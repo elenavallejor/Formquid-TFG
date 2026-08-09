@@ -1,7 +1,19 @@
-.env
-
+# Java / Maven
+target/
+*.class
 backend/target
 
+# Node
+node_modules/
+dist/
 frontend/node_modules
-
 frontend/dist
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environment
+.env
+.env.*
