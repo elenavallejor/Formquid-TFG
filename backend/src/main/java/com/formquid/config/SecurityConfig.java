@@ -2,10 +2,12 @@ package com.formquid.config;
 
 import com.formquid.auth.security.CustomUserDetailsService;
 import com.formquid.auth.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -21,15 +23,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Configuración principal de seguridad de la API REST de FormQuid.
+ * Configura la seguridad global de la API REST de FormQuid.
  *
- * Define qué endpoints son públicos, qué endpoints requieren autenticación,
- * cómo se validan las credenciales de los usuarios y cómo se integra el filtro
- * JWT dentro de la cadena de seguridad de Spring.
- *
- * La aplicación utiliza una arquitectura sin estado, por lo que no se mantiene
- * una sesión HTTP tradicional en el servidor. En su lugar, las peticiones
- * protegidas deben incluir un token JWT en la cabecera Authorization.
+ * Las rutas públicas pueden usarse sin token. El resto de rutas requiere
+ * autenticación mediante JWT. La autorización por roles se aplica en los
+ * controladores mediante @PreAuthorize.
  */
 @Configuration
 @EnableMethodSecurity
@@ -40,15 +38,11 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
 
     /**
-     * Define la cadena principal de filtros de seguridad.
+     * Define las reglas generales de seguridad HTTP.
      *
-     * Se desactivan mecanismos propios de aplicaciones web tradicionales,
-     * como formulario de login, HTTP Basic, logout de sesión y CSRF, porque
-     * el backend funciona como API REST autenticada mediante JWT.
-     *
-     * @param http objeto de configuración de seguridad HTTP.
-     * @return cadena de filtros de seguridad configurada.
-     * @throws Exception si ocurre un error al construir la configuración.
+     * @param http configuración de seguridad HTTP.
+     * @return cadena de filtros configurada.
+     * @throws Exception si ocurre un error de configuración.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -65,17 +59,24 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) ->
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
                 )
+                .accessDeniedHandler((request, response, accessDeniedException) ->
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN)
+                )
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/v1/auth/login",
-                    "/api/v1/registration-requests",
-                    "/api/v1/public/**",
-                    "/actuator/health",
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html"
-                ).permitAll()
+                .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/registration-requests").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/registration-requests/").permitAll()
+
+                .requestMatchers("/api/v1/public/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**").permitAll()
+                .requestMatchers("/swagger-ui.html").permitAll()
+                .requestMatchers("/error").permitAll()
+
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -84,13 +85,9 @@ public class SecurityConfig {
     }
 
     /**
-     * Define el proveedor de autenticación basado en la base de datos.
+     * Configura la autenticación usando usuarios almacenados en base de datos.
      *
-     * Utiliza {@link CustomUserDetailsService} para cargar usuarios desde
-     * PostgreSQL y {@link PasswordEncoder} para comparar la contraseña enviada
-     * en el login con la contraseña cifrada almacenada.
-     *
-     * @return proveedor de autenticación configurado.
+     * @return proveedor de autenticación.
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -103,14 +100,11 @@ public class SecurityConfig {
     }
 
     /**
-     * Expone el AuthenticationManager utilizado por el servicio de autenticación.
+     * Expone el gestor de autenticación usado durante el login.
      *
-     * El AuthenticationManager será usado en AuthService para validar las
-     * credenciales enviadas en el login.
-     *
-     * @param authenticationConfiguration configuración de autenticación de Spring.
-     * @return gestor de autenticación de Spring Security.
-     * @throws Exception si no se puede obtener el gestor de autenticación.
+     * @param authenticationConfiguration configuración de autenticación.
+     * @return gestor de autenticación.
+     * @throws Exception si no se puede obtener el gestor.
      */
     @Bean
     public AuthenticationManager authenticationManager(
@@ -120,12 +114,9 @@ public class SecurityConfig {
     }
 
     /**
-     * Define el algoritmo utilizado para cifrar y verificar contraseñas.
+     * Define el codificador usado para verificar contraseñas.
      *
-     * BCrypt es una opción adecuada para almacenar contraseñas porque incorpora
-     * salt y un coste computacional configurable.
-     *
-     * @return codificador de contraseñas basado en BCrypt.
+     * @return codificador BCrypt.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {

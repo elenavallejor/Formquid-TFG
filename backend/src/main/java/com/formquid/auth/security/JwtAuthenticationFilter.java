@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,10 +18,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Filtro de seguridad encargado de procesar tokens JWT en cada petición.
+ * Filtro encargado de autenticar peticiones mediante token JWT.
  *
- * Si la petición incluye una cabecera Authorization con un token válido,
- * el filtro carga el usuario correspondiente y lo registra.
+ * Solo procesa rutas protegidas. Las rutas públicas, como login o solicitud
+ * de registro, se omiten para que puedan usarse sin token.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,16 +34,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
 
     /**
-     * Intercepta cada petición HTTP para comprobar si incluye un token JWT.
-     *
-     * Si no hay token, la petición continúa sin usuario autenticado.
-     * Si hay token válido, se establece la autenticación en el contexto
-     * de seguridad.
+     * Evita aplicar el filtro JWT sobre endpoints públicos.
      *
      * @param request petición HTTP entrante.
+     * @return true si la ruta no debe pasar por este filtro.
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        String method = request.getMethod();
+
+        return path.equals("/api/v1/auth/login")
+            || path.equals("/actuator/health")
+            || path.equals("/swagger-ui.html")
+            || path.startsWith("/swagger-ui")
+            || path.startsWith("/v3/api-docs")
+            || path.startsWith("/api/v1/public")
+            || (
+                HttpMethod.POST.matches(method)
+                    && path.equals("/api/v1/registration-requests")
+            );
+    }
+
+    /**
+     * Procesa la cabecera Authorization de las rutas protegidas.
+     *
+     * @param request petición HTTP.
      * @param response respuesta HTTP.
-     * @param filterChain cadena de filtros de Spring Security.
-     * @throws ServletException si ocurre un error en el procesamiento del filtro.
+     * @param filterChain cadena de filtros.
+     * @throws ServletException si ocurre un error en el filtro.
      * @throws IOException si ocurre un error de entrada/salida.
      */
     @Override
