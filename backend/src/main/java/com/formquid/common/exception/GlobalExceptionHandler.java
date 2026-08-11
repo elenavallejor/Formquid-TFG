@@ -33,18 +33,17 @@ public class GlobalExceptionHandler {
      * Gestiona errores lanzados manualmente desde los servicios.
      *
      * @param exception excepción recibida.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error normalizada.
      */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiErrorResponse> handleResponseStatusException(
-        ResponseStatusException exception,
-        HttpServletRequest request
-    ) {
+            ResponseStatusException exception,
+            HttpServletRequest request) {
         HttpStatus status = resolveHttpStatus(exception.getStatusCode());
         String message = exception.getReason() != null
-            ? exception.getReason()
-            : "Error en la petición";
+                ? exception.getReason()
+                : "Error en la petición";
 
         return buildResponse(status, message, request);
     }
@@ -53,31 +52,28 @@ public class GlobalExceptionHandler {
      * Gestiona errores de validación producidos por @Valid en DTOs.
      *
      * @param exception excepción de validación.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta con los campos inválidos.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValidException(
-        MethodArgumentNotValidException exception,
-        HttpServletRequest request
-    ) {
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request) {
         List<FieldValidationErrorResponse> fieldErrors = exception
-            .getBindingResult()
-            .getFieldErrors()
-            .stream()
-            .map(error -> new FieldValidationErrorResponse(
-                error.getField(),
-                error.getDefaultMessage()
-            ))
-            .toList();
+                .getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> new FieldValidationErrorResponse(
+                        error.getField(),
+                        error.getDefaultMessage()))
+                .toList();
 
         ApiErrorResponse response = ApiErrorResponse.withFieldErrors(
-            HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "Existen campos inválidos en la petición",
-            request.getRequestURI(),
-            fieldErrors
-        );
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Existen campos inválidos en la petición",
+                request.getRequestURI(),
+                fieldErrors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -86,30 +82,27 @@ public class GlobalExceptionHandler {
      * Gestiona errores de validación sobre parámetros.
      *
      * @param exception excepción de validación.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta con los campos o parámetros inválidos.
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleConstraintViolationException(
-        ConstraintViolationException exception,
-        HttpServletRequest request
-    ) {
+            ConstraintViolationException exception,
+            HttpServletRequest request) {
         List<FieldValidationErrorResponse> fieldErrors = exception
-            .getConstraintViolations()
-            .stream()
-            .map(violation -> new FieldValidationErrorResponse(
-                violation.getPropertyPath().toString(),
-                violation.getMessage()
-            ))
-            .toList();
+                .getConstraintViolations()
+                .stream()
+                .map(violation -> new FieldValidationErrorResponse(
+                        violation.getPropertyPath().toString(),
+                        violation.getMessage()))
+                .toList();
 
         ApiErrorResponse response = ApiErrorResponse.withFieldErrors(
-            HttpStatus.BAD_REQUEST.value(),
-            HttpStatus.BAD_REQUEST.getReasonPhrase(),
-            "Existen parámetros inválidos en la petición",
-            request.getRequestURI(),
-            fieldErrors
-        );
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Existen parámetros inválidos en la petición",
+                request.getRequestURI(),
+                fieldErrors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -118,19 +111,17 @@ public class GlobalExceptionHandler {
      * Gestiona JSON mal formado o cuerpos de petición no legibles.
      *
      * @param exception excepción recibida.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error.
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadableException(
-        HttpMessageNotReadableException exception,
-        HttpServletRequest request
-    ) {
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request) {
         return buildResponse(
-            HttpStatus.BAD_REQUEST,
-            "El cuerpo de la petición no tiene un formato válido",
-            request
-        );
+                HttpStatus.BAD_REQUEST,
+                "El cuerpo de la petición no tiene un formato válido",
+                request);
     }
 
     /**
@@ -140,116 +131,104 @@ public class GlobalExceptionHandler {
      * restricciones definidas en PostgreSQL.
      *
      * @param exception excepción de integridad.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolationException(
-        DataIntegrityViolationException exception,
-        HttpServletRequest request
-    ) {
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
         String message = resolveDataIntegrityMessage(exception);
 
         return buildResponse(
-            HttpStatus.BAD_REQUEST,
-            message,
-            request
-        );
+                HttpStatus.BAD_REQUEST,
+                message,
+                request);
     }
 
     /**
      * Gestiona errores de conexión con la base de datos.
      *
      * @param exception excepción de conexión.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error.
      */
     @ExceptionHandler(CannotCreateTransactionException.class)
     public ResponseEntity<ApiErrorResponse> handleCannotCreateTransactionException(
-        CannotCreateTransactionException exception,
-        HttpServletRequest request
-    ) {
+            CannotCreateTransactionException exception,
+            HttpServletRequest request) {
         log.error("No se pudo abrir una transacción con la base de datos", exception);
 
         return buildResponse(
-            HttpStatus.SERVICE_UNAVAILABLE,
-            "No se ha podido conectar con la base de datos",
-            request
-        );
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "No se ha podido conectar con la base de datos",
+                request);
     }
 
     /**
      * Gestiona otros errores de acceso a datos.
      *
      * @param exception excepción de acceso a datos.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error.
      */
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiErrorResponse> handleDataAccessException(
-        DataAccessException exception,
-        HttpServletRequest request
-    ) {
+            DataAccessException exception,
+            HttpServletRequest request) {
         log.error("Error de acceso a la base de datos", exception);
 
         return buildResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "Se produjo un error al acceder a la base de datos",
-            request
-        );
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Se produjo un error al acceder a la base de datos",
+                request);
     }
 
     /**
      * Gestiona accesos autenticados sin permisos suficientes.
      *
      * @param exception excepción de permisos.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error.
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAccessDeniedException(
-        AccessDeniedException exception,
-        HttpServletRequest request
-    ) {
+            AccessDeniedException exception,
+            HttpServletRequest request) {
         return buildResponse(
-            HttpStatus.FORBIDDEN,
-            "No tienes permisos para realizar esta operación",
-            request
-        );
+                HttpStatus.FORBIDDEN,
+                "No tienes permisos para realizar esta operación",
+                request);
     }
 
     /**
      * Gestiona errores no controlados.
      *
      * @param exception excepción inesperada.
-     * @param request petición HTTP.
+     * @param request   petición HTTP.
      * @return respuesta de error genérica.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(
-        Exception exception,
-        HttpServletRequest request
-    ) {
+            Exception exception,
+            HttpServletRequest request) {
         log.error("Error no controlado", exception);
 
         return buildResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "Se produjo un error inesperado en el servidor",
-            request
-        );
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Se produjo un error inesperado en el servidor",
+                request);
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(
-        HttpStatus status,
-        String message,
-        HttpServletRequest request
-    ) {
+            HttpStatus status,
+            String message,
+            HttpServletRequest request) {
         ApiErrorResponse response = ApiErrorResponse.of(
-            status.value(),
-            status.getReasonPhrase(),
-            message,
-            request.getRequestURI()
-        );
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI());
 
         return ResponseEntity.status(status).body(response);
     }
@@ -258,18 +237,22 @@ public class GlobalExceptionHandler {
         HttpStatus status = HttpStatus.resolve(statusCode.value());
 
         return status != null
-            ? status
-            : HttpStatus.INTERNAL_SERVER_ERROR;
+                ? status
+                : HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
     private String resolveDataIntegrityMessage(DataIntegrityViolationException exception) {
         Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(exception);
         String detail = rootCause.getMessage() != null
-            ? rootCause.getMessage().toLowerCase()
-            : "";
+                ? rootCause.getMessage().toLowerCase()
+                : "";
 
         if (detail.contains("uk_users_email")) {
             return "Ya existe un usuario registrado con ese correo electrónico";
+        }
+
+        if (detail.contains("uk_blocks_name_normalized")) {
+            return "Ya existe un bloque con ese nombre";
         }
 
         if (detail.contains("uk_tags_name")) {
