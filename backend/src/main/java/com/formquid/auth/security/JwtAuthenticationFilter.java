@@ -20,8 +20,9 @@ import java.io.IOException;
 /**
  * Filtro encargado de autenticar peticiones mediante token JWT.
  *
- * Solo procesa rutas protegidas. Las rutas públicas, como login o solicitud
- * de registro, se omiten para que puedan usarse sin token.
+ * Solo procesa rutas protegidas. Las rutas públicas, como login, solicitud
+ * de registro o rutas internas de error, se omiten para que puedan usarse
+ * sin token.
  */
 @Component
 @RequiredArgsConstructor
@@ -45,6 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         return path.equals("/api/v1/auth/login")
+            || path.equals("/error")
             || path.equals("/actuator/health")
             || path.equals("/swagger-ui.html")
             || path.startsWith("/swagger-ui")
