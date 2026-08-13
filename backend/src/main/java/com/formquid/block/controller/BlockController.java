@@ -1,6 +1,5 @@
 package com.formquid.block.controller;
 
-import com.formquid.auth.security.CustomUserDetails;
 import com.formquid.block.dto.BlockResponseDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.dto.UpdateBlockRequestDto;
@@ -10,9 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 /**
@@ -31,11 +30,6 @@ public class BlockController {
 
     /**
      * Devuelve los bloques activos disponibles.
-     *
-     * Pueden consultarlos usuarios autenticados para construir encuestas,
-     * plantillas o preguntas.
-     *
-     * @return lista de bloques activos.
      */
     @GetMapping("/blocks/active")
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
@@ -49,8 +43,6 @@ public class BlockController {
 
     /**
      * Devuelve todos los bloques.
-     *
-     * @return lista de bloques.
      */
     @GetMapping("/admin/blocks")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
@@ -63,10 +55,7 @@ public class BlockController {
     }
 
     /**
-     * Devuelve un bloque concreto por su identificador.
-     *
-     * @param id identificador del bloque.
-     * @return bloque encontrado.
+     * Devuelve un bloque por su identificador.
      */
     @GetMapping("/admin/blocks/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
@@ -80,10 +69,6 @@ public class BlockController {
 
     /**
      * Crea un nuevo bloque.
-     *
-     * @param request datos de creación.
-     * @param userDetails usuario autenticado.
-     * @return bloque creado.
      */
     @PostMapping("/admin/blocks")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
@@ -93,17 +78,16 @@ public class BlockController {
     )
     public BlockResponseDto create(
         @Valid @RequestBody CreateBlockRequestDto request,
-        @AuthenticationPrincipal CustomUserDetails userDetails
+        Principal principal
     ) {
-        return blockService.create(request, userDetails.getId());
+        return blockService.create(
+            request,
+            principal.getName()
+        );
     }
 
     /**
      * Actualiza un bloque existente.
-     *
-     * @param id identificador del bloque.
-     * @param request nuevos datos.
-     * @return bloque actualizado.
      */
     @PutMapping("/admin/blocks/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
@@ -120,9 +104,6 @@ public class BlockController {
 
     /**
      * Activa un bloque.
-     *
-     * @param id identificador del bloque.
-     * @return bloque activado.
      */
     @PatchMapping("/admin/blocks/{id}/activate")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
@@ -136,9 +117,6 @@ public class BlockController {
 
     /**
      * Desactiva un bloque.
-     *
-     * @param id identificador del bloque.
-     * @return bloque desactivado.
      */
     @PatchMapping("/admin/blocks/{id}/disable")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
@@ -152,9 +130,6 @@ public class BlockController {
 
     /**
      * Archiva un bloque.
-     *
-     * @param id identificador del bloque.
-     * @return bloque archivado.
      */
     @PatchMapping("/admin/blocks/{id}/archive")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")

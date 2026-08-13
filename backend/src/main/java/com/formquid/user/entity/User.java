@@ -21,14 +21,17 @@ import java.time.LocalDateTime;
     name = "users",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+    },
+    indexes = {
+        @Index(name = "idx_users_role", columnList = "role"),
+        @Index(name = "idx_users_enabled", columnList = "enabled"),
+        @Index(name = "idx_users_role_enabled", columnList = "role, enabled")
     }
 )
 public class User {
 
     /**
      * Identificador único del usuario.
-     *
-     * Se genera automáticamente de forma secuencial en la base de datos.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,11 +40,11 @@ public class User {
     /**
      * Nombre completo del usuario.
      */
-    @Column(name = "full_name", nullable = false, length = 150)
-    private String fullName;
+    @Column(nullable = false, length = 150)
+    private String name;
 
     /**
-     * Correo electrónico usado para iniciar sesión, unico.
+     * Correo electrónico usado para iniciar sesión.
      */
     @Column(nullable = false, length = 255)
     private String email;
@@ -49,10 +52,10 @@ public class User {
     /**
      * Contraseña cifrada del usuario.
      *
-     * No debe exponerse en respuestas de la API.
+     * Aunque el atributo se llame password, nunca se almacena en texto plano.
      */
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+    @Column(nullable = false)
+    private String password;
 
     /**
      * Rol del usuario dentro del sistema.

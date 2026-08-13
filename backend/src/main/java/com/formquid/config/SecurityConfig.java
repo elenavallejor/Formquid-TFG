@@ -1,125 +1,172 @@
 package com.formquid.config;
 
-import com.formquid.auth.security.CustomUserDetailsService;
 import com.formquid.auth.security.JwtAuthenticationFilter;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import com.formquid.user.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * Configura la seguridad global de la API REST de FormQuid.
+ * Configuración central de Spring Security.
  *
- * Las rutas públicas pueden usarse sin token. El resto de rutas requiere
- * autenticación mediante JWT. La autorización por roles se aplica en los
- * controladores mediante @PreAuthorize.
+ * La API utiliza JWT y no mantiene sesiones en el servidor.
  */
 @Configuration
+@EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomUserDetailsService customUserDetailsService;
+    private final HandlerExceptionResolver resolver;
 
     /**
-     * Define las reglas generales de seguridad HTTP.
+     * El filtro JWT no se inyecta en el constructor de esta configuración.
      *
-     * @param http configuración de seguridad HTTP.
-     * @return cadena de filtros configurada.
-     * @throws Exception si ocurre un error de configuración.
+     * Se recibe como parámetro del bean SecurityFilterChain para evitar
+     * una dependencia circular con UserDetailsService.
+     */
+    public SecurityConfig(
+        @Qualifier("handlerExceptionResolver")
+        HandlerExceptionResolver resolver
+    ) {
+        this.resolver = resolver;
+    }
+
+    /**
+     * Configura autorización, manejo de errores y filtro JWT.
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
         return http
-            .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
-            .logout(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint((request, response, authException) ->
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
-                )
-                .accessDeniedHandler((request, response, accessDeniedException) ->
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN)
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+                /*
+                 * Solo el inicio de sesión es público dentro de /api/auth.
+                 * /api/auth/me requiere autenticación.
+                 */
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/auth/login"
+                ).permitAll()
 
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/registration-requests").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/registration-requests/").permitAll()
+                /*
+                 * Recursos destinados a participantes sin cuenta.
+                 */
+                .requestMatchers(
+                    "/api/v1/public/**"
+                ).permitAll()
 
-                .requestMatchers("/api/v1/public/**").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/v3/api-docs/**").permitAll()
-                .requestMatchers("/swagger-ui/**").permitAll()
-                .requestMatchers("/swagger-ui.html").permitAll()
-                .requestMatchers("/error").permitAll()
+                /*
+                 * Una persona sin cuenta puede solicitar el alta como editor.
+                 */
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/v1/registration-requests"
+                ).permitAll()
 
-                .anyRequest().authenticated()
+                .anyRequest()
+                .authenticated()
             )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(
+                    (request, response, exception) ->
+                        resolver.resolveException(
+                            request,
+                            response,
+                            null,
+                            exception
+                        )
+                )
+                .accessDeniedHandler(
+                    (request, response, exception) ->
+                        resolver.resolveException(
+                            request,
+                            response,
+                            null,
+                            exception
+                        )
+                )
+            )
+            .addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+            )
             .build();
     }
 
     /**
-     * Configura la autenticación usando usuarios almacenados en base de datos.
+     * Carga usuarios por correo sin distinguir mayúsculas.
      *
-     * @return proveedor de autenticación.
+     * El estado enabled se transfiere a Spring Security para impedir
+     * el inicio de sesión de cuentas deshabilitadas.
      */
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authenticationProvider =
-            new DaoAuthenticationProvider(customUserDetailsService);
-
-        authenticationProvider.setPasswordEncoder(passwordEncoder());
-
-        return authenticationProvider;
+    public UserDetailsService userDetailsService(
+        UserRepository userRepository
+    ) {
+        return username ->
+            userRepository
+                .findByEmailIgnoreCase(
+                    username.trim()
+                )
+                .map(user ->
+                    org.springframework.security.core.userdetails.User
+                        .builder()
+                        .username(user.getEmail())
+                        .password(user.getPassword())
+                        .authorities(
+                            "ROLE_"
+                                + user.getRole().name()
+                        )
+                        .disabled(!user.isEnabled())
+                        .build()
+                )
+                .orElseThrow(() ->
+                    new UsernameNotFoundException(
+                        "Usuario no encontrado: "
+                            + username
+                    )
+                );
     }
 
     /**
-     * Expone el gestor de autenticación usado durante el login.
-     *
-     * @param authenticationConfiguration configuración de autenticación.
-     * @return gestor de autenticación.
-     * @throws Exception si no se puede obtener el gestor.
-     */
-    @Bean
-    public AuthenticationManager authenticationManager(
-        AuthenticationConfiguration authenticationConfiguration
-    ) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    /**
-     * Define el codificador usado para verificar contraseñas.
-     *
-     * @return codificador BCrypt.
+     * Codificador BCrypt para las contraseñas de usuario.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Expone el AuthenticationManager configurado por Spring Security.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(
+        AuthenticationConfiguration configuration
+    ) throws Exception {
+        return configuration
+            .getAuthenticationManager();
     }
 }

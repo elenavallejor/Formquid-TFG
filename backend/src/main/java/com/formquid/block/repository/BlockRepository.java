@@ -4,6 +4,7 @@ import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,33 +14,31 @@ import java.util.Optional;
 public interface BlockRepository extends JpaRepository<Block, Long> {
 
     /**
-     * Busca un bloque por su nombre normalizado.
+     * Busca un bloque por nombre.
      *
-     * @param nameNormalized nombre normalizado.
-     * @return bloque encontrado, si existe.
      */
-    Optional<Block> findByNameNormalized(String nameNormalized);
+    Optional<Block> findByNameIgnoreCase(String name);
 
     /**
-     * Comprueba si existe un bloque con el nombre normalizado indicado.
-     *
-     * @param nameNormalized nombre normalizado.
-     * @return true si existe.
+     * Comprueba si existe un bloque con el nombre indicado ignorando
+     * mayúsculas y minúsculas.
      */
-    boolean existsByNameNormalized(String nameNormalized);
+    boolean existsByNameIgnoreCase(String name);
 
     /**
-     * Obtiene todos los bloques ordenados por nombre.
-     *
-     * @return lista de bloques.
+     * Lista todos los bloques ordenados alfabéticamente.
      */
     List<Block> findAllByOrderByNameAsc();
 
     /**
-     * Obtiene bloques con un estado concreto ordenados por nombre.
-     *
-     * @param status estado de los bloques.
-     * @return lista de bloques.
+     * Lista bloques filtrados por estado.
      */
     List<Block> findByStatusOrderByNameAsc(BlockStatus status);
+
+    /**
+     * Busca varios bloques por sus identificadores.
+     *
+     * Se usa al crear plantillas o encuestas a partir de bloques existentes.
+     */
+    List<Block> findByIdIn(Collection<Long> ids);
 }

@@ -47,9 +47,9 @@ public class DevDataInitializer implements CommandLineRunner {
         }
 
         User superadmin = User.builder()
-            .fullName("Superadministrador FormQuid")
+            .name("Superadministrador FormQuid")
             .email(initialSuperadminEmail)
-            .passwordHash(passwordEncoder.encode(initialSuperadminPassword))
+            .password(passwordEncoder.encode(initialSuperadminPassword))
             .role(UserRole.SUPERADMIN)
             .gender(UserGender.OTHER)
             .institution("FormQuid")

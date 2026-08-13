@@ -1,5 +1,6 @@
 package com.formquid.auth.security;
 
+import com.formquid.user.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -13,7 +14,7 @@ import java.time.Instant;
 import java.util.Date;
 
 /**
- * Servicio encargado de generar y validar tokens JWT.
+ * Servicio encargado de generar, leer y validar tokens JWT.
  */
 @Service
 public class JwtService {
@@ -25,19 +26,22 @@ public class JwtService {
     private long jwtExpirationMs;
 
     /**
-     * Genera un token para el usuario autenticado.
+     * Genera un JWT para el usuario autenticado.
      *
-     * @param userDetails usuario autenticado.
-     * @return token JWT firmado.
+     * El correo se usa como subject, mientras que userId y role se incluyen
+     * como claims informativos.
      */
-    public String generateToken(CustomUserDetails userDetails) {
+    public String generateToken(
+        User user
+    ) {
         Instant now = Instant.now();
-        Instant expiration = now.plusMillis(jwtExpirationMs);
+        Instant expiration =
+            now.plusMillis(jwtExpirationMs);
 
         return Jwts.builder()
-            .subject(userDetails.getUsername())
-            .claim("userId", userDetails.getId().toString())
-            .claim("role", userDetails.getUser().getRole().name())
+            .subject(user.getEmail())
+            .claim("userId", user.getId())
+            .claim("role", user.getRole().name())
             .issuedAt(Date.from(now))
             .expiration(Date.from(expiration))
             .signWith(getSigningKey())
@@ -45,47 +49,46 @@ public class JwtService {
     }
 
     /**
-     * Extrae el correo electrónico contenido en el token.
-     *
-     * @param token token JWT.
-     * @return email del usuario.
+     * Extrae el correo almacenado como subject del token.
      */
-    public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    /**
-     * Comprueba si el token corresponde al usuario y no ha expirado.
-     *
-     * @param token token JWT.
-     * @param userDetails usuario cargado desde la base de datos.
-     * @return true si el token es válido.
-     */
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
-
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
-    }
-
-    /**
-     * Comprueba si el token ha expirado.
-     *
-     * @param token token JWT.
-     * @return true si el token ha expirado.
-     */
-    private boolean isTokenExpired(String token) {
+    public String extractUsername(
+        String token
+    ) {
         return extractAllClaims(token)
-            .getExpiration()
-            .before(new Date());
+            .getSubject();
     }
 
     /**
-     * Extrae los datos internos del token.
-     *
-     * @param token token JWT.
-     * @return claims del token.
+     * Comprueba que el JWT corresponda al usuario cargado
+     * y que todavía no haya expirado.
      */
-    private Claims extractAllClaims(String token) {
+    public boolean isTokenValid(
+        String token,
+        UserDetails userDetails
+    ) {
+        Claims claims =
+            extractAllClaims(token);
+
+        String username =
+            claims.getSubject();
+
+        Date expiration =
+            claims.getExpiration();
+
+        return username != null
+            && username.equals(
+                userDetails.getUsername()
+            )
+            && expiration != null
+            && expiration.after(new Date());
+    }
+
+    /**
+     * Valida la firma del JWT y devuelve sus claims.
+     */
+    private Claims extractAllClaims(
+        String token
+    ) {
         return Jwts.parser()
             .verifyWith(getSigningKey())
             .build()
@@ -94,12 +97,19 @@ public class JwtService {
     }
 
     /**
-     * Obtiene la clave usada para firmar y verificar tokens.
+     * Obtiene la clave HMAC empleada para firmar y verificar los tokens.
      *
-     * @return clave secreta.
+     * La propiedad security.jwt.secret debe tener longitud suficiente
+     * para el algoritmo HMAC utilizado.
      */
     private SecretKey getSigningKey() {
-        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes =
+            jwtSecret.getBytes(
+                StandardCharsets.UTF_8
+            );
+
+        return Keys.hmacShaKeyFor(
+            keyBytes
+        );
     }
 }

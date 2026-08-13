@@ -6,11 +6,13 @@ import com.formquid.user.entity.UserGender;
 import java.time.LocalDateTime;
 
 /**
- * Datos de una solicitud de registro devueltos por la API.
+ * DTO de salida para mostrar una solicitud de registro.
+ *
+ * La contraseña cifrada nunca se expone a través de la API.
  */
 public record RegistrationRequestResponseDto(
     Long id,
-    String fullName,
+    String name,
     String email,
     UserGender gender,
     String institution,
@@ -19,6 +21,6 @@ public record RegistrationRequestResponseDto(
     LocalDateTime requestedAt,
     LocalDateTime resolvedAt,
     Long resolvedByUserId,
+    String resolvedByName,
     String rejectionReason
-) {
-}
+) {}

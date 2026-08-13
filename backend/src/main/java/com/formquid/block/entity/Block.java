@@ -1,8 +1,26 @@
 package com.formquid.block.entity;
 
 import com.formquid.user.entity.User;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -22,12 +40,13 @@ import java.time.LocalDateTime;
     name = "blocks",
     uniqueConstraints = {
         @UniqueConstraint(
-            name = "uk_blocks_name_normalized",
-            columnNames = "name_normalized"
+            name = "uk_blocks_name",
+            columnNames = "name"
         )
     },
     indexes = {
         @Index(name = "idx_blocks_status", columnList = "status"),
+        @Index(name = "idx_blocks_created_by", columnList = "created_by_user_id"),
         @Index(name = "idx_blocks_status_name", columnList = "status, name")
     }
 )
@@ -45,15 +64,6 @@ public class Block {
      */
     @Column(nullable = false, length = 120)
     private String name;
-
-    /**
-     * Nombre normalizado para búsquedas y control de duplicados.
-     *
-     * Se almacena en minúsculas y sin espacios laterales para evitar
-     * duplicados como "Datos generales" y "datos generales".
-     */
-    @Column(name = "name_normalized", nullable = false, length = 120)
-    private String nameNormalized;
 
     /**
      * Descripción opcional del bloque.

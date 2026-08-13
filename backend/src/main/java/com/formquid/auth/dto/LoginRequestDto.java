@@ -2,26 +2,26 @@ package com.formquid.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * DTO de entrada utilizado para iniciar sesión en FormQuid.
  */
 public record LoginRequestDto(
 
-    /**
-     * Correo electrónico del usuario registrado.
-     */
-    @NotBlank(message = "El correo electrónico es obligatorio")
-    @Email(message = "El correo electrónico no tiene un formato válido")
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El formato de email no es válido")
+    @Size(
+        max = 255,
+        message = "El email no puede superar los 255 caracteres"
+    )
     String email,
 
-    /**
-     * Contraseña introducida por el usuario.
-     *
-     * Se recibe en texto durante el login y se compara internamente con la contraseña cifrada almacenada.
-     */
     @NotBlank(message = "La contraseña es obligatoria")
+    @Size(
+        max = 100,
+        message = "La contraseña no puede superar los 100 caracteres"
+    )
     String password
 
-) {
-}
+) {}

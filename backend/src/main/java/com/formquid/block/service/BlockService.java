@@ -6,8 +6,10 @@ import com.formquid.block.dto.UpdateBlockRequestDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockStatus;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.fixedquestion.entity.FixedQuestionStatus;
+import com.formquid.fixedquestion.repository.FixedQuestionRepository;
 import com.formquid.user.entity.User;
-import jakarta.persistence.EntityManager;
+import com.formquid.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,183 +17,273 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Servicio encargado de gestionar bloques.
+ * Servicio de negocio para bloques reutilizables.
+ *
+ * Los bloques agrupan preguntas fijas y pueden reutilizarse al crear
+ * plantillas o encuestas.
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BlockService {
 
     private final BlockRepository blockRepository;
-    private final EntityManager entityManager;
+    private final FixedQuestionRepository fixedQuestionRepository;
+    private final UserRepository userRepository;
 
     /**
-     * Crea un nuevo bloque.
-     *
-     * @param request datos de creación.
-     * @param creatorId identificador del usuario creador.
-     * @return bloque creado.
+     * Devuelve todos los bloques del sistema.
      */
-    @Transactional
-    public BlockResponseDto create(CreateBlockRequestDto request, Long creatorId) {
-        String normalizedName = normalizeName(request.name());
-
-        if (blockRepository.existsByNameNormalized(normalizedName)) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Ya existe un bloque con ese nombre"
-            );
-        }
-
-        User creatorReference = entityManager.getReference(User.class, creatorId);
-
-        Block block = Block.builder()
-            .name(request.name().trim())
-            .nameNormalized(normalizedName)
-            .description(normalizeDescription(request.description()))
-            .status(BlockStatus.ACTIVE)
-            .createdBy(creatorReference)
-            .build();
-
-        return mapToResponseDto(blockRepository.save(block));
-    }
-
-    /**
-     * Devuelve todos los bloques existentes.
-     *
-     * @return lista de bloques.
-     */
-    @Transactional(readOnly = true)
     public List<BlockResponseDto> findAll() {
         return blockRepository.findAllByOrderByNameAsc()
             .stream()
-            .map(this::mapToResponseDto)
+            .map(this::toResponse)
             .toList();
     }
 
     /**
-     * Devuelve los bloques activos.
-     *
-     * @return lista de bloques activos.
+     * Devuelve solo los bloques activos.
      */
-    @Transactional(readOnly = true)
     public List<BlockResponseDto> findActive() {
-        return blockRepository.findByStatusOrderByNameAsc(BlockStatus.ACTIVE)
+        return blockRepository.findByStatusOrderByNameAsc(
+                BlockStatus.ACTIVE
+            )
             .stream()
-            .map(this::mapToResponseDto)
+            .map(this::toResponse)
             .toList();
     }
 
     /**
-     * Devuelve un bloque por su identificador.
-     *
-     * @param id identificador del bloque.
-     * @return bloque encontrado.
+     * Busca un bloque por su identificador.
      */
-    @Transactional(readOnly = true)
-    public BlockResponseDto findById(Long id) {
-        return mapToResponseDto(findEntityById(id));
+    public BlockResponseDto findById(Long blockId) {
+        return toResponse(findBlock(blockId));
+    }
+
+    /**
+     * Crea un nuevo bloque reutilizable.
+     */
+    @Transactional
+    public BlockResponseDto create(
+        CreateBlockRequestDto request,
+        String creatorEmail
+    ) {
+        String name = cleanName(request.name());
+
+        checkAvailableName(name, null);
+
+        User creator = findCreatorByEmail(creatorEmail);
+
+        Block block = Block.builder()
+            .name(name)
+            .description(cleanDescription(request.description()))
+            .status(BlockStatus.ACTIVE)
+            .createdBy(creator)
+            .build();
+
+        return toResponse(
+            blockRepository.save(block)
+        );
     }
 
     /**
      * Actualiza los datos básicos de un bloque.
-     *
-     * @param id identificador del bloque.
-     * @param request nuevos datos.
-     * @return bloque actualizado.
      */
     @Transactional
-    public BlockResponseDto update(Long id, UpdateBlockRequestDto request) {
-        Block block = findEntityById(id);
-        String normalizedName = normalizeName(request.name());
+    public BlockResponseDto update(
+        Long blockId,
+        UpdateBlockRequestDto request
+    ) {
+        Block block = findBlock(blockId);
+        String name = cleanName(request.name());
 
-        blockRepository.findByNameNormalized(normalizedName)
-            .filter(existingBlock -> !existingBlock.getId().equals(id))
-            .ifPresent(existingBlock -> {
-                throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Ya existe otro bloque con ese nombre"
-                );
-            });
+        checkAvailableName(name, blockId);
 
-        block.setName(request.name().trim());
-        block.setNameNormalized(normalizedName);
-        block.setDescription(normalizeDescription(request.description()));
+        block.setName(name);
+        block.setDescription(
+            cleanDescription(request.description())
+        );
 
-        return mapToResponseDto(blockRepository.save(block));
+        return toResponse(block);
     }
 
     /**
      * Activa un bloque.
-     *
-     * @param id identificador del bloque.
-     * @return bloque activado.
      */
     @Transactional
-    public BlockResponseDto activate(Long id) {
-        return changeStatus(id, BlockStatus.ACTIVE);
+    public BlockResponseDto activate(Long blockId) {
+        return changeStatus(
+            blockId,
+            BlockStatus.ACTIVE
+        );
     }
 
     /**
      * Desactiva un bloque.
      *
-     * @param id identificador del bloque.
-     * @return bloque desactivado.
+     * El bloque deja de estar disponible para nuevos usos,
+     * pero se mantiene almacenado.
      */
     @Transactional
-    public BlockResponseDto disable(Long id) {
-        return changeStatus(id, BlockStatus.DISABLED);
+    public BlockResponseDto disable(Long blockId) {
+        return changeStatus(
+            blockId,
+            BlockStatus.DISABLED
+        );
     }
 
     /**
      * Archiva un bloque.
-     *
-     * @param id identificador del bloque.
-     * @return bloque archivado.
      */
     @Transactional
-    public BlockResponseDto archive(Long id) {
-        return changeStatus(id, BlockStatus.ARCHIVED);
+    public BlockResponseDto archive(Long blockId) {
+        return changeStatus(
+            blockId,
+            BlockStatus.ARCHIVED
+        );
     }
 
-    private BlockResponseDto changeStatus(Long id, BlockStatus status) {
-        Block block = findEntityById(id);
+    /**
+     * Devuelve un bloque que puede utilizarse al construir
+     * una plantilla o encuesta.
+     *
+     * Debe estar activo y contener al menos una pregunta fija activa.
+     */
+    public Block getUsableBlock(Long blockId) {
+        Block block = findBlock(blockId);
+
+        if (block.getStatus() != BlockStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El bloque indicado no está activo"
+            );
+        }
+
+        boolean hasActiveQuestions =
+            fixedQuestionRepository.existsByBlockIdAndStatus(
+                blockId,
+                FixedQuestionStatus.ACTIVE
+            );
+
+        if (!hasActiveQuestions) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El bloque indicado debe contener al menos una pregunta fija activa"
+            );
+        }
+
+        return block;
+    }
+
+    /**
+     * Cambia el estado de un bloque.
+     */
+    private BlockResponseDto changeStatus(
+        Long blockId,
+        BlockStatus status
+    ) {
+        Block block = findBlock(blockId);
+
         block.setStatus(status);
 
-        return mapToResponseDto(blockRepository.save(block));
+        return toResponse(block);
     }
 
-    private Block findEntityById(Long id) {
-        return blockRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Bloque no encontrado"
-            ));
+    /**
+     * Busca un bloque o lanza un error si no existe.
+     */
+    private Block findBlock(Long blockId) {
+        return blockRepository.findById(blockId)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Bloque no encontrado"
+                )
+            );
     }
 
-    private String normalizeName(String name) {
-        return name.trim().toLowerCase(Locale.ROOT);
+    /**
+     * Obtiene el usuario creador a partir del correo
+     * del usuario autenticado.
+     */
+    private User findCreatorByEmail(String email) {
+        return userRepository.findByEmail(email)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Usuario autenticado no encontrado"
+                )
+            );
     }
 
-    private String normalizeDescription(String description) {
-        return description != null && !description.isBlank()
-            ? description.trim()
-            : null;
+    /**
+     * Comprueba que no exista otro bloque con el mismo nombre.
+     */
+    private void checkAvailableName(
+        String name,
+        Long currentBlockId
+    ) {
+        blockRepository.findByNameIgnoreCase(name)
+            .filter(existingBlock ->
+                currentBlockId == null
+                    || !existingBlock.getId().equals(currentBlockId)
+            )
+            .ifPresent(existingBlock -> {
+                throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Ya existe un bloque con ese nombre"
+                );
+            });
     }
 
-    private BlockResponseDto mapToResponseDto(Block block) {
-        Long createdByUserId = block.getCreatedBy() != null
-            ? block.getCreatedBy().getId()
-            : null;
+    /**
+     * Limpia el nombre antes de guardarlo.
+     */
+    private String cleanName(String name) {
+        if (name == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El nombre del bloque es obligatorio"
+            );
+        }
+
+        String cleanName = name.trim();
+
+        if (cleanName.isBlank()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El nombre del bloque es obligatorio"
+            );
+        }
+
+        return cleanName;
+    }
+
+    /**
+     * Limpia descripción.
+     */
+    private String cleanDescription(String description) {
+        if (description == null || description.isBlank()) {
+            return null;
+        }
+
+        return description.trim();
+    }
+
+    /**
+     * Convierte un bloque a DTO de respuesta.
+     */
+    private BlockResponseDto toResponse(Block block) {
+        User creator = block.getCreatedBy();
 
         return new BlockResponseDto(
             block.getId(),
             block.getName(),
             block.getDescription(),
             block.getStatus(),
-            createdByUserId,
+            creator != null ? creator.getId() : null,
             block.getCreatedAt(),
             block.getUpdatedAt()
         );
