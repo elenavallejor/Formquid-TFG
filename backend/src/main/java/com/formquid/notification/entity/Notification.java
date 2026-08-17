@@ -1,5 +1,9 @@
 package com.formquid.notification.entity;
 
+import com.formquid.collaboration.entity.SurveyCollaboration;
+import com.formquid.elementrequest.entity.ElementRequest;
+import com.formquid.registration.entity.RegistrationRequest;
+import com.formquid.survey.entity.Survey;
 import com.formquid.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,6 +23,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 
@@ -34,13 +39,37 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
+@Check(constraints = """
+    type in (
+        'GENERAL',
+        'REGISTRATION_APPROVED',
+        'ACCOUNT_UPDATED',
+        'COLLABORATION_REQUEST',
+        'COLLABORATION_ACCEPTED',
+        'COLLABORATION_REJECTED',
+        'ELEMENT_REQUEST_RESOLVED',
+        'SURVEY_STATUS_CHANGED'
+    )
+    and channel in ('INTERNAL', 'EMAIL')
+    and (
+        (case when survey_id is null then 0 else 1 end)
+        + (case when registration_request_id is null then 0 else 1 end)
+        + (case when collaboration_id is null then 0 else 1 end)
+        + (case when element_request_id is null then 0 else 1 end)
+        + (case when target_user_id is null then 0 else 1 end)
+    ) <= 1
+""")
 @Table(
     name = "notifications",
     indexes = {
         @Index(name = "idx_notifications_recipient", columnList = "recipient_user_id"),
         @Index(name = "idx_notifications_recipient_created", columnList = "recipient_user_id, created_at"),
         @Index(name = "idx_notifications_recipient_read", columnList = "recipient_user_id, read_at"),
-        @Index(name = "idx_notifications_target", columnList = "target_type, target_id")
+        @Index(name = "idx_notifications_survey", columnList = "survey_id"),
+        @Index(name = "idx_notifications_registration_request", columnList = "registration_request_id"),
+        @Index(name = "idx_notifications_collaboration", columnList = "collaboration_id"),
+        @Index(name = "idx_notifications_element_request", columnList = "element_request_id"),
+        @Index(name = "idx_notifications_target_user", columnList = "target_user_id")
     }
 )
 public class Notification {
@@ -82,20 +111,25 @@ public class Notification {
     @Column(nullable = false, length = 1500)
     private String message;
 
-    /**
-     * Tipo del recurso relacionado con la notificación.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "target_type", nullable = false, length = 50)
-    private NotificationTargetType targetType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "survey_id")
+    private Survey survey;
 
-    /**
-     * Identificador del recurso relacionado.
-     *
-     * Puede ser null cuando la notificación no apunta a ningún recurso.
-     */
-    @Column(name = "target_id")
-    private Long targetId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registration_request_id")
+    private RegistrationRequest registrationRequest;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collaboration_id")
+    private SurveyCollaboration collaboration;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "element_request_id")
+    private ElementRequest elementRequest;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "target_user_id")
+    private User targetUser;
 
     /**
      * Fecha de creación de la notificación.
@@ -117,10 +151,6 @@ public class Notification {
 
         if (this.channel == null) {
             this.channel = NotificationChannel.INTERNAL;
-        }
-
-        if (this.targetType == null) {
-            this.targetType = NotificationTargetType.NONE;
         }
     }
 

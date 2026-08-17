@@ -1,7 +1,7 @@
 package com.formquid.survey.service;
 
-import com.formquid.fixedquestion.entity.MatrixRowConfig;
-import com.formquid.fixedquestion.entity.OptionConfig;
+import com.formquid.question.entity.MatrixRowConfig;
+import com.formquid.question.entity.OptionConfig;
 import com.formquid.survey.dto.AccessSurveyRequestDto;
 import com.formquid.survey.dto.PublicMatrixRowDto;
 import com.formquid.survey.dto.PublicOptionDto;
@@ -10,9 +10,10 @@ import com.formquid.survey.dto.PublicSurveyQuestionDto;
 import com.formquid.survey.dto.PublicSurveyResponseDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.entity.Survey;
-import com.formquid.survey.entity.SurveyBlock;
-import com.formquid.survey.entity.SurveyQuestion;
 import com.formquid.survey.entity.SurveyStatus;
+import com.formquid.survey.model.SurveyBlockSnapshot;
+import com.formquid.survey.model.SurveyQuestionSnapshot;
+import com.formquid.survey.model.SurveyStructure;
 import com.formquid.survey.repository.SurveyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,8 +29,8 @@ import java.util.List;
 /**
  * Servicio encargado exclusivamente del acceso público a encuestas.
  *
- * Atiende a participantes anónimos y devuelve únicamente DTO públicos,
- * evitando exponer información administrativa o datos internos de evaluación.
+ * Devuelve únicamente el snapshot necesario para mostrar y responder la
+ * encuesta, sin exponer datos administrativos ni puntuaciones internas.
  */
 @Service
 @RequiredArgsConstructor
@@ -52,9 +53,6 @@ public class PublicSurveyService {
 
     /**
      * Obtiene directamente una encuesta con estado PUBLIC.
-     *
-     * Las encuestas privadas deben accederse mediante accessByCode,
-     * ya que requieren validar la contraseña.
      */
     public PublicSurveyResponseDto findPublicByCode(String publicCode) {
         Survey survey = getSurveyByPublicCode(publicCode);
@@ -70,11 +68,7 @@ public class PublicSurveyService {
     }
 
     /**
-     * Permite acceder a una encuesta mediante su código público.
-     *
-     * PUBLIC: acceso directo.
-     * PRIVATE: requiere contraseña válida.
-     * DRAFT/HIDDEN: no se exponen a participantes.
+     * Permite acceder a una encuesta pública o privada mediante código.
      */
     public PublicSurveyResponseDto accessByCode(
         String publicCode,
@@ -101,9 +95,6 @@ public class PublicSurveyService {
         );
     }
 
-    /**
-     * Recupera una encuesta con la estructura necesaria para el participante.
-     */
     private Survey getSurveyByPublicCode(String publicCode) {
         if (!StringUtils.hasText(publicCode)) {
             throw new ResponseStatusException(
@@ -120,9 +111,6 @@ public class PublicSurveyService {
             ));
     }
 
-    /**
-     * Valida la contraseña de una encuesta privada.
-     */
     private void validatePrivateAccess(
         Survey survey,
         String accessPassword
@@ -134,17 +122,14 @@ public class PublicSurveyService {
             );
         }
 
-        if (!StringUtils.hasText(survey.getAccessPassword())) {
+        if (!StringUtils.hasText(survey.getAccessPasswordHash())) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "La encuesta privada no tiene contraseña configurada"
             );
         }
 
-        if (!passwordEncoder.matches(
-            accessPassword.trim(),
-            survey.getAccessPassword()
-        )) {
+        if (!passwordEncoder.matches(accessPassword.trim(), survey.getAccessPasswordHash())) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN,
                 "La contraseña de acceso no es correcta"
@@ -152,9 +137,6 @@ public class PublicSurveyService {
         }
     }
 
-    /**
-     * Construye el resumen mostrado en el listado público.
-     */
     private PublicSurveySummaryDto toPublicSummary(Survey survey) {
         return new PublicSurveySummaryDto(
             survey.getPublicCode(),
@@ -165,9 +147,6 @@ public class PublicSurveyService {
         );
     }
 
-    /**
-     * Construye la representación pública completa de una encuesta.
-     */
     private PublicSurveyResponseDto toPublicResponse(Survey survey) {
         return new PublicSurveyResponseDto(
             survey.getPublicCode(),
@@ -175,45 +154,36 @@ public class PublicSurveyService {
             survey.getDescription(),
             survey.getImageUrl(),
             toTagNames(survey),
-            toBlockResponses(survey.getBlocks())
+            toBlockResponses(survey.getStructure())
         );
     }
 
-    /**
-     * Convierte las etiquetas a una lista ordenada de nombres.
-     */
     private List<String> toTagNames(Survey survey) {
-        if (survey.getTags() == null) {
+        if (survey.getTagNames() == null) {
             return List.of();
         }
 
-        return survey.getTags()
+        return survey.getTagNames()
             .stream()
-            .map(tag -> tag.getName())
-            .sorted()
+            .filter(StringUtils::hasText)
+            .map(String::trim)
+            .sorted(String.CASE_INSENSITIVE_ORDER)
             .toList();
     }
 
-    /**
-     * Convierte los bloques sin exponer referencias al catálogo interno.
-     */
-    private List<PublicSurveyBlockDto> toBlockResponses(
-        List<SurveyBlock> blocks
-    ) {
-        if (blocks == null) {
+    private List<PublicSurveyBlockDto> toBlockResponses(SurveyStructure structure) {
+        if (structure == null || structure.getBlocks() == null) {
             return List.of();
         }
 
-        return blocks.stream()
-            .sorted(Comparator.comparing(SurveyBlock::getPosition))
+        return structure.getBlocks()
+            .stream()
+            .sorted(Comparator.comparing(SurveyBlockSnapshot::getPosition))
             .map(this::toBlockResponse)
             .toList();
     }
 
-    /**
-     * Convierte un bloque a su representación pública.
-     */
-    private PublicSurveyBlockDto toBlockResponse(SurveyBlock block) {
+    private PublicSurveyBlockDto toBlockResponse(SurveyBlockSnapshot block) {
         return new PublicSurveyBlockDto(
             block.getTitle(),
             block.getPosition(),
@@ -221,31 +191,24 @@ public class PublicSurveyService {
         );
     }
 
-    /**
-     * Convierte las preguntas de un bloque a DTO públicos.
-     */
     private List<PublicSurveyQuestionDto> toQuestionResponses(
-        List<SurveyQuestion> questions
+        List<SurveyQuestionSnapshot> questions
     ) {
         if (questions == null) {
             return List.of();
         }
 
         return questions.stream()
-            .sorted(Comparator.comparing(SurveyQuestion::getPosition))
+            .sorted(Comparator.comparing(SurveyQuestionSnapshot::getPosition))
             .map(this::toQuestionResponse)
             .toList();
     }
 
-    /**
-     * Convierte una pregunta sin exponer procedencia, puntuación
-     * ni dirección de evaluación.
-     */
     private PublicSurveyQuestionDto toQuestionResponse(
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         return new PublicSurveyQuestionDto(
-            question.getId(),
+            question.getQuestionKey(),
             question.getText(),
             question.getDescription(),
             question.getType(),
@@ -261,12 +224,7 @@ public class PublicSurveyService {
         );
     }
 
-    /**
-     * Convierte las opciones ocultando scoreValue.
-     */
-    private List<PublicOptionDto> toOptionResponses(
-        List<OptionConfig> options
-    ) {
+    private List<PublicOptionDto> toOptionResponses(List<OptionConfig> options) {
         if (options == null) {
             return List.of();
         }
@@ -281,21 +239,13 @@ public class PublicSurveyService {
             .toList();
     }
 
-    /**
-     * Convierte las filas de matriz.
-     */
-    private List<PublicMatrixRowDto> toMatrixRowResponses(
-        List<MatrixRowConfig> rows
-    ) {
+    private List<PublicMatrixRowDto> toMatrixRowResponses(List<MatrixRowConfig> rows) {
         if (rows == null) {
             return List.of();
         }
 
         return rows.stream()
-            .map(row -> new PublicMatrixRowDto(
-                row.getKey(),
-                row.getLabel()
-            ))
+            .map(row -> new PublicMatrixRowDto(row.getKey(), row.getLabel()))
             .toList();
     }
 }

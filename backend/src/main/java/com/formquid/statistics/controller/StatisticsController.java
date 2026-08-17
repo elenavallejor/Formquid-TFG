@@ -63,23 +63,23 @@ public class StatisticsController {
      * La pregunta debe pertenecer a la encuesta indicada en la URL.
      *
      * @param surveyId identificador de la encuesta.
-     * @param questionId identificador de la pregunta.
+     * @param questionKey clave estable de la pregunta.
      * @param principal usuario autenticado.
      * @return estadísticas de la pregunta.
      */
-    @GetMapping("/questions/{questionId}")
+    @GetMapping("/questions/{questionKey}")
     @Operation(
         summary = "Consultar estadísticas de una pregunta",
         description = "Devuelve el desglose estadístico de una pregunta perteneciente a la encuesta."
     )
     public QuestionStatisticsResponseDto getQuestionStatistics(
         @PathVariable Long surveyId,
-        @PathVariable Long questionId,
+        @PathVariable String questionKey,
         Principal principal
     ) {
         return statisticsService.getQuestionStatistics(
             surveyId,
-            questionId,
+            questionKey,
             getAuthenticatedEmail(principal)
         );
     }

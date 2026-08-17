@@ -52,7 +52,6 @@ public class Participation {
 
     /**
      * Encuesta respondida.
-     *
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "survey_id", nullable = false)

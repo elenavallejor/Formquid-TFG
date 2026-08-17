@@ -13,15 +13,10 @@ import java.util.List;
 
 /**
  * Repositorio de acceso a datos para respuestas.
- *
  */
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     List<Answer> findByParticipationId(Long participationId);
-
-    List<Answer> findBySurveyQuestionId(Long surveyQuestionId);
-
-    List<Answer> findBySurveyQuestionIdOrderByIdAsc(Long surveyQuestionId);
 
     /**
      * Calcula estadísticas numéricas de una pregunta usando la base de datos.
@@ -34,13 +29,16 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
                 min(a.numeric_value) as minimum,
                 max(a.numeric_value) as maximum
             from answers a
-            where a.survey_question_id = :questionId
+            join participations p on p.id = a.participation_id
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
               and a.numeric_value is not null
         """,
         nativeQuery = true
     )
     NumericStatisticsProjection calculateNumericStatistics(
-        @Param("questionId") Long questionId
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
     );
 
     /**
@@ -50,13 +48,18 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
         value = """
             select count(a.id)
             from answers a
-            where a.survey_question_id = :questionId
+            join participations p on p.id = a.participation_id
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
               and a.text_value is not null
               and btrim(a.text_value) <> ''
         """,
         nativeQuery = true
     )
-    long countTextAnswers(@Param("questionId") Long questionId);
+    long countTextAnswers(
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
+    );
 
     /**
      * Obtiene una muestra limitada de respuestas textuales.
@@ -67,7 +70,9 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
         value = """
             select a.text_value
             from answers a
-            where a.survey_question_id = :questionId
+            join participations p on p.id = a.participation_id
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
               and a.text_value is not null
               and btrim(a.text_value) <> ''
             order by a.id asc
@@ -76,7 +81,8 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
         nativeQuery = true
     )
     List<String> findTextAnswerSample(
-        @Param("questionId") Long questionId,
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey,
         @Param("limit") int limit
     );
 
@@ -89,13 +95,16 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
                 count(*) filter (where a.boolean_value = true) as yes_count,
                 count(*) filter (where a.boolean_value = false) as no_count
             from answers a
-            where a.survey_question_id = :questionId
+            join participations p on p.id = a.participation_id
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
               and a.boolean_value is not null
         """,
         nativeQuery = true
     )
     BooleanStatisticsProjection calculateBooleanStatistics(
-        @Param("questionId") Long questionId
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
     );
 
     /**
@@ -108,12 +117,17 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
         value = """
             select count(a.id)
             from answers a
-            where a.survey_question_id = :questionId
+            join participations p on p.id = a.participation_id
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
               and jsonb_array_length(coalesce(a.selected_values, '[]'::jsonb)) > 0
         """,
         nativeQuery = true
     )
-    long countSelectionAnswers(@Param("questionId") Long questionId);
+    long countSelectionAnswers(
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
+    );
 
     /**
      * Cuenta cuántas veces se selecciona cada opción.
@@ -126,16 +140,19 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
                 selected_value.value as stored_value,
                 count(*) as answer_count
             from answers a
+            join participations p on p.id = a.participation_id
             cross join lateral jsonb_array_elements_text(
                 coalesce(a.selected_values, '[]'::jsonb)
             ) as selected_value(value)
-            where a.survey_question_id = :questionId
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
             group by selected_value.value
         """,
         nativeQuery = true
     )
     List<ChoiceCountProjection> countSelectedValues(
-        @Param("questionId") Long questionId
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
     );
 
     /**
@@ -145,12 +162,17 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
         value = """
             select count(a.id)
             from answers a
-            where a.survey_question_id = :questionId
+            join participations p on p.id = a.participation_id
+            where a.question_key = :questionKey
+              and p.survey_id = :surveyId
               and jsonb_array_length(coalesce(a.matrix_values, '[]'::jsonb)) > 0
         """,
         nativeQuery = true
     )
-    long countMatrixAnswers(@Param("questionId") Long questionId);
+    long countMatrixAnswers(
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
+    );
 
     /**
      * Calcula estadísticas por fila de matriz usando JSONB.
@@ -184,10 +206,12 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
                         else null
                     end as numeric_value
                 from answers a
+                join participations p on p.id = a.participation_id
                 cross join lateral jsonb_array_elements(
                     coalesce(a.matrix_values, '[]'::jsonb)
                 ) as matrix_value(item)
-                where a.survey_question_id = :questionId
+                where a.question_key = :questionKey
+                  and p.survey_id = :surveyId
             ) matrix_rows
             where row_key is not null
               and numeric_value is not null
@@ -196,6 +220,7 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
         nativeQuery = true
     )
     List<MatrixRowStatisticsProjection> calculateMatrixStatistics(
-        @Param("questionId") Long questionId
+        @Param("surveyId") Long surveyId,
+        @Param("questionKey") String questionKey
     );
 }

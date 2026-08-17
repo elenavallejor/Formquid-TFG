@@ -11,10 +11,13 @@ import java.util.List;
  */
 public record SurveyBlockRequestDto(
 
+    @Size(max = 80, message = "La clave del bloque no puede superar los 80 caracteres")
+    String blockKey,
+
     /**
      * Identificador del bloque reutilizable de origen.
      *
-     * Puede ser null cuando el grupo no proceda de un bloque fijo.
+     * Puede ser null cuando el grupo no proceda del catálogo.
      */
     Long sourceBlockId,
 

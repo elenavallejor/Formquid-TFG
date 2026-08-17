@@ -1,8 +1,5 @@
 package com.formquid.participation.service;
 
-import com.formquid.fixedquestion.entity.MatrixRowConfig;
-import com.formquid.fixedquestion.entity.OptionConfig;
-import com.formquid.fixedquestion.entity.QuestionType;
 import com.formquid.participation.dto.AnswerResponseDto;
 import com.formquid.participation.dto.MatrixAnswerRequestDto;
 import com.formquid.participation.dto.MatrixAnswerResponseDto;
@@ -13,10 +10,12 @@ import com.formquid.participation.entity.Answer;
 import com.formquid.participation.entity.MatrixAnswerValue;
 import com.formquid.participation.entity.Participation;
 import com.formquid.participation.repository.ParticipationRepository;
+import com.formquid.question.entity.MatrixRowConfig;
+import com.formquid.question.entity.OptionConfig;
+import com.formquid.question.entity.QuestionType;
 import com.formquid.survey.entity.Survey;
-import com.formquid.survey.entity.SurveyQuestion;
 import com.formquid.survey.entity.SurveyStatus;
-import com.formquid.survey.repository.SurveyQuestionRepository;
+import com.formquid.survey.model.SurveyQuestionSnapshot;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
@@ -41,9 +40,8 @@ import java.util.Set;
 /**
  * Servicio de negocio para el envío y consulta de participaciones.
  *
- * Las participaciones son anónimas: no se almacena información identificativa
- * del encuestado. Cada envío se valida contra la estructura actual de la
- * encuesta antes de guardarse.
+ * Las respuestas se validan contra el snapshot JSONB de la encuesta. No existe
+ * una tabla survey_questions: cada respuesta queda asociada a questionKey.
  */
 @Service
 @RequiredArgsConstructor
@@ -54,16 +52,12 @@ public class ParticipationService {
 
     private final ParticipationRepository participationRepository;
     private final SurveyRepository surveyRepository;
-    private final SurveyQuestionRepository surveyQuestionRepository;
     private final SurveyService surveyService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
      * Registra una participación anónima en una encuesta pública o privada.
-     *
-     * Las encuestas públicas pueden responderse directamente. Las privadas
-     * requieren una contraseña de acceso correcta.
      */
     @Transactional
     public ParticipationResponseDto submit(
@@ -75,26 +69,19 @@ public class ParticipationService {
         Survey survey = getSurveyForAnswer(publicCode);
         validateSurveyCanBeAnswered(survey, request.accessPassword());
 
-        List<SurveyQuestion> questions = surveyQuestionRepository.findBySurvey(survey.getId());
+        List<SurveyQuestionSnapshot> questions = getSurveyQuestions(survey);
+        Map<String, SurveyQuestionSnapshot> questionsByKey = toQuestionMap(questions);
+        Map<String, SubmitAnswerRequestDto> answersByQuestionKey = toAnswerMap(request.answers());
 
-        if (questions.isEmpty()) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "La encuesta no contiene preguntas"
-            );
-        }
-
-        Map<Long, SurveyQuestion> questionsById = toQuestionMap(questions);
-        Map<Long, SubmitAnswerRequestDto> answersByQuestionId = toAnswerMap(request.answers());
-
-        validateRequiredQuestions(questions, answersByQuestionId);
+        validateRequiredQuestions(questions, answersByQuestionKey);
 
         Participation participation = Participation.builder()
             .survey(survey)
             .build();
 
         for (SubmitAnswerRequestDto answerRequest : request.answers()) {
-            SurveyQuestion question = questionsById.get(answerRequest.surveyQuestionId());
+            SurveyQuestionSnapshot question =
+                questionsByKey.get(answerRequest.questionKey().trim());
 
             if (question == null) {
                 throw new ResponseStatusException(
@@ -104,8 +91,7 @@ public class ParticipationService {
             }
 
             if (!isEmptyOptionalAnswer(answerRequest, question)) {
-                Answer answer = buildAnswer(answerRequest, question);
-                participation.addAnswer(answer);
+                participation.addAnswer(buildAnswer(answerRequest, question));
             }
         }
 
@@ -121,9 +107,6 @@ public class ParticipationService {
 
     /**
      * Obtiene las participaciones de una encuesta aplicando permisos.
-     *
-     * Pueden consultarlas el propietario, colaboradores, administradores
-     * y superadministradores.
      */
     public List<ParticipationResponseDto> getBySurveyId(
         Long surveyId,
@@ -132,10 +115,6 @@ public class ParticipationService {
         User user = getAuthenticatedUser(userEmail);
         Survey survey = getSurveyById(surveyId);
 
-        /*
-         * SurveyService centraliza las reglas de acceso interno a encuestas,
-         * por lo que ParticipationService no duplica lógica de permisos.
-         */
         surveyService.assertCanViewResults(
             survey,
             user.getId(),
@@ -149,10 +128,17 @@ public class ParticipationService {
             .toList();
     }
 
-    /**
-     * Recupera el usuario autenticado a partir del correo utilizado
-     * como identidad en Spring Security.
-     */
+    private List<SurveyQuestionSnapshot> getSurveyQuestions(Survey survey) {
+        if (survey.getStructure() == null || !survey.getStructure().hasQuestions()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La encuesta no contiene preguntas"
+            );
+        }
+
+        return survey.getStructure().getQuestions();
+    }
+
     private User getAuthenticatedUser(String email) {
         if (!StringUtils.hasText(email)) {
             throw new ResponseStatusException(
@@ -161,17 +147,13 @@ public class ParticipationService {
             );
         }
 
-        return userRepository
-            .findByEmailIgnoreCase(email.trim())
+        return userRepository.findByEmailIgnoreCase(email.trim())
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
                 "Usuario autenticado no encontrado"
             ));
     }
 
-    /**
-     * Valida que el DTO principal contenga respuestas.
-     */
     private void validateRequest(SubmitParticipationRequestDto request) {
         if (request == null || request.answers() == null || request.answers().isEmpty()) {
             throw new ResponseStatusException(
@@ -181,12 +163,6 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Obtiene una encuesta por su código público aplicando bloqueo de lectura.
-     *
-     * Esto evita que la encuesta cambie de estado mientras se validan y
-     * almacenan las respuestas.
-     */
     private Survey getSurveyForAnswer(String publicCode) {
         return surveyRepository.findByPublicCodeForAnswer(publicCode)
             .orElseThrow(() -> new ResponseStatusException(
@@ -195,9 +171,6 @@ public class ParticipationService {
             ));
     }
 
-    /**
-     * Obtiene una encuesta por id.
-     */
     private Survey getSurveyById(Long surveyId) {
         return surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ResponseStatusException(
@@ -206,9 +179,6 @@ public class ParticipationService {
             ));
     }
 
-    /**
-     * Comprueba que una encuesta pueda recibir respuestas.
-     */
     private void validateSurveyCanBeAnswered(
         Survey survey,
         String accessPassword
@@ -228,9 +198,6 @@ public class ParticipationService {
         );
     }
 
-    /**
-     * Valida la contraseña de una encuesta privada.
-     */
     private void validatePrivateSurveyPassword(
         Survey survey,
         String accessPassword
@@ -242,14 +209,14 @@ public class ParticipationService {
             );
         }
 
-        if (!StringUtils.hasText(survey.getAccessPassword())) {
+        if (!StringUtils.hasText(survey.getAccessPasswordHash())) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "La encuesta privada no tiene contraseña configurada"
             );
         }
 
-        if (!passwordEncoder.matches(accessPassword.trim(), survey.getAccessPassword())) {
+        if (!passwordEncoder.matches(accessPassword.trim(), survey.getAccessPasswordHash())) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN,
                 "La contraseña de acceso no es correcta"
@@ -257,37 +224,32 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Construye un mapa de preguntas para acceder por id de forma eficiente.
-     */
-    private Map<Long, SurveyQuestion> toQuestionMap(List<SurveyQuestion> questions) {
-        Map<Long, SurveyQuestion> result = new HashMap<>();
+    private Map<String, SurveyQuestionSnapshot> toQuestionMap(
+        List<SurveyQuestionSnapshot> questions
+    ) {
+        Map<String, SurveyQuestionSnapshot> result = new HashMap<>();
 
-        for (SurveyQuestion question : questions) {
-            result.put(question.getId(), question);
+        for (SurveyQuestionSnapshot question : questions) {
+            result.put(question.getQuestionKey(), question);
         }
 
         return result;
     }
 
-    /**
-     * Construye un mapa de respuestas e impide responder dos veces
-     * a la misma pregunta en una participación.
-     */
-    private Map<Long, SubmitAnswerRequestDto> toAnswerMap(
+    private Map<String, SubmitAnswerRequestDto> toAnswerMap(
         List<SubmitAnswerRequestDto> answers
     ) {
-        Map<Long, SubmitAnswerRequestDto> result = new HashMap<>();
+        Map<String, SubmitAnswerRequestDto> result = new HashMap<>();
 
         for (SubmitAnswerRequestDto answer : answers) {
-            if (answer.surveyQuestionId() == null) {
+            if (!StringUtils.hasText(answer.questionKey())) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "El identificador de la pregunta es obligatorio"
+                    "La clave de la pregunta es obligatoria"
                 );
             }
 
-            if (result.put(answer.surveyQuestionId(), answer) != null) {
+            if (result.put(answer.questionKey().trim(), answer) != null) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "La participación contiene respuestas repetidas"
@@ -298,19 +260,17 @@ public class ParticipationService {
         return result;
     }
 
-    /**
-     * Comprueba que todas las preguntas obligatorias tengan respuesta real.
-     */
     private void validateRequiredQuestions(
-        List<SurveyQuestion> questions,
-        Map<Long, SubmitAnswerRequestDto> answersByQuestionId
+        List<SurveyQuestionSnapshot> questions,
+        Map<String, SubmitAnswerRequestDto> answersByQuestionKey
     ) {
-        for (SurveyQuestion question : questions) {
+        for (SurveyQuestionSnapshot question : questions) {
             if (!question.isRequired()) {
                 continue;
             }
 
-            SubmitAnswerRequestDto answer = answersByQuestionId.get(question.getId());
+            SubmitAnswerRequestDto answer =
+                answersByQuestionKey.get(question.getQuestionKey());
 
             if (answer == null || !hasSubmittedValue(answer, question.getType())) {
                 throw new ResponseStatusException(
@@ -321,20 +281,14 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Indica si una respuesta opcional viene vacía.
-     */
     private boolean isEmptyOptionalAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         return !question.isRequired()
             && !hasSubmittedValue(request, question.getType());
     }
 
-    /**
-     * Comprueba si el DTO contiene un valor real según el tipo de pregunta.
-     */
     private boolean hasSubmittedValue(
         SubmitAnswerRequestDto request,
         QuestionType type
@@ -348,12 +302,9 @@ public class ParticipationService {
         };
     }
 
-    /**
-     * Construye una respuesta validando su tipo.
-     */
     private Answer buildAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         return switch (question.getType()) {
             case SHORT_TEXT, LONG_TEXT -> buildTextAnswer(request, question);
@@ -366,12 +317,9 @@ public class ParticipationService {
         };
     }
 
-    /**
-     * Construye una respuesta textual.
-     */
     private Answer buildTextAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         if (!StringUtils.hasText(request.textValue())) {
             throw new ResponseStatusException(
@@ -387,12 +335,9 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Construye una respuesta numérica.
-     */
     private Answer buildNumberAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         if (request.numericValue() == null) {
             throw new ResponseStatusException(
@@ -410,12 +355,9 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Construye una respuesta booleana.
-     */
     private Answer buildBooleanAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         if (request.booleanValue() == null) {
             throw new ResponseStatusException(
@@ -431,12 +373,9 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Construye una respuesta de escala.
-     */
     private Answer buildScaleAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         if (request.numericValue() == null) {
             throw new ResponseStatusException(
@@ -454,12 +393,9 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Construye una respuesta de selección simple o múltiple.
-     */
     private Answer buildChoiceAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question,
+        SurveyQuestionSnapshot question,
         boolean multiple
     ) {
         List<String> selectedValues = cleanSelectedValues(request.selectedValues());
@@ -497,12 +433,9 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Construye una respuesta de matriz.
-     */
     private Answer buildMatrixAnswer(
         SubmitAnswerRequestDto request,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         List<MatrixAnswerValue> values = toMatrixValues(request.matrixValues(), question);
 
@@ -521,12 +454,10 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Crea el builder común de una respuesta.
-     */
-    private Answer.AnswerBuilder baseAnswer(SurveyQuestion question) {
+    private Answer.AnswerBuilder baseAnswer(SurveyQuestionSnapshot question) {
         return Answer.builder()
-            .surveyQuestion(question);
+            .questionKey(question.getQuestionKey())
+            .questionText(question.getText());
     }
 
     private void validateOnlyText(SubmitAnswerRequestDto request) {
@@ -578,9 +509,6 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Crea una excepción homogénea para formatos incompatibles.
-     */
     private ResponseStatusException invalidAnswerFormat() {
         return new ResponseStatusException(
             HttpStatus.BAD_REQUEST,
@@ -588,10 +516,10 @@ public class ParticipationService {
         );
     }
 
-    /**
-     * Comprueba que una respuesta numérica esté dentro del rango permitido.
-     */
-    private void validateRange(BigDecimal value, SurveyQuestion question) {
+    private void validateRange(
+        BigDecimal value,
+        SurveyQuestionSnapshot question
+    ) {
         Integer min = question.getMinValue();
         Integer max = question.getMaxValue();
 
@@ -610,10 +538,9 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Crea un mapa de opciones usando storedValue como clave.
-     */
-    private Map<String, OptionConfig> toOptionsByValue(SurveyQuestion question) {
+    private Map<String, OptionConfig> toOptionsByValue(
+        SurveyQuestionSnapshot question
+    ) {
         Map<String, OptionConfig> result = new HashMap<>();
 
         if (question.getOptions() == null) {
@@ -629,9 +556,6 @@ public class ParticipationService {
         return result;
     }
 
-    /**
-     * Comprueba que las opciones seleccionadas existan.
-     */
     private void validateSelectedValues(
         List<String> selectedValues,
         Map<String, OptionConfig> optionsByValue
@@ -646,9 +570,6 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Impide enviar opciones repetidas.
-     */
     private void validateNoDuplicatedValues(List<String> values) {
         Set<String> usedValues = new HashSet<>();
 
@@ -662,9 +583,6 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Resuelve texto libre para opciones que lo permiten.
-     */
     private String resolveChoiceFreeText(
         String freeTextValue,
         List<String> selectedValues,
@@ -688,9 +606,6 @@ public class ParticipationService {
         );
     }
 
-    /**
-     * Calcula puntuación total de selección.
-     */
     private BigDecimal calculateChoiceScore(
         List<String> values,
         Map<String, OptionConfig> optionsByValue
@@ -710,12 +625,9 @@ public class ParticipationService {
         return hasScore ? total : null;
     }
 
-    /**
-     * Convierte y valida respuestas de matriz.
-     */
     private List<MatrixAnswerValue> toMatrixValues(
         List<MatrixAnswerRequestDto> requestValues,
-        SurveyQuestion question
+        SurveyQuestionSnapshot question
     ) {
         if (requestValues == null || requestValues.isEmpty()) {
             return new ArrayList<>();
@@ -746,10 +658,7 @@ public class ParticipationService {
         return result;
     }
 
-    /**
-     * Obtiene las filas válidas de una pregunta de matriz.
-     */
-    private Set<String> getAllowedMatrixRows(SurveyQuestion question) {
+    private Set<String> getAllowedMatrixRows(SurveyQuestionSnapshot question) {
         Set<String> allowedRows = new HashSet<>();
 
         if (question.getMatrixRows() == null) {
@@ -765,12 +674,9 @@ public class ParticipationService {
         return allowedRows;
     }
 
-    /**
-     * Construye y valida el valor de una fila de matriz.
-     */
     private MatrixAnswerValue buildMatrixValue(
         MatrixAnswerRequestDto request,
-        SurveyQuestion question,
+        SurveyQuestionSnapshot question,
         Set<String> allowedRows,
         Set<String> usedRows
     ) {
@@ -807,9 +713,6 @@ public class ParticipationService {
             .build();
     }
 
-    /**
-     * Calcula la media de puntuación de una respuesta de matriz.
-     */
     private BigDecimal calculateMatrixScore(List<MatrixAnswerValue> values) {
         if (values.isEmpty()) {
             return null;
@@ -830,9 +733,6 @@ public class ParticipationService {
         );
     }
 
-    /**
-     * Convierte el valor recibido para una fila de matriz a número.
-     */
     private BigDecimal parseMatrixValue(String value) {
         if (!StringUtils.hasText(value)) {
             throw new ResponseStatusException(
@@ -851,9 +751,6 @@ public class ParticipationService {
         }
     }
 
-    /**
-     * Convierte una participación a DTO.
-     */
     private ParticipationResponseDto toResponse(Participation participation) {
         return new ParticipationResponseDto(
             participation.getId(),
@@ -866,14 +763,11 @@ public class ParticipationService {
         );
     }
 
-    /**
-     * Convierte una respuesta a DTO.
-     */
     private AnswerResponseDto toAnswerResponse(Answer answer) {
         return new AnswerResponseDto(
             answer.getId(),
-            answer.getSurveyQuestion().getId(),
-            answer.getSurveyQuestion().getText(),
+            answer.getQuestionKey(),
+            answer.getQuestionText(),
             answer.getTextValue(),
             answer.getNumericValue(),
             answer.getBooleanValue(),
@@ -884,10 +778,9 @@ public class ParticipationService {
         );
     }
 
-    /**
-     * Convierte valores de matriz a DTO.
-     */
-    private List<MatrixAnswerResponseDto> toMatrixResponses(List<MatrixAnswerValue> values) {
+    private List<MatrixAnswerResponseDto> toMatrixResponses(
+        List<MatrixAnswerValue> values
+    ) {
         if (values == null) {
             return List.of();
         }
@@ -901,9 +794,6 @@ public class ParticipationService {
             .toList();
     }
 
-    /**
-     * Limpia las opciones seleccionadas eliminando valores vacíos.
-     */
     private List<String> cleanSelectedValues(List<String> values) {
         if (values == null || values.isEmpty()) {
             return new ArrayList<>();

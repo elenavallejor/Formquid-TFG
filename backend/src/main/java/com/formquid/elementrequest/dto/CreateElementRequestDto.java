@@ -1,14 +1,21 @@
 package com.formquid.elementrequest.dto;
 
+import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.elementrequest.entity.ElementRequestType;
+import com.formquid.question.dto.CreateQuestionRequestDto;
+import com.formquid.template.dto.CreateSurveyTemplateRequestDto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Datos necesarios para crear una solicitud de elemento reutilizable.
+ * Datos necesarios para proponer un nuevo elemento reutilizable.
  *
- * Las validaciones se ejecutan antes de entrar en la capa de servicio.
+ * Solo debe informarse el DTO específico correspondiente al valor de type:
+ * - BLOCK -> block
+ * - QUESTION -> question
+ * - TEMPLATE -> template
  */
 public record CreateElementRequestDto(
 
@@ -16,26 +23,23 @@ public record CreateElementRequestDto(
     ElementRequestType type,
 
     @NotBlank(message = "El título de la solicitud es obligatorio")
-    @Size(
-        max = 180,
-        message = "El título no puede superar los 180 caracteres"
-    )
+    @Size(max = 180, message = "El título no puede superar los 180 caracteres")
     String title,
 
     @NotBlank(message = "La descripción de la solicitud es obligatoria")
-    @Size(
-        max = 2000,
-        message = "La descripción no puede superar los 2000 caracteres"
-    )
+    @Size(max = 2000, message = "La descripción no puede superar los 2000 caracteres")
     String description,
 
-    /**
-     * Campo opcional para explicar por qué el elemento propuesto
-     * resultaría útil en el catálogo.
-     */
-    @Size(
-        max = 1500,
-        message = "La justificación no puede superar los 1500 caracteres"
-    )
-    String justification
+    @Size(max = 1500, message = "La justificación no puede superar los 1500 caracteres")
+    String justification,
+
+    @Valid
+    CreateBlockRequestDto block,
+
+    @Valid
+    CreateQuestionRequestDto question,
+
+    @Valid
+    CreateSurveyTemplateRequestDto template
+
 ) {}

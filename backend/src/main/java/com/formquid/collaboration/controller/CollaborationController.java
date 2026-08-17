@@ -147,14 +147,14 @@ public class CollaborationController {
     }
 
     /**
-     * Elimina un colaborador de una encuesta.
+     * Retira un colaborador de una encuesta.
      */
     @DeleteMapping("/surveys/{surveyId}/collaborators/{editorId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
     @Operation(
-        summary = "Eliminar colaborador",
-        description = "Elimina un editor colaborador de una encuesta."
+        summary = "Retirar colaborador",
+        description = "Marca la colaboración como retirada sin borrar su historial."
     )
     public void removeCollaborator(
         @PathVariable Long surveyId,

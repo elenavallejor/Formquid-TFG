@@ -1,6 +1,7 @@
 package com.formquid.elementrequest.controller;
 
 import com.formquid.common.dto.CountResponseDto;
+import com.formquid.elementrequest.dto.ApproveElementRequestResponseDto;
 import com.formquid.elementrequest.dto.ElementRequestResponseDto;
 import com.formquid.elementrequest.dto.ResolveElementRequestDto;
 import com.formquid.elementrequest.service.ElementRequestService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,8 +24,8 @@ import java.security.Principal;
 import java.util.List;
 
 /**
- * Controlador REST reservado a la gestión administrativa
- * de solicitudes de elementos reutilizables.
+ * Controlador reservado a la gestión administrativa de solicitudes
+ * pendientes de elementos reutilizables.
  */
 @RestController
 @RequestMapping("/api/v1/admin/element-requests")
@@ -31,80 +33,48 @@ import java.util.List;
 @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 @Tag(
     name = "Administración de solicitudes de elementos",
-    description = "Consulta y resolución administrativa de solicitudes"
+    description = "Consulta y resolución administrativa de solicitudes pendientes"
 )
 public class ElementRequestAdminController {
 
     private final ElementRequestService elementRequestService;
 
-    /**
-     * Lista todas las solicitudes registradas.
-     */
+    /** Lista todas las solicitudes existentes; todas ellas son pendientes. */
     @GetMapping
-    @Operation(
-        summary = "Listar solicitudes",
-        description = "Devuelve todas las solicitudes ordenadas por fecha de creación."
-    )
     public List<ElementRequestResponseDto> getAll() {
         return elementRequestService.getAll();
     }
 
-    /**
-     * Obtiene una solicitud concreta para su revisión.
-     */
+    /** Obtiene una solicitud pendiente concreta. */
     @GetMapping("/{requestId}")
-    @Operation(
-        summary = "Obtener solicitud",
-        description = "Devuelve el detalle de una solicitud de elemento."
-    )
-    public ElementRequestResponseDto getById(
-        @PathVariable Long requestId
-    ) {
-        return elementRequestService.getById(
-            requestId
-        );
+    public ElementRequestResponseDto getById(@PathVariable Long requestId) {
+        return elementRequestService.getById(requestId);
     }
 
-    /**
-     * Lista únicamente las solicitudes todavía pendientes.
-     */
+    /** Alias semántico para listar solicitudes pendientes. */
     @GetMapping("/pending")
-    @Operation(
-        summary = "Listar solicitudes pendientes",
-        description = "Devuelve las solicitudes pendientes de resolución."
-    )
     public List<ElementRequestResponseDto> getPending() {
         return elementRequestService.getPending();
     }
 
-    /**
-     * Cuenta las solicitudes todavía pendientes.
-     */
+    /** Cuenta las solicitudes pendientes. */
     @GetMapping("/pending/count")
-    @Operation(
-        summary = "Contar solicitudes pendientes",
-        description = "Devuelve el número de solicitudes pendientes."
-    )
     public CountResponseDto countPending() {
-        return new CountResponseDto(
-            elementRequestService.countPending()
-        );
+        return new CountResponseDto(elementRequestService.countPending());
     }
 
     /**
-     * Aprueba una solicitud pendiente.
-     *
-     * La aprobación únicamente resuelve la propuesta; no crea
-     * automáticamente el bloque, pregunta o plantilla solicitada.
+     * Aprueba la solicitud, crea el elemento solicitado y conserva
+     * el registro resuelto para auditoría.
      */
     @PatchMapping("/{requestId}/approve")
     @Operation(
         summary = "Aprobar solicitud",
-        description = "Marca una solicitud pendiente como aprobada."
+        description = "Crea el elemento solicitado, notifica al editor y marca la solicitud como aprobada."
     )
-    public ElementRequestResponseDto approve(
+    public ApproveElementRequestResponseDto approve(
         @PathVariable Long requestId,
-        @Valid @RequestBody ResolveElementRequestDto request,
+        @Valid @RequestBody(required = false) ResolveElementRequestDto request,
         Principal principal
     ) {
         return elementRequestService.approve(
@@ -115,31 +85,29 @@ public class ElementRequestAdminController {
     }
 
     /**
-     * Rechaza una solicitud pendiente.
+     * Rechaza la solicitud, notifica al editor y conserva
+     * el registro resuelto para auditoría.
      */
     @PatchMapping("/{requestId}/reject")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Rechazar solicitud",
-        description = "Marca una solicitud pendiente como rechazada."
+        description = "Notifica al solicitante y marca la solicitud como rechazada sin crear ningún elemento."
     )
-    public ElementRequestResponseDto reject(
+    public void reject(
         @PathVariable Long requestId,
-        @Valid @RequestBody ResolveElementRequestDto request,
+        @Valid @RequestBody(required = false) ResolveElementRequestDto request,
         Principal principal
     ) {
-        return elementRequestService.reject(
+        elementRequestService.reject(
             requestId,
             request,
             getAuthenticatedEmail(principal)
         );
     }
 
-    /**
-     * Obtiene el correo del administrador autenticado.
-     */
-    private String getAuthenticatedEmail(
-        Principal principal
-    ) {
+    /** Obtiene el correo del administrador autenticado. */
+    private String getAuthenticatedEmail(Principal principal) {
         if (
             principal == null
             || principal.getName() == null

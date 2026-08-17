@@ -32,9 +32,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailIgnoreCase(String email);
 
     /**
+     * Busca un usuario por hash de token temporal de configuración.
+     */
+    Optional<User> findByPasswordSetupTokenHash(String passwordSetupTokenHash);
+
+    /**
      * Comprueba si ya existe un usuario con el correo indicado.
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Comprueba si ya existe un usuario ignorando mayúsculas y minúsculas.
+     */
+    boolean existsByEmailIgnoreCase(String email);
 
     /**
      * Lista todos los usuarios ordenados por nombre.

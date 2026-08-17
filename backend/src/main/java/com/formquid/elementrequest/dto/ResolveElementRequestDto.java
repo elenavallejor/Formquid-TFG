@@ -8,10 +8,6 @@ import jakarta.validation.constraints.Size;
  */
 public record ResolveElementRequestDto(
 
-    @Size(
-        max = 1500,
-        message = "El mensaje de resolución no puede superar los 1500 caracteres"
-    )
+    @Size(max = 1500,message = "El mensaje de resolución no puede superar los 1500 caracteres")
     String resolutionMessage
-
 ) {}

@@ -3,10 +3,9 @@ package com.formquid.collaboration.service;
 import com.formquid.collaboration.dto.CollaborationRequestResponseDto;
 import com.formquid.collaboration.dto.CreateCollaborationRequestDto;
 import com.formquid.collaboration.dto.SurveyCollaboratorResponseDto;
-import com.formquid.collaboration.entity.CollaborationRequest;
-import com.formquid.collaboration.entity.SurveyCollaborator;
-import com.formquid.collaboration.repository.CollaborationRequestRepository;
-import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.collaboration.entity.SurveyCollaboration;
+import com.formquid.collaboration.entity.SurveyCollaborationStatus;
+import com.formquid.collaboration.repository.SurveyCollaborationRepository;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.repository.SurveyRepository;
@@ -21,38 +20,29 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Servicio de negocio para gestionar colaboraciones entre editores.
+ * Servicio de negocio para colaboraciones de encuestas.
  *
- * Centraliza:
- * - creación de solicitudes de colaboración;
- * - aceptación y rechazo de invitaciones;
- * - consulta de solicitudes pendientes;
- * - consulta de colaboradores;
- * - eliminación de colaboradores.
- *
- * Las solicitudes aceptadas o rechazadas se eliminan del sistema,
- * por lo que CollaborationRequest representa siempre una solicitud pendiente.
+ * Las invitaciones pendientes, aceptadas, rechazadas y retiradas se almacenan
+ * en una única tabla con estado. No se borran solicitudes resueltas porque la
+ * plataforma necesita trazabilidad de uso.
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CollaborationService {
 
-    private final CollaborationRequestRepository collaborationRequestRepository;
-    private final SurveyCollaboratorRepository surveyCollaboratorRepository;
+    private final SurveyCollaborationRepository surveyCollaborationRepository;
     private final SurveyRepository surveyRepository;
     private final UserRepository userRepository;
     private final SurveyService surveyService;
     private final NotificationService notificationService;
 
     /**
-     * Crea una nueva solicitud de colaboración.
-     *
-     * Puede realizar la operación el propietario de la encuesta,
-     * un administrador o un superadministrador.
+     * Crea o reabre una invitación pendiente de colaboración.
      */
     @Transactional
     public CollaborationRequestResponseDto createRequest(
@@ -63,10 +53,6 @@ public class CollaborationService {
         User requester = getAuthenticatedUser(requesterEmail);
         Survey survey = getSurvey(surveyId);
 
-        /*
-         * SurveyService centraliza las reglas de autorización interna.
-         * Los colaboradores normales no pueden administrar colaboradores.
-         */
         surveyService.assertCanManageSurvey(
             survey,
             requester.getId(),
@@ -74,49 +60,37 @@ public class CollaborationService {
         );
 
         User invitedEditor = resolveInvitedEditor(request);
+        validateInvitedEditor(survey, invitedEditor, requester.getId());
 
-        validateInvitedEditor(
-            survey,
-            invitedEditor,
-            requester.getId()
-        );
+        SurveyCollaboration collaboration =
+            findExistingCollaboration(survey.getId(), invitedEditor.getId())
+                .map(existing -> reopenExistingRequest(
+                    existing,
+                    requester,
+                    cleanOptional(request.message())
+                ))
+                .orElseGet(() -> SurveyCollaboration.builder()
+                    .survey(survey)
+                    .requestedBy(requester)
+                    .editor(invitedEditor)
+                    .message(cleanOptional(request.message()))
+                    .status(SurveyCollaborationStatus.PENDING)
+                    .build());
 
-        validateRequestDoesNotExist(
-            survey.getId(),
-            invitedEditor.getId()
-        );
+        SurveyCollaboration saved =
+            surveyCollaborationRepository.save(collaboration);
 
-        CollaborationRequest collaborationRequest =
-            CollaborationRequest.builder()
-                .survey(survey)
-                .requestedBy(requester)
-                .invitedEditor(invitedEditor)
-                .message(cleanOptional(request.message()))
-                .build();
-
-        CollaborationRequest savedRequest =
-            collaborationRequestRepository.save(
-                collaborationRequest
-            );
-
-        /*
-         * CollaborationService no construye notificaciones.
-         * Delega ese detalle al servicio específico de notificaciones.
-         */
         notificationService.notifyCollaborationInvite(
             invitedEditor.getId(),
-            savedRequest.getId(),
+            saved.getId(),
             survey.getTitle()
         );
 
-        return toRequestResponse(savedRequest);
+        return toRequestResponse(saved);
     }
 
     /**
-     * Obtiene las solicitudes pendientes de una encuesta.
-     *
-     * Solo pueden consultar esta información quienes puedan
-     * administrar la encuesta.
+     * Lista las invitaciones pendientes de una encuesta.
      */
     public List<CollaborationRequestResponseDto> getPendingRequests(
         Long surveyId,
@@ -131,24 +105,10 @@ public class CollaborationService {
             user.getRole()
         );
 
-        return collaborationRequestRepository
-            .findBySurveyIdOrderByCreatedAtDesc(surveyId)
-            .stream()
-            .map(this::toRequestResponse)
-            .toList();
-    }
-
-    /**
-     * Obtiene las solicitudes recibidas por el usuario autenticado.
-     */
-    public List<CollaborationRequestResponseDto> getReceivedRequests(
-        String userEmail
-    ) {
-        User user = getAuthenticatedUser(userEmail);
-
-        return collaborationRequestRepository
-            .findByInvitedEditorIdOrderByCreatedAtDesc(
-                user.getId()
+        return surveyCollaborationRepository
+            .findBySurveyIdAndStatusOrderByCreatedAtDesc(
+                surveyId,
+                SurveyCollaborationStatus.PENDING
             )
             .stream()
             .map(this::toRequestResponse)
@@ -156,10 +116,25 @@ public class CollaborationService {
     }
 
     /**
-     * Acepta una solicitud de colaboración.
-     *
-     * Solo el editor invitado puede aceptar su propia solicitud.
-     * Al aceptarla se crea la colaboración y se elimina la solicitud pendiente.
+     * Lista las invitaciones pendientes recibidas por el usuario autenticado.
+     */
+    public List<CollaborationRequestResponseDto> getReceivedRequests(
+        String userEmail
+    ) {
+        User user = getAuthenticatedUser(userEmail);
+
+        return surveyCollaborationRepository
+            .findByEditorIdAndStatusOrderByCreatedAtDesc(
+                user.getId(),
+                SurveyCollaborationStatus.PENDING
+            )
+            .stream()
+            .map(this::toRequestResponse)
+            .toList();
+    }
+
+    /**
+     * Acepta una invitación pendiente.
      */
     @Transactional
     public SurveyCollaboratorResponseDto accept(
@@ -167,69 +142,25 @@ public class CollaborationService {
         String userEmail
     ) {
         User user = getAuthenticatedUser(userEmail);
-        CollaborationRequest request = getRequest(requestId);
+        SurveyCollaboration collaboration = getCollaboration(requestId);
 
-        validateInvitedUser(
-            request,
-            user.getId()
-        );
+        validatePending(collaboration);
+        validateInvitedUser(collaboration, user.getId());
 
-        /*
-         * La comprobación evita crear una segunda colaboración
-         * si el usuario ya fue añadido por otra operación.
-         */
-        if (
-            surveyCollaboratorRepository
-                .existsBySurveyIdAndEditorId(
-                    request.getSurvey().getId(),
-                    user.getId()
-                )
-        ) {
-            /*
-             * La solicitud ya no tiene sentido si la colaboración existe.
-             */
-            collaborationRequestRepository.delete(request);
-
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "El editor ya es colaborador de esta encuesta"
-            );
-        }
-
-        SurveyCollaborator collaborator =
-            SurveyCollaborator.builder()
-                .survey(request.getSurvey())
-                .editor(request.getInvitedEditor())
-                .addedBy(request.getRequestedBy())
-                .build();
-
-        SurveyCollaborator savedCollaborator =
-            surveyCollaboratorRepository.save(
-                collaborator
-            );
-
-        /*
-         * Las solicitudes resueltas no se conservan.
-         */
-        collaborationRequestRepository.delete(request);
+        collaboration.accept();
 
         notificationService.notifyCollaborationAccepted(
-            request.getRequestedBy().getId(),
-            request.getSurvey().getId(),
-            request.getInvitedEditor().getName(),
-            request.getSurvey().getTitle()
+            collaboration.getRequestedBy().getId(),
+            collaboration.getSurvey().getId(),
+            collaboration.getEditor().getName(),
+            collaboration.getSurvey().getTitle()
         );
 
-        return toCollaboratorResponse(
-            savedCollaborator
-        );
+        return toCollaboratorResponse(collaboration);
     }
 
     /**
-     * Rechaza una solicitud de colaboración.
-     *
-     * Solo el editor invitado puede rechazarla.
-     * Al resolverse, la solicitud se elimina.
+     * Rechaza una invitación pendiente.
      */
     @Transactional
     public CollaborationRequestResponseDto reject(
@@ -237,36 +168,25 @@ public class CollaborationService {
         String userEmail
     ) {
         User user = getAuthenticatedUser(userEmail);
-        CollaborationRequest request = getRequest(requestId);
+        SurveyCollaboration collaboration = getCollaboration(requestId);
 
-        validateInvitedUser(
-            request,
-            user.getId()
-        );
+        validatePending(collaboration);
+        validateInvitedUser(collaboration, user.getId());
 
-        /*
-         * Se construye la respuesta antes de eliminar la entidad.
-         */
-        CollaborationRequestResponseDto response =
-            toRequestResponse(request);
-
-        collaborationRequestRepository.delete(request);
+        collaboration.reject();
 
         notificationService.notifyCollaborationRejected(
-            request.getRequestedBy().getId(),
-            request.getSurvey().getId(),
-            request.getInvitedEditor().getName(),
-            request.getSurvey().getTitle()
+            collaboration.getRequestedBy().getId(),
+            collaboration.getSurvey().getId(),
+            collaboration.getEditor().getName(),
+            collaboration.getSurvey().getTitle()
         );
 
-        return response;
+        return toRequestResponse(collaboration);
     }
 
     /**
-     * Obtiene los colaboradores actuales de una encuesta.
-     *
-     * Puede consultar esta lista cualquier usuario con acceso interno
-     * a la encuesta.
+     * Lista colaboradores aceptados de una encuesta.
      */
     public List<SurveyCollaboratorResponseDto> getCollaborators(
         Long surveyId,
@@ -281,21 +201,18 @@ public class CollaborationService {
             user.getRole()
         );
 
-        /*
-         * El repositorio utiliza EntityGraph para cargar survey,
-         * editor y addedBy evitando consultas secundarias N+1.
-         */
-        return surveyCollaboratorRepository
-            .findBySurveyId(surveyId)
+        return surveyCollaborationRepository
+            .findBySurveyIdAndStatusOrderByCreatedAtDesc(
+                surveyId,
+                SurveyCollaborationStatus.ACCEPTED
+            )
             .stream()
             .map(this::toCollaboratorResponse)
             .toList();
     }
 
     /**
-     * Elimina un colaborador de una encuesta.
-     *
-     * Puede hacerlo el propietario, un administrador o un superadministrador.
+     * Marca una colaboración como retirada sin borrar su historial.
      */
     @Transactional
     public void removeCollaborator(
@@ -312,56 +229,68 @@ public class CollaborationService {
             user.getRole()
         );
 
-        validateOwnerCannotBeRemoved(
-            survey,
-            editorId
-        );
+        validateOwnerCannotBeRemoved(survey, editorId);
 
-        SurveyCollaborator collaborator =
-            surveyCollaboratorRepository
-                .findBySurveyIdAndEditorId(
-                    surveyId,
-                    editorId
-                )
-                .orElseThrow(() ->
-                    new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "El editor indicado no es colaborador de esta encuesta"
-                    )
-                );
+        SurveyCollaboration collaboration =
+            surveyCollaborationRepository
+                .findBySurveyIdAndEditorId(surveyId, editorId)
+                .filter(item -> item.getStatus() == SurveyCollaborationStatus.ACCEPTED)
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "El editor indicado no es colaborador de esta encuesta"
+                ));
 
-        surveyCollaboratorRepository.delete(
-            collaborator
-        );
+        collaboration.remove();
 
         notificationService.notifyCollaboratorRemoved(
-            collaborator.getEditor().getId(),
+            collaboration.getEditor().getId(),
             survey.getId(),
             survey.getTitle()
         );
     }
 
-    /**
-     * Recupera una encuesta o devuelve 404.
-     */
-    private Survey getSurvey(Long surveyId) {
-        return surveyRepository
-            .findById(surveyId)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "No existe la encuesta indicada"
-                )
+    private SurveyCollaboration reopenExistingRequest(
+        SurveyCollaboration existing,
+        User requester,
+        String message
+    ) {
+        if (existing.getStatus() == SurveyCollaborationStatus.PENDING) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Ya existe una invitación pendiente para este editor"
             );
+        }
+
+        if (existing.getStatus() == SurveyCollaborationStatus.ACCEPTED) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El editor ya es colaborador de esta encuesta"
+            );
+        }
+
+        existing.reopen(requester, message);
+        return existing;
     }
 
-    /**
-     * Recupera al usuario autenticado a partir del correo utilizado
-     * como identidad en Spring Security.
-     */
-    private User getAuthenticatedUser(
-        String email
+    private java.util.Optional<SurveyCollaboration> findExistingCollaboration(
+        Long surveyId,
+        Long editorId
     ) {
+        return surveyCollaborationRepository.findBySurveyIdAndEditorId(
+            surveyId,
+            editorId
+        );
+    }
+
+    private Survey getSurvey(Long surveyId) {
+        return surveyRepository.findById(surveyId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "No existe la encuesta indicada"
+            ));
+    }
+
+    private User getAuthenticatedUser(String email) {
         if (!StringUtils.hasText(email)) {
             throw new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
@@ -369,61 +298,32 @@ public class CollaborationService {
             );
         }
 
-        return userRepository
-            .findByEmailIgnoreCase(email.trim())
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Usuario autenticado no encontrado"
-                )
-            );
+        return userRepository.findByEmailIgnoreCase(email.trim())
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Usuario autenticado no encontrado"
+            ));
     }
 
-    /**
-     * Obtiene un usuario por identificador.
-     */
     private User getUser(Long userId) {
-        return userRepository
-            .findById(userId)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "No existe el usuario indicado"
-                )
-            );
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "No existe el usuario indicado"
+            ));
     }
 
-    /**
-     * Obtiene una solicitud de colaboración o devuelve 404.
-     */
-    private CollaborationRequest getRequest(
-        Long requestId
-    ) {
-        return collaborationRequestRepository
-            .findById(requestId)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "No existe la solicitud de colaboración indicada"
-                )
-            );
+    private SurveyCollaboration getCollaboration(Long requestId) {
+        return surveyCollaborationRepository.findById(requestId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "No existe la invitación de colaboración indicada"
+            ));
     }
 
-    /**
-     * Resuelve el editor invitado mediante id o correo electrónico.
-     *
-     * Debe proporcionarse exactamente uno de los dos identificadores.
-     */
-    private User resolveInvitedEditor(
-        CreateCollaborationRequestDto request
-    ) {
-        boolean hasId =
-            request.invitedEditorId() != null;
-
-        boolean hasEmail =
-            StringUtils.hasText(
-                request.invitedEditorEmail()
-            );
+    private User resolveInvitedEditor(CreateCollaborationRequestDto request) {
+        boolean hasId = request.invitedEditorId() != null;
+        boolean hasEmail = StringUtils.hasText(request.invitedEditorEmail());
 
         if (hasId == hasEmail) {
             throw new ResponseStatusException(
@@ -433,36 +333,23 @@ public class CollaborationService {
         }
 
         if (hasId) {
-            return getUser(
-                request.invitedEditorId()
-            );
+            return getUser(request.invitedEditorId());
         }
 
         return userRepository
-            .findByEmailIgnoreCase(
-                request.invitedEditorEmail().trim()
-            )
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "No existe un editor registrado con ese correo electrónico"
-                )
-            );
+            .findByEmailIgnoreCase(request.invitedEditorEmail().trim())
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "No existe un editor registrado con ese correo electrónico"
+            ));
     }
 
-    /**
-     * Valida que el usuario seleccionado pueda incorporarse
-     * como colaborador de la encuesta.
-     */
     private void validateInvitedEditor(
         Survey survey,
         User invitedEditor,
         Long requesterId
     ) {
-        if (
-            invitedEditor.getRole()
-                != UserRole.EDITOR
-        ) {
+        if (invitedEditor.getRole() != UserRole.EDITOR) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "Solo se puede invitar a usuarios con rol editor"
@@ -476,102 +363,48 @@ public class CollaborationService {
             );
         }
 
-        if (
-            invitedEditor.getId()
-                .equals(requesterId)
-        ) {
+        if (invitedEditor.getId().equals(requesterId)) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "No puedes invitarte a ti mismo como colaborador"
             );
         }
 
-        if (
-            survey.getOwner().getId()
-                .equals(invitedEditor.getId())
-        ) {
+        if (survey.getOwner().getId().equals(invitedEditor.getId())) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "El propietario de la encuesta no puede añadirse como colaborador"
             );
         }
+    }
 
-        /*
-         * Se comprueba la existencia antes de persistir para proporcionar
-         * un error de dominio claro y evitar depender de una restricción SQL.
-         */
-        if (
-            surveyCollaboratorRepository
-                .existsBySurveyIdAndEditorId(
-                    survey.getId(),
-                    invitedEditor.getId()
-                )
-        ) {
+    private void validatePending(SurveyCollaboration collaboration) {
+        if (collaboration.getStatus() != SurveyCollaborationStatus.PENDING) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "El editor ya es colaborador de esta encuesta"
+                "La invitación de colaboración ya fue resuelta"
             );
         }
     }
 
-    /**
-     * Evita crear más de una solicitud pendiente
-     * para la misma encuesta y editor.
-     */
-    private void validateRequestDoesNotExist(
-        Long surveyId,
-        Long invitedEditorId
-    ) {
-        if (
-            collaborationRequestRepository
-                .existsBySurveyIdAndInvitedEditorId(
-                    surveyId,
-                    invitedEditorId
-                )
-        ) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Ya existe una solicitud pendiente para este editor"
-            );
-        }
-    }
-
-    /**
-     * Comprueba que quien resuelve una solicitud sea
-     * exactamente el editor invitado.
-     */
     private void validateInvitedUser(
-        CollaborationRequest request,
+        SurveyCollaboration collaboration,
         Long userId
     ) {
-        if (
-            request.getInvitedEditor() == null
-            || request.getInvitedEditor().getId() == null
-            || !request.getInvitedEditor()
-                .getId()
-                .equals(userId)
-        ) {
+        if (collaboration.getEditor() == null
+            || collaboration.getEditor().getId() == null
+            || !collaboration.getEditor().getId().equals(userId)) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN,
-                "Solo el editor invitado puede resolver esta solicitud"
+                "Solo el editor invitado puede resolver esta invitación"
             );
         }
     }
 
-    /**
-     * Impide intentar eliminar al propietario como colaborador.
-     */
-    private void validateOwnerCannotBeRemoved(
-        Survey survey,
-        Long editorId
-    ) {
-        if (
-            survey.getOwner() != null
+    private void validateOwnerCannotBeRemoved(Survey survey, Long editorId) {
+        if (survey.getOwner() != null
             && survey.getOwner().getId() != null
-            && survey.getOwner()
-                .getId()
-                .equals(editorId)
-        ) {
+            && survey.getOwner().getId().equals(editorId)) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "El propietario de la encuesta no puede eliminarse como colaborador"
@@ -579,62 +412,46 @@ public class CollaborationService {
         }
     }
 
-    /**
-     * Convierte una solicitud pendiente a DTO.
-     */
     private CollaborationRequestResponseDto toRequestResponse(
-        CollaborationRequest request
+        SurveyCollaboration collaboration
     ) {
         return new CollaborationRequestResponseDto(
-            request.getId(),
-            request.getSurvey().getId(),
-            request.getSurvey().getTitle(),
-            request.getRequestedBy().getId(),
-            request.getRequestedBy().getName(),
-            request.getInvitedEditor().getId(),
-            request.getInvitedEditor().getName(),
-            request.getInvitedEditor().getEmail(),
-            request.getMessage(),
-            request.getCreatedAt()
+            collaboration.getId(),
+            collaboration.getSurvey().getId(),
+            collaboration.getSurvey().getTitle(),
+            collaboration.getRequestedBy().getId(),
+            collaboration.getRequestedBy().getName(),
+            collaboration.getEditor().getId(),
+            collaboration.getEditor().getName(),
+            collaboration.getEditor().getEmail(),
+            collaboration.getMessage(),
+            collaboration.getStatus(),
+            collaboration.getCreatedAt(),
+            collaboration.getResolvedAt()
         );
     }
 
-    /**
-     * Convierte una colaboración activa a DTO.
-     */
     private SurveyCollaboratorResponseDto toCollaboratorResponse(
-        SurveyCollaborator collaborator
+        SurveyCollaboration collaboration
     ) {
-        User addedBy =
-            collaborator.getAddedBy();
+        LocalDateTime addedAt = collaboration.getResolvedAt() != null
+            ? collaboration.getResolvedAt()
+            : collaboration.getCreatedAt();
 
         return new SurveyCollaboratorResponseDto(
-            collaborator.getId(),
-            collaborator.getSurvey().getId(),
-            collaborator.getSurvey().getTitle(),
-            collaborator.getEditor().getId(),
-            collaborator.getEditor().getName(),
-            collaborator.getEditor().getEmail(),
-            addedBy != null
-                ? addedBy.getId()
-                : null,
-            addedBy != null
-                ? addedBy.getName()
-                : null,
-            collaborator.getAddedAt()
+            collaboration.getId(),
+            collaboration.getSurvey().getId(),
+            collaboration.getSurvey().getTitle(),
+            collaboration.getEditor().getId(),
+            collaboration.getEditor().getName(),
+            collaboration.getEditor().getEmail(),
+            collaboration.getRequestedBy().getId(),
+            collaboration.getRequestedBy().getName(),
+            addedAt
         );
     }
 
-    /**
-     * Limpia un texto opcional.
-     */
-    private String cleanOptional(
-        String value
-    ) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-
-        return value.trim();
+    private String cleanOptional(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }

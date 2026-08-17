@@ -14,14 +14,17 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 /**
  * Representa una solicitud de alta como editor en FormQuid.
@@ -39,6 +42,28 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
+@Check(constraints = """
+    status in ('PENDING', 'APPROVED', 'REJECTED')
+    and (
+        (
+            status = 'PENDING'
+            and resolved_at is null
+            and resolved_by_user_id is null
+            and rejection_reason is null
+        )
+        or (
+            status = 'APPROVED'
+            and resolved_at is not null
+            and resolved_by_user_id is not null
+            and rejection_reason is null
+        )
+        or (
+            status = 'REJECTED'
+            and resolved_at is not null
+            and resolved_by_user_id is not null
+        )
+    )
+""")
 @Table(
     name = "registration_requests",
     indexes = {
@@ -78,14 +103,6 @@ public class RegistrationRequest {
      */
     @Column(nullable = false, length = 255)
     private String email;
-
-    /**
-     * Contraseña ya cifrada.
-     *
-     * Nunca se almacena la contraseña original en texto plano.
-     */
-    @Column(name = "password", nullable = false)
-    private String password;
 
     /**
      * Género indicado por el solicitante.
@@ -151,6 +168,13 @@ public class RegistrationRequest {
         if (this.status == null) {
             this.status = RegistrationRequestStatus.PENDING;
         }
+
+        normalizeAndValidate();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        normalizeAndValidate();
     }
 
     /**
@@ -235,5 +259,13 @@ public class RegistrationRequest {
         }
 
         return value.trim();
+    }
+
+    private void normalizeAndValidate() {
+        if (email == null || email.isBlank()) {
+            throw new IllegalStateException("El correo de la solicitud es obligatorio");
+        }
+
+        email = email.trim().toLowerCase(Locale.ROOT);
     }
 }

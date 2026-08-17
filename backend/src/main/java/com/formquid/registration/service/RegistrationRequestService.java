@@ -18,9 +18,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Servicio encargado de gestionar las solicitudes de registro de editores.
@@ -29,13 +34,15 @@ import java.util.Locale;
  * cuenta. La cuenta EDITOR se crea únicamente cuando un administrador o
  * superadministrador aprueba la solicitud.
  *
- * Las consultas son de solo lectura por defecto. Las operaciones create,
- * approve y reject abren transacciones de escritura explícitas.
+ * Las consultas son de solo lectura por defecto. Las operaciones que cambian
+ * el estado de una solicitud abren transacciones de escritura explícitas.
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RegistrationRequestService {
+
+    private static final long PASSWORD_SETUP_TOKEN_HOURS = 24;
 
     private final RegistrationRequestRepository registrationRequestRepository;
     private final UserRepository userRepository;
@@ -48,8 +55,8 @@ public class RegistrationRequestService {
      * El correo se normaliza para evitar duplicados provocados por
      * diferencias de mayúsculas, minúsculas o espacios.
      *
-     * La contraseña se cifra antes de almacenar la solicitud y nunca
-     * permanece en texto plano en la base de datos.
+     * La solicitud no almacena contraseña. La contraseña se configurará tras
+     * la aprobación mediante un token temporal.
      */
     @Transactional
     public RegistrationRequestResponseDto create(
@@ -65,11 +72,6 @@ public class RegistrationRequestService {
             RegistrationRequest.builder()
                 .name(request.name().trim())
                 .email(email)
-                .password(
-                    passwordEncoder.encode(
-                        request.password()
-                    )
-                )
                 .gender(request.gender())
                 .institution(
                     request.institution().trim()
@@ -126,36 +128,14 @@ public class RegistrationRequestService {
     }
 
     /**
-     * Elimina las solicitudes que llevan al menos siete días resueltas.
-     *
-     * La antigüedad se calcula desde resolvedAt, no desde requestedAt, ya que
-     * el periodo de conservación comienza cuando la solicitud se aprueba o
-     * rechaza. Las solicitudes PENDING nunca son eliminadas por esta tarea.
-     *
-     * @return número de solicitudes eliminadas.
-     */
-    @Transactional
-    public int deleteExpiredResolvedRequests() {
-        LocalDateTime expirationDate =
-            LocalDateTime.now().minusDays(7);
-
-        return registrationRequestRepository
-            .deleteResolvedBefore(
-                RegistrationRequestStatus.APPROVED,
-                RegistrationRequestStatus.REJECTED,
-                expirationDate
-            );
-    }
-
-    /**
      * Aprueba una solicitud y crea el usuario EDITOR correspondiente.
      *
      * La creación del usuario y la resolución de RegistrationRequest forman
      * parte de la misma transacción. Si cualquiera de las operaciones falla,
      * Spring realiza rollback y no queda información parcialmente persistida.
      *
-     * La contraseña almacenada en RegistrationRequest ya está cifrada, por
-     * lo que se copia directamente al nuevo usuario y no vuelve a codificarse.
+     * La contraseña no se almacena en RegistrationRequest. Al aprobar se genera
+     * un token temporal para que el usuario configure su contraseña.
      */
     @Transactional
     public RegistrationRequestResponseDto approve(
@@ -167,12 +147,6 @@ public class RegistrationRequestService {
 
         User admin =
             getAdministrator(adminEmail);
-
-        /*
-         * La entidad valida aquí que la solicitud continúe pendiente.
-         * Si ya estaba resuelta, no se llega a crear ningún usuario.
-         */
-        request.approve(admin);
 
         /*
          * Se comprueba cualquier usuario existente, esté activo o no,
@@ -190,16 +164,29 @@ public class RegistrationRequestService {
             );
         }
 
+        String setupToken = generateSetupToken();
+
+        /*
+         * La entidad valida aquí que la solicitud continúe pendiente.
+         * Si ya estaba resuelta, no se llega a crear ningún usuario.
+         */
+        request.approve(admin);
+
         User editor =
             User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
-                .password(request.getPassword())
+                .passwordHash(passwordEncoder.encode(generateRandomSecret()))
                 .role(UserRole.EDITOR)
                 .gender(request.getGender())
                 .institution(request.getInstitution())
-                .enabled(true)
+                .enabled(false)
                 .build();
+
+        editor.assignPasswordSetupToken(
+            hashSetupToken(setupToken),
+            LocalDateTime.now().plusHours(PASSWORD_SETUP_TOKEN_HOURS)
+        );
 
         User savedEditor =
             userRepository.save(editor);
@@ -216,7 +203,7 @@ public class RegistrationRequestService {
                 request.getId()
             );
 
-        return toResponse(request);
+        return toResponse(request, setupToken);
     }
 
     /**
@@ -384,7 +371,7 @@ public class RegistrationRequestService {
     /**
      * Convierte una entidad de solicitud en su DTO de salida.
      *
-     * La contraseña cifrada nunca se expone al cliente.
+     * El hash de contraseña nunca se expone al cliente.
      */
     private RegistrationRequestResponseDto toResponse(
         RegistrationRequest request
@@ -408,7 +395,57 @@ public class RegistrationRequestService {
             resolvedBy != null
                 ? resolvedBy.getName()
                 : null,
-            request.getRejectionReason()
+            request.getRejectionReason(),
+            null
         );
+    }
+
+    private RegistrationRequestResponseDto toResponse(
+        RegistrationRequest request,
+        String passwordSetupToken
+    ) {
+        User resolvedBy =
+            request.getResolvedBy();
+
+        return new RegistrationRequestResponseDto(
+            request.getId(),
+            request.getName(),
+            request.getEmail(),
+            request.getGender(),
+            request.getInstitution(),
+            request.getMotivation(),
+            request.getStatus(),
+            request.getRequestedAt(),
+            request.getResolvedAt(),
+            resolvedBy != null
+                ? resolvedBy.getId()
+                : null,
+            resolvedBy != null
+                ? resolvedBy.getName()
+                : null,
+            request.getRejectionReason(),
+            passwordSetupToken
+        );
+    }
+
+    private String generateSetupToken() {
+        return generateRandomSecret();
+    }
+
+    private String generateRandomSecret() {
+        return UUID.randomUUID() + "-" + UUID.randomUUID();
+    }
+
+    private String hashSetupToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                "No se pudo calcular el hash del token temporal",
+                exception
+            );
+        }
     }
 }

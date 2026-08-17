@@ -1,11 +1,11 @@
 package com.formquid.survey.dto;
 
-import com.formquid.fixedquestion.dto.MatrixRowRequestDto;
-import com.formquid.fixedquestion.dto.OptionConfigRequestDto;
-import com.formquid.fixedquestion.entity.EvaluationDirection;
-import com.formquid.fixedquestion.entity.QuestionType;
-import com.formquid.fixedquestion.entity.ScaleDisplayType;
-import com.formquid.survey.entity.SurveyQuestionSource;
+import com.formquid.question.dto.MatrixRowRequestDto;
+import com.formquid.question.dto.OptionConfigRequestDto;
+import com.formquid.question.entity.EvaluationDirection;
+import com.formquid.question.entity.QuestionType;
+import com.formquid.question.entity.ScaleDisplayType;
+import com.formquid.survey.model.SurveyQuestionSource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -17,22 +17,24 @@ import java.util.List;
  */
 public record SurveyQuestionRequestDto(
 
+    /**
+     * Clave estable de la pregunta dentro de la encuesta.
+     *
+     * Puede omitirse al crear una pregunta nueva; se conserva al editar para
+     * no romper respuestas ya asociadas por questionKey.
+     */
+    @Size(max = 80, message = "La clave de la pregunta no puede superar los 80 caracteres")
+    String questionKey,
+
     @NotNull(message = "El origen de la pregunta es obligatorio")
     SurveyQuestionSource source,
 
     /**
-     * Identificador de la pregunta fija de origen.
+     * Identificador de la pregunta de catálogo de origen.
      *
-     * Se usa cuando source = FIXED.
+     * Se usa cuando source = CATALOG.
      */
-    Long sourceFixedQuestionId,
-
-    /**
-     * Identificador de la pregunta de plantilla de origen.
-     *
-     * Se usa internamente cuando source = TEMPLATE.
-     */
-    Long sourceTemplateQuestionId,
+    Long sourceQuestionId,
 
     @Size(max = 1000, message = "El enunciado no puede superar los 1000 caracteres")
     String text,

@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 
@@ -36,6 +37,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
+@Check(constraints = "status in ('ACTIVE', 'DISABLED', 'ARCHIVED')")
 @Table(
     name = "blocks",
     uniqueConstraints = {

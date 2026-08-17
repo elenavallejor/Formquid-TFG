@@ -1,5 +1,6 @@
 package com.formquid.elementrequest.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.formquid.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,16 +20,18 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
 /**
- * Representa una solicitud realizada por un editor para proponer
- * la creación de un elemento reutilizable del sistema.
+ * Solicitud realizada por un editor para proponer un elemento reutilizable
+ * del catálogo.
  *
- * La propia entidad controla la transición desde PENDING hacia
- * APPROVED o REJECTED para impedir que una solicitud ya resuelta
- * pueda modificarse una segunda vez.
+ * Las solicitudes se conservan después de resolverse para mantener auditoría
+ * y métricas de uso de la plataforma.
  */
 @Getter
 @Setter
@@ -36,14 +39,31 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
+@Check(constraints = """
+    type in ('BLOCK', 'QUESTION', 'TEMPLATE')
+    and status in ('PENDING', 'APPROVED', 'REJECTED')
+    and jsonb_typeof(request_payload) = 'object'
+    and (
+        (
+            status = 'PENDING'
+            and resolved_at is null
+            and resolved_by_user_id is null
+        )
+        or (
+            status in ('APPROVED', 'REJECTED')
+            and resolved_at is not null
+            and resolved_by_user_id is not null
+        )
+    )
+""")
 @Table(
     name = "element_requests",
     indexes = {
-        @Index(name = "idx_element_requests_status", columnList = "status"),
         @Index(name = "idx_element_requests_type", columnList = "type"),
+        @Index(name = "idx_element_requests_status", columnList = "status"),
         @Index(name = "idx_element_requests_requested_by", columnList = "requested_by_user_id"),
         @Index(name = "idx_element_requests_resolved_by", columnList = "resolved_by_user_id"),
-        @Index(name = "idx_element_requests_status_created", columnList = "status, created_at")
+        @Index(name = "idx_element_requests_created_at", columnList = "created_at")
     }
 )
 public class ElementRequest {
@@ -52,163 +72,99 @@ public class ElementRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Tipo de elemento solicitado.
-     */
+    /** Tipo de elemento que se propone crear. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
     private ElementRequestType type;
 
-    /**
-     * Título breve de la solicitud.
-     */
+    /** Título breve utilizado para identificar la propuesta. */
     @Column(nullable = false, length = 180)
     private String title;
 
-    /**
-     * Descripción de la propuesta realizada por el editor.
-     */
+    /** Descripción de la propuesta. */
     @Column(nullable = false, length = 2000)
     private String description;
 
-    /**
-     * Justificación opcional de por qué el elemento sería útil.
-     */
+    /** Justificación opcional proporcionada por el editor. */
     @Column(length = 1500)
     private String justification;
 
     /**
-     * Usuario que realiza la solicitud.
+     * Definición completa del elemento propuesto.
+     *
+     * Se almacena como JSONB porque la estructura depende del tipo.
      */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "request_payload", nullable = false, columnDefinition = "jsonb")
+    private JsonNode requestPayload;
+
+    /** Usuario que realizó la solicitud. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requested_by_user_id", nullable = false)
     private User requestedBy;
 
-    /**
-     * Estado actual de la solicitud.
-     */
+    /** Estado de resolución de la solicitud. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private ElementRequestStatus status;
 
-    /**
-     * Administrador o superadministrador que resolvió la solicitud.
-     */
+    /** Fecha en la que se creó la solicitud. */
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    /** Fecha de resolución administrativa. */
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    /** Usuario administrador que resolvió la solicitud. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resolved_by_user_id")
     private User resolvedBy;
 
-    /**
-     * Comentario opcional asociado a la resolución.
-     */
+    /** Mensaje opcional de resolución. */
     @Column(name = "resolution_message", length = 1500)
     private String resolutionMessage;
 
-    /**
-     * Fecha de creación de la solicitud.
-     */
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    /**
-     * Fecha en la que la solicitud fue resuelta.
-     */
-    @Column(name = "resolved_at")
-    private LocalDateTime resolvedAt;
-
-    /**
-     * Inicializa automáticamente la fecha y el estado de una
-     * solicitud nueva antes de persistirla.
-     */
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
 
-        if (this.status == null) {
-            this.status = ElementRequestStatus.PENDING;
+        if (status == null) {
+            status = ElementRequestStatus.PENDING;
         }
     }
 
-    /**
-     * Aprueba una solicitud pendiente.
-     *
-     * La entidad establece conjuntamente estado, administrador,
-     * comentario y fecha de resolución para evitar estados parciales.
-     *
-     * @param admin usuario que resuelve la solicitud.
-     * @param message comentario opcional de resolución.
-     */
     public void approve(User admin, String message) {
-        resolve(
-            ElementRequestStatus.APPROVED,
-            admin,
-            message
-        );
+        resolve(ElementRequestStatus.APPROVED, admin, message);
     }
 
-    /**
-     * Rechaza una solicitud pendiente.
-     *
-     * @param admin usuario que resuelve la solicitud.
-     * @param message comentario opcional de resolución.
-     */
     public void reject(User admin, String message) {
-        resolve(
-            ElementRequestStatus.REJECTED,
-            admin,
-            message
-        );
+        resolve(ElementRequestStatus.REJECTED, admin, message);
     }
 
-    /**
-     * Centraliza la resolución para garantizar una única transición
-     * desde PENDING hacia un estado final.
-     */
     private void resolve(
-        ElementRequestStatus resolvedStatus,
+        ElementRequestStatus finalStatus,
         User admin,
         String message
     ) {
-        validatePending();
-        validateResolver(admin);
-
-        this.status = resolvedStatus;
-        this.resolvedBy = admin;
-        this.resolutionMessage = clean(message);
-        this.resolvedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Impide volver a resolver una solicitud aprobada o rechazada.
-     */
-    private void validatePending() {
         if (status != ElementRequestStatus.PENDING) {
-            throw new IllegalArgumentException(
-                "La solicitud ya ha sido resuelta"
+            throw new IllegalStateException(
+                "La solicitud de elemento ya ha sido resuelta"
             );
         }
-    }
 
-    /**
-     * Garantiza que toda resolución conserve la identidad
-     * del usuario que la realizó.
-     */
-    private void validateResolver(User admin) {
         if (admin == null || admin.getId() == null) {
-            throw new IllegalArgumentException(
-                "El usuario que resuelve la solicitud es obligatorio"
+            throw new IllegalStateException(
+                "El administrador que resuelve la solicitud es obligatorio"
             );
         }
-    }
 
-    /**
-     * Limpia textos opcionales antes de almacenarlos.
-     */
-    private String clean(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-
-        return value.trim();
+        this.status = finalStatus;
+        this.resolvedBy = admin;
+        this.resolvedAt = LocalDateTime.now();
+        this.resolutionMessage =
+            message != null && !message.isBlank() ? message.trim() : null;
     }
 }

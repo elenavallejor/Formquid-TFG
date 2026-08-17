@@ -8,7 +8,7 @@ import java.util.List;
  */
 public record AnswerResponseDto(
     Long id,
-    Long surveyQuestionId,
+    String questionKey,
     String questionText,
     String textValue,
     BigDecimal numericValue,

@@ -15,28 +15,20 @@ import java.util.Optional;
 /**
  * Repositorio de acceso a datos para encuestas.
  *
- * Incluye consultas privadas, administrativas y públicas, cargando
- * únicamente las relaciones necesarias para cada contexto de uso.
+ * Incluye consultas privadas, administrativas y públicas.
  */
 public interface SurveyRepository extends JpaRepository<Survey, Long> {
 
     /**
-     * Recupera una encuesta interna cargando propietario y etiquetas.
-     *
-     * Los bloques y preguntas permanecen con carga diferida y se benefician
-     * de @BatchSize en las entidades.
+     * Recupera una encuesta interna cargando propietario.
      */
     @Override
-    @EntityGraph(attributePaths = {"owner", "tags"})
+    @EntityGraph(attributePaths = {"owner"})
     Optional<Survey> findById(Long id);
 
     /**
      * Recupera una encuesta para acceso público.
-     *
-     * Se cargan etiquetas y bloques. Las preguntas de los bloques se
-     * recuperan por lotes mediante @BatchSize en SurveyBlock.
      */
-    @EntityGraph(attributePaths = {"tags", "blocks"})
     @Query("""
         select distinct survey
         from Survey survey
@@ -48,11 +40,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
 
     /**
      * Lista encuestas públicas para la página de inicio.
-     *
-     * Solo se precargan las etiquetas porque no se necesita la estructura
-     * completa en este listado.
      */
-    @EntityGraph(attributePaths = {"tags"})
     @Query("""
         select distinct survey
         from Survey survey
@@ -82,7 +70,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     /**
      * Lista las encuestas creadas por un usuario.
      */
-    @EntityGraph(attributePaths = {"owner", "tags"})
+    @EntityGraph(attributePaths = {"owner"})
     @Query("""
         select distinct survey
         from Survey survey
@@ -96,7 +84,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     /**
      * Lista encuestas filtradas por estado.
      */
-    @EntityGraph(attributePaths = {"owner", "tags"})
+    @EntityGraph(attributePaths = {"owner"})
     @Query("""
         select distinct survey
         from Survey survey
@@ -110,7 +98,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     /**
      * Lista todas las encuestas para administración.
      */
-    @EntityGraph(attributePaths = {"owner", "tags"})
+    @EntityGraph(attributePaths = {"owner"})
     @Query("""
         select distinct survey
         from Survey survey

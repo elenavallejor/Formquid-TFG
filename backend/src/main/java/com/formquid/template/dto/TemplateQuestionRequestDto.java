@@ -1,11 +1,11 @@
 package com.formquid.template.dto;
 
-import com.formquid.fixedquestion.dto.MatrixRowRequestDto;
-import com.formquid.fixedquestion.dto.OptionConfigRequestDto;
-import com.formquid.fixedquestion.entity.EvaluationDirection;
-import com.formquid.fixedquestion.entity.QuestionType;
-import com.formquid.fixedquestion.entity.ScaleDisplayType;
-import com.formquid.template.entity.TemplateQuestionSource;
+import com.formquid.question.dto.MatrixRowRequestDto;
+import com.formquid.question.dto.OptionConfigRequestDto;
+import com.formquid.question.entity.EvaluationDirection;
+import com.formquid.question.entity.QuestionType;
+import com.formquid.question.entity.ScaleDisplayType;
+import com.formquid.survey.model.SurveyQuestionSource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -17,10 +17,13 @@ import java.util.List;
  */
 public record TemplateQuestionRequestDto(
 
-    @NotNull(message = "El origen de la pregunta es obligatorio")
-    TemplateQuestionSource source,
+    @Size(max = 80, message = "La clave de la pregunta no puede superar los 80 caracteres")
+    String questionKey,
 
-    Long fixedQuestionId,
+    @NotNull(message = "El origen de la pregunta es obligatorio")
+    SurveyQuestionSource source,
+
+    Long sourceQuestionId,
 
     @Size(max = 1000, message = "El enunciado no puede superar los 1000 caracteres")
     String text,

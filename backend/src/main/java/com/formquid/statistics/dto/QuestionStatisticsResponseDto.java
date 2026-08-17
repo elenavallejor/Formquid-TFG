@@ -1,6 +1,6 @@
 package com.formquid.statistics.dto;
 
-import com.formquid.fixedquestion.entity.QuestionType;
+import com.formquid.question.entity.QuestionType;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import java.util.List;
  * Estadísticas calculadas para una pregunta de encuesta.
  */
 public record QuestionStatisticsResponseDto(
-    Long questionId,
+    String questionKey,
     String text,
     QuestionType type,
     boolean required,

@@ -6,9 +6,8 @@ import java.util.List;
  * DTO de salida para un bloque incluido en una plantilla.
  */
 public record TemplateBlockResponseDto(
-    Long id,
+    String blockKey,
     Long blockId,
     String blockName,
     List<TemplateQuestionResponseDto> questions
 ) {}
-

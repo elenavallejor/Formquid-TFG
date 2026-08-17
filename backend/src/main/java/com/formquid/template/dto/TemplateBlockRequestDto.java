@@ -2,6 +2,7 @@ package com.formquid.template.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -10,10 +11,13 @@ import java.util.List;
  */
 public record TemplateBlockRequestDto(
 
+    @Size(max = 80, message = "La clave del bloque no puede superar los 80 caracteres")
+    String blockKey,
+
     /**
      * Identificador del bloque reutilizable.
      *
-     * Puede ser null si pregunta no pertenece a ningún bloque.
+     * Puede ser null si el grupo no procede del catálogo.
      */
     Long blockId,
 

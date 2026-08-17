@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
  * DTO de salida para mostrar una solicitud de registro.
  *
  * La contraseña cifrada nunca se expone a través de la API.
+ * passwordSetupToken solo se informa en la respuesta inmediata de aprobación.
  */
 public record RegistrationRequestResponseDto(
     Long id,
@@ -22,5 +23,6 @@ public record RegistrationRequestResponseDto(
     LocalDateTime resolvedAt,
     Long resolvedByUserId,
     String resolvedByName,
-    String rejectionReason
+    String rejectionReason,
+    String passwordSetupToken
 ) {}

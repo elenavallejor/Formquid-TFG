@@ -1,9 +1,11 @@
 package com.formquid.collaboration.dto;
 
+import com.formquid.collaboration.entity.SurveyCollaborationStatus;
+
 import java.time.LocalDateTime;
 
 /**
- * DTO de salida para solicitudes pendientes de colaboración.
+ * DTO de salida para invitaciones de colaboración.
  */
 public record CollaborationRequestResponseDto(
     Long id,
@@ -15,5 +17,7 @@ public record CollaborationRequestResponseDto(
     String invitedEditorName,
     String invitedEditorEmail,
     String message,
-    LocalDateTime createdAt
+    SurveyCollaborationStatus status,
+    LocalDateTime createdAt,
+    LocalDateTime resolvedAt
 ) {}

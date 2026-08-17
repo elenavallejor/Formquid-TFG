@@ -1,23 +1,23 @@
 package com.formquid.survey.entity;
 
-import com.formquid.tag.entity.Tag;
+import com.formquid.survey.model.SurveyStructure;
 import com.formquid.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Check;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Representa una encuesta real creada por un editor.
  *
  * Una encuesta puede estar en borrador, ser pública, privada u oculta.
- * Sus preguntas se almacenan como copia propia para que no se vean afectadas
- * por cambios posteriores en preguntas fijas o plantillas.
+ * Su estructura se almacena como snapshot propio para que no se vea afectada
+ * por cambios posteriores en el catálogo o en las plantillas.
  */
 @Getter
 @Setter
@@ -25,6 +25,19 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Entity
+@Check(constraints = """
+    status in ('DRAFT', 'PUBLIC', 'PRIVATE', 'HIDDEN')
+    and (
+        (
+            status = 'PRIVATE'
+            and access_password_hash is not null
+        )
+        or (
+            status <> 'PRIVATE'
+            and access_password_hash is null
+        )
+    )
+""")
 @Table(
     name = "surveys",
     uniqueConstraints = {
@@ -63,48 +76,31 @@ public class Survey {
     @Column(nullable = false, length = 30)
     private SurveyStatus status;
 
-    @Column(name = "access_password", length = 255)
-    private String accessPassword;
+    @Column(name = "access_password_hash", length = 255)
+    private String accessPasswordHash;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id", nullable = false)
     private User owner;
 
     /**
-     * Etiquetas libres asociadas a la encuesta.
+     * Etiquetas libres propias de la encuesta.
+     *
+     * No existe tabla global de tags porque una etiqueta solo tiene sentido
+     * dentro de la encuesta que la usa.
      */
-    @ManyToMany
-    @BatchSize(size = 20)
-    @JoinTable(
-        name = "survey_tags",
-        joinColumns = @JoinColumn(name = "survey_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id"),
-        uniqueConstraints = {
-            @UniqueConstraint(
-                name = "uk_survey_tags_survey_tag",
-                columnNames = {"survey_id", "tag_id"}
-            )
-        },
-        indexes = {
-            @Index(name = "idx_survey_tags_tag_id", columnList = "tag_id")
-        }
-    )
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tag_names", nullable = false, columnDefinition = "jsonb")
     @Builder.Default
-    private Set<Tag> tags = new HashSet<>();
+    private List<String> tagNames = new ArrayList<>();
 
     /**
-     * Bloques o grupos de preguntas de la encuesta.
-     *
+     * Snapshot completo de bloques y preguntas de la encuesta.
      */
-    @OneToMany(
-        mappedBy = "survey",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true
-    )
-    @OrderBy("position ASC")
-    @BatchSize(size = 20)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "jsonb")
     @Builder.Default
-    private List<SurveyBlock> blocks = new ArrayList<>();
+    private SurveyStructure structure = new SurveyStructure();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -114,11 +110,6 @@ public class Survey {
 
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
-
-    public void addBlock(SurveyBlock block) {
-        blocks.add(block);
-        block.setSurvey(this);
-    }
 
     /**
      * Indica si el contenido de la encuesta puede modificarse.
@@ -130,6 +121,13 @@ public class Survey {
         return status == SurveyStatus.DRAFT;
     }
 
+    /**
+     * Indica si la encuesta contiene al menos una pregunta en su snapshot.
+     */
+    public boolean hasQuestions() {
+        return structure != null && structure.hasQuestions();
+    }
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -139,10 +137,40 @@ public class Survey {
         if (this.status == null) {
             this.status = SurveyStatus.DRAFT;
         }
+
+        normalizeJsonFields();
+        normalizePrivateAccess();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        normalizeJsonFields();
+        normalizePrivateAccess();
+
         this.updatedAt = LocalDateTime.now();
+    }
+
+    private void normalizeJsonFields() {
+        if (this.tagNames == null) {
+            this.tagNames = new ArrayList<>();
+        }
+
+        if (this.structure == null) {
+            this.structure = new SurveyStructure();
+        }
+    }
+
+    private void normalizePrivateAccess() {
+        if (this.status == SurveyStatus.PRIVATE) {
+            if (this.accessPasswordHash == null || this.accessPasswordHash.isBlank()) {
+                throw new IllegalStateException(
+                    "Las encuestas privadas deben tener hash de contraseña de acceso"
+                );
+            }
+
+            return;
+        }
+
+        this.accessPasswordHash = null;
     }
 }

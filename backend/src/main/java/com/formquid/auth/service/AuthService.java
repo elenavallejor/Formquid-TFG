@@ -1,6 +1,7 @@
 package com.formquid.auth.service;
 
 import com.formquid.auth.dto.AuthUserResponseDto;
+import com.formquid.auth.dto.CompletePasswordSetupRequestDto;
 import com.formquid.auth.dto.LoginRequestDto;
 import com.formquid.auth.dto.LoginResponseDto;
 import com.formquid.auth.security.JwtService;
@@ -10,11 +11,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.Locale;
 
 /**
@@ -31,6 +38,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Inicia sesión con correo y contraseña.
@@ -72,6 +80,37 @@ public class AuthService {
     }
 
     /**
+     * Configura la contraseña inicial de una cuenta aprobada.
+     */
+    @Transactional
+    public AuthUserResponseDto completePasswordSetup(
+        CompletePasswordSetupRequestDto request
+    ) {
+        String tokenHash = hashSetupToken(request.token().trim());
+
+        User user = userRepository
+            .findByPasswordSetupTokenHash(tokenHash)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El token de configuración no es válido"
+            ));
+
+        if (user.getPasswordSetupTokenExpiresAt() == null
+            || user.getPasswordSetupTokenExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El token de configuración ha caducado"
+            );
+        }
+
+        user.completePasswordSetup(
+            passwordEncoder.encode(request.password())
+        );
+
+        return AuthUserResponseDto.from(user);
+    }
+
+    /**
      * Recupera un usuario por correo ignorando mayúsculas.
      */
     private User findUserByEmail(
@@ -105,5 +144,18 @@ public class AuthService {
         return email
             .trim()
             .toLowerCase(Locale.ROOT);
+    }
+
+    private String hashSetupToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                "No se pudo calcular el hash del token temporal",
+                exception
+            );
+        }
     }
 }

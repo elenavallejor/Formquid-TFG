@@ -1,7 +1,7 @@
 package com.formquid.template.entity;
 
+import com.formquid.survey.model.SurveyStructure;
 import com.formquid.user.entity.User;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,8 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -24,17 +22,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Check;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Representa una plantilla reutilizable para crear encuestas.
  *
- * Una plantilla agrupa bloques y preguntas que pueden copiarse posteriormente
- * a una encuesta real. Las plantillas no almacenan respuestas.
+ * Una plantilla agrupa un snapshot de bloques y preguntas que puede copiarse
+ * posteriormente a una encuesta real. Las plantillas no almacenan respuestas.
  */
 @Getter
 @Setter
@@ -42,6 +40,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
+@Check(constraints = "status in ('ACTIVE', 'DISABLED', 'ARCHIVED')")
 @Table(
     name = "survey_templates",
     uniqueConstraints = {
@@ -89,18 +88,12 @@ public class SurveyTemplate {
     private TemplateStatus status;
 
     /**
-     * Bloques o grupos de preguntas que componen la plantilla.
-     *
+     * Estructura reutilizable de bloques y preguntas.
      */
-    @OneToMany(
-        mappedBy = "template",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true
-    )
-    @OrderBy("position ASC")
-    @BatchSize(size = 20)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "template_structure", nullable = false, columnDefinition = "jsonb")
     @Builder.Default
-    private List<TemplateBlock> blocks = new ArrayList<>();
+    private SurveyStructure templateStructure = new SurveyStructure();
 
     /**
      * Usuario administrador que creó la plantilla.
@@ -115,14 +108,6 @@ public class SurveyTemplate {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    /**
-     * Añade un bloque a la plantilla manteniendo la relación bidireccional.
-     */
-    public void addBlock(TemplateBlock block) {
-        blocks.add(block);
-        block.setTemplate(this);
-    }
-
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -132,10 +117,26 @@ public class SurveyTemplate {
         if (this.status == null) {
             this.status = TemplateStatus.ACTIVE;
         }
+
+        normalizeStructure();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        normalizeStructure();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Indica si la plantilla contiene al menos una pregunta reutilizable.
+     */
+    public boolean hasQuestions() {
+        return templateStructure != null && templateStructure.hasQuestions();
+    }
+
+    private void normalizeStructure() {
+        if (this.templateStructure == null) {
+            this.templateStructure = new SurveyStructure();
+        }
     }
 }

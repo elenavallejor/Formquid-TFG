@@ -63,12 +63,17 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 /*
-                 * Solo el inicio de sesión es público dentro de /api/auth.
-                 * /api/auth/me requiere autenticación.
+                 * El inicio de sesión y la configuración inicial de contraseña
+                 * son los únicos flujos públicos dentro de /api/auth.
                  */
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/auth/login"
+                ).permitAll()
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/auth/password-setup"
                 ).permitAll()
 
                 /*
@@ -135,7 +140,7 @@ public class SecurityConfig {
                     org.springframework.security.core.userdetails.User
                         .builder()
                         .username(user.getEmail())
-                        .password(user.getPassword())
+                        .password(user.getPasswordHash())
                         .authorities(
                             "ROLE_"
                                 + user.getRole().name()

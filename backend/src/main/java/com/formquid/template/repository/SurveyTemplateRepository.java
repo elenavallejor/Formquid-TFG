@@ -33,9 +33,7 @@ public interface SurveyTemplateRepository
      */
     @EntityGraph(
         attributePaths = {
-            "createdBy",
-            "blocks",
-            "blocks.block"
+            "createdBy"
         }
     )
     List<SurveyTemplate> findAllByOrderByCreatedAtDesc();
@@ -45,9 +43,7 @@ public interface SurveyTemplateRepository
      */
     @EntityGraph(
         attributePaths = {
-            "createdBy",
-            "blocks",
-            "blocks.block"
+            "createdBy"
         }
     )
     List<SurveyTemplate> findByStatusOrderByNameAsc(
@@ -55,15 +51,11 @@ public interface SurveyTemplateRepository
     );
 
     /**
-     * Obtiene una plantilla con el primer nivel de su estructura cargado.
-     *
-     * Las preguntas se cargan por lotes desde TemplateBlock.
+     * Obtiene una plantilla con su creador cargado.
      */
     @EntityGraph(
         attributePaths = {
-            "createdBy",
-            "blocks",
-            "blocks.block"
+            "createdBy"
         }
     )
     @Query("""

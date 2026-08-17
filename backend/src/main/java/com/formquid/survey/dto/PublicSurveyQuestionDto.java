@@ -1,18 +1,18 @@
 package com.formquid.survey.dto;
 
-import com.formquid.fixedquestion.entity.QuestionType;
-import com.formquid.fixedquestion.entity.ScaleDisplayType;
+import com.formquid.question.entity.QuestionType;
+import com.formquid.question.entity.ScaleDisplayType;
 
 import java.util.List;
 
 /**
  * Representación pública de una pregunta.
  *
- * El id se conserva porque es necesario para asociar posteriormente
+ * questionKey se conserva porque es necesario para asociar posteriormente
  * la respuesta enviada por el participante.
  */
 public record PublicSurveyQuestionDto(
-    Long id,
+    String questionKey,
     String text,
     String description,
     QuestionType type,

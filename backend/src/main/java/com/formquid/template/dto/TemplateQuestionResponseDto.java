@@ -1,11 +1,11 @@
 package com.formquid.template.dto;
 
-import com.formquid.fixedquestion.dto.MatrixRowResponseDto;
-import com.formquid.fixedquestion.dto.OptionConfigResponseDto;
-import com.formquid.fixedquestion.entity.EvaluationDirection;
-import com.formquid.fixedquestion.entity.QuestionType;
-import com.formquid.fixedquestion.entity.ScaleDisplayType;
-import com.formquid.template.entity.TemplateQuestionSource;
+import com.formquid.question.dto.MatrixRowResponseDto;
+import com.formquid.question.dto.OptionConfigResponseDto;
+import com.formquid.question.entity.EvaluationDirection;
+import com.formquid.question.entity.QuestionType;
+import com.formquid.question.entity.ScaleDisplayType;
+import com.formquid.survey.model.SurveyQuestionSource;
 
 import java.util.List;
 
@@ -13,9 +13,9 @@ import java.util.List;
  * DTO de salida para una pregunta incluida en una plantilla.
  */
 public record TemplateQuestionResponseDto(
-    Long id,
-    TemplateQuestionSource source,
-    Long fixedQuestionId,
+    String questionKey,
+    SurveyQuestionSource source,
+    Long sourceQuestionId,
     String text,
     String description,
     QuestionType type,

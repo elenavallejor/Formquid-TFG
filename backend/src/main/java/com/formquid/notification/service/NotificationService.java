@@ -1,13 +1,18 @@
 package com.formquid.notification.service;
 
+import com.formquid.collaboration.entity.SurveyCollaboration;
+import com.formquid.elementrequest.entity.ElementRequest;
 import com.formquid.notification.dto.NotificationResponseDto;
 import com.formquid.notification.entity.Notification;
 import com.formquid.notification.entity.NotificationChannel;
 import com.formquid.notification.entity.NotificationTargetType;
 import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.repository.NotificationRepository;
+import com.formquid.registration.entity.RegistrationRequest;
+import com.formquid.survey.entity.Survey;
 import com.formquid.user.entity.User;
 import com.formquid.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +43,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
     /**
      * Crea una notificación interna para un usuario.
@@ -325,33 +331,81 @@ public class NotificationService {
             title,
             message
         );
+        validateTarget(
+            targetType,
+            targetId
+        );
 
-        Notification notification =
+        Notification.NotificationBuilder builder =
             Notification.builder()
                 .recipient(recipient)
-                .type(
-                    type != null
-                        ? type
-                        : NotificationType.GENERAL
-                )
-                .channel(
-                    channel != null
-                        ? channel
-                        : NotificationChannel.INTERNAL
-                )
+                .type(type != null ? type : NotificationType.GENERAL)
+                .channel(channel != null ? channel : NotificationChannel.INTERNAL)
                 .title(title.trim())
-                .message(message.trim())
-                .targetType(
-                    targetType != null
-                        ? targetType
-                        : NotificationTargetType.NONE
-                )
-                .targetId(targetId)
-                .build();
+                .message(message.trim());
+
+        assignTarget(
+            builder,
+            targetType,
+            targetId
+        );
+
+        Notification notification = builder.build();
 
         return toResponse(
             notificationRepository.save(notification)
         );
+    }
+
+    private void validateTarget(
+        NotificationTargetType targetType,
+        Long targetId
+    ) {
+        NotificationTargetType effectiveTargetType =
+            targetType != null
+                ? targetType
+                : NotificationTargetType.NONE;
+
+        if (effectiveTargetType == NotificationTargetType.NONE && targetId != null) {
+            throw new IllegalArgumentException(
+                "Las notificaciones sin recurso asociado no deben indicar targetId"
+            );
+        }
+
+        if (effectiveTargetType != NotificationTargetType.NONE && targetId == null) {
+            throw new IllegalArgumentException(
+                "Las notificaciones asociadas a un recurso deben indicar targetId"
+            );
+        }
+    }
+
+    private void assignTarget(
+        Notification.NotificationBuilder builder,
+        NotificationTargetType targetType,
+        Long targetId
+    ) {
+        NotificationTargetType effectiveTargetType =
+            targetType != null ? targetType : NotificationTargetType.NONE;
+
+        switch (effectiveTargetType) {
+            case NONE -> {
+            }
+            case SURVEY -> builder.survey(
+                entityManager.getReference(Survey.class, targetId)
+            );
+            case REGISTRATION_REQUEST -> builder.registrationRequest(
+                entityManager.getReference(RegistrationRequest.class, targetId)
+            );
+            case COLLABORATION_REQUEST -> builder.collaboration(
+                entityManager.getReference(SurveyCollaboration.class, targetId)
+            );
+            case ELEMENT_REQUEST -> builder.elementRequest(
+                entityManager.getReference(ElementRequest.class, targetId)
+            );
+            case USER -> builder.targetUser(
+                entityManager.getReference(User.class, targetId)
+            );
+        }
     }
 
     /**
@@ -478,11 +532,59 @@ public class NotificationService {
             notification.getChannel(),
             notification.getTitle(),
             notification.getMessage(),
-            notification.getTargetType(),
-            notification.getTargetId(),
+            resolveTargetType(notification),
+            resolveTargetId(notification),
             notification.getReadAt() != null,
             notification.getCreatedAt(),
             notification.getReadAt()
         );
+    }
+
+    private NotificationTargetType resolveTargetType(Notification notification) {
+        if (notification.getSurvey() != null) {
+            return NotificationTargetType.SURVEY;
+        }
+
+        if (notification.getRegistrationRequest() != null) {
+            return NotificationTargetType.REGISTRATION_REQUEST;
+        }
+
+        if (notification.getCollaboration() != null) {
+            return NotificationTargetType.COLLABORATION_REQUEST;
+        }
+
+        if (notification.getElementRequest() != null) {
+            return NotificationTargetType.ELEMENT_REQUEST;
+        }
+
+        if (notification.getTargetUser() != null) {
+            return NotificationTargetType.USER;
+        }
+
+        return NotificationTargetType.NONE;
+    }
+
+    private Long resolveTargetId(Notification notification) {
+        if (notification.getSurvey() != null) {
+            return notification.getSurvey().getId();
+        }
+
+        if (notification.getRegistrationRequest() != null) {
+            return notification.getRegistrationRequest().getId();
+        }
+
+        if (notification.getCollaboration() != null) {
+            return notification.getCollaboration().getId();
+        }
+
+        if (notification.getElementRequest() != null) {
+            return notification.getElementRequest().getId();
+        }
+
+        if (notification.getTargetUser() != null) {
+            return notification.getTargetUser().getId();
+        }
+
+        return null;
     }
 }

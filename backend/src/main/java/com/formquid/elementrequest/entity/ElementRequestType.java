@@ -5,6 +5,6 @@ package com.formquid.elementrequest.entity;
  */
 public enum ElementRequestType {
     BLOCK,
-    FIXED_QUESTION,
+    QUESTION,
     TEMPLATE
 }

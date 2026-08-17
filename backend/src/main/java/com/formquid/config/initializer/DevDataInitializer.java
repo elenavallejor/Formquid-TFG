@@ -11,10 +11,12 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
+
 /**
  * Inicializador de datos para el entorno de desarrollo.
  *
- * Este componente crea un usuario super inicial
+ * Este componente crea el superadministrador inicial.
  *
  * Solo se ejecuta cuando el perfil activo es {@code dev}.
  */
@@ -36,20 +38,25 @@ public class DevDataInitializer implements CommandLineRunner {
      * Ejecuta la inicialización de datos al arrancar la aplicación.
      *
      * Si no existe ningún usuario con el correo configurado para el
-     * super inicial, se crea automáticamente con rol SUPERADMIN.
+     * superadministrador inicial, se crea automáticamente con rol SUPERADMIN.
      *
      * @param args argumentos recibidos por línea de comandos.
      */
     @Override
     public void run(String... args) {
-        if (userRepository.existsByEmail(initialSuperadminEmail)) {
+        String superadminEmail =
+            initialSuperadminEmail
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        if (userRepository.existsByEmailIgnoreCase(superadminEmail)) {
             return;
         }
 
         User superadmin = User.builder()
             .name("Superadministrador FormQuid")
-            .email(initialSuperadminEmail)
-            .password(passwordEncoder.encode(initialSuperadminPassword))
+            .email(superadminEmail)
+            .passwordHash(passwordEncoder.encode(initialSuperadminPassword))
             .role(UserRole.SUPERADMIN)
             .gender(UserGender.OTHER)
             .institution("FormQuid")

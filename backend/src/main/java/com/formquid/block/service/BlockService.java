@@ -6,14 +6,15 @@ import com.formquid.block.dto.UpdateBlockRequestDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockStatus;
 import com.formquid.block.repository.BlockRepository;
-import com.formquid.fixedquestion.entity.FixedQuestionStatus;
-import com.formquid.fixedquestion.repository.FixedQuestionRepository;
+import com.formquid.question.entity.QuestionStatus;
+import com.formquid.question.repository.QuestionRepository;
 import com.formquid.user.entity.User;
 import com.formquid.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
 /**
  * Servicio de negocio para bloques reutilizables.
  *
- * Los bloques agrupan preguntas fijas y pueden reutilizarse al crear
+ * Los bloques agrupan preguntas del catálogo y pueden reutilizarse al crear
  * plantillas o encuestas.
  */
 @Service
@@ -30,7 +31,7 @@ import java.util.List;
 public class BlockService {
 
     private final BlockRepository blockRepository;
-    private final FixedQuestionRepository fixedQuestionRepository;
+    private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
 
     /**
@@ -149,7 +150,7 @@ public class BlockService {
      * Devuelve un bloque que puede utilizarse al construir
      * una plantilla o encuesta.
      *
-     * Debe estar activo y contener al menos una pregunta fija activa.
+     * Debe estar activo y contener al menos una pregunta activa.
      */
     public Block getUsableBlock(Long blockId) {
         Block block = findBlock(blockId);
@@ -162,15 +163,15 @@ public class BlockService {
         }
 
         boolean hasActiveQuestions =
-            fixedQuestionRepository.existsByBlockIdAndStatus(
+            questionRepository.existsByBlockIdAndStatus(
                 blockId,
-                FixedQuestionStatus.ACTIVE
+                QuestionStatus.ACTIVE
             );
 
         if (!hasActiveQuestions) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "El bloque indicado debe contener al menos una pregunta fija activa"
+                "El bloque indicado debe contener al menos una pregunta activa"
             );
         }
 
@@ -209,7 +210,14 @@ public class BlockService {
      * del usuario autenticado.
      */
     private User findCreatorByEmail(String email) {
-        return userRepository.findByEmail(email)
+        if (!StringUtils.hasText(email)) {
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Usuario no autenticado"
+            );
+        }
+
+        return userRepository.findByEmailIgnoreCase(email.trim())
             .orElseThrow(() ->
                 new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,

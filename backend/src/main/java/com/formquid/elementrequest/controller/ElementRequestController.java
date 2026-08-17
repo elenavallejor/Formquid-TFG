@@ -46,7 +46,7 @@ public class ElementRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Crear solicitud",
-        description = "Permite proponer la creación de un bloque, pregunta fija o plantilla."
+        description = "Permite proponer la creación de un bloque, pregunta reutilizable o plantilla."
     )
     public ElementRequestResponseDto create(
         @Valid @RequestBody CreateElementRequestDto request,
@@ -59,7 +59,7 @@ public class ElementRequestController {
     }
 
     /**
-     * Obtiene el historial de solicitudes creadas
+     * Obtiene las solicitudes pendientes creadas
      * por el usuario autenticado.
      */
     @GetMapping("/mine")

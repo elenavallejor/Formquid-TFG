@@ -1,7 +1,7 @@
 package com.formquid.participation.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -14,8 +14,9 @@ import java.util.List;
  */
 public record SubmitAnswerRequestDto(
 
-    @NotNull(message = "El identificador de la pregunta es obligatorio")
-    Long surveyQuestionId,
+    @NotBlank(message = "La clave de la pregunta es obligatoria")
+    @Size(max = 80, message = "La clave de la pregunta no puede superar los 80 caracteres")
+    String questionKey,
 
     @Size(max = 5000, message = "La respuesta textual no puede superar los 5000 caracteres")
     String textValue,

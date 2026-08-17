@@ -104,6 +104,8 @@ public class UserService {
             authenticatedUser
         );
 
+        validateNotPendingPasswordSetup(targetUser);
+
         targetUser.setEnabled(true);
 
         notifyAccountUpdated(
@@ -228,7 +230,7 @@ public class UserService {
             );
         }
 
-        return userRepository.findByEmailIgnoreCase(email)
+        return userRepository.findByEmailIgnoreCase(email.trim())
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
                 "No se ha podido identificar al usuario autenticado"
@@ -283,6 +285,15 @@ public class UserService {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "No puedes realizar esta operación sobre tu propia cuenta"
+            );
+        }
+    }
+
+    private void validateNotPendingPasswordSetup(User targetUser) {
+        if (targetUser.hasPendingPasswordSetup()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La cuenta debe configurar su contraseña inicial antes de activarse"
             );
         }
     }

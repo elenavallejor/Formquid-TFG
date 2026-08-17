@@ -1,6 +1,7 @@
 package com.formquid.auth.controller;
 
 import com.formquid.auth.dto.AuthUserResponseDto;
+import com.formquid.auth.dto.CompletePasswordSetupRequestDto;
 import com.formquid.auth.dto.LoginRequestDto;
 import com.formquid.auth.dto.LoginResponseDto;
 import com.formquid.auth.service.AuthService;
@@ -39,6 +40,18 @@ public class AuthController {
     ) {
         return ResponseEntity.ok(
             authService.login(request)
+        );
+    }
+
+    /**
+     * Configura la contraseña inicial de una cuenta aprobada.
+     */
+    @PostMapping("/password-setup")
+    public ResponseEntity<AuthUserResponseDto> completePasswordSetup(
+        @Valid @RequestBody CompletePasswordSetupRequestDto request
+    ) {
+        return ResponseEntity.ok(
+            authService.completePasswordSetup(request)
         );
     }
 

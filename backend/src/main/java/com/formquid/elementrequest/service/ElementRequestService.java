@@ -1,5 +1,11 @@
 package com.formquid.elementrequest.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formquid.block.dto.CreateBlockRequestDto;
+import com.formquid.block.service.BlockService;
+import com.formquid.elementrequest.dto.ApproveElementRequestResponseDto;
 import com.formquid.elementrequest.dto.CreateElementRequestDto;
 import com.formquid.elementrequest.dto.ElementRequestResponseDto;
 import com.formquid.elementrequest.dto.ResolveElementRequestDto;
@@ -9,6 +15,10 @@ import com.formquid.elementrequest.repository.ElementRequestRepository;
 import com.formquid.notification.entity.NotificationTargetType;
 import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.service.NotificationService;
+import com.formquid.question.dto.CreateQuestionRequestDto;
+import com.formquid.question.service.QuestionService;
+import com.formquid.template.dto.CreateSurveyTemplateRequestDto;
+import com.formquid.template.service.SurveyTemplateService;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
@@ -22,11 +32,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 /**
- * Servicio de negocio para la gestión de solicitudes de elementos.
+ * Servicio de negocio para gestionar solicitudes de elementos del catálogo.
  *
- * Agrupa tanto las operaciones de los editores como las operaciones
- * administrativas, manteniendo la autorización HTTP separada en
- * dos controladores diferentes.
+ * La solicitud se conserva tras aprobarse o rechazarse; el estado y los campos
+ * de resolución aportan trazabilidad sin tablas adicionales.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,12 +45,13 @@ public class ElementRequestService {
     private final ElementRequestRepository elementRequestRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final BlockService blockService;
+    private final QuestionService questionService;
+    private final SurveyTemplateService surveyTemplateService;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Crea una nueva solicitud de elemento reutilizable.
-     *
-     * El usuario autenticado se obtiene a partir de su correo, evitando
-     * depender de una implementación personalizada de UserDetails.
+     * Crea una nueva solicitud pendiente.
      */
     @Transactional
     public ElementRequestResponseDto create(
@@ -49,169 +59,206 @@ public class ElementRequestService {
         String requesterEmail
     ) {
         User requester = getAuthenticatedUser(requesterEmail);
+        JsonNode payload = buildPayload(request);
 
-        ElementRequest elementRequest =
-            ElementRequest.builder()
-                .type(request.type())
-                .title(request.title().trim())
-                .description(request.description().trim())
-                .justification(
-                    cleanOptional(request.justification())
-                )
-                .requestedBy(requester)
-                .status(ElementRequestStatus.PENDING)
-                .build();
+        ElementRequest elementRequest = ElementRequest.builder()
+            .type(request.type())
+            .title(request.title().trim())
+            .description(request.description().trim())
+            .justification(cleanOptional(request.justification()))
+            .requestPayload(payload)
+            .requestedBy(requester)
+            .status(ElementRequestStatus.PENDING)
+            .build();
 
-        return toResponse(
-            elementRequestRepository.save(elementRequest)
-        );
+        return toResponse(elementRequestRepository.save(elementRequest));
     }
 
     /**
-     * Obtiene todas las solicitudes ordenadas por fecha de creación.
-     *
-     * Este método se utiliza desde el controlador administrativo.
+     * Devuelve todas las solicitudes, incluidas las resueltas.
      */
     public List<ElementRequestResponseDto> getAll() {
-        return elementRequestRepository
-            .findAllByOrderByCreatedAtDesc()
+        return elementRequestRepository.findAllByOrderByCreatedAtDesc()
             .stream()
             .map(this::toResponse)
             .toList();
     }
 
-    /**
-     * Obtiene una solicitud concreta por su identificador.
-     *
-     * El repositorio precarga requestedBy y resolvedBy mediante
-     * EntityGraph para evitar consultas adicionales al construir el DTO.
-     */
     public ElementRequestResponseDto getById(Long requestId) {
-        return toResponse(
-            getRequest(requestId)
-        );
+        return toResponse(getRequest(requestId));
     }
 
     /**
-     * Obtiene únicamente las solicitudes todavía pendientes.
+     * Devuelve solicitudes pendientes.
      */
     public List<ElementRequestResponseDto> getPending() {
         return elementRequestRepository
-            .findByStatusOrderByCreatedAtDesc(
-                ElementRequestStatus.PENDING
-            )
+            .findByStatusOrderByCreatedAtDesc(ElementRequestStatus.PENDING)
             .stream()
             .map(this::toResponse)
             .toList();
     }
 
-    /**
-     * Obtiene el historial de solicitudes creadas
-     * por el usuario autenticado.
-     */
-    public List<ElementRequestResponseDto> getMyRequests(
-        String userEmail
-    ) {
+    public List<ElementRequestResponseDto> getMyRequests(String userEmail) {
         User user = getAuthenticatedUser(userEmail);
 
         return elementRequestRepository
-            .findByRequestedByIdOrderByCreatedAtDesc(
-                user.getId()
-            )
+            .findByRequestedByIdOrderByCreatedAtDesc(user.getId())
             .stream()
             .map(this::toResponse)
             .toList();
     }
 
-    /**
-     * Cuenta las solicitudes todavía pendientes.
-     *
-     * La operación se ejecuta directamente mediante COUNT en base de datos,
-     * sin cargar las entidades en memoria.
-     */
     public long countPending() {
-        return elementRequestRepository
-            .countByStatus(
-                ElementRequestStatus.PENDING
+        return elementRequestRepository.countByStatus(ElementRequestStatus.PENDING);
+    }
+
+    /**
+     * Aprueba una solicitud y crea el elemento definitivo del catálogo.
+     */
+    @Transactional
+    public ApproveElementRequestResponseDto approve(
+        Long requestId,
+        ResolveElementRequestDto resolution,
+        String adminEmail
+    ) {
+        User admin = getAdministrator(adminEmail);
+        ElementRequest request = getPendingRequest(requestId);
+        Long createdElementId = createRequestedElement(request, adminEmail);
+
+        request.approve(admin, getResolutionMessage(resolution));
+        notifyRequester(request, true);
+
+        return new ApproveElementRequestResponseDto(
+            request.getType(),
+            createdElementId
+        );
+    }
+
+    /**
+     * Rechaza una solicitud pendiente conservando el historial.
+     */
+    @Transactional
+    public void reject(
+        Long requestId,
+        ResolveElementRequestDto resolution,
+        String adminEmail
+    ) {
+        User admin = getAdministrator(adminEmail);
+        ElementRequest request = getPendingRequest(requestId);
+
+        request.reject(admin, getResolutionMessage(resolution));
+        notifyRequester(request, false);
+    }
+
+    private JsonNode buildPayload(CreateElementRequestDto request) {
+        validatePayload(request);
+
+        return switch (request.type()) {
+            case BLOCK -> objectMapper.valueToTree(request.block());
+            case QUESTION -> objectMapper.valueToTree(request.question());
+            case TEMPLATE -> objectMapper.valueToTree(request.template());
+        };
+    }
+
+    private void validatePayload(CreateElementRequestDto request) {
+        if (request.type() == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Debe indicarse el tipo de elemento solicitado"
             );
+        }
+
+        int informedPayloads = 0;
+
+        if (request.block() != null) informedPayloads++;
+        if (request.question() != null) informedPayloads++;
+        if (request.template() != null) informedPayloads++;
+
+        if (informedPayloads != 1) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Debe informarse exactamente la definición del elemento solicitado"
+            );
+        }
+
+        boolean matchesType = switch (request.type()) {
+            case BLOCK -> request.block() != null;
+            case QUESTION -> request.question() != null;
+            case TEMPLATE -> request.template() != null;
+        };
+
+        if (!matchesType) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La definición enviada no corresponde con el tipo de solicitud"
+            );
+        }
     }
 
-    /**
-     * Aprueba una solicitud pendiente.
-     *
-     * La transición y los campos de auditoría se establecen dentro
-     * de ElementRequest para garantizar consistencia.
-     */
-    @Transactional
-    public ElementRequestResponseDto approve(
-        Long requestId,
-        ResolveElementRequestDto request,
+    private Long createRequestedElement(
+        ElementRequest request,
         String adminEmail
     ) {
-        User admin = getAdministrator(adminEmail);
-        ElementRequest elementRequest = getRequest(requestId);
+        try {
+            return switch (request.getType()) {
+                case BLOCK -> {
+                    CreateBlockRequestDto dto = objectMapper.treeToValue(
+                        request.getRequestPayload(),
+                        CreateBlockRequestDto.class
+                    );
 
-        /*
-         * La entidad comprueba por sí misma que siga pendiente.
-         */
-        elementRequest.approve(
-            admin,
-            request.resolutionMessage()
-        );
+                    yield blockService.create(dto, adminEmail).id();
+                }
 
-        notifyRequester(
-            elementRequest,
-            true
-        );
+                case QUESTION -> {
+                    CreateQuestionRequestDto dto = objectMapper.treeToValue(
+                        request.getRequestPayload(),
+                        CreateQuestionRequestDto.class
+                    );
 
-        return toResponse(elementRequest);
+                    yield questionService.create(dto, adminEmail).id();
+                }
+
+                case TEMPLATE -> {
+                    CreateSurveyTemplateRequestDto dto = objectMapper.treeToValue(
+                        request.getRequestPayload(),
+                        CreateSurveyTemplateRequestDto.class
+                    );
+
+                    yield surveyTemplateService.create(dto, adminEmail).id();
+                }
+            };
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La definición almacenada para la solicitud no es válida",
+                ex
+            );
+        }
     }
 
-    /**
-     * Rechaza una solicitud pendiente.
-     *
-     * La entidad impide resolver dos veces la misma solicitud.
-     */
-    @Transactional
-    public ElementRequestResponseDto reject(
-        Long requestId,
-        ResolveElementRequestDto request,
-        String adminEmail
-    ) {
-        User admin = getAdministrator(adminEmail);
-        ElementRequest elementRequest = getRequest(requestId);
-
-        elementRequest.reject(
-            admin,
-            request.resolutionMessage()
-        );
-
-        notifyRequester(
-            elementRequest,
-            false
-        );
-
-        return toResponse(elementRequest);
-    }
-
-    /**
-     * Recupera una solicitud o devuelve un error 404.
-     */
     private ElementRequest getRequest(Long requestId) {
-        return elementRequestRepository
-            .findById(requestId)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "No existe la solicitud indicada"
-                )
-            );
+        return elementRequestRepository.findById(requestId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "No existe la solicitud indicada"
+            ));
     }
 
-    /**
-     * Recupera el usuario autenticado mediante el correo almacenado
-     * en java.security.Principal.
-     */
+    private ElementRequest getPendingRequest(Long requestId) {
+        ElementRequest request = getRequest(requestId);
+
+        if (request.getStatus() != ElementRequestStatus.PENDING) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La solicitud indicada ya ha sido resuelta"
+            );
+        }
+
+        return request;
+    }
+
     private User getAuthenticatedUser(String email) {
         if (!StringUtils.hasText(email)) {
             throw new ResponseStatusException(
@@ -220,30 +267,17 @@ public class ElementRequestService {
             );
         }
 
-        return userRepository
-            .findByEmailIgnoreCase(email.trim())
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Usuario autenticado no encontrado"
-                )
-            );
+        return userRepository.findByEmailIgnoreCase(email.trim())
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Usuario autenticado no encontrado"
+            ));
     }
 
-    /**
-     * Recupera y valida al usuario que intenta resolver una solicitud.
-     *
-     * Aunque los endpoints administrativos están protegidos mediante
-     * @PreAuthorize, esta comprobación mantiene segura la capa de negocio
-     * si el servicio se reutiliza desde otro componente.
-     */
     private User getAdministrator(String email) {
         User user = getAuthenticatedUser(email);
 
-        if (
-            user.getRole() != UserRole.ADMIN
-            && user.getRole() != UserRole.SUPERADMIN
-        ) {
+        if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.SUPERADMIN) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN,
                 "Solo un administrador puede resolver solicitudes de elementos"
@@ -253,9 +287,6 @@ public class ElementRequestService {
         return user;
     }
 
-    /**
-     * Notifica al solicitante el resultado de la revisión.
-     */
     private void notifyRequester(
         ElementRequest request,
         boolean approved
@@ -265,8 +296,12 @@ public class ElementRequestService {
             : "Solicitud de nuevo elemento rechazada";
 
         String message = approved
-            ? "Tu solicitud de nuevo elemento ha sido aprobada por un administrador."
-            : "Tu solicitud de nuevo elemento ha sido rechazada por un administrador.";
+            ? "Tu solicitud " + request.getTitle() + " ha sido aprobada y el elemento ya está disponible en el catálogo."
+            : "Tu solicitud " + request.getTitle() + " ha sido rechazada.";
+
+        if (StringUtils.hasText(request.getResolutionMessage())) {
+            message += " Comentario: " + request.getResolutionMessage();
+        }
 
         notificationService.notifyInternal(
             request.getRequestedBy().getId(),
@@ -278,44 +313,33 @@ public class ElementRequestService {
         );
     }
 
-    /**
-     * Convierte una entidad a su DTO de salida.
-     */
-    private ElementRequestResponseDto toResponse(
-        ElementRequest request
-    ) {
+    private String getResolutionMessage(ResolveElementRequestDto resolution) {
+        return resolution == null ? null : resolution.resolutionMessage();
+    }
+
+    private ElementRequestResponseDto toResponse(ElementRequest request) {
         User requestedBy = request.getRequestedBy();
         User resolvedBy = request.getResolvedBy();
 
         return new ElementRequestResponseDto(
             request.getId(),
             request.getType(),
+            request.getStatus(),
             request.getTitle(),
             request.getDescription(),
             request.getJustification(),
+            request.getRequestPayload(),
             requestedBy.getId(),
             requestedBy.getName(),
-            request.getStatus(),
-            resolvedBy != null
-                ? resolvedBy.getId()
-                : null,
-            resolvedBy != null
-                ? resolvedBy.getName()
-                : null,
+            resolvedBy != null ? resolvedBy.getId() : null,
+            resolvedBy != null ? resolvedBy.getName() : null,
             request.getResolutionMessage(),
             request.getCreatedAt(),
             request.getResolvedAt()
         );
     }
 
-    /**
-     * Limpia un texto opcional.
-     */
     private String cleanOptional(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-
-        return value.trim();
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }
