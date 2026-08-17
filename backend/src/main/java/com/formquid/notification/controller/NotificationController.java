@@ -40,27 +40,26 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    /**
-     * Obtiene de forma paginada las notificaciones del usuario autenticado.
+     /**
+     * Obtiene el historial paginado de notificaciones
+     * del usuario autenticado.
      *
-     * Por defecto se devuelven 20 elementos ordenados desde el más reciente.
+     * Por defecto se devuelve la primera página con un máximo
+     * de 20 notificaciones, ordenadas de más reciente a más antigua.
      */
     @GetMapping
-    @Operation(
-        summary = "Listar mis notificaciones",
-        description = "Devuelve el historial paginado de notificaciones del usuario autenticado."
-    )
     public Page<NotificationResponseDto> getMyNotifications(
-        Principal principal,
         @PageableDefault(
+            page = 0,
             size = 20,
             sort = "createdAt",
             direction = Sort.Direction.DESC
         )
-        Pageable pageable
+        Pageable pageable,
+        Principal principal
     ) {
         return notificationService.getMyNotifications(
-            getAuthenticatedEmail(principal),
+            principal.getName(),
             pageable
         );
     }

@@ -188,32 +188,14 @@ public class NotificationService {
     }
 
     /**
-     * Notifica al nuevo editor que su solicitud de registro
-     * ha sido aprobada.
+     * Obtiene de forma paginada las notificaciones
+     * del usuario identificado por su correo electrónico.
      *
-     * RegistrationRequestService únicamente aporta los identificadores
-     * del evento y no necesita conocer tipos, títulos ni mensajes internos.
+     * @param userEmail correo del usuario autenticado
+     * @param pageable configuración de paginación
+     * @return página de notificaciones del usuario
      */
-    @Transactional
-    public void notifyRegistrationApproved(
-        Long recipientId,
-        Long registrationRequestId
-    ) {
-        createNotification(
-            recipientId,
-            NotificationType.REGISTRATION_APPROVED,
-            NotificationChannel.INTERNAL,
-            "Solicitud de registro aprobada",
-            "Tu solicitud de registro en FormQuid ha sido aprobada.",
-            NotificationTargetType.REGISTRATION_REQUEST,
-            registrationRequestId
-        );
-    }
-
-    /**
-     * Obtiene el historial paginado de notificaciones
-     * del usuario autenticado.
-     */
+    @Transactional(readOnly = true)
     public Page<NotificationResponseDto> getMyNotifications(
         String userEmail,
         Pageable pageable
