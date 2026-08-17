@@ -4,7 +4,11 @@ import com.formquid.registration.entity.RegistrationRequest;
 import com.formquid.registration.entity.RegistrationRequestStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,5 +61,38 @@ public interface RegistrationRequestRepository
      */
     long countByStatus(
         RegistrationRequestStatus status
+    );
+
+    /**
+     * Elimina en una única operación SQL las solicitudes ya resueltas cuya
+     * fecha de resolución ha superado el periodo de conservación.
+     *
+     * Solo se eliminan solicitudes APPROVED o REJECTED. Las solicitudes
+     * PENDING quedan siempre excluidas, independientemente de su antigüedad.
+     *
+     * @param approvedStatus estado APPROVED.
+     * @param rejectedStatus estado REJECTED.
+     * @param expirationDate fecha límite de conservación.
+     * @return número de solicitudes eliminadas.
+     */
+    @Modifying(
+        clearAutomatically = true,
+        flushAutomatically = true
+    )
+    @Query("""
+        delete from RegistrationRequest request
+        where request.status in (:approvedStatus, :rejectedStatus)
+          and request.resolvedAt is not null
+          and request.resolvedAt <= :expirationDate
+    """)
+    int deleteResolvedBefore(
+        @Param("approvedStatus")
+        RegistrationRequestStatus approvedStatus,
+
+        @Param("rejectedStatus")
+        RegistrationRequestStatus rejectedStatus,
+
+        @Param("expirationDate")
+        LocalDateTime expirationDate
     );
 }

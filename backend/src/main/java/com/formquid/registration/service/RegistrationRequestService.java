@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 
@@ -121,6 +122,28 @@ public class RegistrationRequestService {
         return registrationRequestRepository
             .countByStatus(
                 RegistrationRequestStatus.PENDING
+            );
+    }
+
+    /**
+     * Elimina las solicitudes que llevan al menos siete días resueltas.
+     *
+     * La antigüedad se calcula desde resolvedAt, no desde requestedAt, ya que
+     * el periodo de conservación comienza cuando la solicitud se aprueba o
+     * rechaza. Las solicitudes PENDING nunca son eliminadas por esta tarea.
+     *
+     * @return número de solicitudes eliminadas.
+     */
+    @Transactional
+    public int deleteExpiredResolvedRequests() {
+        LocalDateTime expirationDate =
+            LocalDateTime.now().minusDays(7);
+
+        return registrationRequestRepository
+            .deleteResolvedBefore(
+                RegistrationRequestStatus.APPROVED,
+                RegistrationRequestStatus.REJECTED,
+                expirationDate
             );
     }
 

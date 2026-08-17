@@ -51,6 +51,10 @@ import java.time.LocalDateTime;
         @Index(
             name = "idx_registration_requests_status_requested_at",
             columnList = "status, requested_at"
+        ),
+        @Index(
+            name = "idx_registration_requests_status_resolved_at",
+            columnList = "status, resolved_at"
         )
     }
 )

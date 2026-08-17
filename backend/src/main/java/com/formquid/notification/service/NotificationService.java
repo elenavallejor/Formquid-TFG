@@ -93,6 +93,28 @@ public class NotificationService {
     }
 
     /**
+     * Notifica al nuevo editor que su solicitud de registro ha sido aprobada.
+     *
+     * La notificación se asocia a la solicitud de registro que originó el alta
+     * para conservar la trazabilidad del evento mientras dicha solicitud exista.
+     */
+    @Transactional
+    public void notifyRegistrationApproved(
+        Long recipientId,
+        Long registrationRequestId
+    ) {
+        createNotification(
+            recipientId,
+            NotificationType.REGISTRATION_APPROVED,
+            NotificationChannel.INTERNAL,
+            "Solicitud de registro aprobada",
+            "Tu solicitud de registro ha sido aprobada. Ya puedes acceder a FormQuid.",
+            NotificationTargetType.REGISTRATION_REQUEST,
+            registrationRequestId
+        );
+    }
+
+    /**
      * Notifica a un editor que ha recibido una invitación
      * para colaborar en una encuesta.
      *
@@ -188,14 +210,9 @@ public class NotificationService {
     }
 
     /**
-     * Obtiene de forma paginada las notificaciones
-     * del usuario identificado por su correo electrónico.
-     *
-     * @param userEmail correo del usuario autenticado
-     * @param pageable configuración de paginación
-     * @return página de notificaciones del usuario
+     * Obtiene el historial paginado de notificaciones
+     * del usuario autenticado.
      */
-    @Transactional(readOnly = true)
     public Page<NotificationResponseDto> getMyNotifications(
         String userEmail,
         Pageable pageable
