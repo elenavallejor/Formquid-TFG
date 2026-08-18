@@ -215,7 +215,7 @@ create table question_settings (
     false_evaluation_factor numeric check (false_evaluation_factor is null or false_evaluation_factor between 0 and 1),
     font_family varchar(80),
     font_size smallint,
-    text_color char(7) check (text_color is null or text_color ~ '^#[0-9A-Fa-f]{6}$'),
+	text_color varchar(7) check (text_color is null or text_color ~ '^#[0-9A-Fa-f]{6}$'),
     button_shape varchar(30) check (button_shape is null or button_shape in ('RECTANGULAR', 'ROUNDED', 'PILL')),
     scale_display_type varchar(30) check (scale_display_type is null or scale_display_type in ('NUMERIC', 'STARS', 'FACES')),
     check (min_value is null or max_value is null or min_value <= max_value),
