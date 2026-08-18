@@ -1,15 +1,12 @@
 package com.formquid.statistics.dto;
 
-import java.math.BigDecimal;
+import java.util.UUID;
 
-/**
- * Estadísticas de una fila de una pregunta de matriz.
- */
 public record MatrixRowStatisticsDto(
-    String rowKey,
+    UUID rowId,
     String label,
-    long count,
-    BigDecimal average,
-    BigDecimal min,
-    BigDecimal max
-) {}
+    long answers,
+    NumericStatisticsDto numericStatistics,
+    Double normalizedScore
+) {
+}

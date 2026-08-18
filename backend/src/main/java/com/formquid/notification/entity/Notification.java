@@ -1,9 +1,5 @@
 package com.formquid.notification.entity;
 
-import com.formquid.collaboration.entity.SurveyCollaboration;
-import com.formquid.elementrequest.entity.ElementRequest;
-import com.formquid.registration.entity.RegistrationRequest;
-import com.formquid.survey.entity.Survey;
 import com.formquid.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,14 +21,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-/**
- * Representa una notificación dirigida a un usuario del sistema.
- *
- * Puede ser una notificación interna o el registro de una notificación
- * enviada por correo electrónico.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,36 +30,26 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Check(constraints = """
-    type in (
-        'GENERAL',
-        'REGISTRATION_APPROVED',
-        'ACCOUNT_UPDATED',
-        'COLLABORATION_REQUEST',
-        'COLLABORATION_ACCEPTED',
-        'COLLABORATION_REJECTED',
-        'ELEMENT_REQUEST_RESOLVED',
-        'SURVEY_STATUS_CHANGED'
+    channel in ('INTERNAL', 'EMAIL')
+    and type in (
+        'GENERAL', 'REGISTRATION_REQUEST', 'REGISTRATION_APPROVED', 'REGISTRATION_REJECTED',
+        'ACCOUNT_UPDATED', 'COLLABORATION_INVITATION', 'COLLABORATION_REQUEST',
+        'COLLABORATION_ACCEPTED', 'COLLABORATION_REJECTED', 'PUBLICATION_REQUEST',
+        'PUBLICATION_ACCEPTED', 'PUBLICATION_REJECTED', 'ELEMENT_REQUEST',
+        'ELEMENT_REQUEST_RESOLVED', 'SURVEY_STATUS_CHANGED', 'SURVEY_OWNERSHIP_TRANSFERRED'
     )
-    and channel in ('INTERNAL', 'EMAIL')
-    and (
-        (case when survey_id is null then 0 else 1 end)
-        + (case when registration_request_id is null then 0 else 1 end)
-        + (case when collaboration_id is null then 0 else 1 end)
-        + (case when element_request_id is null then 0 else 1 end)
-        + (case when target_user_id is null then 0 else 1 end)
-    ) <= 1
+    and target_type in (
+        'SURVEY', 'REGISTRATION_REQUEST', 'COLLABORATION_REQUEST', 'PUBLICATION_REQUEST',
+        'ELEMENT_REQUEST', 'USER', 'QUESTION', 'BLOCK', 'TEMPLATE', 'NONE'
+    )
+    and recipient_user_id is not null
 """)
 @Table(
     name = "notifications",
     indexes = {
-        @Index(name = "idx_notifications_recipient", columnList = "recipient_user_id"),
         @Index(name = "idx_notifications_recipient_created", columnList = "recipient_user_id, created_at"),
         @Index(name = "idx_notifications_recipient_read", columnList = "recipient_user_id, read_at"),
-        @Index(name = "idx_notifications_survey", columnList = "survey_id"),
-        @Index(name = "idx_notifications_registration_request", columnList = "registration_request_id"),
-        @Index(name = "idx_notifications_collaboration", columnList = "collaboration_id"),
-        @Index(name = "idx_notifications_element_request", columnList = "element_request_id"),
-        @Index(name = "idx_notifications_target_user", columnList = "target_user_id")
+        @Index(name = "idx_notifications_target", columnList = "target_type, target_id")
     }
 )
 public class Notification {
@@ -78,88 +58,48 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Usuario destinatario de la notificación.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "recipient_user_id", nullable = false)
-    private User recipient;
+    private User recipientUser;
 
-    /**
-     * Tipo funcional de la notificación.
-     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private NotificationType type;
 
-    /**
-     * Canal de envío o registro de la notificación.
-     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private NotificationChannel channel;
 
-    /**
-     * Título breve visible para el usuario.
-     */
     @Column(nullable = false, length = 180)
     private String title;
 
-    /**
-     * Mensaje completo de la notificación.
-     */
     @Column(nullable = false, length = 1500)
     private String message;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "survey_id")
-    private Survey survey;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false, length = 50)
+    private NotificationTargetType targetType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "registration_request_id")
-    private RegistrationRequest registrationRequest;
+    @Column(name = "target_id", length = 80)
+    private String targetId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "collaboration_id")
-    private SurveyCollaboration collaboration;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "element_request_id")
-    private ElementRequest elementRequest;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_user_id")
-    private User targetUser;
-
-    /**
-     * Fecha de creación de la notificación.
-     */
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
-    /**
-     * Fecha de lectura.
-     *
-     * Si es null, la notificación sigue sin leerse.
-     */
     @Column(name = "read_at")
-    private LocalDateTime readAt;
+    private Instant readAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-
-        if (this.channel == null) {
-            this.channel = NotificationChannel.INTERNAL;
+        createdAt = Instant.now();
+        if (targetType == null) {
+            targetType = NotificationTargetType.NONE;
         }
     }
 
-    /**
-     * Marca la notificación como leída.
-     */
     public void markAsRead() {
-        if (this.readAt == null) {
-            this.readAt = LocalDateTime.now();
+        if (channel == NotificationChannel.INTERNAL) {
+            readAt = Instant.now();
         }
     }
 }

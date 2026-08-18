@@ -1,52 +1,69 @@
 package com.formquid.user.controller;
 
-import com.formquid.user.dto.UserSummaryResponseDto;
+import com.formquid.user.dto.TransferOwnershipRequestDto;
+import com.formquid.user.dto.UpdateUserRoleRequestDto;
+import com.formquid.user.dto.UserResponseDto;
+import com.formquid.user.entity.User;
 import com.formquid.user.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * Controlador REST para consultas generales sobre usuarios.
- */
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
-@Tag(
-    name = "Usuarios",
-    description = "Consultas generales sobre usuarios"
-)
 public class UserController {
 
     private final UserService userService;
 
-    /**
-     * Busca editores activos por nombre, correo o institución.
-     *
-     * Si no se proporciona query, devuelve todos los editores activos
-     * excepto el usuario autenticado.
-     */
-    @GetMapping("/editors")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Buscar editores",
-        description = "Busca editores activos por nombre, correo o institución."
-    )
-    public List<UserSummaryResponseDto> searchEditors(
-        @RequestParam(required = false) String query,
-        Principal principal
+    @GetMapping("/me")
+    public UserResponseDto me(@AuthenticationPrincipal User user) {
+        return userService.getProfile(user);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    public List<UserResponseDto> findAll() {
+        return userService.findAll();
+    }
+
+    @PatchMapping("/{userId}/role")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    public UserResponseDto updateRole(
+        @PathVariable UUID userId,
+        @Valid @RequestBody UpdateUserRoleRequestDto request
     ) {
-        return userService.searchEditors(
-            query,
-            principal.getName()
-        );
+        return userService.updateRole(userId, request.role());
+    }
+
+    @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    public void delete(@PathVariable UUID userId) {
+        userService.delete(userId);
+    }
+
+    @PostMapping("/surveys/{surveyId}/transfer-ownership")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void transferOwnership(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody TransferOwnershipRequestDto request
+    ) {
+        userService.transferSurveyOwnership(surveyId, user.getId(), request.newOwnerId());
     }
 }

@@ -1,18 +1,33 @@
 package com.formquid.user.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import com.formquid.common.service.EmailNormalizer;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Check;
+import org.hibernate.annotations.UuidGenerator;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
-import java.util.Locale;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
-/**
- * Representa a un usuario registrado en FormQuid.
- *
- * Almacena los datos necesarios para autenticación, autorización
- * y gestión básica del perfil.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,177 +35,84 @@ import java.util.Locale;
 @Builder
 @Entity
 @Check(constraints = """
-    role in ('SUPERADMIN', 'ADMIN', 'EDITOR')
-    and gender in ('FEMALE', 'MALE', 'OTHER')
+    role in ('EDITOR', 'ADMIN', 'SUPERADMIN')
+    and gender in ('MALE', 'FEMALE', 'OTHER')
     and email = lower(btrim(email))
 """)
 @Table(
     name = "users",
-    uniqueConstraints = {
-        @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
-        @UniqueConstraint(
-            name = "uk_users_password_setup_token_hash",
-            columnNames = "password_setup_token_hash"
-        )
-    },
+    uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
     indexes = {
         @Index(name = "idx_users_role", columnList = "role"),
-        @Index(name = "idx_users_enabled", columnList = "enabled"),
-        @Index(name = "idx_users_role_enabled", columnList = "role, enabled")
+        @Index(name = "idx_users_email", columnList = "email")
     }
 )
-public class User {
+public class User implements UserDetails {
 
-    /**
-     * Identificador único del usuario.
-     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator
+    private UUID id;
 
-    /**
-     * Nombre completo del usuario.
-     */
-    @Column(nullable = false, length = 150)
-    private String name;
-
-    /**
-     * Correo electrónico usado para iniciar sesión.
-     */
-    @Column(nullable = false, length = 255)
-    private String email;
-
-    /**
-     * Hash BCrypt de la contraseña del usuario.
-     */
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
-
-    /**
-     * Hash SHA-256 del token temporal de configuración de contraseña.
-     */
-    @Column(name = "password_setup_token_hash", length = 64)
-    private String passwordSetupTokenHash;
-
-    /**
-     * Fecha límite de uso del token temporal de configuración.
-     */
-    @Column(name = "password_setup_token_expires_at")
-    private LocalDateTime passwordSetupTokenExpiresAt;
-
-    /**
-     * Rol del usuario dentro del sistema.
-     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private UserRole role;
 
-    /**
-     * Género indicado por el usuario.
-     */
+    @Column(nullable = false, length = 320)
+    private String email;
+
+    @Column(nullable = false, length = 150)
+    private String name;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 20)
     private UserGender gender;
 
-    /**
-     * Institución o entidad asociada al usuario.
-     */
-    @Column(length = 150)
+    @Column(nullable = false, length = 200)
     private String institution;
 
-    /**
-     * Indica si la cuenta está activa.
-     */
-    @Builder.Default
-    @Column(nullable = false)
-    private boolean enabled = true;
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
 
-    /**
-     * Fecha de creación del usuario.
-     */
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
-    /**
-     * Fecha de última modificación del usuario.
-     */
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
-    /**
-     * Asigna las fechas iniciales antes de guardar el usuario.
-     */
     @PrePersist
     protected void onCreate() {
-        normalizeAndValidate();
-
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+        normalize();
     }
 
-    /**
-     * Actualiza la fecha de modificación antes de guardar cambios.
-     */
     @PreUpdate
     protected void onUpdate() {
-        normalizeAndValidate();
-
-        this.updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
+        normalize();
     }
 
-    private void normalizeAndValidate() {
-        if (email == null || email.isBlank()) {
-            throw new IllegalStateException("El correo electrónico del usuario es obligatorio");
+    public void normalize() {
+        email = EmailNormalizer.normalize(email);
+        if (role == null) {
+            role = UserRole.EDITOR;
         }
-
-        if (passwordHash == null || passwordHash.isBlank()) {
-            throw new IllegalStateException("El hash de contraseña del usuario es obligatorio");
-        }
-
-        email = email.trim().toLowerCase(Locale.ROOT);
     }
 
-    /**
-     * Asigna un token temporal de configuración de contraseña.
-     */
-    public void assignPasswordSetupToken(
-        String tokenHash,
-        LocalDateTime expiresAt
-    ) {
-        if (tokenHash == null || tokenHash.isBlank() || expiresAt == null) {
-            throw new IllegalArgumentException(
-                "El token temporal de contraseña y su expiración son obligatorios"
-            );
-        }
-
-        this.passwordSetupTokenHash = tokenHash;
-        this.passwordSetupTokenExpiresAt = expiresAt;
-        this.enabled = false;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    /**
-     * Configura una nueva contraseña y activa la cuenta.
-     */
-    public void completePasswordSetup(String newPasswordHash) {
-        if (newPasswordHash == null || newPasswordHash.isBlank()) {
-            throw new IllegalArgumentException(
-                "El hash de contraseña del usuario es obligatorio"
-            );
-        }
-
-        this.passwordHash = newPasswordHash;
-        this.passwordSetupTokenHash = null;
-        this.passwordSetupTokenExpiresAt = null;
-        this.enabled = true;
+    @Override
+    public String getPassword() {
+        return passwordHash;
     }
 
-    /**
-     * Indica si la cuenta todavía debe configurar su contraseña inicial.
-     */
-    public boolean hasPendingPasswordSetup() {
-        return passwordSetupTokenHash != null
-            && !passwordSetupTokenHash.isBlank()
-            && passwordSetupTokenExpiresAt != null;
+    @Override
+    public String getUsername() {
+        return email;
     }
 }

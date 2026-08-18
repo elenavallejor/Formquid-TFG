@@ -1,14 +1,12 @@
 package com.formquid.survey.dto;
 
-import java.util.List;
+import com.formquid.survey.entity.SurveyAccessMode;
 
-/**
- * DTO público resumido para mostrar encuestas disponibles en el inicio.
- */
 public record PublicSurveySummaryDto(
-    String publicCode,
+    String id,
     String title,
     String description,
-    String imageUrl,
-    List<String> tagNames
-) {}
+    String imageKey,
+    SurveyAccessMode accessMode
+) {
+}

@@ -1,23 +1,19 @@
 package com.formquid.user.dto;
 
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
+import com.formquid.user.entity.UserGender;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.UUID;
 
-/**
- * DTO de salida para mostrar usuarios en el panel de administración.
- *
- * No expone la contraseña cifrada ni ningún dato sensible de autenticación.
- */
 public record UserResponseDto(
-    Long id,
-    String name,
-    String email,
+    UUID id,
     UserRole role,
+    String email,
+    String name,
     UserGender gender,
     String institution,
-    boolean enabled,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt
-) {}
+    Instant createdAt,
+    Instant updatedAt
+) {
+}

@@ -4,17 +4,18 @@ import com.formquid.question.entity.QuestionType;
 
 import java.util.List;
 
-/**
- * Estadísticas calculadas para una pregunta de encuesta.
- */
 public record QuestionStatisticsResponseDto(
-    String questionKey,
-    String text,
-    QuestionType type,
-    boolean required,
-    long totalAnswers,
+    String questionId,
+    String statement,
+    QuestionType questionType,
+    long answers,
+    long omissions,
+    double responseRate,
     NumericStatisticsDto numericStatistics,
     List<ChoiceOptionStatisticsDto> choiceStatistics,
+    BooleanStatisticsDto booleanStatistics,
     List<MatrixRowStatisticsDto> matrixStatistics,
-    List<String> textAnswers
-) {}
+    Double normalizedScore,
+    Double evaluationScore
+) {
+}

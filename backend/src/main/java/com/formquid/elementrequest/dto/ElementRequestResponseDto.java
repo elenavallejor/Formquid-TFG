@@ -1,27 +1,17 @@
 package com.formquid.elementrequest.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.formquid.elementrequest.entity.ElementRequestStatus;
-import com.formquid.elementrequest.entity.ElementRequestType;
+import com.formquid.elementrequest.entity.RequestedElementType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 
-/**
- * DTO de salida de una solicitud de elemento.
- */
 public record ElementRequestResponseDto(
-    Long id,
-    ElementRequestType type,
-    ElementRequestStatus status,
-    String title,
-    String description,
-    String justification,
-    JsonNode requestPayload,
-    Long requestedByUserId,
-    String requestedByName,
-    Long resolvedByUserId,
-    String resolvedByName,
-    String resolutionMessage,
-    LocalDateTime createdAt,
-    LocalDateTime resolvedAt
-) {}
+    UUID id,
+    UUID requestedByUserId,
+    RequestedElementType elementType,
+    String message,
+    Map<String, Object> requestPayload,
+    Instant createdAt
+) {
+}

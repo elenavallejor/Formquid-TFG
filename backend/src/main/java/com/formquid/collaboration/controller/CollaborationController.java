@@ -2,189 +2,121 @@ package com.formquid.collaboration.controller;
 
 import com.formquid.collaboration.dto.CollaborationRequestResponseDto;
 import com.formquid.collaboration.dto.CreateCollaborationRequestDto;
+import com.formquid.collaboration.dto.CreatePublicationRequestDto;
 import com.formquid.collaboration.dto.SurveyCollaboratorResponseDto;
 import com.formquid.collaboration.service.CollaborationService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.formquid.survey.entity.Survey;
+import com.formquid.survey.service.SurveyService;
+import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * Controlador REST para gestionar solicitudes de colaboración
- * y colaboradores de encuestas.
- */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/surveys/{surveyId}")
 @RequiredArgsConstructor
-@Tag(
-    name = "Colaboraciones",
-    description = "Invitaciones y colaboradores de encuestas"
-)
 public class CollaborationController {
 
     private final CollaborationService collaborationService;
+    private final SurveyService surveyService;
 
-    /**
-     * Crea una solicitud de colaboración para una encuesta.
-     */
-    @PostMapping("/surveys/{surveyId}/collaboration-requests")
+    @GetMapping("/collaborators")
+    public List<SurveyCollaboratorResponseDto> findCollaborators(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user
+    ) {
+        ensureCollaborationAccess(surveyId, user);
+        return collaborationService.findCollaborators(surveyId);
+    }
+
+    @GetMapping("/collaboration-requests")
+    public List<CollaborationRequestResponseDto> findRequests(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user
+    ) {
+        ensureCollaborationAccess(surveyId, user);
+        return collaborationService.findRequests(surveyId);
+    }
+
+    @PostMapping("/collaboration-requests")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Invitar colaborador",
-        description = "Crea una solicitud pendiente para que un editor colabore en una encuesta."
-    )
     public CollaborationRequestResponseDto createRequest(
-        @PathVariable Long surveyId,
-        @Valid @RequestBody CreateCollaborationRequestDto request,
-        Principal principal
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateCollaborationRequestDto request
     ) {
-        return collaborationService.createRequest(
-            surveyId,
-            request,
-            getAuthenticatedEmail(principal)
-        );
+        return collaborationService.request(surveyId, user.getId(), request);
     }
 
-    /**
-     * Lista las solicitudes pendientes de una encuesta.
-     */
-    @GetMapping("/surveys/{surveyId}/collaboration-requests")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Listar solicitudes pendientes",
-        description = "Devuelve las solicitudes de colaboración pendientes de una encuesta."
-    )
-    public List<CollaborationRequestResponseDto> getPendingRequests(
-        @PathVariable Long surveyId,
-        Principal principal
-    ) {
-        return collaborationService.getPendingRequests(
-            surveyId,
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Lista las solicitudes recibidas por el usuario autenticado.
-     */
-    @GetMapping("/collaboration-requests/received")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Listar invitaciones recibidas",
-        description = "Devuelve las solicitudes de colaboración recibidas por el usuario autenticado."
-    )
-    public List<CollaborationRequestResponseDto> getReceivedRequests(
-        Principal principal
-    ) {
-        return collaborationService.getReceivedRequests(
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Acepta una solicitud de colaboración recibida.
-     */
     @PostMapping("/collaboration-requests/{requestId}/accept")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Aceptar invitación",
-        description = "Acepta una solicitud de colaboración recibida."
-    )
     public SurveyCollaboratorResponseDto accept(
-        @PathVariable Long requestId,
-        Principal principal
+        @PathVariable UUID requestId,
+        @AuthenticationPrincipal User user
     ) {
-        return collaborationService.accept(
-            requestId,
-            getAuthenticatedEmail(principal)
-        );
+        return collaborationService.accept(requestId, user.getId());
     }
 
-    /**
-     * Rechaza una solicitud de colaboración recibida.
-     */
-    @PostMapping("/collaboration-requests/{requestId}/reject")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Rechazar invitación",
-        description = "Rechaza una solicitud de colaboración recibida."
-    )
-    public CollaborationRequestResponseDto reject(
-        @PathVariable Long requestId,
-        Principal principal
-    ) {
-        return collaborationService.reject(
-            requestId,
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Lista los colaboradores actuales de una encuesta.
-     */
-    @GetMapping("/surveys/{surveyId}/collaborators")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Listar colaboradores",
-        description = "Devuelve los colaboradores actuales de una encuesta."
-    )
-    public List<SurveyCollaboratorResponseDto> getCollaborators(
-        @PathVariable Long surveyId,
-        Principal principal
-    ) {
-        return collaborationService.getCollaborators(
-            surveyId,
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Retira un colaborador de una encuesta.
-     */
-    @DeleteMapping("/surveys/{surveyId}/collaborators/{editorId}")
+    @DeleteMapping("/collaboration-requests/{requestId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Retirar colaborador",
-        description = "Marca la colaboración como retirada sin borrar su historial."
-    )
-    public void removeCollaborator(
-        @PathVariable Long surveyId,
-        @PathVariable Long editorId,
-        Principal principal
+    public void reject(
+        @PathVariable UUID requestId,
+        @AuthenticationPrincipal User user
     ) {
-        collaborationService.removeCollaborator(
-            surveyId,
-            editorId,
-            getAuthenticatedEmail(principal)
-        );
+        collaborationService.reject(requestId, user.getId());
     }
 
-    /**
-     * Obtiene el correo del usuario autenticado.
-     */
-    private String getAuthenticatedEmail(
-        Principal principal
+    @DeleteMapping("/collaborators/{collaboratorId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeCollaborator(
+        @PathVariable String surveyId,
+        @PathVariable UUID collaboratorId,
+        @AuthenticationPrincipal User user
     ) {
-        if (
-            principal == null
-            || principal.getName() == null
-            || principal.getName().isBlank()
-        ) {
-            throw new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "Usuario no autenticado"
-            );
-        }
+        collaborationService.removeCollaborator(surveyId, collaboratorId, user.getId());
+    }
 
-        return principal.getName();
+    @PostMapping("/publication-requests")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UUID requestPublication(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreatePublicationRequestDto request
+    ) {
+        return collaborationService.requestPublication(surveyId, user.getId(), request.message());
+    }
+
+    @PostMapping("/publication-requests/{requestId}/accept")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void acceptPublication(
+        @PathVariable UUID requestId,
+        @AuthenticationPrincipal User user
+    ) {
+        collaborationService.acceptPublication(requestId, user.getId());
+    }
+
+    @DeleteMapping("/publication-requests/{requestId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rejectPublication(
+        @PathVariable UUID requestId,
+        @AuthenticationPrincipal User user
+    ) {
+        collaborationService.rejectPublication(requestId, user.getId());
+    }
+
+    private void ensureCollaborationAccess(String surveyId, User user) {
+        Survey survey = surveyService.getSurvey(surveyId);
+        surveyService.ensureCanViewResults(survey, user);
     }
 }

@@ -1,18 +1,18 @@
 package com.formquid.block.dto;
+
+import com.formquid.content.dto.CreateQuestionItemRequestDto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.List;
 
 /**
- * Datos necesarios para crear un bloque.
+ * Datos necesarios para crear un bloque de catálogo.
  */
 public record CreateBlockRequestDto(
-
-    @NotBlank(message = "El nombre del bloque es obligatorio")
-    @Size(max = 120, message = "El nombre del bloque no puede superar los 120 caracteres")
-    String name,
-
-    @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
-    String description
-
+    @NotBlank String name,
+    String description,
+    @NotEmpty List<@Valid CreateQuestionItemRequestDto> questions
 ) {
 }

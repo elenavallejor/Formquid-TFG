@@ -1,13 +1,11 @@
 package com.formquid.statistics.dto;
 
-import java.math.BigDecimal;
+import java.util.UUID;
 
-/**
- * Estadística de una opción de respuesta.
- */
 public record ChoiceOptionStatisticsDto(
-    String storedValue,
+    UUID optionId,
     String label,
     long count,
-    BigDecimal percentage
-) {}
+    double percentage
+) {
+}

@@ -1,41 +1,37 @@
 package com.formquid.question.entity;
 
-import com.formquid.block.entity.Block;
+import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Check;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Representa una pregunta reutilizable.
- *
- * Las preguntas pueden usarse directamente en encuestas o formar parte
- * de plantillas. Las opciones y filas de matriz se almacenan como JSONB para
- * mantener un modelo flexible sin crear tablas auxiliares.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,182 +39,121 @@ import java.util.List;
 @Builder
 @Entity
 @Check(constraints = """
-    type in (
-        'SHORT_TEXT',
-        'LONG_TEXT',
-        'NUMBER',
-        'SINGLE_CHOICE',
-        'MULTIPLE_CHOICE',
-        'SCALE',
-        'MATRIX_SCALE',
-        'BIPOLAR_SCALE',
-        'BOOLEAN'
-    )
+    id ~ '^Q[1-9][0-9]*$'
+    and scope in ('CATALOG_FIXED', 'LOCAL', 'FIXED_SNAPSHOT')
+    and question_type in ('SHORT_TEXT', 'LONG_TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BIPOLAR_SCALE', 'BOOLEAN')
     and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
-    and status in ('ACTIVE', 'DISABLED', 'ARCHIVED')
     and (
-        scale_display_type is null
-        or scale_display_type in ('NUMERIC', 'STARS', 'FACES')
+        (scope = 'CATALOG_FIXED' and parent_item_id is null and catalog_name is not null and source_fixed_question_id is null)
+        or (scope = 'LOCAL' and parent_item_id is not null and catalog_name is null)
+        or (scope = 'FIXED_SNAPSHOT' and parent_item_id is not null and catalog_name is null)
     )
     and (
-        min_value is null
-        or max_value is null
-        or min_value < max_value
+        (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)
+        or (evaluation_direction in ('POSITIVE', 'NEGATIVE') and evaluation_weight > 0)
     )
 """)
 @Table(
     name = "questions",
+    uniqueConstraints = @UniqueConstraint(name = "uk_questions_parent_item", columnNames = "parent_item_id"),
     indexes = {
-        @Index(name = "idx_questions_status", columnList = "status"),
-        @Index(name = "idx_questions_block_id", columnList = "block_id"),
-        @Index(name = "idx_questions_block_status", columnList = "block_id, status"),
-        @Index(name = "idx_questions_created_by", columnList = "created_by_user_id"),
-        @Index(name = "idx_questions_type", columnList = "type")
+        @Index(name = "idx_questions_scope", columnList = "scope"),
+        @Index(name = "idx_questions_source_fixed", columnList = "source_fixed_question_id"),
+        @Index(name = "idx_questions_created_by", columnList = "created_by_user_id")
     }
 )
 public class Question {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 20)
+    private String id;
 
-    /**
-     * Enunciado principal de la pregunta.
-     */
-    @Column(nullable = false, length = 1000)
-    private String text;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_item_id", unique = true)
+    private ContentItem parentItem;
 
-    /**
-     * Descripción opcional o aclaración de la pregunta.
-     */
-    @Column(length = 1000)
-    private String description;
-
-    /**
-     * Tipo funcional de respuesta esperada.
-     */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40)
-    private QuestionType type;
+    @Column(nullable = false, length = 30)
+    private QuestionScope scope;
 
-    /**
-     * Indica cómo debe interpretarse la puntuación de la pregunta.
-     */
+    @Column(name = "catalog_name", length = 150)
+    private String catalogName;
+
+    @Column(nullable = false, columnDefinition = "text")
+    private String statement;
+
+    @Column(columnDefinition = "text")
+    private String annotation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "question_type", nullable = false, length = 40)
+    private QuestionType questionType;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "evaluation_direction", nullable = false, length = 30)
     private EvaluationDirection evaluationDirection;
 
-    /**
-     * Estado de disponibilidad de la pregunta.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private QuestionStatus status;
+    @Column(name = "evaluation_weight")
+    private BigDecimal evaluationWeight;
 
-    /**
-     * Bloque reutilizable al que pertenece la pregunta.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "block_id")
-    private Block block;
+    @JoinColumn(name = "source_fixed_question_id")
+    private Question sourceFixedQuestion;
 
-    /**
-     * Usuario administrador que creó la pregunta.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
 
-    /**
-     * Indica si la pregunta será obligatoria por defecto al copiarse.
-     */
+    @OneToOne(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private QuestionSettings settings;
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    @BatchSize(size = 30)
     @Builder.Default
-    @Column(name = "required_by_default", nullable = false)
-    private boolean requiredByDefault = false;
+    private List<QuestionOption> options = new ArrayList<>();
 
-    /**
-     * Valor mínimo permitido para respuestas numéricas o de escala.
-     */
-    @Column(name = "min_value")
-    private Integer minValue;
-
-    /**
-     * Valor máximo permitido para respuestas numéricas o de escala.
-     */
-    @Column(name = "max_value")
-    private Integer maxValue;
-
-    /**
-     * Representación visual de una escala.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "scale_display_type", length = 30)
-    private ScaleDisplayType scaleDisplayType;
-
-    /**
-     * Etiqueta izquierda para escalas bipolares.
-     */
-    @Column(name = "left_label", length = 255)
-    private String leftLabel;
-
-    /**
-     * Etiqueta derecha para escalas bipolares.
-     */
-    @Column(name = "right_label", length = 255)
-    private String rightLabel;
-
-    /**
-     * Opciones configurables de preguntas de selección.
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    @BatchSize(size = 30)
     @Builder.Default
-    private List<OptionConfig> options = new ArrayList<>();
-
-    /**
-     * Filas configurables de preguntas de matriz.
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "matrix_rows", nullable = false, columnDefinition = "jsonb")
-    @Builder.Default
-    private List<MatrixRowConfig> matrixRows = new ArrayList<>();
+    private List<MatrixRow> matrixRows = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-
-        if (this.status == null) {
-            this.status = QuestionStatus.ACTIVE;
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+        if (evaluationDirection == null) {
+            evaluationDirection = EvaluationDirection.NEUTRAL;
         }
-
-        if (this.evaluationDirection == null) {
-            this.evaluationDirection = EvaluationDirection.NEUTRAL;
-        }
-
-        normalizeJsonFields();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        normalizeJsonFields();
-        this.updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
     }
 
-    private void normalizeJsonFields() {
-        if (this.options == null) {
-            this.options = new ArrayList<>();
+    public void setSettings(QuestionSettings settings) {
+        this.settings = settings;
+        if (settings != null) {
+            settings.setQuestion(this);
         }
+    }
 
-        if (this.matrixRows == null) {
-            this.matrixRows = new ArrayList<>();
-        }
+    public void addOption(QuestionOption option) {
+        options.add(option);
+        option.setQuestion(this);
+    }
+
+    public void addMatrixRow(MatrixRow row) {
+        matrixRows.add(row);
+        row.setQuestion(this);
     }
 }

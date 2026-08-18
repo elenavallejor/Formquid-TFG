@@ -3,8 +3,6 @@ package com.formquid.registration.controller;
 import com.formquid.registration.dto.CreateRegistrationRequestDto;
 import com.formquid.registration.dto.RegistrationRequestResponseDto;
 import com.formquid.registration.service.RegistrationRequestService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,38 +12,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Controlador público para solicitar el alta como editor.
- *
- * Este controlador no contiene operaciones administrativas. Su único
- * propósito es permitir que una persona sin cuenta envíe una solicitud
- * de registro.
- */
 @RestController
 @RequestMapping("/api/v1/registration-requests")
 @RequiredArgsConstructor
-@Tag(
-    name = "Solicitudes de registro",
-    description = "Solicitud pública de alta como editor"
-)
 public class RegistrationRequestController {
 
     private final RegistrationRequestService registrationRequestService;
 
-    /**
-     * Envía una nueva solicitud de registro.
-     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(
-        summary = "Solicitar registro como editor",
-        description = "Permite solicitar una cuenta de FormQuid con rol EDITOR."
-    )
-    public RegistrationRequestResponseDto create(
-        @Valid @RequestBody CreateRegistrationRequestDto request
-    ) {
-        return registrationRequestService.create(
-            request
-        );
+    public RegistrationRequestResponseDto create(@Valid @RequestBody CreateRegistrationRequestDto request) {
+        return registrationRequestService.create(request);
     }
 }

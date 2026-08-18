@@ -1,23 +1,16 @@
 package com.formquid.collaboration.dto;
 
-import com.formquid.collaboration.entity.SurveyCollaborationStatus;
+import com.formquid.collaboration.entity.CollaborationRequestType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.UUID;
 
-/**
- * DTO de salida para invitaciones de colaboración.
- */
 public record CollaborationRequestResponseDto(
-    Long id,
-    Long surveyId,
-    String surveyTitle,
-    Long requestedByUserId,
-    String requestedByName,
-    Long invitedEditorUserId,
-    String invitedEditorName,
-    String invitedEditorEmail,
+    UUID id,
+    String surveyId,
+    UUID userId,
+    CollaborationRequestType requestType,
     String message,
-    SurveyCollaborationStatus status,
-    LocalDateTime createdAt,
-    LocalDateTime resolvedAt
-) {}
+    Instant createdAt
+) {
+}

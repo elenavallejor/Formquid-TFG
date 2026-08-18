@@ -1,8 +1,5 @@
 package com.formquid.question.entity;
 
-/**
- * Tipos de pregunta soportados por FormQuid.
- */
 public enum QuestionType {
     SHORT_TEXT,
     LONG_TEXT,

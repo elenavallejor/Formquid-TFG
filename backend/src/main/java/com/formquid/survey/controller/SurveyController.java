@@ -1,189 +1,88 @@
 package com.formquid.survey.controller;
 
-import com.formquid.survey.dto.ChangeSurveyStatusRequestDto;
-import com.formquid.survey.dto.CreateSurveyFromTemplateRequestDto;
+import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
+import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
-import com.formquid.survey.dto.SurveySummaryResponseDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.service.SurveyService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
 import java.util.List;
 
-/**
- * Controlador REST para la gestión autenticada de encuestas.
- *
- * El acceso de participantes anónimos se encuentra separado
- * en PublicSurveyController.
- */
 @RestController
 @RequestMapping("/api/v1/surveys")
 @RequiredArgsConstructor
-@Tag(
-    name = "Encuestas",
-    description = "Creación, edición y gestión autenticada de encuestas"
-)
 public class SurveyController {
 
     private final SurveyService surveyService;
 
-    /**
-     * Crea una encuesta desde cero.
-     */
+    @GetMapping
+    public List<SurveyResponseDto> findMine(@AuthenticationPrincipal User user) {
+        return surveyService.findEditableByUser(user);
+    }
+
+    @GetMapping("/registered")
+    public List<PublicSurveySummaryDto> findVisibleForRegistered(
+        @AuthenticationPrincipal User user,
+        @RequestParam(required = false) List<String> tags
+    ) {
+        return surveyService.findListedOpenForRegistered(user, tags);
+    }
+
     @PostMapping
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Crear encuesta",
-        description = "Crea una nueva encuesta en estado borrador."
-    )
+    @ResponseStatus(HttpStatus.CREATED)
     public SurveyResponseDto create(
-        @Valid @RequestBody CreateSurveyRequestDto request,
-        Principal principal
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateSurveyRequestDto request
     ) {
-        return surveyService.create(
-            request,
-            getAuthenticatedEmail(principal)
-        );
+        return surveyService.create(request, user);
     }
 
-    /**
-     * Crea una encuesta copiando una plantilla activa.
-     */
-    @PostMapping("/from-template")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Crear encuesta desde plantilla",
-        description = "Crea una encuesta copiando la estructura de una plantilla activa."
-    )
-    public SurveyResponseDto createFromTemplate(
-        @Valid @RequestBody CreateSurveyFromTemplateRequestDto request,
-        Principal principal
-    ) {
-        return surveyService.createFromTemplate(
-            request,
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Lista las encuestas creadas por el usuario autenticado.
-     */
-    @GetMapping("/mine")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Listar mis encuestas",
-        description = "Devuelve las encuestas creadas por el usuario autenticado."
-    )
-    public List<SurveyResponseDto> findMine(
-        Principal principal
-    ) {
-        return surveyService.findMine(
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Lista las encuestas en las que el usuario participa como colaborador.
-     */
-    @GetMapping("/collaborations")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Listar mis colaboraciones",
-        description = "Devuelve las encuestas en las que el usuario autenticado es colaborador."
-    )
-    public List<SurveySummaryResponseDto> findCollaborations(
-        Principal principal
-    ) {
-        return surveyService.findCollaboratingSurveys(
-            getAuthenticatedEmail(principal)
-        );
-    }
-
-    /**
-     * Obtiene una encuesta si el usuario dispone de permisos.
-     */
     @GetMapping("/{surveyId}")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Obtener encuesta",
-        description = "Devuelve una encuesta completa para su gestión."
-    )
-    public SurveyResponseDto findById(
-        @PathVariable Long surveyId,
-        Principal principal
+    public SurveyResponseDto get(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user
     ) {
-        return surveyService.findById(
-            surveyId,
-            getAuthenticatedEmail(principal)
-        );
+        return surveyService.getSurveyForUser(surveyId, user);
     }
 
-    /**
-     * Actualiza una encuesta en borrador.
-     */
     @PutMapping("/{surveyId}")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Actualizar encuesta",
-        description = "Actualiza los datos, etiquetas y estructura de una encuesta en borrador."
-    )
     public SurveyResponseDto update(
-        @PathVariable Long surveyId,
-        @Valid @RequestBody UpdateSurveyRequestDto request,
-        Principal principal
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody UpdateSurveyRequestDto request
     ) {
-        return surveyService.update(
-            surveyId,
-            request,
-            getAuthenticatedEmail(principal)
-        );
+        return surveyService.update(surveyId, request, user);
     }
 
-    /**
-     * Cambia el estado o visibilidad de una encuesta.
-     */
-    @PatchMapping("/{surveyId}/status")
-    @PreAuthorize("hasAnyRole('EDITOR', 'ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Cambiar estado de encuesta",
-        description = "Cambia el estado entre DRAFT, PUBLIC, PRIVATE y HIDDEN."
-    )
-    public SurveyResponseDto changeStatus(
-        @PathVariable Long surveyId,
-        @Valid @RequestBody ChangeSurveyStatusRequestDto request,
-        Principal principal
+    @PatchMapping("/{surveyId}/lifecycle")
+    public SurveyResponseDto changeLifecycle(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody ChangeSurveyLifecycleRequestDto request
     ) {
-        return surveyService.changeStatus(
-            surveyId,
-            request,
-            getAuthenticatedEmail(principal)
-        );
+        return surveyService.changeLifecycle(surveyId, request.lifecycleStatus(), user);
     }
 
-    /**
-     * Obtiene el correo del usuario autenticado almacenado en Principal.
-     */
-    private String getAuthenticatedEmail(Principal principal) {
-        if (
-            principal == null
-            || principal.getName() == null
-            || principal.getName().isBlank()
-        ) {
-            throw new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "Usuario no autenticado"
-            );
-        }
-
-        return principal.getName();
+    @DeleteMapping("/{surveyId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String surveyId, @AuthenticationPrincipal User user) {
+        surveyService.delete(surveyId, user);
     }
 }

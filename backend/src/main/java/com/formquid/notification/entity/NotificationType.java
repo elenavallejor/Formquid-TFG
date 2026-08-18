@@ -1,18 +1,20 @@
 package com.formquid.notification.entity;
 
-/**
- * Tipos de notificación soportados por la plataforma.
- *
- * Se utilizan para clasificar los avisos internos y futuros avisos por correo.
- */
 public enum NotificationType {
-
     GENERAL,
+    REGISTRATION_REQUEST,
     REGISTRATION_APPROVED,
+    REGISTRATION_REJECTED,
     ACCOUNT_UPDATED,
+    COLLABORATION_INVITATION,
     COLLABORATION_REQUEST,
     COLLABORATION_ACCEPTED,
     COLLABORATION_REJECTED,
-    ELEMENT_REQUEST_RESOLVED, // El detalle de si fue aprobada o rechazada se indica en el título y mensaje de la notificación.
-    SURVEY_STATUS_CHANGED
+    PUBLICATION_REQUEST,
+    PUBLICATION_ACCEPTED,
+    PUBLICATION_REJECTED,
+    ELEMENT_REQUEST,
+    ELEMENT_REQUEST_RESOLVED,
+    SURVEY_STATUS_CHANGED,
+    SURVEY_OWNERSHIP_TRANSFERRED
 }

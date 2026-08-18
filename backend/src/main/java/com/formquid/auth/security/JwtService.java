@@ -14,7 +14,10 @@ import java.time.Instant;
 import java.util.Date;
 
 /**
- * Servicio encargado de generar, leer y validar tokens JWT.
+ * Servicio de gestión de tokens JWT.
+ *
+ * Genera tokens para usuarios autenticados y valida los tokens recibidos
+ * en las peticiones protegidas. 
  */
 @Service
 public class JwtService {
@@ -26,21 +29,14 @@ public class JwtService {
     private long jwtExpirationMs;
 
     /**
-     * Genera un JWT para el usuario autenticado.
-     *
-     * El correo se usa como subject, mientras que userId y role se incluyen
-     * como claims informativos.
+     * Recibe un usuario autenticado y devuelve su JWT.
      */
-    public String generateToken(
-        User user
-    ) {
+    public String generateToken(User user) {
         Instant now = Instant.now();
-        Instant expiration =
-            now.plusMillis(jwtExpirationMs);
-
+        Instant expiration = now.plusMillis(jwtExpirationMs);
         return Jwts.builder()
             .subject(user.getEmail())
-            .claim("userId", user.getId())
+            .claim("userId", user.getId().toString())
             .claim("role", user.getRole().name())
             .issuedAt(Date.from(now))
             .expiration(Date.from(expiration))
@@ -49,46 +45,28 @@ public class JwtService {
     }
 
     /**
-     * Extrae el correo almacenado como subject del token.
+     * Recibe un token JWT. Devuelve el correo almacenado como subject.
      */
-    public String extractUsername(
-        String token
-    ) {
-        return extractAllClaims(token)
-            .getSubject();
+    public String extractUsername(String token) {
+        return extractAllClaims(token).getSubject();
     }
 
     /**
-     * Comprueba que el JWT corresponda al usuario cargado
-     * y que todavía no haya expirado.
+     * Recibe un token y un usuario. Devuelve true si el token pertenece al usuario y no ha expirado.
      */
-    public boolean isTokenValid(
-        String token,
-        UserDetails userDetails
-    ) {
-        Claims claims =
-            extractAllClaims(token);
-
-        String username =
-            claims.getSubject();
-
-        Date expiration =
-            claims.getExpiration();
-
-        return username != null
-            && username.equals(
-                userDetails.getUsername()
-            )
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        Claims claims = extractAllClaims(token);
+        Date expiration = claims.getExpiration();
+        return claims.getSubject() != null
+            && claims.getSubject().equals(userDetails.getUsername())
             && expiration != null
             && expiration.after(new Date());
     }
 
     /**
-     * Valida la firma del JWT y devuelve sus claims.
+     * Recibe un token JWT. Devuelve sus claims tras verificar la firma.
      */
-    private Claims extractAllClaims(
-        String token
-    ) {
+    private Claims extractAllClaims(String token) {
         return Jwts.parser()
             .verifyWith(getSigningKey())
             .build()
@@ -96,20 +74,8 @@ public class JwtService {
             .getPayload();
     }
 
-    /**
-     * Obtiene la clave HMAC empleada para firmar y verificar los tokens.
-     *
-     * La propiedad security.jwt.secret debe tener longitud suficiente
-     * para el algoritmo HMAC utilizado.
-     */
+    // signing key para validar tokens.
     private SecretKey getSigningKey() {
-        byte[] keyBytes =
-            jwtSecret.getBytes(
-                StandardCharsets.UTF_8
-            );
-
-        return Keys.hmacShaKeyFor(
-            keyBytes
-        );
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -1,226 +1,30 @@
 package com.formquid.participation.repository;
 
 import com.formquid.participation.entity.Answer;
-import com.formquid.statistics.projection.BooleanStatisticsProjection;
-import com.formquid.statistics.projection.ChoiceCountProjection;
-import com.formquid.statistics.projection.MatrixRowStatisticsProjection;
-import com.formquid.statistics.projection.NumericStatisticsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * Repositorio de acceso a datos para respuestas.
- */
-public interface AnswerRepository extends JpaRepository<Answer, Long> {
+public interface AnswerRepository extends JpaRepository<Answer, UUID> {
 
-    List<Answer> findByParticipationId(Long participationId);
+    List<Answer> findByParticipationId(UUID participationId);
 
-    /**
-     * Calcula estadísticas numéricas de una pregunta usando la base de datos.
-     */
-    @Query(
-        value = """
-            select
-                count(a.id) as answer_count,
-                avg(a.numeric_value) as average,
-                min(a.numeric_value) as minimum,
-                max(a.numeric_value) as maximum
-            from answers a
-            join participations p on p.id = a.participation_id
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-              and a.numeric_value is not null
-        """,
-        nativeQuery = true
-    )
-    NumericStatisticsProjection calculateNumericStatistics(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
+    List<Answer> findByQuestionId(String questionId);
 
-    /**
-     * Calcula el número de respuestas textuales no vacías de una pregunta.
-     */
-    @Query(
-        value = """
-            select count(a.id)
-            from answers a
-            join participations p on p.id = a.participation_id
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-              and a.text_value is not null
-              and btrim(a.text_value) <> ''
-        """,
-        nativeQuery = true
-    )
-    long countTextAnswers(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
+    boolean existsByQuestionId(String questionId);
 
-    /**
-     * Obtiene una muestra limitada de respuestas textuales.
-     *
-     * No se devuelven todas para evitar respuestas HTTP demasiado grandes.
-     */
-    @Query(
-        value = """
-            select a.text_value
-            from answers a
-            join participations p on p.id = a.participation_id
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-              and a.text_value is not null
-              and btrim(a.text_value) <> ''
-            order by a.id asc
-            limit :limit
-        """,
-        nativeQuery = true
-    )
-    List<String> findTextAnswerSample(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey,
-        @Param("limit") int limit
-    );
+    long countByQuestionId(String questionId);
 
-    /**
-     * Calcula los recuentos de respuestas booleanas en base de datos.
-     */
-    @Query(
-        value = """
-            select
-                count(*) filter (where a.boolean_value = true) as yes_count,
-                count(*) filter (where a.boolean_value = false) as no_count
-            from answers a
-            join participations p on p.id = a.participation_id
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-              and a.boolean_value is not null
-        """,
-        nativeQuery = true
-    )
-    BooleanStatisticsProjection calculateBooleanStatistics(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
+    @Query("select avg(answer.numericValue) from Answer answer where answer.question.id = :questionId and answer.numericValue is not null")
+    Double averageNumeric(@Param("questionId") String questionId);
 
-    /**
-     * Cuenta cuántas respuestas tienen al menos una opción seleccionada.
-     *
-     * Se usa como denominador para calcular porcentajes en preguntas
-     * de selección simple y múltiple.
-     */
-    @Query(
-        value = """
-            select count(a.id)
-            from answers a
-            join participations p on p.id = a.participation_id
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-              and jsonb_array_length(coalesce(a.selected_values, '[]'::jsonb)) > 0
-        """,
-        nativeQuery = true
-    )
-    long countSelectionAnswers(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
+    @Query("select min(answer.numericValue) from Answer answer where answer.question.id = :questionId and answer.numericValue is not null")
+    BigDecimal minNumeric(@Param("questionId") String questionId);
 
-    /**
-     * Cuenta cuántas veces se selecciona cada opción.
-     *
-     * selected_values es una columna JSONB con un array de storedValue.
-     */
-    @Query(
-        value = """
-            select
-                selected_value.value as stored_value,
-                count(*) as answer_count
-            from answers a
-            join participations p on p.id = a.participation_id
-            cross join lateral jsonb_array_elements_text(
-                coalesce(a.selected_values, '[]'::jsonb)
-            ) as selected_value(value)
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-            group by selected_value.value
-        """,
-        nativeQuery = true
-    )
-    List<ChoiceCountProjection> countSelectedValues(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
-
-    /**
-     * Cuenta cuántas respuestas tienen valores de matriz.
-     */
-    @Query(
-        value = """
-            select count(a.id)
-            from answers a
-            join participations p on p.id = a.participation_id
-            where a.question_key = :questionKey
-              and p.survey_id = :surveyId
-              and jsonb_array_length(coalesce(a.matrix_values, '[]'::jsonb)) > 0
-        """,
-        nativeQuery = true
-    )
-    long countMatrixAnswers(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
-
-    /**
-     * Calcula estadísticas por fila de matriz usando JSONB.
-     *
-     * matrix_values es un array JSONB. Cada elemento contiene:
-     * - rowKey
-     * - value
-     * - scoreValue
-     *
-     * Se prioriza scoreValue si existe. Si no existe, se intenta convertir
-     * value a número.
-     */
-    @Query(
-        value = """
-            select
-                row_key as row_key,
-                count(numeric_value) as answer_count,
-                avg(numeric_value) as average,
-                min(numeric_value) as minimum,
-                max(numeric_value) as maximum
-            from (
-                select
-                    matrix_value.item ->> 'rowKey' as row_key,
-                    case
-                        when matrix_value.item ->> 'scoreValue' is not null
-                             and matrix_value.item ->> 'scoreValue' ~ '^-?[0-9]+(\\.[0-9]+)?$'
-                            then (matrix_value.item ->> 'scoreValue')::numeric
-                        when matrix_value.item ->> 'value' is not null
-                             and matrix_value.item ->> 'value' ~ '^-?[0-9]+(\\.[0-9]+)?$'
-                            then (matrix_value.item ->> 'value')::numeric
-                        else null
-                    end as numeric_value
-                from answers a
-                join participations p on p.id = a.participation_id
-                cross join lateral jsonb_array_elements(
-                    coalesce(a.matrix_values, '[]'::jsonb)
-                ) as matrix_value(item)
-                where a.question_key = :questionKey
-                  and p.survey_id = :surveyId
-            ) matrix_rows
-            where row_key is not null
-              and numeric_value is not null
-            group by row_key
-        """,
-        nativeQuery = true
-    )
-    List<MatrixRowStatisticsProjection> calculateMatrixStatistics(
-        @Param("surveyId") Long surveyId,
-        @Param("questionKey") String questionKey
-    );
+    @Query("select max(answer.numericValue) from Answer answer where answer.question.id = :questionId and answer.numericValue is not null")
+    BigDecimal maxNumeric(@Param("questionId") String questionId);
 }

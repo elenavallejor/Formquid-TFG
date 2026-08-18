@@ -1,25 +1,27 @@
 package com.formquid.survey.dto;
 
-import com.formquid.survey.entity.SurveyStatus;
+import com.formquid.content.dto.ContentItemResponseDto;
+import com.formquid.survey.entity.SurveyAccessMode;
+import com.formquid.survey.entity.SurveyLifecycle;
+import com.formquid.survey.entity.SurveyVisibility;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * DTO de salida para una encuesta completa en la zona privada.
- */
 public record SurveyResponseDto(
-    Long id,
-    String publicCode,
+    String id,
+    UUID ownerId,
+    UUID sourceTemplateId,
     String title,
     String description,
-    String imageUrl,
-    SurveyStatus status,
-    Long ownerUserId,
-    String ownerName,
-    List<String> tagNames,
-    List<SurveyBlockResponseDto> blocks,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    LocalDateTime publishedAt
-) {}
+    String imageKey,
+    SurveyLifecycle lifecycleStatus,
+    SurveyAccessMode accessMode,
+    SurveyVisibility visibility,
+    List<String> tags,
+    List<ContentItemResponseDto> contentItems,
+    Instant createdAt,
+    Instant updatedAt
+) {
+}

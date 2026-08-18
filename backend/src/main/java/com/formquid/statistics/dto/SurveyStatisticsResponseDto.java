@@ -1,13 +1,14 @@
 package com.formquid.statistics.dto;
 
+import java.time.Instant;
 import java.util.List;
 
-/**
- * Estadísticas generales de una encuesta.
- */
 public record SurveyStatisticsResponseDto(
-    Long surveyId,
-    String surveyTitle,
-    long totalParticipations,
+    String surveyId,
+    long participations,
+    Instant firstParticipation,
+    Instant lastParticipation,
+    Double globalTechnologyScore,
     List<QuestionStatisticsResponseDto> questions
-) {}
+) {
+}

@@ -6,7 +6,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -20,71 +19,46 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.UuidGenerator;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * Representa una participación anónima en una encuesta.
- *
- * Cada participación agrupa todas las respuestas enviadas por una persona.
- * No se almacena información identificativa del encuestado.
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(
-    name = "participations",
-    indexes = {
-        @Index(name = "idx_participations_survey_id", columnList = "survey_id"),
-        @Index(name = "idx_participations_survey_submitted_at", columnList = "survey_id, submitted_at")
-    }
-)
+@Table(name = "participations", indexes = @Index(name = "idx_participations_survey_submitted", columnList = "survey_id, submitted_at"))
 public class Participation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator
+    private UUID id;
 
-    /**
-     * Encuesta respondida.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "survey_id", nullable = false)
     private Survey survey;
 
-    /**
-     * Respuestas incluidas en la participación.
-     */
-    @OneToMany(
-        mappedBy = "participation",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true
-    )
+    @Column(name = "submitted_at", nullable = false)
+    private Instant submittedAt;
+
+    @OneToMany(mappedBy = "participation", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
     @Builder.Default
     private List<Answer> answers = new ArrayList<>();
 
-    /**
-     * Fecha de envío de la participación.
-     */
-    @Column(name = "submitted_at", nullable = false)
-    private LocalDateTime submittedAt;
+    @PrePersist
+    protected void onCreate() {
+        submittedAt = Instant.now();
+    }
 
-    /**
-     * Añade una respuesta manteniendo la relación bidireccional.
-     */
     public void addAnswer(Answer answer) {
         answers.add(answer);
         answer.setParticipation(this);
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        this.submittedAt = LocalDateTime.now();
     }
 }

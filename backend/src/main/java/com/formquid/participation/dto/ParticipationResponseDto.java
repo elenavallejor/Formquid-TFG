@@ -1,14 +1,13 @@
 package com.formquid.participation.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * DTO de salida para una participación anónima.
- */
 public record ParticipationResponseDto(
-    Long id,
-    Long surveyId,
-    LocalDateTime submittedAt,
+    UUID id,
+    String surveyId,
+    Instant submittedAt,
     List<AnswerResponseDto> answers
-) {}
+) {
+}

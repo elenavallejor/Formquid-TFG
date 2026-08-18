@@ -1,66 +1,53 @@
 package com.formquid.survey.controller;
 
-import com.formquid.common.dto.CountResponseDto;
-import com.formquid.survey.dto.SurveySummaryResponseDto;
-import com.formquid.survey.entity.SurveyStatus;
+import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
+import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.service.SurveyService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.formquid.user.entity.User;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Controlador administrativo de encuestas.
- *
- * Agrupa los listados y contadores utilizados por administradores
- * y superadministradores.
- */
 @RestController
 @RequestMapping("/api/v1/admin/surveys")
 @RequiredArgsConstructor
-@Tag(
-    name = "Administración de encuestas",
-    description = "Consulta administrativa de encuestas"
-)
+@PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
 public class AdminSurveyController {
 
     private final SurveyService surveyService;
 
-    /**
-     * Lista todas las encuestas.
-     *
-     * Si se proporciona status, filtra por dicho estado.
-     */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Listar encuestas",
-        description = "Devuelve todas las encuestas, opcionalmente filtradas por estado."
-    )
-    public List<SurveySummaryResponseDto> findAll(
-        @RequestParam(required = false) SurveyStatus status
-    ) {
-        return surveyService.findAllForAdmin(status);
+    public List<SurveyResponseDto> findAll() {
+        return surveyService.findAllForAdmin();
     }
 
-    /**
-     * Devuelve el número total de encuestas o el número
-     * correspondiente a un estado concreto.
-     */
-    @GetMapping("/count")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    @Operation(
-        summary = "Contar encuestas",
-        description = "Devuelve el total de encuestas o el total de un estado concreto."
-    )
-    public CountResponseDto count(
-        @RequestParam(required = false) SurveyStatus status
+    @PatchMapping("/{surveyId}/lifecycle")
+    public SurveyResponseDto changeLifecycle(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody ChangeSurveyLifecycleRequestDto request
     ) {
-        return new CountResponseDto(
-            surveyService.count(status)
-        );
+        return surveyService.adminChangeLifecycle(surveyId, request.lifecycleStatus(), user);
+    }
+
+    @DeleteMapping("/{surveyId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user
+    ) {
+        surveyService.adminDelete(surveyId, user);
     }
 }

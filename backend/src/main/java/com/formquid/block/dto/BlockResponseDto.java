@@ -1,17 +1,19 @@
 package com.formquid.block.dto;
-import com.formquid.block.entity.BlockStatus;
-import java.time.LocalDateTime;
+
+import com.formquid.block.entity.BlockScope;
+import com.formquid.content.dto.ContentItemResponseDto;
+
+import java.util.List;
 
 /**
- * Datos de un bloque devueltos por la API.
+ * Respuesta con los datos de un bloque.
  */
 public record BlockResponseDto(
-    Long id,
+    String id,
+    BlockScope scope,
+    String sourceBlockId,
     String name,
     String description,
-    BlockStatus status,
-    Long createdByUserId,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    List<ContentItemResponseDto> contentItems
 ) {
 }

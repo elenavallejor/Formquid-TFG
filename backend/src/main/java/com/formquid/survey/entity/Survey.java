@@ -1,24 +1,37 @@
 package com.formquid.survey.entity;
 
-import com.formquid.survey.model.SurveyStructure;
+import com.formquid.content.entity.ContentItem;
+import com.formquid.template.entity.Template;
 import com.formquid.user.entity.User;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Representa una encuesta real creada por un editor.
- *
- * Una encuesta puede estar en borrador, ser pública, privada u oculta.
- * Su estructura se almacena como snapshot propio para que no se vea afectada
- * por cambios posteriores en el catálogo o en las plantillas.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,151 +39,111 @@ import java.util.List;
 @Builder
 @Entity
 @Check(constraints = """
-    status in ('DRAFT', 'PUBLIC', 'PRIVATE', 'HIDDEN')
+    id ~ '^S[1-9][0-9]*$'
+    and lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
+    and access_mode in ('PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED')
+    and visibility in ('LISTED', 'UNLISTED')
     and (
-        (
-            status = 'PRIVATE'
-            and access_password_hash is not null
-        )
-        or (
-            status <> 'PRIVATE'
-            and access_password_hash is null
-        )
+        (access_mode = 'PASSWORD_PROTECTED' and access_password_hash is not null)
+        or (access_mode <> 'PASSWORD_PROTECTED' and access_password_hash is null)
     )
+    and cardinality(tags) <= 4
 """)
 @Table(
     name = "surveys",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_surveys_public_code",
-            columnNames = "public_code"
-        )
-    },
     indexes = {
-        @Index(name = "idx_surveys_owner", columnList = "owner_user_id"),
-        @Index(name = "idx_surveys_status", columnList = "status"),
-        @Index(name = "idx_surveys_owner_status", columnList = "owner_user_id, status"),
-        @Index(name = "idx_surveys_status_created_at", columnList = "status, created_at"),
-        @Index(name = "idx_surveys_published_at", columnList = "published_at")
+        @Index(name = "idx_surveys_owner", columnList = "owner_id"),
+        @Index(name = "idx_surveys_lifecycle_visibility", columnList = "lifecycle_status, visibility")
     }
 )
 public class Survey {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 20)
+    private String id;
 
-    @Column(name = "public_code", nullable = false, length = 80)
-    private String publicCode;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 
-    @Column(nullable = false, length = 180)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_template_id")
+    private Template sourceTemplate;
+
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(length = 1500)
+    @Column(columnDefinition = "text")
     private String description;
 
-    @Column(name = "image_url", length = 1000)
-    private String imageUrl;
+    @Column(name = "image_key", columnDefinition = "text")
+    private String imageKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "lifecycle_status", nullable = false, length = 30)
+    private SurveyLifecycle lifecycleStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "access_mode", nullable = false, length = 40)
+    private SurveyAccessMode accessMode;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private SurveyStatus status;
+    private SurveyVisibility visibility;
 
     @Column(name = "access_password_hash", length = 255)
     private String accessPasswordHash;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_user_id", nullable = false)
-    private User owner;
-
-    /**
-     * Etiquetas libres propias de la encuesta.
-     *
-     * No existe tabla global de tags porque una etiqueta solo tiene sentido
-     * dentro de la encuesta que la usa.
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tag_names", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "varchar(50)[]")
     @Builder.Default
-    private List<String> tagNames = new ArrayList<>();
+    private String[] tags = new String[0];
 
-    /**
-     * Snapshot completo de bloques y preguntas de la encuesta.
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
+    @OneToMany(mappedBy = "survey", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    @BatchSize(size = 30)
     @Builder.Default
-    private SurveyStructure structure = new SurveyStructure();
+    private List<ContentItem> contentItems = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @Column(name = "published_at")
-    private LocalDateTime publishedAt;
-
-    /**
-     * Indica si el contenido de la encuesta puede modificarse.
-     *
-     * Las encuestas únicamente son editables mientras permanecen
-     * en estado DRAFT.
-     */
-    public boolean isEditable() {
-        return status == SurveyStatus.DRAFT;
-    }
-
-    /**
-     * Indica si la encuesta contiene al menos una pregunta en su snapshot.
-     */
-    public boolean hasQuestions() {
-        return structure != null && structure.hasQuestions();
-    }
+    private Instant updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-
-        if (this.status == null) {
-            this.status = SurveyStatus.DRAFT;
-        }
-
-        normalizeJsonFields();
-        normalizePrivateAccess();
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+        normalize();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        normalizeJsonFields();
-        normalizePrivateAccess();
-
-        this.updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
+        normalize();
     }
 
-    private void normalizeJsonFields() {
-        if (this.tagNames == null) {
-            this.tagNames = new ArrayList<>();
+    public void normalize() {
+        if (lifecycleStatus == null) {
+            lifecycleStatus = SurveyLifecycle.DRAFT;
         }
-
-        if (this.structure == null) {
-            this.structure = new SurveyStructure();
+        if (accessMode == null) {
+            accessMode = SurveyAccessMode.PUBLIC;
+        }
+        if (visibility == null) {
+            visibility = SurveyVisibility.LISTED;
+        }
+        if (accessMode != SurveyAccessMode.PASSWORD_PROTECTED) {
+            accessPasswordHash = null;
+        }
+        if (tags == null) {
+            tags = new String[0];
         }
     }
 
-    private void normalizePrivateAccess() {
-        if (this.status == SurveyStatus.PRIVATE) {
-            if (this.accessPasswordHash == null || this.accessPasswordHash.isBlank()) {
-                throw new IllegalStateException(
-                    "Las encuestas privadas deben tener hash de contraseña de acceso"
-                );
-            }
-
-            return;
-        }
-
-        this.accessPasswordHash = null;
+    public boolean isOpen() {
+        return lifecycleStatus == SurveyLifecycle.OPEN;
     }
 }
