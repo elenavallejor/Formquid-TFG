@@ -23,45 +23,6 @@ const INITIAL_FORM_DATA = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateRegisterForm(formData) {
-  const errors = {};
-
-  if (!formData.name.trim()) {
-    errors.name = 'Introduce tu nombre completo.';
-  }
-
-  if (!formData.email.trim()) {
-    errors.email = 'Introduce tu correo electrónico.';
-  } else if (!EMAIL_PATTERN.test(formData.email.trim())) {
-    errors.email = 'Introduce un correo electrónico válido.';
-  }
-
-  if (!formData.gender) {
-    errors.gender = 'Selecciona tu género.';
-  }
-
-  if (!formData.institution.trim()) {
-    errors.institution = 'Introduce tu institución.';
-  }
-
-  if (!formData.motivation.trim()) {
-    errors.motivation = 'Escribe una breve motivación para solicitar el registro.';
-  }
-
-  if (!formData.password) {
-    errors.password = 'Introduce una contraseña.';
-  } else if (formData.password.length < 8) {
-    errors.password = 'La contraseña debe tener al menos 8 caracteres.';
-  }
-
-  if (!formData.confirmPassword) {
-    errors.confirmPassword = 'Confirma tu contraseña.';
-  } else if (formData.password !== formData.confirmPassword) {
-    errors.confirmPassword = 'Las contraseñas no coinciden.';
-  }
-
-  return errors;
-}
 
 export function RegisterForm() {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
@@ -85,29 +46,25 @@ export function RegisterForm() {
     }
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
+  async function handleSubmit(event) {
+  event.preventDefault();
 
-    const nextErrors = validateRegisterForm(formData);
-    setErrors(nextErrors);
+  const nextErrors = validateRegisterForm(formData);
+  setErrors(nextErrors);
 
-    if (Object.values(nextErrors).some(Boolean)) {
-      return;
-    }
-
-    const payload = {
-      role: 'EDITOR',
-      name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
-      gender: formData.gender,
-      institution: formData.institution.trim(),
-      motivation: formData.motivation.trim(),
-      password: formData.password,
-    };
-
-    // TODO: enviar payload al endpoint de registro/solicitud.
-    void payload;
+  if (hasRegisterFormErrors(nextErrors)) {
+    return;
   }
+
+  const payload = createRegistrationRequestPayload(formData);
+  const result = await submitRegistrationRequest(payload);
+
+  if (result.success) {
+    setFormData(INITIAL_REGISTER_FORM_DATA);
+    setIsPasswordVisible(false);
+    setIsConfirmPasswordVisible(false);
+  }
+}
 
   return (
     <form className="register-form" onSubmit={handleSubmit} noValidate>
@@ -305,7 +262,7 @@ export function RegisterForm() {
 
       <p className="register-login-text">
         ¿Ya tienes cuenta?{' '}
-        <Link className="register-login-link" to="/login">
+        <Link className="register-login-link" to="/inicia-sesion">
           Inicia sesión
         </Link>
       </p>

@@ -4,6 +4,7 @@ import { App } from './app';
 import { LoginPage } from './routes/LoginPage/LoginPage';
 import { MainPage } from './routes/MainPage/MainPage';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
+import { PanelPage } from './routes/PanelPage/PanelPage';
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,10 @@ export const router = createBrowserRouter([
       {
         path: 'solicita-cuenta',
         element: <RegisterPage />,
+      },
+      {
+        path: 'panel',
+        element: <PanelPage />,
       },
     ],
   },

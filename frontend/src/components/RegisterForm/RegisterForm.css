@@ -54,6 +54,29 @@
   appearance: none;
 }
 
+.register-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.register-submit:disabled:hover {
+  background-color: var(--color-accent, #009688);
+}
+
+.register-success-message {
+  margin: 0;
+  color: #047857;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.password-toggle:focus-visible,
+.register-submit:focus-visible,
+.register-login-link:focus-visible {
+  outline: 3px solid rgba(0, 152, 138, 0.35);
+  outline-offset: 2px;
+}
+
 .register-textarea-wrapper textarea {
   padding-top: 12px;
   resize: vertical;

@@ -1,6 +1,6 @@
 import { FiUserPlus } from 'react-icons/fi';
 import { MdOutlineBarChart, MdOutlineLightbulb } from 'react-icons/md';
-import { RegisterForm } from '../../../features/auth/components/RegisterForm/RegisterForm';
+import { RegisterForm } from '../../../components/RegisterForm/RegisterForm';
 
 import './RegisterPage.css';
 

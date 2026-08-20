@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { login } from '../api/login';
+import { login } from '../api/authApi';
 
 const LOGIN_ERROR_MESSAGE =
   'No se ha podido iniciar sesión. Inténtalo de nuevo.';

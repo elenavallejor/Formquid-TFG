@@ -2,7 +2,7 @@ package com.formquid.auth.service;
 
 import com.formquid.auth.dto.AuthUserResponseDto;
 import com.formquid.auth.dto.LoginRequestDto;
-import com.formquid.auth.dto.LoginResponseDto;
+import com.formquid.auth.dto.LoginResult;
 import com.formquid.auth.security.JwtService;
 import com.formquid.common.service.EmailNormalizer;
 import com.formquid.user.entity.User;
@@ -28,20 +28,48 @@ public class AuthService {
     private final JwtService jwtService;
 
     /**
-     * Recibe email y contraseña, devuelve JWT y usuario autenticado.
+     * Recibe email y contraseña y devuelve internamente
+     * el JWT y los datos del usuario autenticado.
+     *
+     * El JWT será almacenado posteriormente en una cookie HttpOnly
+     * por el controlador.
      */
-    public LoginResponseDto login(LoginRequestDto request) {
+    public LoginResult login(LoginRequestDto request) {
         String email = EmailNormalizer.normalize(request.email());
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
+
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                email,
+                request.password()
+            )
+        );
+
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new com.formquid.common.exception.ApiException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Credenciales no válidas"));
-        return new LoginResponseDto(jwtService.generateToken(user), toAuthUser(user));
+            .orElseThrow(() ->
+                new com.formquid.common.exception.ApiException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED,
+                    "Credenciales no válidas"
+                )
+            );
+
+        String token = jwtService.generateToken(user);
+
+        return new LoginResult(
+            token,
+            toAuthUser(user)
+        );
     }
 
     /**
-     * Recibe un usuario autenticado. Devuelve los datos seguros para la respuesta.
+     * Recibe un usuario autenticado. Devuelve los datos seguros
+     * que pueden enviarse al frontend.
      */
     private AuthUserResponseDto toAuthUser(User user) {
-        return new AuthUserResponseDto(user.getId(), user.getEmail(), user.getName(), user.getRole());
+        return new AuthUserResponseDto(
+            user.getId(),
+            user.getEmail(),
+            user.getName(),
+            user.getRole()
+        );
     }
 }
