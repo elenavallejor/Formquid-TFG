@@ -1,0 +1,141 @@
+#login-page {
+  min-height: 100%;
+  padding: 72px 16px;
+  background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4)), url('../../../assets/images/fondo.jpg');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-attachment: fixed;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.login-page-container {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  padding: 40px 24px;
+  box-sizing: border-box;
+}
+
+.login-card-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  margin: 0 auto;
+}
+
+.login-logo-backdrop {
+  position: absolute;
+  top: -164px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+
+.backdrop-logo-img {
+  width: 850px;
+  height: auto;
+  display: block;
+}
+
+.login-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 96px 56px 88px 56px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.07);
+  box-sizing: border-box;
+}
+
+.login-card-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.login-title {
+  margin: 0 0 12px 0;
+  color: #102a3a;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.login-subtitle {
+  color: var(--color-text-muted, #5d6d77);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+@media only screen and (max-width: 650px) {
+  .login-page-container {
+    background-color: #EFEFEF;
+    min-height: 100dvh;
+    padding: 32px 24px;
+    align-items: flex-start;
+  }
+
+  .login-card-container {
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .login-logo-backdrop {
+    display: none !important;
+  }
+
+  .login-card {
+    padding: 0;
+    box-shadow: none;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  .login-card-header {
+    margin-top: 45px;
+    margin-bottom: 70px;
+  }
+
+  .login-title {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .login-subtitle {
+    font-size: 14px;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  .login-field {
+    gap: 8px;
+  }
+
+  .login-input-wrapper input {
+    min-height: 46px;
+    font-size: 15px;
+    border-radius: 6px;
+  }
+
+  .login-submit {
+    min-height: 55px;
+    font-size: 15px;
+    border-radius: 6px;
+    margin: 20px 0 16px 0;
+    box-shadow: none;
+  }
+
+  .request-account-text {
+    font-size: 13px;
+  }
+}

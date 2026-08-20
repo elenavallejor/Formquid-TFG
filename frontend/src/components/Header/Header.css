@@ -1,0 +1,174 @@
+#main-header {
+  width: 100%;
+  min-height: 60px;
+  background-color: var(--color-header);
+  color: var(--color-text-on-dark);
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+#main-header .header-content {
+  width: 100%;
+  max-width: 1650px;
+  margin: 0 auto;
+  min-height: 70px;
+  padding: 0 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#main-header .brand {
+  min-height: 44px;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border-radius: 8px;
+  color: var(--color-text-on-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+#main-header .brand-logo {
+  width: 50px;
+  height: 50px;
+  display: block;
+  object-fit: contain;
+}
+
+#main-header .brand-name {
+  font-size: 30px; 
+  line-height: 1.1;
+  font-weight: 600; 
+  letter-spacing: -0.01em;
+  color: var(--color-text-on-dark);
+  user-select: none;
+}
+
+#main-header .brand-name span {
+  color: var(--color-accent);
+  font-weight: 400;
+}
+
+.password-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 20px;
+}
+
+.password-footer-row .login-error-message {
+  flex: 1;
+}
+
+.password-footer-row .forgot-password-link {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+/* Navegación y Acciones */
+#main-header .header-navigation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#main-header .request-account-link {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background-color: transparent;
+  color: var(--color-text-on-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#main-header .request-account-link:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-on-dark);
+}
+
+#main-header .login-link {
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 10px;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#main-header .login-link:hover {
+  background-color: var(--color-primary-hover);
+  color: var(--color-text-on-dark);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+#main-header .login-icon {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+/* Móviles */
+@media only screen and (max-width: 650px) {
+  #main-header .header-content {
+    padding: 0 16px;
+    min-height: 60px;
+  }
+
+  #main-header .brand {
+    gap: 8px;
+    margin-left: 0;
+  }
+
+  #main-header .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  #main-header .brand-name {
+    font-size: 18px; 
+  }
+
+  #main-header .header-navigation {
+    gap: 8px;
+  }
+
+  #main-header .login-link {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  #main-header .request-account-link {
+    display: none;
+  }
+}

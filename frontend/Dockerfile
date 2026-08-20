@@ -1,5 +1,4 @@
-# Etapa 1: Build
-FROM node:22 AS builder
+FROM node:22
 
 WORKDIR /app
 
@@ -9,13 +8,6 @@ RUN npm ci
 
 COPY . .
 
-RUN npm run build
+EXPOSE 5173
 
-# Etapa 2: Nginx
-FROM nginx:alpine
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
