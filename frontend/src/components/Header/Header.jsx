@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ImUser } from 'react-icons/im';
 import {
   MdOutlineKeyboardArrowDown,
   MdOutlineLogout,
   MdOutlineNotificationsNone,
+  MdOutlinePerson,
   MdOutlineDashboard,
 } from 'react-icons/md';
 
@@ -11,6 +13,7 @@ import formQuidLogo from '../../assets/images/formquid-logo.png';
 
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getUserInitials } from '../../utils/getUserInitials.js';
+import { getUnreadNotificationsCount } from '../../api/notificationsApi.js';
 
 import './Header.css';
 
@@ -37,6 +40,7 @@ function getUserDisplayName(user) {
  */
 export function Header() {
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const {
     user,
@@ -46,6 +50,24 @@ export function Header() {
 
   const userDisplayName = getUserDisplayName(user);
   const userRole = ROLE_LABELS[user?.role] ?? user?.role;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (isAuthenticated && user) {
+      getUnreadNotificationsCount()
+        .then((count) => {
+          if (isMounted) setUnreadCount(count);
+        })
+        .catch((error) => {
+          console.error('Error al obtener el número de notificaciones no leídas:', error);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, user]);
 
   async function handleLogout() {
     try {
@@ -95,10 +117,13 @@ export function Header() {
                 className="notification-button"
                 type="button"
                 aria-label="Ver notificaciones"
+                onClick={() => navigate('/notificaciones')}
               >
-                <MdOutlineNotificationsNone
-                  aria-hidden="true"
-                />
+                <span className="notification-label">NOTIFICACIONES</span>
+                <MdOutlineNotificationsNone className="notification-icon" aria-hidden="true" />
+                {unreadCount > 0 && (
+                  <span className="notification-badge" title={`${unreadCount} no leídas`} />
+                )}
               </button>
 
               <details className="user-menu">
@@ -129,6 +154,17 @@ export function Header() {
                 </summary>
 
                 <div className="user-menu-dropdown">
+                  <Link
+                    className="user-menu-option"
+                    to="/perfil"
+                  >
+                    <MdOutlinePerson
+                      aria-hidden="true"
+                    />
+
+                    <span>Mi perfil</span>
+                  </Link>
+
                   <Link
                     className="user-menu-option"
                     to="/panel"

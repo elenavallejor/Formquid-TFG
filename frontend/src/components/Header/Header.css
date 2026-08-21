@@ -76,7 +76,7 @@
 #main-header .header-navigation {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 32px;
 }
 
 #main-header .request-account-link {
@@ -136,6 +136,167 @@
   opacity: 0.9;
 }
 
+/* --- NOTIFICACIONES (Pill style) --- */
+#main-header .notification-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-text-on-dark, #ffffff);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  border-radius: 50px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+#main-header .notification-button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Texto de notificaciones ajustado a 13px */
+#main-header .notification-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--color-text-on-dark, #ffffff);
+  opacity: 0.95;
+}
+
+#main-header .notification-icon {
+  font-size: 22px;
+}
+
+/* Circulito naranja independiente */
+#main-header .notification-badge {
+  width: 9px;
+  height: 9px;
+  background-color: #d9531e;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px var(--color-header, #001f2d);
+}
+
+/* --- USUARIO Y DROPDOWN --- */
+#main-header .user-menu {
+  position: relative;
+  display: inline-block;
+}
+
+#main-header .user-menu-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+#main-header .user-menu-summary::-webkit-details-marker,
+#main-header .user-menu-summary::marker {
+  display: none;
+  content: "";
+}
+
+#main-header .user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #9e9e9e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+#main-header .user-header-information {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+#main-header .user-header-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-on-dark, #ffffff);
+  line-height: 1.2;
+}
+
+#main-header .user-header-role {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 1px;
+}
+
+#main-header .user-menu-arrow {
+  font-size: 20px;
+  color: var(--color-text-on-dark, #ffffff);
+  transition: transform 0.2s ease;
+}
+
+#main-header .user-menu[open] .user-menu-arrow {
+  transform: rotate(180deg);
+}
+
+#main-header .user-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 170px;
+  padding: 6px 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+#main-header .user-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #333333;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+#main-header .user-menu-option:hover {
+  background-color: #f5f5f5;
+}
+
+#main-header .user-menu-option svg {
+  font-size: 18px;
+  color: #666666;
+}
+
+#main-header .user-menu-option.logout-option {
+  color: #d32f2f;
+  border-top: 1px solid #eeeeee;
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+#main-header .user-menu-option.logout-option svg {
+  color: #d32f2f;
+}
+
 /* Móviles */
 @media only screen and (max-width: 650px) {
   #main-header .header-content {
@@ -158,7 +319,16 @@
   }
 
   #main-header .header-navigation {
-    gap: 8px;
+    gap: 12px;
+  }
+
+  #main-header .notification-label {
+    display: none;
+  }
+
+  #main-header .notification-button {
+    padding: 6px;
+    border: none;
   }
 
   #main-header .login-link {
@@ -169,6 +339,10 @@
   }
 
   #main-header .request-account-link {
+    display: none;
+  }
+
+  #main-header .user-header-information {
     display: none;
   }
 }
