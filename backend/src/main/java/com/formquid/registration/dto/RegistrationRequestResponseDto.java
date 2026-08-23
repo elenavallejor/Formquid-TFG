@@ -1,6 +1,5 @@
 package com.formquid.registration.dto;
 
-import com.formquid.common.entity.RequestStatus;
 import com.formquid.user.entity.UserGender;
 
 import java.time.Instant;
@@ -12,8 +11,7 @@ public record RegistrationRequestResponseDto(
     String name,
     UserGender gender,
     String institution,
-    RequestStatus status,
-    Instant createdAt,
-    Instant resolvedAt
+    String motivation,
+    Instant createdAt
 ) {
 }

@@ -30,19 +30,32 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
+    /**
+     * Devuelve todas las notificaciones de un usuario.
+     */
+    @Transactional(readOnly = true)
     public List<NotificationResponseDto> findForUser(UUID userId) {
-        return notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(userId)
+        return notificationRepository
+            .findByRecipientUserIdOrderByCreatedAtDesc(userId)
             .stream()
             .map(this::toResponse)
             .toList();
     }
 
+    /**
+     * Devuelve el número de notificaciones internas no leídas.
+     */
+    @Transactional(readOnly = true)
     public long countUnread(UUID userId) {
-        return notificationRepository.countByRecipientUserIdAndChannelAndReadAtIsNull(userId, NotificationChannel.INTERNAL);
+        return notificationRepository
+            .countByRecipientUserIdAndChannelAndReadAtIsNull(
+                userId,
+                NotificationChannel.INTERNAL
+            );
     }
 
     /**
-     * Recibe usuario destino y mensaje. Devuelve la notificación interna creada.
+     * Crea una notificación interna sin recurso asociado.
      */
     public Notification createInternal(
         User recipient,
@@ -50,19 +63,40 @@ public class NotificationService {
         String title,
         String message
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.NONE, null);
+        return create(
+            recipient,
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
+            NotificationTargetType.NONE,
+            null
+        );
     }
 
+    /**
+     * Registra una notificación de correo sin recurso asociado.
+     */
     public Notification createEmail(
         User recipient,
         NotificationType type,
         String title,
         String message
     ) {
-        // Registra el email pendiente; el correo real se obtiene desde recipient.email.
-        return create(recipient, NotificationChannel.EMAIL, type, title, message, NotificationTargetType.NONE, null);
+        return create(
+            recipient,
+            NotificationChannel.EMAIL,
+            type,
+            title,
+            message,
+            NotificationTargetType.NONE,
+            null
+        );
     }
 
+    /**
+     * Crea una notificación asociada a una encuesta.
+     */
     public Notification createSurveyNotification(
         User recipient,
         NotificationType type,
@@ -70,9 +104,20 @@ public class NotificationService {
         String message,
         Survey survey
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.SURVEY, survey.getId());
+        return create(
+            recipient,
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
+            NotificationTargetType.SURVEY,
+            survey.getId().toString()
+        );
     }
 
+    /**
+     * Crea una notificación asociada a una solicitud de registro.
+     */
     public Notification createRegistrationRequestNotification(
         User recipient,
         NotificationType type,
@@ -80,24 +125,20 @@ public class NotificationService {
         String message,
         RegistrationRequest request
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.REGISTRATION_REQUEST, request.getId().toString());
-    }
-
-    public Notification createRegistrationApprovedEmail(
-        User recipient,
-        RegistrationRequest request
-    ) {
         return create(
             recipient,
-            NotificationChannel.EMAIL,
-            NotificationType.REGISTRATION_APPROVED,
-            "Solicitud aprobada",
-            "Tu cuenta de FormQuid ha sido aprobada.",
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
             NotificationTargetType.REGISTRATION_REQUEST,
             request.getId().toString()
         );
     }
 
+    /**
+     * Crea una notificación asociada a una solicitud de colaboración.
+     */
     public Notification createCollaborationRequestNotification(
         User recipient,
         NotificationType type,
@@ -105,9 +146,20 @@ public class NotificationService {
         String message,
         CollaborationRequest request
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.COLLABORATION_REQUEST, request.getId().toString());
+        return create(
+            recipient,
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
+            NotificationTargetType.COLLABORATION_REQUEST,
+            request.getId().toString()
+        );
     }
 
+    /**
+     * Crea una notificación asociada a una solicitud de publicación.
+     */
     public Notification createPublicationRequestNotification(
         User recipient,
         NotificationType type,
@@ -115,9 +167,20 @@ public class NotificationService {
         String message,
         PublicationRequest request
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.PUBLICATION_REQUEST, request.getId().toString());
+        return create(
+            recipient,
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
+            NotificationTargetType.PUBLICATION_REQUEST,
+            request.getId().toString()
+        );
     }
 
+    /**
+     * Crea una notificación asociada a una solicitud de elemento.
+     */
     public Notification createElementRequestNotification(
         User recipient,
         NotificationType type,
@@ -125,9 +188,20 @@ public class NotificationService {
         String message,
         ElementRequest request
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.ELEMENT_REQUEST, request.getId().toString());
+        return create(
+            recipient,
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
+            NotificationTargetType.ELEMENT_REQUEST,
+            request.getId().toString()
+        );
     }
 
+    /**
+     * Crea una notificación asociada a un usuario.
+     */
     public Notification createUserNotification(
         User recipient,
         NotificationType type,
@@ -135,46 +209,162 @@ public class NotificationService {
         String message,
         User targetUser
     ) {
-        return create(recipient, NotificationChannel.INTERNAL, type, title, message, NotificationTargetType.USER, targetUser.getId().toString());
-    }
-
-    public void notifyAdmins(NotificationType type, String title, String message) {
-        userRepository.findAll().stream()
-            .filter(user -> user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPERADMIN)
-            .forEach(user -> createInternal(user, type, title, message));
-    }
-
-    public void notifyAdminsAboutElementRequest(ElementRequest request) {
-        userRepository.findAll().stream()
-            .filter(user -> user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPERADMIN)
-            .forEach(user -> createElementRequestNotification(
-                user,
-                NotificationType.ELEMENT_REQUEST,
-                "Nueva solicitud de elemento",
-                "Hay una nueva propuesta de elemento para el catálogo",
-                request
-            ));
+        return create(
+            recipient,
+            NotificationChannel.INTERNAL,
+            type,
+            title,
+            message,
+            NotificationTargetType.USER,
+            targetUser.getId().toString()
+        );
     }
 
     /**
-     * Recibe una notificación interna. Devuelve la notificación leída.
+     * Notifica a todos los administradores.
+     */
+    public void notifyAdmins(
+        NotificationType type,
+        String title,
+        String message
+    ) {
+        userRepository.findAll()
+            .stream()
+            .filter(user ->
+                user.getRole() == UserRole.ADMIN
+                    || user.getRole() == UserRole.SUPERADMIN
+            )
+            .forEach(user ->
+                createInternal(
+                    user,
+                    type,
+                    title,
+                    message
+                )
+            );
+    }
+
+    /**
+     * Notifica a los administradores sobre una solicitud de elemento.
+     */
+    public void notifyAdminsAboutElementRequest(
+        ElementRequest request
+    ) {
+        userRepository.findAll()
+            .stream()
+            .filter(user ->
+                user.getRole() == UserRole.ADMIN
+                    || user.getRole() == UserRole.SUPERADMIN
+            )
+            .forEach(user ->
+                createElementRequestNotification(
+                    user,
+                    NotificationType.ELEMENT_REQUEST,
+                    "Nueva solicitud de elemento",
+                    "Hay una nueva propuesta de elemento para el catálogo",
+                    request
+                )
+            );
+    }
+
+    /**
+     * Marca una notificación interna como leída.
      */
     @Transactional
-    public NotificationResponseDto markAsRead(Long id, UUID currentUserId) {
-        Notification notification = getOwnedNotification(id, currentUserId);
+    public NotificationResponseDto markAsRead(
+        Long id,
+        UUID currentUserId
+    ) {
+        Notification notification =
+            getOwnedNotification(id, currentUserId);
+
         notification.markAsRead();
+
         return toResponse(notification);
     }
 
     /**
-     * Recibe una notificación y el usuario actual. Elimina la notificación si le pertenece.
+     * Elimina una notificación del usuario actual.
      */
     @Transactional
-    public void delete(Long id, UUID currentUserId) {
-        Notification notification = getOwnedNotification(id, currentUserId);
+    public void delete(
+        Long id,
+        UUID currentUserId
+    ) {
+        Notification notification =
+            getOwnedNotification(id, currentUserId);
+
         notificationRepository.delete(notification);
     }
 
+    /**
+     * Elimina las notificaciones asociadas a una solicitud de registro.
+     */
+    @Transactional
+    public void deleteRegistrationRequestNotifications(
+        UUID requestId
+    ) {
+        deleteTargetNotifications(
+            NotificationTargetType.REGISTRATION_REQUEST,
+            requestId
+        );
+    }
+
+    /**
+     * Elimina las notificaciones asociadas a una solicitud de colaboración.
+     */
+    @Transactional
+    public void deleteCollaborationRequestNotifications(
+        UUID requestId
+    ) {
+        deleteTargetNotifications(
+            NotificationTargetType.COLLABORATION_REQUEST,
+            requestId
+        );
+    }
+
+    /**
+     * Elimina las notificaciones asociadas a una solicitud de elemento.
+     */
+    @Transactional
+    public void deleteElementRequestNotifications(
+        UUID requestId
+    ) {
+        deleteTargetNotifications(
+            NotificationTargetType.ELEMENT_REQUEST,
+            requestId
+        );
+    }
+
+    /**
+     * Elimina las notificaciones asociadas a una solicitud de publicación.
+     */
+    @Transactional
+    public void deletePublicationRequestNotifications(
+        UUID requestId
+    ) {
+        deleteTargetNotifications(
+            NotificationTargetType.PUBLICATION_REQUEST,
+            requestId
+        );
+    }
+
+    /**
+     * Elimina las notificaciones asociadas a un recurso.
+     */
+    private void deleteTargetNotifications(
+        NotificationTargetType targetType,
+        UUID targetId
+    ) {
+        notificationRepository.deleteByTargetTypeAndTargetId(
+            targetType,
+            targetId.toString()
+        );
+    }
+
+    /**
+     * Crea y persiste una notificación.
+     */
     private Notification create(
         User recipient,
         NotificationChannel channel,
@@ -193,19 +383,47 @@ public class NotificationService {
             .targetType(targetType)
             .targetId(targetId)
             .build();
+
         return notificationRepository.save(notification);
     }
 
-    private Notification getOwnedNotification(Long id, UUID currentUserId) {
-        Notification notification = notificationRepository.findById(id)
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Notificación no encontrada"));
-        if (!notification.getRecipientUser().getId().equals(currentUserId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "La notificación no pertenece al usuario actual");
+    /**
+     * Obtiene una notificación perteneciente al usuario actual.
+     */
+    private Notification getOwnedNotification(
+        Long id,
+        UUID currentUserId
+    ) {
+        Notification notification =
+            notificationRepository.findById(id)
+                .orElseThrow(() ->
+                    new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Notificación no encontrada"
+                    )
+                );
+
+        if (
+            !notification
+                .getRecipientUser()
+                .getId()
+                .equals(currentUserId)
+        ) {
+            throw new ApiException(
+                HttpStatus.FORBIDDEN,
+                "La notificación no pertenece al usuario actual"
+            );
         }
+
         return notification;
     }
 
-    private NotificationResponseDto toResponse(Notification notification) {
+    /**
+     * Convierte una notificación en su DTO de respuesta.
+     */
+    private NotificationResponseDto toResponse(
+        Notification notification
+    ) {
         return new NotificationResponseDto(
             notification.getId(),
             notification.getType(),

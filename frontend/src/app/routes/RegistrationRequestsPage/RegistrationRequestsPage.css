@@ -1,0 +1,126 @@
+/* src/pages/admin/RegistrationRequestsPage/RegistrationRequestsPage.css */
+.admin-requests-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  background-color: var(--color-background);
+  padding: 32px 24px;
+  box-sizing: border-box;
+}
+
+.admin-requests-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.breadcrumb-nav a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb-nav a:hover {
+  color: var(--color-primary);
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-header);
+  letter-spacing: -0.01em;
+}
+
+.page-header p {
+  margin: 6px 0 28px 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 480px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--color-text-muted);
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 10px 14px 10px 42px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  font-size: 14px;
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+.sort-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.sort-selector-wrapper select {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty-requests-card {
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+@media only screen and (max-width: 640px) {
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-input-wrapper {
+    max-width: 100%;
+  }
+}

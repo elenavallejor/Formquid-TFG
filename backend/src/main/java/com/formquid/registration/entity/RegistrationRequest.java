@@ -1,7 +1,6 @@
 package com.formquid.registration.entity;
 
 import com.formquid.common.service.EmailNormalizer;
-import com.formquid.common.entity.RequestStatus;
 import com.formquid.user.entity.UserGender;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -54,35 +53,18 @@ public class RegistrationRequest {
     @Column(nullable = false, length = 200)
     private String institution;
 
+    @Column(nullable = false, length = 1000)
+    private String motivation;
+
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private RequestStatus status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "resolved_at")
-    private Instant resolvedAt;
-
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
-        if (status == null) {
-            status = RequestStatus.PENDING;
-        }
         email = EmailNormalizer.normalize(email);
-    }
-
-    public void approve() {
-        status = RequestStatus.APPROVED;
-        resolvedAt = Instant.now();
-    }
-
-    public void reject() {
-        status = RequestStatus.REJECTED;
-        resolvedAt = Instant.now();
     }
 }

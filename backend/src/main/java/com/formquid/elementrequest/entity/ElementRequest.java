@@ -1,6 +1,5 @@
 package com.formquid.elementrequest.entity;
 
-import com.formquid.common.entity.RequestStatus;
 import com.formquid.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,12 +34,21 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "element_type in ('FIXED_QUESTION', 'BLOCK', 'TEMPLATE') and status in ('PENDING', 'APPROVED', 'REJECTED')")
+@Check(
+    constraints =
+        "element_type in ('FIXED_QUESTION', 'BLOCK', 'TEMPLATE')"
+)
 @Table(
     name = "element_requests",
     indexes = {
-        @Index(name = "idx_element_requests_created_at", columnList = "created_at"),
-        @Index(name = "idx_element_requests_user", columnList = "requested_by_user_id")
+        @Index(
+            name = "idx_element_requests_created_at",
+            columnList = "created_at"
+        ),
+        @Index(
+            name = "idx_element_requests_user",
+            columnList = "requested_by_user_id"
+        )
     }
 )
 public class ElementRequest {
@@ -51,46 +59,38 @@ public class ElementRequest {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "requested_by_user_id", nullable = false)
+    @JoinColumn(
+        name = "requested_by_user_id",
+        nullable = false
+    )
     private User requestedBy;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "element_type", nullable = false, length = 40)
+    @Column(
+        name = "element_type",
+        nullable = false,
+        length = 40
+    )
     private RequestedElementType elementType;
 
     @Column(nullable = false, columnDefinition = "text")
     private String message;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "request_payload", nullable = false, columnDefinition = "jsonb")
+    @Column(
+        name = "request_payload",
+        nullable = false,
+        columnDefinition = "jsonb"
+    )
     @Builder.Default
-    private Map<String, Object> requestPayload = new LinkedHashMap<>();
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private RequestStatus status;
+    private Map<String, Object> requestPayload =
+        new LinkedHashMap<>();
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "resolved_at")
-    private Instant resolvedAt;
-
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
-        if (status == null) {
-            status = RequestStatus.PENDING;
-        }
-    }
-
-    public void approve() {
-        status = RequestStatus.APPROVED;
-        resolvedAt = Instant.now();
-    }
-
-    public void reject() {
-        status = RequestStatus.REJECTED;
-        resolvedAt = Instant.now();
     }
 }

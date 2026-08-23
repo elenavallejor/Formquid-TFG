@@ -1,7 +1,6 @@
 package com.formquid.registration.service;
 
 import com.formquid.common.exception.ApiException;
-import com.formquid.common.entity.RequestStatus;
 import com.formquid.common.service.EmailNormalizer;
 import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.service.NotificationService;
@@ -30,17 +29,25 @@ public class RegistrationRequestService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
+    /**
+     * Devuelve todas las solicitudes pendientes ordenadas por fecha.
+     */
+    @Transactional(readOnly = true)
     public List<RegistrationRequestResponseDto> findPending() {
-        return requestRepository.findByStatusOrderByCreatedAtAsc(RequestStatus.PENDING).stream().map(this::toResponse).toList();
+        return requestRepository.findAllByOrderByCreatedAtAsc()
+            .stream()
+            .map(this::toResponse)
+            .toList();
     }
 
     /**
-     * Recibe datos de registro y devuelve la solicitud pendiente.
+     * Crea una nueva solicitud de registro.
      */
     @Transactional
     public RegistrationRequestResponseDto create(CreateRegistrationRequestDto request) {
         String email = EmailNormalizer.normalize(request.email());
-        if (userRepository.existsByEmail(email) || requestRepository.existsByEmailAndStatus(email, RequestStatus.PENDING)) {
+
+        if (userRepository.existsByEmail(email) || requestRepository.existsByEmail(email)) {
             throw new ApiException(HttpStatus.CONFLICT, "El correo ya está registrado o pendiente de aprobación");
         }
 
@@ -49,21 +56,30 @@ public class RegistrationRequestService {
             .name(request.name().trim())
             .gender(request.gender())
             .institution(request.institution().trim())
+            .motivation(request.motivation().trim())
             .passwordHash(passwordEncoder.encode(request.password()))
             .build();
+
         RegistrationRequest saved = requestRepository.save(entity);
+
         notifyAdmins(saved);
+
         return toResponse(saved);
     }
 
     /**
-     * Recibe una solicitud pendiente y devuelve el usuario creado.
+     * Aprueba una solicitud, crea el usuario y elimina la solicitud.
      */
     @Transactional
     public UUID approve(UUID requestId) {
+
         RegistrationRequest request = getRequest(requestId);
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo");
+            throw new ApiException(
+                HttpStatus.CONFLICT,
+                "Ya existe un usuario con ese correo"
+            );
         }
 
         User user = User.builder()
@@ -74,8 +90,26 @@ public class RegistrationRequestService {
             .institution(request.getInstitution())
             .passwordHash(request.getPasswordHash())
             .build();
+
         User saved = userRepository.save(user);
-        notificationService.createRegistrationApprovedEmail(saved, request);
+
+        /*
+         * Se registra el correo de aprobación.
+         */
+        notificationService.createEmail(
+            saved,
+            NotificationType.REGISTRATION_APPROVED,
+            "Solicitud aprobada",
+            "Tu solicitud de registro ha sido aprobada. "
+                + "Tu cuenta de FormQuid ya está activa."
+        );
+
+        /*
+         * También se crea una notificación interna para que el usuario
+         * pueda verla cuando acceda a la plataforma.
+         *
+         * El target es el propio usuario, que seguirá existiendo.
+         */
         notificationService.createUserNotification(
             saved,
             NotificationType.REGISTRATION_APPROVED,
@@ -83,52 +117,92 @@ public class RegistrationRequestService {
             "Tu cuenta de FormQuid ya está activa.",
             saved
         );
-        request.approve();
+
+        /*
+         * Una solicitud solo existe mientras está pendiente.
+         */
+        requestRepository.delete(request);
+
         return saved.getId();
     }
 
     /**
-     * Recibe una solicitud pendiente. No devuelve contenido.
+     * Rechaza y elimina una solicitud de registro.
      */
     @Transactional
     public void reject(UUID requestId) {
+
         RegistrationRequest request = getRequest(requestId);
-        // Con notifications simplificada no se persiste email sin usuario.
-        // El proveedor de correo debe enviar el rechazo usando request.getEmail().
-        request.reject();
+
+        /*
+         * TODO IMPLEMENTAR CORREO.
+         *
+         * El correo de rechazo deberá enviarse mediante el servicio de
+         * correo externo antes de eliminar la solicitud.
+         *
+         * Ejemplo futuro:
+         *
+         * emailService.sendRegistrationRejected(
+         *     request.getEmail(),
+         *     request.getName()
+         * );
+         */
+
+        requestRepository.delete(request);
     }
 
+    /**
+     * Obtiene una solicitud pendiente.
+     *
+     * Si no existe, significa que ya fue aprobada, rechazada
+     * o que el identificador es incorrecto.
+     */
     private RegistrationRequest getRequest(UUID requestId) {
-        RegistrationRequest request = requestRepository.findById(requestId)
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Solicitud no encontrada"));
-        if (request.getStatus() != RequestStatus.PENDING) {
-            throw new ApiException(HttpStatus.CONFLICT, "La solicitud ya está resuelta");
-        }
-        return request;
-    }
-
-    private void notifyAdmins(RegistrationRequest request) {
-        userRepository.findAll().stream()
-            .filter(user -> user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPERADMIN)
-            .forEach(user -> notificationService.createRegistrationRequestNotification(
-                user,
-                NotificationType.REGISTRATION_REQUEST,
-                "Nueva solicitud de registro",
-                "Hay una nueva solicitud de cuenta para " + request.getEmail(),
-                request
+        return requestRepository.findById(requestId)
+            .orElseThrow(() -> new ApiException(
+                HttpStatus.NOT_FOUND,
+                "Solicitud no encontrada"
             ));
     }
 
-    private RegistrationRequestResponseDto toResponse(RegistrationRequest request) {
+    /**
+     * Notifica a administradores y superadministradores
+     * de una nueva solicitud de registro.
+     */
+    private void notifyAdmins(RegistrationRequest request) {
+
+        userRepository.findAll()
+            .stream()
+            .filter(user ->
+                user.getRole() == UserRole.ADMIN
+                    || user.getRole() == UserRole.SUPERADMIN
+            )
+            .forEach(user ->
+                notificationService.createRegistrationRequestNotification(
+                    user,
+                    NotificationType.REGISTRATION_REQUEST,
+                    "Nueva solicitud de registro",
+                    "Hay una nueva solicitud de cuenta para "
+                        + request.getEmail(),
+                    request
+                )
+            );
+    }
+
+    /**
+     * Convierte una solicitud a su DTO de respuesta.
+     */
+    private RegistrationRequestResponseDto toResponse(
+        RegistrationRequest request
+    ) {
         return new RegistrationRequestResponseDto(
             request.getId(),
             request.getEmail(),
             request.getName(),
             request.getGender(),
             request.getInstitution(),
-            request.getStatus(),
-            request.getCreatedAt(),
-            request.getResolvedAt()
+            request.getMotivation(),
+            request.getCreatedAt()
         );
     }
 }

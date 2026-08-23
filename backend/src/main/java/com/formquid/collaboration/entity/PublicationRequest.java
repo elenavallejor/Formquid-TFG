@@ -1,12 +1,9 @@
 package com.formquid.collaboration.entity;
 
-import com.formquid.common.entity.RequestStatus;
 import com.formquid.survey.entity.Survey;
 import com.formquid.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -20,7 +17,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
@@ -32,10 +28,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "status in ('PENDING', 'APPROVED', 'REJECTED')")
 @Table(
     name = "publication_requests",
-    indexes = @Index(name = "idx_publication_requests_user", columnList = "requested_by_user_id")
+    indexes = @Index(
+        name = "idx_publication_requests_user",
+        columnList = "requested_by_user_id"
+    )
 )
 public class PublicationRequest {
 
@@ -55,31 +53,11 @@ public class PublicationRequest {
     @Column(columnDefinition = "text")
     private String message;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private RequestStatus status;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
-    @Column(name = "resolved_at")
-    private Instant resolvedAt;
 
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
-        if (status == null) {
-            status = RequestStatus.PENDING;
-        }
-    }
-
-    public void approve() {
-        status = RequestStatus.APPROVED;
-        resolvedAt = Instant.now();
-    }
-
-    public void reject() {
-        status = RequestStatus.REJECTED;
-        resolvedAt = Instant.now();
     }
 }

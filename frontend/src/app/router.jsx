@@ -6,6 +6,7 @@ import { MainPage } from './routes/MainPage/MainPage';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { PanelPage } from './routes/PanelPage/PanelPage';
 import { ErrorPage } from './routes/ErrorPage/ErrorPage';
+import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
       {
         path: 'panel',
         element: <PanelPage />,
+      },
+      {
+        path: 'admin/solicitudes-registro',
+        element: <RegistrationRequestsPage />,
       },
       {
         path: '*',
