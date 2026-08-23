@@ -3,12 +3,7 @@ const API_BASE_URL = (
   'http://localhost:8080/api/v1'
 ).replace(/\/$/, '');
 
-const SAFE_METHODS = new Set([
-  'GET',
-  'HEAD',
-  'OPTIONS',
-  'TRACE',
-]);
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS','TRACE',]);
 
 let csrfRequestPromise = null;
 

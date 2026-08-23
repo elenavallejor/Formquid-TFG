@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  MdOutlineEmail,
-  MdOutlineLock,
-  MdOutlinePerson,
-  MdOutlineBusiness,
-  MdOutlineEdit,
-} from 'react-icons/md';
+import { Link, useNavigate } from 'react-router-dom';
+import { MdOutlineEmail, MdOutlineLock, MdOutlinePerson, MdOutlineBusiness, MdOutlineEdit, MdCheckCircleOutline } from 'react-icons/md';
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
+import { createRegistrationRequest } from '../../api/registrationRequestsApi.js';
 import './RegisterForm.css';
 
 const INITIAL_FORM_DATA = {
@@ -23,10 +18,58 @@ const INITIAL_FORM_DATA = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function validateRegisterForm(data) {
+  const errors = {};
+
+  if (!data.name.trim()) {
+    errors.name = 'El nombre completo es obligatorio.';
+  }
+
+  if (!data.email.trim()) {
+    errors.email = 'El correo electrónico es obligatorio.';
+  } else if (!EMAIL_PATTERN.test(data.email)) {
+    errors.email = 'Introduce un correo electrónico válido.';
+  }
+
+  if (!data.gender) {
+    errors.gender = 'Selecciona una opción de género.';
+  }
+
+  if (!data.institution.trim()) {
+    errors.institution = 'La institución es obligatoria.';
+  }
+
+  if (!data.motivation.trim()) {
+    errors.motivation = 'Explica brevemente tu motivación.';
+  }
+
+  if (!data.password) {
+    errors.password = 'La contraseña es obligatoria.';
+  } else if (data.password.length < 8) {
+    errors.password = 'La contraseña debe tener al menos 8 caracteres.';
+  }
+
+  if (!data.confirmPassword) {
+    errors.confirmPassword = 'Confirma tu contraseña.';
+  } else if (data.password !== data.confirmPassword) {
+    errors.confirmPassword = 'Las contraseñas no coinciden.';
+  }
+
+  return errors;
+}
+
+function hasRegisterFormErrors(errors) {
+  return Object.keys(errors).length > 0;
+}
 
 export function RegisterForm() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false); // Estado de confirmación
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
@@ -47,27 +90,68 @@ export function RegisterForm() {
   }
 
   async function handleSubmit(event) {
-  event.preventDefault();
+    event.preventDefault();
+    setSubmitError('');
 
-  const nextErrors = validateRegisterForm(formData);
-  setErrors(nextErrors);
+    const nextErrors = validateRegisterForm(formData);
+    setErrors(nextErrors);
 
-  if (hasRegisterFormErrors(nextErrors)) {
-    return;
+    if (hasRegisterFormErrors(nextErrors)) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        gender: formData.gender,
+        institution: formData.institution.trim(),
+        motivation: formData.motivation.trim(),
+        password: formData.password,
+      };
+
+      await createRegistrationRequest(payload);
+      
+      setIsSubmitted(true);
+    } catch (error) {
+      setSubmitError(
+        error.message || 'No se ha podido enviar la solicitud. Inténtalo más tarde.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  const payload = createRegistrationRequestPayload(formData);
-  const result = await submitRegistrationRequest(payload);
-
-  if (result.success) {
-    setFormData(INITIAL_REGISTER_FORM_DATA);
-    setIsPasswordVisible(false);
-    setIsConfirmPasswordVisible(false);
+  // Vista de confirmación tras envío exitoso
+  if (isSubmitted) {
+    return (
+      <div className="register-success-container">
+        <MdCheckCircleOutline className="register-success-icon" aria-hidden="true" />
+        <h3 className="register-success-title">¡Solicitud enviada con éxito!</h3>
+        <p className="register-success-message">
+          Hemos recibido tus datos correctamente. Un administrador revisará tu perfil y recibirás una respuesta en tu correo electrónico.
+        </p>
+        <button
+          type="button"
+          className="register-submit"
+          onClick={() => navigate('/')}
+        >
+          Volver a la página principal
+        </button>
+      </div>
+    );
   }
-}
 
   return (
     <form className="register-form" onSubmit={handleSubmit} noValidate>
+      {submitError && (
+        <p className="register-submit-error" role="alert">
+          {submitError}
+        </p>
+      )}
+
       <div className="register-field">
         <label htmlFor="register-name">Nombre completo</label>
         <div className="register-input-wrapper">
@@ -256,8 +340,8 @@ export function RegisterForm() {
         </p>
       </div>
 
-      <button className="register-submit" type="submit">
-        Enviar solicitud
+      <button className="register-submit" type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Enviando solicitud...' : 'Enviar solicitud'}
       </button>
 
       <p className="register-login-text">

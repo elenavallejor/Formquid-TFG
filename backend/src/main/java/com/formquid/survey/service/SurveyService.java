@@ -10,6 +10,7 @@ import com.formquid.content.service.ContentService;
 import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.participation.repository.ParticipationRepository;
+import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
@@ -50,14 +51,22 @@ public class SurveyService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
+    @Transactional(readOnly = true)
     public List<SurveyResponseDto> findEditableByUser(User user) {
         return surveyRepository.findEditableByUser(user.getId()).stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<SurveyResponseDto> findAllForAdmin() {
         return surveyRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AdminSurveySummaryDto> findAdminSummaries() {
+        return surveyRepository.findAdminSummaries();
+    }
+
+    @Transactional(readOnly = true)
     public List<PublicSurveySummaryDto> findListedOpen(List<String> tags) {
         List<String> normalizedTags = normalizeTags(tags);
         return surveyRepository.findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
@@ -70,6 +79,7 @@ public class SurveyService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<PublicSurveySummaryDto> findListedOpenForRegistered(User user, List<String> tags) {
         List<String> normalizedTags = normalizeTags(tags);
         return surveyRepository.findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
@@ -92,12 +102,14 @@ public class SurveyService {
         );
     }
 
+    @Transactional(readOnly = true)
     public SurveyResponseDto getSurveyForUser(String surveyId, User user) {
         Survey survey = getSurvey(surveyId);
         ensureCanViewSurvey(survey, user);
         return toResponse(survey);
     }
 
+    @Transactional(readOnly = true)
     public SurveyResponseDto getPublicSurvey(String surveyId) {
         Survey survey = getSurvey(surveyId);
         if (!canViewPublicSurvey(survey)) {

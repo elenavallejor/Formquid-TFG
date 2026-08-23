@@ -1,7 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  MdOutlineLightbulb,
+  MdOutlinePersonAdd,
+  MdOutlineShield,
+  MdOutlinePoll,
+  MdOutlineHelpOutline,
+  MdOutlineWidgets,
+  MdOutlineDescription,
+} from 'react-icons/md';
 
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { AdminPanelButton } from '../../../components/AdminPanelButton/AdminPanelButton.jsx';
+import { PanelButton } from '../../../components/PanelButton/PanelButton.jsx';
+import { Table } from '../../../components/Table/Table.jsx';
+
+import { getPendingRegistrationRequests } from '../../../api/registrationRequestsApi.js';
+import { getPendingElementRequests } from '../../../api/elementRequestsApi.js';
+import { getAdminSurveysSummary } from '../../../api/surveysApi.js';
 
 import './PanelPage.css';
 
@@ -10,206 +26,108 @@ const ROLE_CONTENT = {
     title: 'Panel de editor',
     description: 'Gestiona tus encuestas, colaboraciones y resultados',
     type: 'EDITOR',
-    actions: [
-      {
-        id: 'crear-encuesta',
-        label: 'Crear encuesta',
-        description: 'Diseña una nueva encuesta desde cero.',
-        to: '/encuestas/nueva',
-        icon: 'plus',
-      },
-      {
-        id: 'mis-colaboraciones',
-        label: 'Mis colaboraciones',
-        description: 'Revisa invitaciones y encuestas compartidas contigo.',
-        to: '/colaboraciones',
-        icon: 'users',
-      },
-      {
-        id: 'resultados',
-        label: 'Resultados',
-        description: 'Consulta y analiza los resultados de tus encuestas.',
-        to: '/resultados',
-        icon: 'chart',
-      },
-      {
-        id: 'sugerir-elemento',
-        label: 'Sugerir elemento',
-        description: 'Propón nuevas funciones o mejoras para FormQuid.',
-        to: '/sugerencias',
-        icon: 'lightbulb',
-      },
-    ],
   },
-
   ADMINISTRADOR: {
     title: 'PANEL DE ADMINISTRADOR',
     description: 'Desde aquí puedes gestionar todas las áreas de la plataforma.',
     type: 'ADMIN_SUPER',
-    sections: [
-      {
-        title: 'PENDIENTES DE GESTIÓN',
-        items: [
-          {
-            id: 'solicitudes-catalogo',
-            title: 'SOLICITUDES PARA CATÁLOGO',
-            description: 'Revisa y gestiona las propuestas de nuevos elementos enviadas por los editores.',
-            badgeCount: 3,
-            badgeText: 'pendientes',
-            buttonLabel: 'Ver solicitudes',
-            to: '/admin/solicitudes-catalogo',
-            colorTheme: 'teal',
-            icon: 'lightbulb',
-          },
-          {
-            id: 'solicitudes-registro',
-            title: 'SOLICITUDES DE REGISTRO',
-            description: 'Revisa las solicitudes de alta de nuevos editores.',
-            badgeCount: 15,
-            badgeText: 'pendientes',
-            buttonLabel: 'Ver registros',
-            to: '/admin/solicitudes-registro',
-            colorTheme: 'orange',
-            icon: 'user-plus',
-          },
-        ],
-      },
-      {
-        title: 'OTRAS GESTIONES (SOLO SUPERADMINISTRADOR)',
-        items: [
-          {
-            id: 'usuarios-permisos',
-            title: 'USUARIOS Y PERMISOS',
-            description: 'Gestiona usuarios y permisos en la plataforma.',
-            buttonLabel: 'Ver registros',
-            to: '/superadmin/usuarios',
-            colorTheme: 'purple',
-            icon: 'shield',
-          },
-        ],
-      },
-    ],
-    hasSurveySummary: true,
   },
-
-  SUPERADMINISTRADOR: {
+  SUPERADMIN: {
     title: 'PANEL DE SUPERADMINISTRADOR',
     description: 'Desde aquí puedes gestionar todas las áreas de la plataforma.',
     type: 'ADMIN_SUPER',
-    sections: [
-      {
-        title: 'PENDIENTES DE GESTIÓN',
-        items: [
-          {
-            id: 'solicitudes-catalogo',
-            title: 'SOLICITUDES PARA CATÁLOGO',
-            description: 'Revisa y gestiona las propuestas de nuevos elementos enviadas por los editores.',
-            badgeCount: 3,
-            badgeText: 'pendientes',
-            buttonLabel: 'Ver solicitudes',
-            to: '/admin/solicitudes-catalogo',
-            colorTheme: 'teal',
-            icon: 'lightbulb',
-          },
-          {
-            id: 'solicitudes-registro',
-            title: 'SOLICITUDES DE REGISTRO',
-            description: 'Revisa las solicitudes de alta de nuevos editores.',
-            badgeCount: 15,
-            badgeText: 'pendientes',
-            buttonLabel: 'Ver registros',
-            to: '/admin/solicitudes-registro',
-            colorTheme: 'orange',
-            icon: 'user-plus',
-          },
-        ],
-      },
-      {
-        title: 'OTRAS GESTIONES (SOLO SUPERADMINISTRADOR)',
-        items: [
-          {
-            id: 'usuarios-permisos',
-            title: 'USUARIOS Y PERMISOS',
-            description: 'Gestiona usuarios y permisos en la plataforma.',
-            buttonLabel: 'Ver registros',
-            to: '/superadmin/usuarios',
-            colorTheme: 'purple',
-            icon: 'shield',
-          },
-        ],
-      },
-    ],
-    hasSurveySummary: true,
   },
 };
 
-// Se mantienen los nombres exactos de los roles sin normalización
-function getRoleContent(role) {
-  return ROLE_CONTENT[role] ?? null;
-}
+// Diccionarios de mapeo para los badges visuales de la tabla
+const LIFECYCLE_LABELS = {
+  DRAFT: 'Borrador',
+  OPEN: 'Abierta',
+  CLOSED: 'Cerrada',
+};
+
+const ACCESS_MODE_LABELS = {
+  PUBLIC: 'Pública',
+  PASSWORD_PROTECTED: 'Con contraseña',
+  AUTHENTICATED: 'Usuarios autenticados',
+};
+
+const VISIBILITY_LABELS = {
+  LISTED: 'Listada',
+  UNLISTED: 'No listada',
+};
 
 export function PanelPage() {
   const navigate = useNavigate();
   const { restoreSession, user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Estado mock de encuestas para el grid/tabla
-  const [mockSurveys] = useState([
-    {
-      id: 1,
-      title: 'Satisfacción del curso 2024',
-      status: 'Borrador',
-      tags: ['Educación', 'Satisfacción'],
-      editor: 'Elena Vallejo',
-      responses: 0,
-      updatedAt: '2026-08-10',
-    },
-    {
-      id: 2,
-      title: 'Evaluación de servicios 2024',
-      status: 'Abierta',
-      tags: ['Servicios', 'Experiencia'],
-      editor: 'Carlos Ruiz',
-      responses: 45,
-      updatedAt: '2026-08-15',
-    },
-    {
-      id: 3,
-      title: 'Consulta ciudadana',
-      status: 'Cerrada',
-      tags: ['Participación', 'Ciudadanía'],
-      editor: 'Ana Gómez',
-      responses: 128,
-      updatedAt: '2026-08-01',
-    },
-    {
-      id: 4,
-      title: 'Clima laboral interno',
-      status: 'Abierta',
-      tags: ['Recursos Humanos', 'Clima laboral'],
-      editor: 'Elena Vallejo',
-      responses: 32,
-      updatedAt: '2026-08-18',
-    },
-  ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataError, setDataError] = useState(null);
+
+  // Estado para las métricas de las tarjetas de administración
+  const [catalogRequestsCount, setCatalogRequestsCount] = useState(0);
+  const [registrationRequestsCount, setRegistrationRequestsCount] = useState(0);
+  const [surveys, setSurveys] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function checkSession() {
-      const currentUser = await restoreSession();
+    async function initializePanel() {
+      try {
+        const currentUser = await restoreSession();
 
-      if (!isMounted) return;
+        if (!isMounted) return;
 
-      if (!currentUser) {
-        navigate('/inicia-sesion', { replace: true });
-        return;
+        if (!currentUser) {
+          navigate('/inicia-sesion', { replace: true });
+          return;
+        }
+
+        const role = currentUser.role;
+        const isAdminOrSuper = role === 'ADMINISTRADOR' || role === 'SUPERADMIN';
+
+        // Peticiones paralelas solo si el usuario cuenta con permisos administrativos
+        if (isAdminOrSuper) {
+          const [catalogRes, registrationRes, surveysRes] = await Promise.allSettled([
+            getPendingElementRequests(),
+            getPendingRegistrationRequests(),
+            getAdminSurveysSummary(),
+          ]);
+
+          if (isMounted) {
+            // Manejo seguro de respuestas (soporta arrays planos y respuestas paginadas backend)
+            if (catalogRes.status === 'fulfilled') {
+              const res = catalogRes.value;
+              const items = Array.isArray(res) ? res : res?.content || res?.data || [];
+              setCatalogRequestsCount(items.length);
+            }
+
+            if (registrationRes.status === 'fulfilled') {
+              const res = registrationRes.value;
+              const items = Array.isArray(res) ? res : res?.content || res?.data || [];
+              setRegistrationRequestsCount(items.length);
+            }
+
+            if (surveysRes.status === 'fulfilled') {
+              const res = surveysRes.value;
+              const surveyList = Array.isArray(res) ? res : res?.content || res?.data || [];
+              setSurveys(surveyList);
+            }
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error al cargar la información del panel:', error);
+          setDataError('No se han podido obtener algunos datos del panel.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-
-      setIsLoading(false);
     }
 
-    void checkSession();
+    void initializePanel();
 
     return () => {
       isMounted = false;
@@ -217,14 +135,65 @@ export function PanelPage() {
   }, [navigate, restoreSession]);
 
   const panelContent = useMemo(
-    () => getRoleContent(user?.role),
+    () => ROLE_CONTENT[user?.role] ?? null,
     [user?.role]
   );
+
+  const isSuperAdmin = user?.role === 'SUPERADMIN';
+
+  const tableHeaders = [
+    'Título',
+    'Editor',
+    'Ciclo de vida',
+    'Modo de acceso',
+    'Visibilidad',
+    'Respuestas',
+    'Actualización',
+  ];
+
+  // Transformación de los datos recibidos de la API al formato consumible por <Table />
+  const tableData = useMemo(() => {
+    return surveys.slice(0, 5).map((survey, index) => {
+      const id = survey.id ?? index;
+      const lifecycle = survey.lifecycleStatus || survey.lifecycle || 'DRAFT';
+      const accessMode = survey.accessMode ?? 'PUBLIC';
+      const visibility = survey.visibility ?? 'LISTED';
+
+      const formattedDate = survey.updatedAt
+        ? new Date(survey.updatedAt).toLocaleDateString()
+        : '-';
+
+      return [
+        survey.title ?? 'Sin título',
+        survey.editorName || 'Sistema',
+        <span
+          key={`lifecycle-${id}`}
+          className={`table-badge table-badge-${lifecycle.toLowerCase()}`}
+        >
+          {LIFECYCLE_LABELS[lifecycle] ?? lifecycle}
+        </span>,
+        <span
+          key={`access-${id}`}
+          className={`table-badge table-badge-${accessMode.toLowerCase()}`}
+        >
+          {ACCESS_MODE_LABELS[accessMode] ?? accessMode}
+        </span>,
+        <span
+          key={`visibility-${id}`}
+          className={`table-badge table-badge-${visibility.toLowerCase()}`}
+        >
+          {VISIBILITY_LABELS[visibility] ?? visibility}
+        </span>,
+        survey.responses ?? 0,
+        formattedDate,
+      ];
+    });
+  }, [surveys]);
 
   if (isLoading) {
     return (
       <main className="panel-page" aria-busy="true">
-        <p className="panel-status">Cargando panel...</p>
+        <p className="panel-status">Cargando datos del panel...</p>
       </main>
     );
   }
@@ -236,8 +205,8 @@ export function PanelPage() {
   if (!panelContent) {
     return (
       <main className="panel-page">
-        <section className="panel-container" aria-labelledby="panel-title">
-          <h1 id="panel-title">Rol de usuario no reconocido</h1>
+        <section className="panel-container">
+          <h1>Rol de usuario no reconocido</h1>
           <p className="panel-description">
             Tu cuenta existe, pero el rol asociado ({user.role}) no tiene un panel configurado.
           </p>
@@ -249,176 +218,113 @@ export function PanelPage() {
   return (
     <main className={`panel-page panel-type-${panelContent.type.toLowerCase()}`}>
       <section className="panel-container" aria-labelledby="panel-title">
-        {/* Cabecera Principal */}
         <div className="panel-header">
           <h1 id="panel-title" className="panel-title">
             {panelContent.title}
           </h1>
           <p className="panel-description">{panelContent.description}</p>
+          {dataError && <p className="panel-error-message">{dataError}</p>}
         </div>
 
-        {/* Layout para EDITOR */}
-        {panelContent.type === 'EDITOR' && (
-          <>
-            <div className="panel-actions-grid" aria-label="Acciones disponibles">
-              {panelContent.actions.map((action) => (
-                <Link key={action.id} className="panel-card-action" to={action.to}>
-                  <div className={`panel-card-icon icon-${action.icon}`}>
-                    <span className="icon-placeholder" />
-                  </div>
-                  <div className="panel-card-content">
-                    <h3 className="panel-card-title">{action.label}</h3>
-                    <p className="panel-card-description">{action.description}</p>
-                  </div>
-                  <span className="panel-card-arrow">&rsaquo;</span>
-                </Link>
-              ))}
-            </div>
-
-            {/* Sección de Encuestas para Editor */}
-            <section className="panel-section surveys-section">
-              <div className="surveys-section-header">
-                <h2>Mis encuestas</h2>
-                <Link to="/encuestas" className="btn-secondary">
-                  Ver todas
-                </Link>
-              </div>
-
-              <div className="surveys-filters">
-                <div className="search-input-wrapper">
-                  <input type="text" placeholder="Buscar encuestas..." />
-                </div>
-                <select defaultValue="todos">
-                  <option value="todos">Todos los estados</option>
-                  <option value="borrador">Borrador</option>
-                  <option value="abierta">Abierta</option>
-                  <option value="cerrada">Cerrada</option>
-                </select>
-                <select defaultValue="recientes">
-                  <option value="recientes">Más recientes primero</option>
-                  <option value="antiguas">Más antiguas primero</option>
-                </select>
-              </div>
-
-              <div className="surveys-cards-grid">
-                {mockSurveys.map((survey) => (
-                  <article key={survey.id} className="survey-card">
-                    <div className="survey-card-image">
-                      <div className="image-placeholder" />
-                    </div>
-                    <div className="survey-card-body">
-                      <h3>{survey.title}</h3>
-                      <span className={`badge badge-${survey.status.toLowerCase()}`}>
-                        {survey.status}
-                      </span>
-                      <div className="survey-card-tags">
-                        {survey.tags.map((tag) => (
-                          <span key={tag} className="tag">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="survey-card-actions">
-                        <Link to={`/encuestas/${survey.id}/editar`} className="btn-action edit">
-                          Editar
-                        </Link>
-                        <Link to={`/encuestas/${survey.id}`} className="btn-action view">
-                          Ver
-                        </Link>
-                        <button type="button" className="btn-options" aria-label="Opciones">
-                          &vellip;
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
-
-        {/* Layout para ADMINISTRADOR / SUPERADMINISTRADOR */}
         {panelContent.type === 'ADMIN_SUPER' && (
           <div className="admin-panel-content">
-            {panelContent.sections.map((section) => (
-              <div key={section.title} className="admin-section">
-                <h2 className="admin-section-title">{section.title}</h2>
-                <div className="admin-cards-grid">
-                  {section.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`admin-management-card theme-${item.colorTheme}`}
-                    >
-                      <div className="admin-card-header">
-                        <div className="admin-card-icon">
-                          <span className="icon-placeholder" />
-                        </div>
-                        <div className="admin-card-info">
-                          <h3>{item.title}</h3>
-                          <p>{item.description}</p>
-                        </div>
-                      </div>
+            {/* Sección de Pendientes y Métricas */}
+            <section className="admin-section">
+              <h2 className="admin-section-title">PENDIENTES DE GESTIÓN</h2>
+              <div className="admin-cards-grid-3">
+                <AdminPanelButton
+                  title="SOLICITUDES PARA CATÁLOGO"
+                  description="Revisa y gestiona las propuestas de nuevos elementos enviadas por los editores."
+                  elementName="solicitudes"
+                  count={catalogRequestsCount}
+                  icon={MdOutlineLightbulb}
+                  to="/admin/solicitudes-catalogo"
+                  theme="teal"
+                  counterLabel="pendientes"
+                />
 
-                      <div className="admin-card-footer">
-                        {item.badgeCount !== undefined ? (
-                          <div className="admin-badge">
-                            <span className="badge-number">{item.badgeCount}</span>
-                            <span className="badge-text">{item.badgeText}</span>
-                          </div>
-                        ) : (
-                          <div className="admin-badge-spacer" />
-                        )}
+                <AdminPanelButton
+                  title="ENCUESTAS CREADAS"
+                  description="Gestiona y supervisa todas las encuestas registradas en la plataforma."
+                  elementName="encuestas"
+                  count={surveys.length}
+                  icon={MdOutlinePoll}
+                  to="/admin/encuestas"
+                  theme="teal"
+                  counterLabel="creadas" // Etiqueta personalizada para encuestas
+                />
 
-                        <Link to={item.to} className={`btn-admin-action theme-${item.colorTheme}`}>
-                          {item.buttonLabel} &rarr;
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <AdminPanelButton
+                  title="SOLICITUDES DE REGISTRO"
+                  description="Revisa las solicitudes de alta de nuevos editores."
+                  elementName="registros"
+                  count={registrationRequestsCount}
+                  icon={MdOutlinePersonAdd}
+                  to="/admin/solicitudes-registro"
+                  theme="teal"
+                  counterLabel="pendientes"
+                />
               </div>
-            ))}
+            </section>
 
-            {/* Resumen de encuestas para paneles de administración */}
-            {panelContent.hasSurveySummary && (
-              <section className="admin-section surveys-summary-section">
-                <div className="admin-section-header-row">
-                  <h2 className="admin-section-title">RESUMEN DE ENCUESTAS</h2>
-                  <Link to="/admin/encuestas" className="btn-admin-action theme-teal">
-                    Ver encuestas &rarr;
-                  </Link>
-                </div>
-
-                <div className="admin-table-wrapper">
-                  <table className="admin-surveys-table">
-                    <thead>
-                      <tr>
-                        <th>Título</th>
-                        <th>Editor</th>
-                        <th>Estado</th>
-                        <th>Respuestas</th>
-                        <th>Actualización</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockSurveys.map((survey) => (
-                        <tr key={survey.id}>
-                          <td>{survey.title}</td>
-                          <td>{survey.editor}</td>
-                          <td>
-                            <span className={`badge badge-${survey.status.toLowerCase()}`}>
-                              {survey.status}
-                            </span>
-                          </td>
-                          <td>{survey.responses}</td>
-                          <td>{survey.updatedAt}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {/* Sección exclusiva para el rol SUPERADMIN */}
+            {isSuperAdmin && (
+              <section className="admin-section">
+                <h2 className="admin-section-title">
+                  OTRAS GESTIONES (SOLO SUPERADMINISTRADOR)
+                </h2>
+                <div className="admin-cards-grid-full">
+                  <AdminPanelButton
+                    title="USUARIOS Y PERMISOS"
+                    description="Gestiona usuarios y permisos en la plataforma."
+                    icon={MdOutlineShield}
+                    to="/superadmin/usuarios"
+                    buttonLabel="Ver registros"
+                    theme="purple"
+                    fullWidth={true}
+                  />
                 </div>
               </section>
             )}
+
+            {/* Acceso directo al Catálogo */}
+            <section className="admin-section">
+              <h2 className="admin-section-title">Acceso al catálogo</h2>
+              <div className="catalog-buttons-grid">
+                <PanelButton
+                  title="Preguntas fijas"
+                  description="Gestiona las preguntas disponibles en el catálogo."
+                  icon={MdOutlineHelpOutline}
+                  to="/catalogo/preguntas"
+                />
+
+                <PanelButton
+                  title="Bloques"
+                  description="Gestiona los bloques de preguntas reutilizables."
+                  icon={MdOutlineWidgets}
+                  to="/catalogo/bloques"
+                />
+
+                <PanelButton
+                  title="Plantillas"
+                  description="Gestiona las plantillas de encuesta."
+                  icon={MdOutlineDescription}
+                  to="/catalogo/plantillas"
+                />
+              </div>
+            </section>
+
+            {/* Resumen dinámico en formato tabla */}
+            <section className="admin-section surveys-summary-section">
+              <div className="admin-section-header-row">
+                <h2 className="admin-section-title">RESUMEN DE ENCUESTAS</h2>
+                <Link to="/admin/encuestas" className="btn-admin-action-link">
+                  Ver encuestas &rarr;
+                </Link>
+              </div>
+
+              <Table headers={tableHeaders} data={tableData} />
+            </section>
           </div>
         )}
       </section>

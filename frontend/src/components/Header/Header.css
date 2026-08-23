@@ -12,10 +12,9 @@
 
 #main-header .header-content {
   width: 100%;
-  max-width: 1650px;
+  max-width: 1500px;
   margin: 0 auto;
   min-height: 70px;
-  padding: 0 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,7 +71,6 @@
   white-space: nowrap;
 }
 
-/* Navegación y Acciones */
 #main-header .header-navigation {
   display: flex;
   align-items: center;
@@ -136,7 +134,7 @@
   opacity: 0.9;
 }
 
-/* --- NOTIFICACIONES (Pill style) --- */
+/* NOTIFICACIONES */
 #main-header .notification-button {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -156,7 +154,6 @@
   border-color: rgba(255, 255, 255, 0.25);
 }
 
-/* Texto de notificaciones ajustado a 13px */
 #main-header .notification-label {
   font-size: 13px;
   font-weight: 600;
@@ -169,7 +166,6 @@
   font-size: 22px;
 }
 
-/* Circulito naranja independiente */
 #main-header .notification-badge {
   width: 9px;
   height: 9px;
@@ -180,10 +176,19 @@
   box-shadow: 0 0 0 2px var(--color-header, #001f2d);
 }
 
-/* --- USUARIO Y DROPDOWN --- */
 #main-header .user-menu {
   position: relative;
   display: inline-block;
+}
+
+#main-header .user-menu-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background: transparent;
 }
 
 #main-header .user-menu-summary {
@@ -297,7 +302,6 @@
   color: #d32f2f;
 }
 
-/* Móviles */
 @media only screen and (max-width: 650px) {
   #main-header .header-content {
     padding: 0 16px;

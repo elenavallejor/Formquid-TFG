@@ -1,5 +1,6 @@
 package com.formquid.survey.controller;
 
+import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.service.SurveyService;
@@ -31,6 +32,11 @@ public class AdminSurveyController {
     @GetMapping
     public List<SurveyResponseDto> findAll() {
         return surveyService.findAllForAdmin();
+    }
+
+    @GetMapping("/summary")
+    public List<AdminSurveySummaryDto> findSummary() {
+        return surveyService.findAdminSummaries();
     }
 
     @PatchMapping("/{surveyId}/lifecycle")

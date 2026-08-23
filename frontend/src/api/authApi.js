@@ -1,25 +1,29 @@
-import { apiClient } from './apiClient';
+import { apiClient } from './apiClient.js';
 
-export function login(credentials) {
+/**
+ * Inicia sesión en la plataforma.
+ */
+export async function login(credentials) {
   return apiClient('/auth/login', {
     method: 'POST',
     body: credentials,
   });
 }
 
-export function logout() {
+/**
+ * Cierra la sesión activa.
+ */
+export async function logout() {
   return apiClient('/auth/logout', {
     method: 'POST',
   });
 }
 
-export function getCurrentUser() {
-  return apiClient('/users/me');
-}
-
-export function createRegistrationRequest(payload) {
-  return apiClient('/registration-requests', {
-    method: 'POST',
-    body: payload,
+/**
+ * Obtiene el perfil del usuario autenticado (/users/me).
+ */
+export async function getCurrentUser() {
+  return apiClient('/users/me', {
+    method: 'GET',
   });
 }

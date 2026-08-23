@@ -144,3 +144,32 @@
 .register-login-link:hover {
   text-decoration: underline;
 }
+
+.register-success-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 70px 16px;
+}
+
+.register-success-icon {
+  font-size: 56px;
+  color: var(--color-success, #067647);
+  margin-bottom: 16px;
+}
+
+.register-success-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-header);
+}
+
+.register-success-message {
+  margin: 10px 0 65px 0;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}

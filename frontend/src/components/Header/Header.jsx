@@ -84,6 +84,11 @@ export function Header() {
     }
   }
 
+  // Cierra el menú desplegable cuando el puntero del ratón sale del área del menú
+  function handleMouseLeave(event) {
+    event.currentTarget.removeAttribute('open');
+  }
+
   return (
     <header id="main-header">
       <div className="header-content">
@@ -126,7 +131,7 @@ export function Header() {
                 )}
               </button>
 
-              <details className="user-menu">
+              <details className="user-menu" onMouseLeave={handleMouseLeave}>
                 <summary className="user-menu-summary">
                   <span
                     className="user-avatar"
