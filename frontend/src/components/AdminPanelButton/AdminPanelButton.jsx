@@ -2,22 +2,34 @@ import { Link } from 'react-router-dom';
 import { MdArrowForward } from 'react-icons/md';
 import './AdminPanelButton.css';
 
-export function AdminPanelButton({
-  title,
-  description,
-  elementName,
-  count,
-  icon: Icon,
-  to,
-  theme = 'teal',
-  fullWidth = false,
-  hideCounter = false,
-  buttonLabel,
-  counterLabel = 'pendientes', // Permite personalizar el texto ("pendientes", "creadas", etc.)
-}) {
-  const labelText = buttonLabel || `Ver ${elementName || 'registros'}`;
+const COUNTER_SINGULAR_MAP = {
+  pendientes: 'pendiente',
+  creadas: 'creada',
+  registros: 'registro',
+  solicitudes: 'solicitud'
+};
 
-  // Diseño destacado a ancho completo (sección Superadministrador)
+const ELEMENT_SINGULAR_MAP = {
+  solicitudes: 'solicitud',
+  encuestas: 'encuesta',
+  registros: 'registro'
+};
+
+export function AdminPanelButton({title, description, elementName, count, icon: Icon, to, theme = 'teal', fullWidth = false, hideCounter = false, buttonLabel, counterLabel = 'pendientes' }) {
+  const isSingular = count === 1;
+
+  const formattedCounterLabel = isSingular
+    ? COUNTER_SINGULAR_MAP[counterLabel] || counterLabel.replace(/s$/, '')
+    : counterLabel;
+
+  let labelText = buttonLabel;
+  if (!labelText) {
+    const name = isSingular
+      ? ELEMENT_SINGULAR_MAP[elementName] || elementName?.replace(/s$/, '')
+      : elementName || 'registros';
+    labelText = `Ver ${name}`;
+  }
+
   if (fullWidth) {
     return (
       <div className={`admin-panel-card full-width-variant theme-${theme}`}>
@@ -40,7 +52,6 @@ export function AdminPanelButton({
     );
   }
 
-  // Diseño estándar en formato tarjeta
   return (
     <div className={`admin-panel-card theme-${theme}`}>
       <div className="admin-panel-card-top">
@@ -58,7 +69,7 @@ export function AdminPanelButton({
         {!hideCounter ? (
           <div className="admin-panel-counter">
             <span className={`admin-panel-count-number theme-${theme}`}>{count}</span>
-            <span className="admin-panel-count-label">{counterLabel}</span>
+            <span className="admin-panel-count-label">{formattedCounterLabel}</span>
           </div>
         ) : (
           <div />

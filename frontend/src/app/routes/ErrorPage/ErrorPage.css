@@ -1,4 +1,4 @@
-.error-page-minimal {
+.error-page {
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -8,7 +8,7 @@
   padding: 40px 24px;
 }
 
-.error-page-minimal-container {
+.error-page-container {
   width: 100%;
   max-width: 900px;
   display: grid;
@@ -17,14 +17,14 @@
   gap: 40px;
 }
 
-.error-page-minimal-text {
+.error-page-text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   color: var(--color-text);
 }
 
-.error-page-minimal-logo {
+.error-page-logo {
   margin: 0 0 24px 0;
   font-size: 42px;
   font-weight: 800;
@@ -32,31 +32,31 @@
   letter-spacing: -0.02em;
 }
 
-.error-page-minimal-status {
+.error-page-status {
   margin: 0 0 16px 0;
   font-size: 16px;
   color: var(--color-text);
 }
 
-.error-page-minimal-status strong {
+.error-page-status strong {
   font-weight: 700;
   color: var(--color-accent);
 }
 
-.error-page-minimal-description {
+.error-page-description {
   margin: 0;
   font-size: 15px;
   line-height: 1.6;
   color: var(--color-text-muted);
 }
 
-.error-page-minimal-illustration {
+.error-page-illustration {
   display: flex;
   justify-content: flex-end;
   align-items: center;
 }
 
-.error-page-minimal-image {
+.error-page-image {
   width: 100%;
   max-width: 320px;
   height: auto;
@@ -64,17 +64,17 @@
 }
 
 @media only screen and (max-width: 768px) {
-  .error-page-minimal-container {
+  .error-page-container {
     grid-template-columns: 1fr;
     text-align: center;
     gap: 32px;
   }
 
-  .error-page-minimal-text {
+  .error-page-text {
     align-items: center;
   }
 
-  .error-page-minimal-illustration {
+  .error-page-illustration {
     justify-content: center;
   }
 }

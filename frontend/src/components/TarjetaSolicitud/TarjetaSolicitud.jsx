@@ -1,10 +1,4 @@
-import { MdOutlineEmail,
-  MdOutlineBusiness,
-  MdOutlinePerson,
-  MdOutlineEdit,
-  MdCheck,
-  MdClose
-} from 'react-icons/md';
+import { MdOutlineEmail, MdOutlineBusiness, MdOutlinePerson, MdOutlineEdit, MdOutlineCalendarToday, MdCheck, MdClose } from 'react-icons/md';
 import './TarjetaSolicitud.css';
 
 const GENDER_TRANSLATIONS = {
@@ -16,8 +10,7 @@ const GENDER_TRANSLATIONS = {
 export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
   const { id, name, email, institution, gender, motivation, createdAt } = solicitud;
 
-  const formattedDate = createdAt
-    ? new Date(createdAt).toLocaleString('es-ES', {
+  const formattedDate = createdAt ? new Date(createdAt).toLocaleString('es-ES', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -30,7 +23,6 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
 
   return (
     <article className="solicitud-card" aria-labelledby={`applicant-name-${id}`}>
-      {/* Columna 1: Nombre y Datos Personales */}
       <div className="solicitud-col solicitud-col-personal">
         <h3 id={`applicant-name-${id}`} className="solicitud-applicant-name">
           {name}
@@ -54,7 +46,6 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
 
       <div className="solicitud-divider" aria-hidden="true" />
 
-      {/* Columna 2: Motivación */}
       <div className="solicitud-col solicitud-col-motivation">
         <p className="solicitud-section-label flex-align">
           <MdOutlineEdit className="solicitud-label-icon" aria-hidden="true" />
@@ -65,9 +56,11 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
 
       <div className="solicitud-divider" aria-hidden="true" />
 
-      {/* Columna 3: Fecha de Solicitud */}
       <div className="solicitud-col solicitud-col-date">
-        <p className="solicitud-section-label center-text">SOLICITADO EL:</p>
+        <p className="solicitud-section-label flex-align center-text">
+          <MdOutlineCalendarToday className="solicitud-label-icon" aria-hidden="true" />
+          <span>SOLICITADO EL:</span>
+        </p>
         <time className="solicitud-date-value" dateTime={createdAt}>
           {formattedDate}
         </time>
@@ -75,7 +68,6 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
 
       <div className="solicitud-divider" aria-hidden="true" />
 
-      {/* Columna 4: Acciones */}
       <div className="solicitud-col solicitud-col-actions">
         <button
           type="button"

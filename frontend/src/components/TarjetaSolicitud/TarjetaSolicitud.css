@@ -1,13 +1,15 @@
 .solicitud-card {
-  display: grid;
-  grid-template-columns: 1.2fr auto 1.6fr auto 1.1fr auto 170px;
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 28px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 24px;
 }
 
 .solicitud-card:hover {
@@ -19,16 +21,37 @@
   flex-direction: column;
 }
 
+.solicitud-col-personal {
+  flex: 1.2;
+  min-width: 220px;
+}
+
+.solicitud-col-motivation {
+  flex: 1.8;
+  min-width: 0;
+}
+
+.solicitud-col-date {
+  flex: 1;
+  min-width: 160px;
+  align-items: flex-start;
+}
+
+.solicitud-col-actions {
+  flex: 0 0 170px;
+  gap: 12px;
+}
+
 .solicitud-divider {
   width: 1px;
-  height: 85%;
+  height: 90px;
   background-color: #e2e8f0;
-  margin: 0 24px;
+  flex-shrink: 0;
 }
 
 .solicitud-applicant-name {
   margin: 0 0 12px 0;
-  font-size: 19px; 
+  font-size: 19px;
   font-weight: 800;
   color: var(--color-header);
   text-transform: uppercase;
@@ -67,7 +90,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 15px; 
+  font-size: 15px;
   color: var(--color-text);
   font-weight: 500;
 }
@@ -83,21 +106,31 @@
   font-size: 15px;
   line-height: 1.55;
   color: var(--color-text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
-.solicitud-col-date {
-  align-items: center;
-  text-align: center;
+.solicitud-motivation-text::-webkit-scrollbar {
+  width: 5px;
+}
+
+.solicitud-motivation-text::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.solicitud-motivation-text::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
 }
 
 .solicitud-date-value {
   font-size: 15px;
   font-weight: 600;
   color: var(--color-text);
-}
-
-.solicitud-col-actions {
-  gap: 14px;
 }
 
 .btn-solicitud-action {
@@ -139,29 +172,41 @@
   font-size: 20px;
 }
 
-@media only screen and (max-width: 1024px) {
+/* Transformación de columnas a filas para tablets y móviles */
+@media only screen and (max-width: 1100px) {
   .solicitud-card {
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
   }
+
   .solicitud-divider {
     display: none;
   }
-  .solicitud-col-actions {
-    flex-direction: row;
-    grid-column: span 2;
+
+  .solicitud-col-personal,
+  .solicitud-col-motivation,
+  .solicitud-col-date {
+    width: 100%;
   }
+
+  .solicitud-col-actions {
+    flex: none;
+    width: 100%;
+    flex-direction: row;
+    gap: 16px;
+    margin-top: 8px;
+  }
+
   .btn-solicitud-action {
     flex: 1;
+    justify-content: center;
+    gap: 10px;
   }
 }
 
-@media only screen and (max-width: 640px) {
-  .solicitud-card {
-    grid-template-columns: 1fr;
-  }
+@media only screen and (max-width: 600px) {
   .solicitud-col-actions {
-    grid-column: span 1;
     flex-direction: column;
   }
 }

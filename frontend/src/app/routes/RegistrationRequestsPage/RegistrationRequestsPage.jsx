@@ -1,4 +1,3 @@
-// src/pages/admin/RegistrationRequestsPage/RegistrationRequestsPage.jsx
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { MdSearch, MdKeyboardArrowRight } from 'react-icons/md';
@@ -20,29 +19,40 @@ export function RegistrationRequestsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('NEWEST');
 
-  // Estado para el modal de confirmación
   const [modalState, setModalState] = useState({
     isOpen: false,
-    actionType: null, // 'ACCEPT' | 'DENY'
+    actionType: null,
     solicitud: null,
   });
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    let isMounted = true;
 
-  async function fetchRequests() {
-    try {
-      setIsLoading(true);
-      const data = await getPendingRegistrationRequests();
-      const items = Array.isArray(data) ? data : data?.content || [];
-      setRequests(items);
-    } catch (err) {
-      setErrorMessage('No se pudieron obtener las solicitudes de registro.');
-    } finally {
-      setIsLoading(false);
+    async function fetchRequests() {
+      try {
+        setIsLoading(true);
+        const data = await getPendingRegistrationRequests();
+        if (isMounted) {
+          const items = Array.isArray(data) ? data : data?.content || [];
+          setRequests(items);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setErrorMessage('No se pudieron obtener las solicitudes de registro.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     }
-  }
+
+    void fetchRequests();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function handleOpenModal(actionType, solicitud) {
     setModalState({
@@ -67,7 +77,6 @@ export function RegistrationRequestsPage() {
         await rejectRegistrationRequest(solicitud.id);
       }
 
-      // Elimina la solicitud de la lista inmediatamente tras confirmar
       setRequests((prev) => prev.filter((item) => item.id !== solicitud.id));
     } catch (err) {
       console.error('Error al procesar la solicitud:', err);
@@ -76,7 +85,6 @@ export function RegistrationRequestsPage() {
     }
   }
 
-  // Filtrado y ordenación
   const filteredRequests = useMemo(() => {
     return requests
       .filter((req) => {
@@ -97,20 +105,17 @@ export function RegistrationRequestsPage() {
   return (
     <main className="admin-requests-page">
       <div className="admin-requests-container">
-        {/* Migas de pan */}
         <nav className="breadcrumb-nav" aria-label="Migas de pan">
           <Link to="/panel">PANEL</Link>
           <MdKeyboardArrowRight aria-hidden="true" />
           <span aria-current="page">SOLICITUDES DE REGISTRO</span>
         </nav>
 
-        {/* Encabezado */}
         <header className="page-header">
           <h1>SOLICITUDES DE REGISTRO</h1>
           <p>Revisa y gestiona las solicitudes de alta de nuevos editores en la plataforma.</p>
         </header>
 
-        {/* Barra de Filtros */}
         <section className="filters-bar" aria-label="Filtros de búsqueda">
           <div className="search-input-wrapper">
             <MdSearch className="search-icon" aria-hidden="true" />
@@ -135,7 +140,6 @@ export function RegistrationRequestsPage() {
           </div>
         </section>
 
-        {/* Listado de Solicitudes */}
         <section className="requests-list" aria-label="Listado de solicitudes">
           {isLoading ? (
             <p className="requests-status-text">Cargando solicitudes...</p>
@@ -158,7 +162,6 @@ export function RegistrationRequestsPage() {
         </section>
       </div>
 
-      {/* Modal de Confirmación */}
       <ConfirmModal
         isOpen={modalState.isOpen}
         onClose={handleCloseModal}
