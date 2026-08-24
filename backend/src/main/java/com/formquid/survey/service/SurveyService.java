@@ -57,11 +57,6 @@ public class SurveyService {
     }
 
     @Transactional(readOnly = true)
-    public List<SurveyResponseDto> findAllForAdmin() {
-        return surveyRepository.findAll().stream().map(this::toResponse).toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<AdminSurveySummaryDto> findAdminSummaries() {
         return surveyRepository.findAdminSummaries();
     }

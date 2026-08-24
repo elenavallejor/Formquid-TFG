@@ -41,11 +41,7 @@ public class ElementRequestService {
      */
     @Transactional(readOnly = true)
     public List<ElementRequestResponseDto> findPending() {
-        return elementRequestRepository
-            .findAllByOrderByCreatedAtAsc()
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        return elementRequestRepository.findAllResponses();
     }
 
     /**

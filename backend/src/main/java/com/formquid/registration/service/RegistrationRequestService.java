@@ -34,10 +34,7 @@ public class RegistrationRequestService {
      */
     @Transactional(readOnly = true)
     public List<RegistrationRequestResponseDto> findPending() {
-        return requestRepository.findAllByOrderByCreatedAtAsc()
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        return requestRepository.findAllResponses();
     }
 
     /**
@@ -62,7 +59,7 @@ public class RegistrationRequestService {
 
         RegistrationRequest saved = requestRepository.save(entity);
 
-        notifyAdmins(saved);
+        notificationService.notifyAdminsAboutRegistrationRequest(saved);
 
         return toResponse(saved);
     }
@@ -119,6 +116,14 @@ public class RegistrationRequestService {
         );
 
         /*
+         * Las notificaciones que apuntan a la solicitud dejan de ser útiles
+         * cuando esta se resuelve.
+         */
+        notificationService.deleteRegistrationRequestNotifications(
+            request.getId()
+        );
+
+        /*
          * Una solicitud solo existe mientras está pendiente.
          */
         requestRepository.delete(request);
@@ -148,6 +153,10 @@ public class RegistrationRequestService {
          * );
          */
 
+        notificationService.deleteRegistrationRequestNotifications(
+            request.getId()
+        );
+
         requestRepository.delete(request);
     }
 
@@ -163,30 +172,6 @@ public class RegistrationRequestService {
                 HttpStatus.NOT_FOUND,
                 "Solicitud no encontrada"
             ));
-    }
-
-    /**
-     * Notifica a administradores y superadministradores
-     * de una nueva solicitud de registro.
-     */
-    private void notifyAdmins(RegistrationRequest request) {
-
-        userRepository.findAll()
-            .stream()
-            .filter(user ->
-                user.getRole() == UserRole.ADMIN
-                    || user.getRole() == UserRole.SUPERADMIN
-            )
-            .forEach(user ->
-                notificationService.createRegistrationRequestNotification(
-                    user,
-                    NotificationType.REGISTRATION_REQUEST,
-                    "Nueva solicitud de registro",
-                    "Hay una nueva solicitud de cuenta para "
-                        + request.getEmail(),
-                    request
-                )
-            );
     }
 
     /**

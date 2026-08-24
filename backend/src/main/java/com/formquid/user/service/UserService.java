@@ -26,8 +26,9 @@ public class UserService {
     private final SurveyCollaboratorRepository collaboratorRepository;
     private final NotificationService notificationService;
 
+    @Transactional(readOnly = true)
     public List<UserResponseDto> findAll() {
-        return userRepository.findAll().stream().map(this::toResponse).toList();
+        return userRepository.findAllResponses();
     }
 
     public User getById(UUID id) {
@@ -35,8 +36,12 @@ public class UserService {
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }
 
+    @Transactional(readOnly = true)
     public UserResponseDto getProfile(User user) {
-        return toResponse(user);
+        return userRepository.findResponseById(user.getId())
+            .orElseThrow(() ->
+                new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado")
+            );
     }
 
     /**

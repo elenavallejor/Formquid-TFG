@@ -28,10 +28,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "gender in ('MALE', 'FEMALE', 'OTHER') and status in ('PENDING', 'APPROVED', 'REJECTED') and email = lower(btrim(email))")
+@Check(constraints = "gender in ('MALE', 'FEMALE', 'OTHER') and email = lower(btrim(email))")
 @Table(
     name = "registration_requests",
-    indexes = @Index(name = "idx_registration_requests_email", columnList = "email")
+    indexes = {
+        @Index(name = "idx_registration_requests_email", columnList = "email"),
+        @Index(name = "idx_registration_requests_created_at", columnList = "created_at")
+    }
 )
 public class RegistrationRequest {
 

@@ -30,10 +30,13 @@ public class AdminSurveyController {
     private final SurveyService surveyService;
 
     @GetMapping
-    public List<SurveyResponseDto> findAll() {
-        return surveyService.findAllForAdmin();
+    public List<AdminSurveySummaryDto> findAll() {
+        return surveyService.findAdminSummaries();
     }
 
+    /**
+     * Alias temporal para mantener compatibilidad con el frontend actual.
+     */
     @GetMapping("/summary")
     public List<AdminSurveySummaryDto> findSummary() {
         return surveyService.findAdminSummaries();

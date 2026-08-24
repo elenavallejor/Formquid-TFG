@@ -48,7 +48,7 @@ import java.time.Instant;
     name = "notifications",
     indexes = {
         @Index(name = "idx_notifications_recipient_created", columnList = "recipient_user_id, created_at"),
-        @Index(name = "idx_notifications_recipient_read", columnList = "recipient_user_id, read_at"),
+        @Index(name = "idx_notifications_recipient_channel_read", columnList = "recipient_user_id, channel, read_at"),
         @Index(name = "idx_notifications_target", columnList = "target_type, target_id")
     }
 )

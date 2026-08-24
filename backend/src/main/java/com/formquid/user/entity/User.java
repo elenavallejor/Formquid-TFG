@@ -43,8 +43,7 @@ import java.util.UUID;
     name = "users",
     uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
     indexes = {
-        @Index(name = "idx_users_role", columnList = "role"),
-        @Index(name = "idx_users_email", columnList = "email")
+        @Index(name = "idx_users_role", columnList = "role")
     }
 )
 public class User implements UserDetails {

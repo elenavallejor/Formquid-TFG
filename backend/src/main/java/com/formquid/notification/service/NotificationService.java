@@ -36,10 +36,7 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationResponseDto> findForUser(UUID userId) {
         return notificationRepository
-            .findByRecipientUserIdOrderByCreatedAtDesc(userId)
-            .stream()
-            .map(this::toResponse)
-            .toList();
+            .findResponsesByRecipientUserId(userId);
     }
 
     /**
@@ -228,20 +225,14 @@ public class NotificationService {
         String title,
         String message
     ) {
-        userRepository.findAll()
-            .stream()
-            .filter(user ->
-                user.getRole() == UserRole.ADMIN
-                    || user.getRole() == UserRole.SUPERADMIN
+        adminUserReferences().forEach(user ->
+            createInternal(
+                user,
+                type,
+                title,
+                message
             )
-            .forEach(user ->
-                createInternal(
-                    user,
-                    type,
-                    title,
-                    message
-                )
-            );
+        );
     }
 
     /**
@@ -250,21 +241,33 @@ public class NotificationService {
     public void notifyAdminsAboutElementRequest(
         ElementRequest request
     ) {
-        userRepository.findAll()
-            .stream()
-            .filter(user ->
-                user.getRole() == UserRole.ADMIN
-                    || user.getRole() == UserRole.SUPERADMIN
+        adminUserReferences().forEach(user ->
+            createElementRequestNotification(
+                user,
+                NotificationType.ELEMENT_REQUEST,
+                "Nueva solicitud de elemento",
+                "Hay una nueva propuesta de elemento para el catálogo",
+                request
             )
-            .forEach(user ->
-                createElementRequestNotification(
-                    user,
-                    NotificationType.ELEMENT_REQUEST,
-                    "Nueva solicitud de elemento",
-                    "Hay una nueva propuesta de elemento para el catálogo",
-                    request
-                )
-            );
+        );
+    }
+
+    /**
+     * Notifica a administración sobre una nueva solicitud de registro sin
+     * cargar todos los usuarios de la plataforma.
+     */
+    public void notifyAdminsAboutRegistrationRequest(
+        RegistrationRequest request
+    ) {
+        adminUserReferences().forEach(user ->
+            createRegistrationRequestNotification(
+                user,
+                NotificationType.REGISTRATION_REQUEST,
+                "Nueva solicitud de registro",
+                "Hay una nueva solicitud de cuenta para " + request.getEmail(),
+                request
+            )
+        );
     }
 
     /**
@@ -363,6 +366,19 @@ public class NotificationService {
     }
 
     /**
+     * Obtiene referencias JPA de administradores recuperando de PostgreSQL
+     * únicamente sus identificadores.
+     */
+    private List<User> adminUserReferences() {
+        return userRepository.findIdsByRoleIn(
+                List.of(UserRole.ADMIN, UserRole.SUPERADMIN)
+            )
+            .stream()
+            .map(userRepository::getReferenceById)
+            .toList();
+    }
+
+    /**
      * Crea y persiste una notificación.
      */
     private Notification create(
@@ -394,28 +410,14 @@ public class NotificationService {
         Long id,
         UUID currentUserId
     ) {
-        Notification notification =
-            notificationRepository.findById(id)
-                .orElseThrow(() ->
-                    new ApiException(
-                        HttpStatus.NOT_FOUND,
-                        "Notificación no encontrada"
-                    )
-                );
-
-        if (
-            !notification
-                .getRecipientUser()
-                .getId()
-                .equals(currentUserId)
-        ) {
-            throw new ApiException(
-                HttpStatus.FORBIDDEN,
-                "La notificación no pertenece al usuario actual"
+        return notificationRepository
+            .findByIdAndRecipientUserId(id, currentUserId)
+            .orElseThrow(() ->
+                new ApiException(
+                    HttpStatus.NOT_FOUND,
+                    "Notificación no encontrada"
+                )
             );
-        }
-
-        return notification;
     }
 
     /**

@@ -4,6 +4,7 @@ import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -46,6 +47,34 @@ public interface SurveyRepository extends JpaRepository<Survey, String> {
         order by survey.updatedAt desc
     """)
     List<AdminSurveySummaryDto> findAdminSummaries();
+
+    /**
+     * Misma proyección, limitada mediante Pageable para el dashboard.
+     */
+    @Query("""
+        select new com.formquid.survey.dto.AdminSurveySummaryDto(
+            survey.id,
+            survey.title,
+            survey.owner.name,
+            survey.lifecycleStatus,
+            survey.accessMode,
+            survey.visibility,
+            count(participation.id),
+            survey.updatedAt
+        )
+        from Survey survey
+        left join Participation participation
+            on participation.survey = survey
+        group by survey.id,
+            survey.title,
+            survey.owner.name,
+            survey.lifecycleStatus,
+            survey.accessMode,
+            survey.visibility,
+            survey.updatedAt
+        order by survey.updatedAt desc
+    """)
+    List<AdminSurveySummaryDto> findAdminSummaries(Pageable pageable);
 
     @Query("""
         select distinct survey

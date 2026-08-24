@@ -53,7 +53,8 @@ import java.util.List;
     name = "surveys",
     indexes = {
         @Index(name = "idx_surveys_owner", columnList = "owner_id"),
-        @Index(name = "idx_surveys_lifecycle_visibility", columnList = "lifecycle_status, visibility")
+        @Index(name = "idx_surveys_lifecycle_visibility", columnList = "lifecycle_status, visibility"),
+        @Index(name = "idx_surveys_updated_at", columnList = "updated_at")
     }
 )
 public class Survey {

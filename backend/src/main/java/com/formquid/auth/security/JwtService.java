@@ -1,23 +1,24 @@
 package com.formquid.auth.security;
 
 import com.formquid.user.entity.User;
+import com.formquid.user.entity.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * Servicio de gestión de tokens JWT.
  *
- * Genera tokens para usuarios autenticados y valida los tokens recibidos
- * en las peticiones protegidas. 
+ * El token contiene únicamente los datos necesarios para autenticar y
+ * autorizar peticiones sin consultar la base de datos en cada request.
  */
 @Service
 public class JwtService {
@@ -29,11 +30,12 @@ public class JwtService {
     private long jwtExpirationMs;
 
     /**
-     * Recibe un usuario autenticado y devuelve su JWT.
+     * Genera un JWT firmado para un usuario autenticado.
      */
     public String generateToken(User user) {
         Instant now = Instant.now();
         Instant expiration = now.plusMillis(jwtExpirationMs);
+
         return Jwts.builder()
             .subject(user.getEmail())
             .claim("userId", user.getId().toString())
@@ -45,26 +47,35 @@ public class JwtService {
     }
 
     /**
-     * Recibe un token JWT. Devuelve el correo almacenado como subject.
+     * Valida firma y expiración una sola vez y reconstruye el principal
+     * mínimo que Spring Security necesita durante la petición.
+     *
+     * No realiza consultas a PostgreSQL.
      */
-    public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    /**
-     * Recibe un token y un usuario. Devuelve true si el token pertenece al usuario y no ha expirado.
-     */
-    public boolean isTokenValid(String token, UserDetails userDetails) {
+    public User extractAuthenticatedUser(String token) {
         Claims claims = extractAllClaims(token);
+
+        String email = claims.getSubject();
+        String userId = claims.get("userId", String.class);
+        String role = claims.get("role", String.class);
         Date expiration = claims.getExpiration();
-        return claims.getSubject() != null
-            && claims.getSubject().equals(userDetails.getUsername())
-            && expiration != null
-            && expiration.after(new Date());
+
+        if (email == null || email.isBlank()
+            || userId == null || userId.isBlank()
+            || role == null || role.isBlank()
+            || expiration == null || !expiration.after(new Date())) {
+            throw new IllegalArgumentException("JWT incompleto o expirado");
+        }
+
+        return User.builder()
+            .id(UUID.fromString(userId))
+            .email(email)
+            .role(UserRole.valueOf(role))
+            .build();
     }
 
     /**
-     * Recibe un token JWT. Devuelve sus claims tras verificar la firma.
+     * Parsea el token y verifica su firma criptográfica.
      */
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
@@ -74,8 +85,9 @@ public class JwtService {
             .getPayload();
     }
 
-    // signing key para validar tokens.
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(
+            jwtSecret.getBytes(StandardCharsets.UTF_8)
+        );
     }
 }
