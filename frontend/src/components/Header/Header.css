@@ -1,11 +1,11 @@
 #main-header {
   width: 100%;
   min-height: 60px;
-  background-color: var(--color-header);
-  color: var(--color-text-on-dark);
   position: relative;
   z-index: 10;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--color-header);
+  color: var(--color-text-on-dark);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(8px);
 }
@@ -13,8 +13,8 @@
 #main-header .header-content {
   width: 100%;
   max-width: 1500px;
-  margin: 0 auto;
   min-height: 70px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -22,8 +22,8 @@
 
 #main-header .brand {
   min-height: 44px;
-  padding: 4px 8px;
   margin-left: -8px;
+  padding: 4px 8px;
   border-radius: 8px;
   color: var(--color-text-on-dark);
   display: inline-flex;
@@ -41,34 +41,17 @@
 }
 
 #main-header .brand-name {
-  font-size: 30px; 
-  line-height: 1.1;
-  font-weight: 600; 
-  letter-spacing: -0.01em;
   color: var(--color-text-on-dark);
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   user-select: none;
 }
 
 #main-header .brand-name span {
   color: var(--color-accent);
   font-weight: 400;
-}
-
-.password-footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 20px;
-}
-
-.password-footer-row .login-error-message {
-  flex: 1;
-}
-
-.password-footer-row .forgot-password-link {
-  margin-top: 0;
-  white-space: nowrap;
 }
 
 #main-header .header-navigation {
@@ -92,18 +75,19 @@
   letter-spacing: 0.01em;
   text-decoration: none;
   opacity: 0.85;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
 }
 
 #main-header .request-account-link:hover {
-  opacity: 1;
   background-color: rgba(255, 255, 255, 0.06);
   color: var(--color-text-on-dark);
+  opacity: 1;
 }
 
 #main-header .login-link {
   min-height: 44px;
   padding: 0 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   background-color: var(--color-primary);
   color: var(--color-text-on-dark);
@@ -116,9 +100,8 @@
   font-weight: 500;
   letter-spacing: 0.01em;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 #main-header .login-link:hover {
@@ -134,19 +117,18 @@
   opacity: 0.9;
 }
 
-/* NOTIFICACIONES */
 #main-header .notification-button {
-  background: transparent;
+  position: relative;
+  padding: 8px 18px;
   border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50px;
+  background-color: transparent;
   color: var(--color-text-on-dark, #ffffff);
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 18px;
-  border-radius: 50px;
-  position: relative;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 #main-header .notification-button:hover {
@@ -155,10 +137,10 @@
 }
 
 #main-header .notification-label {
+  color: var(--color-text-on-dark, #ffffff);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--color-text-on-dark, #ffffff);
   opacity: 0.95;
 }
 
@@ -169,8 +151,8 @@
 #main-header .notification-badge {
   width: 9px;
   height: 9px;
-  background-color: #d9531e;
   border-radius: 50%;
+  background-color: #d9531e;
   display: inline-block;
   flex-shrink: 0;
   box-shadow: 0 0 0 2px var(--color-header, #001f2d);
@@ -179,16 +161,6 @@
 #main-header .user-menu {
   position: relative;
   display: inline-block;
-}
-
-#main-header .user-menu-dropdown::before {
-  content: "";
-  position: absolute;
-  top: -12px;
-  left: 0;
-  width: 100%;
-  height: 12px;
-  background: transparent;
 }
 
 #main-header .user-menu-summary {
@@ -215,11 +187,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  flex-shrink: 0;
   font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  flex-shrink: 0;
 }
 
 #main-header .user-header-information {
@@ -229,21 +201,21 @@
 }
 
 #main-header .user-header-name {
-  font-size: 14px;
-  font-weight: 600;
   color: var(--color-text-on-dark, #ffffff);
+  font-size: 14px;
   line-height: 1.2;
+  font-weight: 600;
 }
 
 #main-header .user-header-role {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.65);
   margin-top: 1px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
 }
 
 #main-header .user-menu-arrow {
-  font-size: 20px;
   color: var(--color-text-on-dark, #ffffff);
+  font-size: 20px;
   transition: transform 0.2s ease;
 }
 
@@ -255,31 +227,41 @@
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 100;
   min-width: 170px;
   padding: 6px 0;
-  z-index: 100;
+  border-radius: 8px;
+  background-color: #ffffff;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+#main-header .user-menu-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background-color: transparent;
 }
 
 #main-header .user-menu-option {
+  width: 100%;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  border: none;
+  background-color: transparent;
+  color: #333333;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
   font-size: 14px;
-  color: #333333;
-  text-decoration: none;
-  background: transparent;
-  border: none;
-  width: 100%;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  box-sizing: border-box;
 }
 
 #main-header .user-menu-option:hover {
@@ -287,30 +269,45 @@
 }
 
 #main-header .user-menu-option svg {
-  font-size: 18px;
   color: #666666;
+  font-size: 18px;
 }
 
 #main-header .user-menu-option.logout-option {
-  color: #d32f2f;
-  border-top: 1px solid #eeeeee;
   margin-top: 4px;
   padding-top: 10px;
+  border-top: 1px solid #eeeeee;
+  color: #d32f2f;
 }
 
 #main-header .user-menu-option.logout-option svg {
   color: #d32f2f;
 }
 
+#main-header .user-menu-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+#main-header .brand:focus-visible,
+#main-header .login-link:focus-visible,
+#main-header .request-account-link:focus-visible,
+#main-header .notification-button:focus-visible,
+#main-header .user-menu-summary:focus-visible,
+#main-header .user-menu-option:focus-visible {
+  outline: 3px solid rgba(0, 152, 138, 0.55);
+  outline-offset: 3px;
+}
+
 @media only screen and (max-width: 650px) {
   #main-header .header-content {
-    padding: 0 16px;
     min-height: 60px;
+    padding: 0 16px;
   }
 
   #main-header .brand {
-    gap: 8px;
     margin-left: 0;
+    gap: 8px;
   }
 
   #main-header .brand-logo {
@@ -319,7 +316,7 @@
   }
 
   #main-header .brand-name {
-    font-size: 18px; 
+    font-size: 18px;
   }
 
   #main-header .header-navigation {

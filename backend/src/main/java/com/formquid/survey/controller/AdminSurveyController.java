@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Expone las operaciones administrativas de supervisión sobre las encuestas de la plataforma.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/surveys")
 @RequiredArgsConstructor
@@ -31,14 +34,6 @@ public class AdminSurveyController {
 
     @GetMapping
     public List<AdminSurveySummaryDto> findAll() {
-        return surveyService.findAdminSummaries();
-    }
-
-    /**
-     * Alias temporal para mantener compatibilidad con el frontend actual.
-     */
-    @GetMapping("/summary")
-    public List<AdminSurveySummaryDto> findSummary() {
         return surveyService.findAdminSummaries();
     }
 

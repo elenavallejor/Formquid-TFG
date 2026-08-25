@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Expone la consulta pública de encuestas disponibles sin requerir autenticación.
+ */
 @RestController
 @RequestMapping("/api/v1/public/surveys")
 @RequiredArgsConstructor

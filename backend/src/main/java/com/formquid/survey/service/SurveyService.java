@@ -13,7 +13,9 @@ import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
+import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyResponseDto;
+import com.formquid.survey.dto.SurveySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
@@ -26,6 +28,10 @@ import com.formquid.template.service.TemplateService;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,8 +40,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
+import java.util.Locale;
 
+/**
+ * Centraliza la lógica de creación, consulta, permisos y gestión de las encuestas.
+ */
 @Service
 @RequiredArgsConstructor
 public class SurveyService {
@@ -52,8 +61,48 @@ public class SurveyService {
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    public List<SurveyResponseDto> findEditableByUser(User user) {
-        return surveyRepository.findEditableByUser(user.getId()).stream().map(this::toResponse).toList();
+    public SurveyPageResponseDto findEditableByUser(
+        User user,
+        String search,
+        SurveyLifecycle lifecycleStatus,
+        Pageable pageable
+    ) {
+        if (user == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
+        }
+        if (pageable.getPageNumber() < 0 || pageable.getPageSize() < 1 || pageable.getPageSize() > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
+        }
+
+        Sort.Order updatedAtOrder = pageable.getSort().getOrderFor("updatedAt");
+        if (updatedAtOrder == null || pageable.getSort().stream().count() != 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ordenación de encuestas no válida");
+        }
+
+        String normalizedSearch = search == null
+            ? ""
+            : search.trim().toLowerCase(Locale.ROOT);
+
+        PageRequest safePageable = PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(updatedAtOrder.getDirection(), "updatedAt")
+        );
+
+        Page<Survey> surveys = surveyRepository.findEditableByUser(
+            user.getId(),
+            normalizedSearch,
+            lifecycleStatus,
+            safePageable
+        );
+
+        return new SurveyPageResponseDto(
+            surveys.getContent().stream().map(this::toSummary).toList(),
+            surveys.getNumber(),
+            surveys.getSize(),
+            surveys.getTotalElements(),
+            surveys.getTotalPages()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -172,10 +221,6 @@ public class SurveyService {
         return surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
     }
-
-    /**
-     * Recibe metadatos de encuesta y devuelve la encuesta creada.
-     */
     @Transactional
     public SurveyResponseDto create(CreateSurveyRequestDto request, User owner) {
         Template sourceTemplate = null;
@@ -202,10 +247,6 @@ public class SurveyService {
         }
         return toResponse(saved);
     }
-
-    /**
-     * Recibe metadatos actualizados y devuelve la encuesta modificada.
-     */
     @Transactional
     public SurveyResponseDto update(String surveyId, UpdateSurveyRequestDto request, User actor) {
         Survey survey = getSurvey(surveyId);
@@ -219,10 +260,6 @@ public class SurveyService {
         saveTags(survey, request.tags());
         return toResponse(survey);
     }
-
-    /**
-     * Recibe nuevo ciclo de vida y devuelve la encuesta actualizada.
-     */
     @Transactional
     public SurveyResponseDto changeLifecycle(String surveyId, SurveyLifecycle lifecycle, User actor) {
         Survey survey = getSurvey(surveyId);
@@ -273,6 +310,17 @@ public class SurveyService {
         if (participationRepository.existsBySurveyId(survey.getId())) {
             throw new ApiException(HttpStatus.CONFLICT, "No puede modificarse la estructura de una encuesta con respuestas");
         }
+    }
+
+    private SurveySummaryDto toSummary(Survey survey) {
+        return new SurveySummaryDto(
+            survey.getId(),
+            survey.getTitle(),
+            survey.getImageKey(),
+            survey.getLifecycleStatus(),
+            tagsFrom(survey),
+            survey.getUpdatedAt()
+        );
     }
 
     public SurveyResponseDto toResponse(Survey survey) {

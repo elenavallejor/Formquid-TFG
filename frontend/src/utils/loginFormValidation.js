@@ -1,3 +1,7 @@
+/**
+ * Centraliza la validación y construcción de las credenciales 
+ * utilizadas en el inicio de sesión.
+ */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateLoginForm({ email, password }) {

@@ -1,68 +1,92 @@
 import { apiClient } from './apiClient.js';
 
-// Encuestas públicas
-export async function getPublicSurveys() {
+/**
+ * Gestiona las operaciones públicas, privadas y administrativas relacionadas con las encuestas.
+ */
+export function getPublicSurveys() {
   return apiClient('/public/surveys', { method: 'GET' });
 }
 
-export async function getPublicSurveyById(surveyId) {
+export function getPublicSurveyById(surveyId) {
   return apiClient(`/public/surveys/${surveyId}`, { method: 'GET' });
 }
 
-// Encuestas autenticadas
-export async function getMySurveys() {
-  return apiClient('/surveys', { method: 'GET' });
+export function getMySurveys({
+  search = '',
+  lifecycleStatus = 'ALL',
+  sortOrder = 'RECENT',
+  page = 0,
+  size = 8,
+  signal,
+} = {}) {
+  const params = new URLSearchParams();
+  const normalizedSearch = search.trim();
+
+  if (normalizedSearch) {
+    params.set('search', normalizedSearch);
+  }
+
+  if (lifecycleStatus !== 'ALL') {
+    params.set('lifecycleStatus', lifecycleStatus);
+  }
+
+  params.set(
+    'sort',
+    `updatedAt,${sortOrder === 'OLDEST' ? 'asc' : 'desc'}`,
+  );
+  params.set('page', String(page));
+  params.set('size', String(size));
+
+  return apiClient(`/surveys?${params.toString()}`, {
+    method: 'GET',
+    signal,
+  });
 }
 
-export async function getRegisteredSurveys() {
+export function getRegisteredSurveys() {
   return apiClient('/surveys/registered', { method: 'GET' });
 }
 
-export async function createSurvey(data) {
+export function createSurvey(data) {
   return apiClient('/surveys', {
     method: 'POST',
     body: data,
   });
 }
 
-export async function getSurveyById(surveyId) {
+export function getSurveyById(surveyId) {
   return apiClient(`/surveys/${surveyId}`, { method: 'GET' });
 }
 
-export async function updateSurvey(surveyId, data) {
+export function updateSurvey(surveyId, data) {
   return apiClient(`/surveys/${surveyId}`, {
     method: 'PUT',
     body: data,
   });
 }
 
-export async function updateSurveyLifecycle(surveyId, lifecycle) {
+export function updateSurveyLifecycle(surveyId, lifecycleStatus) {
   return apiClient(`/surveys/${surveyId}/lifecycle`, {
     method: 'PATCH',
-    body: { lifecycle },
+    body: { lifecycleStatus },
   });
 }
 
-export async function deleteSurvey(surveyId) {
+export function deleteSurvey(surveyId) {
   return apiClient(`/surveys/${surveyId}`, { method: 'DELETE' });
 }
 
-// Administración de Encuestas
-export async function getAllAdminSurveys() {
+export function getAllAdminSurveys() {
   return apiClient('/admin/surveys', { method: 'GET' });
 }
 
-export async function updateAdminSurveyLifecycle(surveyId, lifecycle) {
+export function updateAdminSurveyLifecycle(surveyId, lifecycleStatus) {
   return apiClient(`/admin/surveys/${surveyId}/lifecycle`, {
     method: 'PATCH',
-    body: { lifecycle },
+    body: { lifecycleStatus },
   });
 }
 
-export async function deleteAdminSurvey(surveyId) {
+export function deleteAdminSurvey(surveyId) {
   return apiClient(`/admin/surveys/${surveyId}`, { method: 'DELETE' });
-}
-
-export async function getAdminSurveysSummary() {
-  return apiClient('/admin/surveys/summary', { method: 'GET' });
 }

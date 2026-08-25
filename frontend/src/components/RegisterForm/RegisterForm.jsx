@@ -1,175 +1,125 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MdOutlineEmail, MdOutlineLock, MdOutlinePerson, MdOutlineBusiness, MdOutlineEdit, MdCheckCircleOutline } from 'react-icons/md';
+import { Link } from 'react-router-dom';
+import {
+  MdBusiness,
+  MdCheckCircleOutline,
+  MdEditNote,
+  MdLockOutline,
+  MdOutlineEmail,
+  MdPersonOutline,
+} from 'react-icons/md';
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
-import { createRegistrationRequest } from '../../api/registrationRequestsApi.js';
+import { createRegistrationRequest } from '../../api/registrationRequestsApi';
+import {
+  INITIAL_REGISTER_FORM_DATA,
+  REGISTER_FORM_LIMITS,
+  createRegistrationRequestPayload,
+  hasRegisterFormErrors,
+  validateRegisterForm,
+} from '../../utils/registerFormValidation';
+
 import './RegisterForm.css';
 
-const INITIAL_FORM_DATA = {
-  name: '',
-  email: '',
-  gender: '',
-  institution: '',
-  motivation: '',
-  password: '',
-  confirmPassword: '',
-};
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validateRegisterForm(data) {
-  const errors = {};
-
-  if (!data.name.trim()) {
-    errors.name = 'El nombre completo es obligatorio.';
-  }
-
-  if (!data.email.trim()) {
-    errors.email = 'El correo electrónico es obligatorio.';
-  } else if (!EMAIL_PATTERN.test(data.email)) {
-    errors.email = 'Introduce un correo electrónico válido.';
-  }
-
-  if (!data.gender) {
-    errors.gender = 'Selecciona una opción de género.';
-  }
-
-  if (!data.institution.trim()) {
-    errors.institution = 'La institución es obligatoria.';
-  }
-
-  if (!data.motivation.trim()) {
-    errors.motivation = 'Explica brevemente tu motivación.';
-  }
-
-  if (!data.password) {
-    errors.password = 'La contraseña es obligatoria.';
-  } else if (data.password.length < 8) {
-    errors.password = 'La contraseña debe tener al menos 8 caracteres.';
-  }
-
-  if (!data.confirmPassword) {
-    errors.confirmPassword = 'Confirma tu contraseña.';
-  } else if (data.password !== data.confirmPassword) {
-    errors.confirmPassword = 'Las contraseñas no coinciden.';
-  }
-
-  return errors;
-}
-
-function hasRegisterFormErrors(errors) {
-  return Object.keys(errors).length > 0;
-}
-
+/**
+ * Gestiona el formulario público de solicitud de registro, 
+ * su validación y el envío de los datos al servidor.
+ */
 export function RegisterForm() {
-  const navigate = useNavigate();
-
-  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState(INITIAL_REGISTER_FORM_DATA);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false); // Estado de confirmación
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   function handleChange(event) {
     const { name, value } = event.target;
 
-    setFormData((currentData) => ({
-      ...currentData,
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
     }));
 
     if (errors[name]) {
-      setErrors((currentErrors) => ({
-        ...currentErrors,
-        [name]: undefined,
+      setErrors((previous) => ({
+        ...previous,
+        [name]: '',
       }));
     }
+
+    if (submitError) setSubmitError('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (isSubmitting) return;
+
+    const validationErrors = validateRegisterForm(formData);
+    setErrors(validationErrors);
     setSubmitError('');
 
-    const nextErrors = validateRegisterForm(formData);
-    setErrors(nextErrors);
-
-    if (hasRegisterFormErrors(nextErrors)) {
-      return;
-    }
-
-    setIsSubmitting(true);
+    if (hasRegisterFormErrors(validationErrors)) return;
 
     try {
-      const payload = {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        gender: formData.gender,
-        institution: formData.institution.trim(),
-        motivation: formData.motivation.trim(),
-        password: formData.password,
-      };
+      setIsSubmitting(true);
 
+      const payload = createRegistrationRequestPayload(formData);
       await createRegistrationRequest(payload);
-      
-      setIsSubmitted(true);
+
+      setFormData(INITIAL_REGISTER_FORM_DATA);
+      setErrors({});
+      setIsSuccess(true);
     } catch (error) {
       setSubmitError(
-        error.message || 'No se ha podido enviar la solicitud. Inténtalo más tarde.'
+        error?.message ||
+          'No se ha podido enviar la solicitud. Inténtalo de nuevo más tarde.',
       );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // Vista de confirmación tras envío exitoso
-  if (isSubmitted) {
+  if (isSuccess) {
     return (
-      <div className="register-success-container">
-        <MdCheckCircleOutline className="register-success-icon" aria-hidden="true" />
-        <h3 className="register-success-title">¡Solicitud enviada con éxito!</h3>
+      <div className="register-success-container" role="status">
+        <MdCheckCircleOutline
+          className="register-success-icon"
+          aria-hidden="true"
+        />
+        <h2 className="register-success-title">Solicitud enviada</h2>
         <p className="register-success-message">
-          Hemos recibido tus datos correctamente. Un administrador revisará tu perfil y recibirás una respuesta en tu correo electrónico.
+          Tu solicitud se ha enviado correctamente. Recibirás una notificación
+          cuando haya sido revisada.
         </p>
-        <button
-          type="button"
-          className="register-submit"
-          onClick={() => navigate('/')}
-        >
-          Volver a la página principal
-        </button>
+        <Link to="/inicia-sesion" className="register-login-link">
+          Ir a iniciar sesión
+        </Link>
       </div>
     );
   }
 
   return (
     <form className="register-form" onSubmit={handleSubmit} noValidate>
-      {submitError && (
-        <p className="register-submit-error" role="alert">
-          {submitError}
-        </p>
-      )}
-
       <div className="register-field">
         <label htmlFor="register-name">Nombre completo</label>
         <div className="register-input-wrapper">
-          <MdOutlinePerson className="register-input-icon" aria-hidden="true" />
+          <MdPersonOutline className="register-input-icon" aria-hidden="true" />
           <input
             id="register-name"
             name="name"
             type="text"
             placeholder="Tu nombre completo"
             value={formData.name}
+            onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.name}
             autoComplete="name"
-            required
             aria-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? 'register-name-error' : undefined}
-            onChange={handleChange}
           />
         </div>
-        <p className="register-error-message" id="register-name-error">
+        <p id="register-name-error" className="register-error-message">
           {errors.name || ''}
         </p>
       </div>
@@ -184,14 +134,14 @@ export function RegisterForm() {
             type="email"
             placeholder="tu@email.com"
             value={formData.email}
+            onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.email}
             autoComplete="email"
-            required
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? 'register-email-error' : undefined}
-            onChange={handleChange}
           />
         </div>
-        <p className="register-error-message" id="register-email-error">
+        <p id="register-email-error" className="register-error-message">
           {errors.email || ''}
         </p>
       </div>
@@ -203,42 +153,43 @@ export function RegisterForm() {
             id="register-gender"
             name="gender"
             value={formData.gender}
-            required
+            onChange={handleChange}
             aria-invalid={Boolean(errors.gender)}
             aria-describedby={errors.gender ? 'register-gender-error' : undefined}
-            onChange={handleChange}
           >
             <option value="">Selecciona una opción</option>
             <option value="FEMALE">Mujer</option>
             <option value="MALE">Hombre</option>
-            <option value="OTHER">Otro</option>
+            <option value="OTHER">Otro / Prefiero no indicarlo</option>
           </select>
         </div>
-        <p className="register-error-message" id="register-gender-error">
+        <p id="register-gender-error" className="register-error-message">
           {errors.gender || ''}
         </p>
       </div>
 
       <div className="register-field">
-        <label htmlFor="register-institution">Institución</label>
+        <label htmlFor="register-institution">
+          Institución / Organización
+        </label>
         <div className="register-input-wrapper">
-          <MdOutlineBusiness className="register-input-icon" aria-hidden="true" />
+          <MdBusiness className="register-input-icon" aria-hidden="true" />
           <input
             id="register-institution"
             name="institution"
             type="text"
-            placeholder="Universidad, centro o entidad"
+            placeholder="Ej: Universidad de Granada"
             value={formData.institution}
+            onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.institution}
             autoComplete="organization"
-            required
             aria-invalid={Boolean(errors.institution)}
             aria-describedby={
               errors.institution ? 'register-institution-error' : undefined
             }
-            onChange={handleChange}
           />
         </div>
-        <p className="register-error-message" id="register-institution-error">
+        <p id="register-institution-error" className="register-error-message">
           {errors.institution || ''}
         </p>
       </div>
@@ -246,22 +197,25 @@ export function RegisterForm() {
       <div className="register-field">
         <label htmlFor="register-motivation">Motivación</label>
         <div className="register-input-wrapper register-textarea-wrapper">
-          <MdOutlineEdit className="register-input-icon register-textarea-icon" aria-hidden="true" />
+          <MdEditNote
+            className="register-input-icon register-textarea-icon"
+            aria-hidden="true"
+          />
           <textarea
             id="register-motivation"
             name="motivation"
-            rows="3"
-            placeholder="Cuéntanos brevemente por qué deseas formar parte de nuestro equipo como editor..."
+            placeholder="Cuéntanos brevemente por qué deseas formar parte como editor..."
             value={formData.motivation}
-            required
+            onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.motivation}
+            rows="4"
             aria-invalid={Boolean(errors.motivation)}
             aria-describedby={
               errors.motivation ? 'register-motivation-error' : undefined
             }
-            onChange={handleChange}
           />
         </div>
-        <p className="register-error-message" id="register-motivation-error">
+        <p id="register-motivation-error" className="register-error-message">
           {errors.motivation || ''}
         </p>
       </div>
@@ -269,33 +223,35 @@ export function RegisterForm() {
       <div className="register-field">
         <label htmlFor="register-password">Contraseña</label>
         <div className="register-input-wrapper">
-          <MdOutlineLock className="register-input-icon" aria-hidden="true" />
+          <MdLockOutline className="register-input-icon" aria-hidden="true" />
           <input
             id="register-password"
             name="password"
-            type={isPasswordVisible ? 'text' : 'password'}
-            placeholder="Mínimo 8 caracteres"
+            type={showPassword ? 'text' : 'password'}
             value={formData.password}
-            autoComplete="new-password"
-            required
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? 'register-password-error' : undefined}
             onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.password}
+            autoComplete="new-password"
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={
+              errors.password ? 'register-password-error' : undefined
+            }
           />
           <button
-            className="password-toggle"
             type="button"
-            aria-label={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
+            className="password-toggle"
+            onClick={() => setShowPassword((previous) => !previous)}
+            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            aria-pressed={showPassword}
           >
-            {isPasswordVisible ? (
+            {showPassword ? (
               <LuEyeClosed aria-hidden="true" />
             ) : (
               <LuEye aria-hidden="true" />
             )}
           </button>
         </div>
-        <p className="register-error-message" id="register-password-error">
+        <p id="register-password-error" className="register-error-message">
           {errors.password || ''}
         </p>
       </div>
@@ -303,50 +259,65 @@ export function RegisterForm() {
       <div className="register-field">
         <label htmlFor="register-confirm-password">Confirmar contraseña</label>
         <div className="register-input-wrapper">
-          <MdOutlineLock className="register-input-icon" aria-hidden="true" />
+          <MdLockOutline className="register-input-icon" aria-hidden="true" />
           <input
             id="register-confirm-password"
             name="confirmPassword"
-            type={isConfirmPasswordVisible ? 'text' : 'password'}
-            placeholder="Repite la contraseña"
+            type={showConfirmPassword ? 'text' : 'password'}
             value={formData.confirmPassword}
+            onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.password}
             autoComplete="new-password"
-            required
             aria-invalid={Boolean(errors.confirmPassword)}
             aria-describedby={
-              errors.confirmPassword ? 'register-confirm-password-error' : undefined
+              errors.confirmPassword
+                ? 'register-confirm-password-error'
+                : undefined
             }
-            onChange={handleChange}
           />
           <button
-            className="password-toggle"
             type="button"
+            className="password-toggle"
+            onClick={() => setShowConfirmPassword((previous) => !previous)}
             aria-label={
-              isConfirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
+              showConfirmPassword
+                ? 'Ocultar confirmación de contraseña'
+                : 'Mostrar confirmación de contraseña'
             }
-            onClick={() =>
-              setIsConfirmPasswordVisible((currentValue) => !currentValue)
-            }
+            aria-pressed={showConfirmPassword}
           >
-            {isConfirmPasswordVisible ? (
+            {showConfirmPassword ? (
               <LuEyeClosed aria-hidden="true" />
             ) : (
               <LuEye aria-hidden="true" />
             )}
           </button>
         </div>
-        <p className="register-error-message" id="register-confirm-password-error">
+        <p
+          id="register-confirm-password-error"
+          className="register-error-message"
+        >
           {errors.confirmPassword || ''}
         </p>
       </div>
 
-      <button className="register-submit" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Enviando solicitud...' : 'Enviar solicitud'}
+      {submitError && (
+        <p className="register-error-message" role="alert">
+          {submitError}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className="register-submit"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Enviando...' : 'Enviar solicitud'}
       </button>
 
       <p className="register-login-text">
         ¿Ya tienes cuenta?{' '}
-        <Link className="register-login-link" to="/inicia-sesion">
+        <Link to="/inicia-sesion" className="register-login-link">
           Inicia sesión
         </Link>
       </p>

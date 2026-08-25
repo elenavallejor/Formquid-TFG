@@ -1,37 +1,35 @@
 .table-container {
   width: 100%;
   overflow-x: auto;
-  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0; 
-  box-shadow: none;
+  background-color: var(--color-surface);
 }
 
 .custom-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   text-align: left;
 }
 
 .custom-table thead tr {
-  background-color: #cac8c8; 
   border-bottom: 1px solid var(--color-border);
+  background-color: #cac8c8;
 }
 
 .custom-table th {
   padding: 14px 20px;
+  color: var(--color-text);
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-text);
   letter-spacing: 0.02em;
 }
 
-/* Filas del cuerpo */
 .custom-table td {
   padding: 16px 20px;
-  font-size: 14px;
-  color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 14px;
 }
 
 .custom-table tbody tr:last-child td {
@@ -40,4 +38,10 @@
 
 .custom-table tbody tr:hover {
   background-color: #f8fafc;
+}
+
+.custom-table-empty {
+  padding: 28px 20px;
+  color: var(--color-text-muted);
+  text-align: center;
 }

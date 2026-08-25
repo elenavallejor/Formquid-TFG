@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
+/**
+ * Recibe los metadatos editables de una encuesta existente.
+ */
 public record UpdateSurveyRequestDto(
     @NotBlank @Size(max = 200) String title,
     String description,

@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom';
 import { MdChevronRight } from 'react-icons/md';
+
 import './PanelButton.css';
 
 /**
- * Botón/Tarjeta interactiva para el panel principal.
+ * Muestra una tarjeta de navegación para acceder a una sección del panel.
  */
 export function PanelButton({ title, description, icon: Icon, to }) {
   return (
     <Link to={to} className="panel-button">
-      <div className="panel-button-icon-container">
-        {Icon && <Icon className="panel-button-icon" aria-hidden="true" />}
+      <div className="panel-button-icon-container" aria-hidden="true">
+        {Icon && <Icon className="panel-button-icon" />}
       </div>
 
       <div className="panel-button-content">
@@ -17,7 +18,10 @@ export function PanelButton({ title, description, icon: Icon, to }) {
         <p className="panel-button-description">{description}</p>
       </div>
 
-      <MdChevronRight className="panel-button-arrow" aria-hidden="true" />
+      <MdChevronRight
+        className="panel-button-arrow"
+        aria-hidden="true"
+      />
     </Link>
   );
 }

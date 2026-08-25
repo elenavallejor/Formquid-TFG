@@ -1,41 +1,76 @@
-import { MdOutlineEdit, MdOutlineRemoveRedEye, MdMoreVert } from 'react-icons/md';
+import {
+  MdMoreVert,
+  MdOutlineEdit,
+  MdOutlineRemoveRedEye,
+} from 'react-icons/md';
+
 import './SurveyCard.css';
 
+/**
+ * Representa una encuesta resumida mediante su imagen, estado, etiquetas y acciones principales.
+ */
 const LIFECYCLE_LABELS = {
   DRAFT: 'Borrador',
   OPEN: 'Abierta',
   CLOSED: 'Cerrada',
 };
 
-export function SurveyCard({ survey, onEdit, onView, onMoreOptions }) {
-  const { id, title, lifecycleStatus = 'DRAFT', tags = [], imageKey } = survey;
+export function SurveyCard({
+  survey,
+  onEdit,
+  onView,
+  onMoreOptions,
+}) {
+  const {
+    id,
+    title = 'Sin título',
+    lifecycleStatus,
+    tags,
+    imageKey,
+  } = survey;
 
-  const statusLabel = LIFECYCLE_LABELS[lifecycleStatus] || lifecycleStatus;
-  const statusClass = lifecycleStatus.toLowerCase();
+  const normalizedLifecycle = LIFECYCLE_LABELS[lifecycleStatus]
+    ? lifecycleStatus
+    : 'DRAFT';
+
+  const surveyTags = Array.isArray(tags) ? tags : [];
 
   return (
     <article className="survey-card">
       <div className="survey-card-image-wrapper">
         {imageKey ? (
-          <img src={imageKey} alt="" className="survey-card-image" />
+          <img
+            src={imageKey}
+            alt=""
+            className="survey-card-image"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
-          <div className="survey-card-placeholder" aria-hidden="true" />
+          <div
+            className="survey-card-placeholder"
+            aria-hidden="true"
+          />
         )}
       </div>
 
       <div className="survey-card-content">
-        <h3 className="survey-card-title">{title}</h3>
+        <h3 className="survey-card-title">
+          {title}
+        </h3>
 
         <div className="survey-card-badges">
-          <span className={`survey-status-badge status-${statusClass}`}>
-            {statusLabel}
+          <span
+            className={`survey-status-badge status-${normalizedLifecycle.toLowerCase()}`}
+          >
+            {LIFECYCLE_LABELS[normalizedLifecycle]}
           </span>
         </div>
 
-        {tags && tags.length > 0 && (
+        {surveyTags.length > 0 && (
           <div className="survey-card-tags">
-            {Array.from(tags).map((tag, idx) => (
-              <span key={idx} className="survey-tag">
+            {surveyTags.map((tag) => (
+              <span key={tag} className="survey-tag">
                 {tag}
               </span>
             ))}
@@ -61,14 +96,16 @@ export function SurveyCard({ survey, onEdit, onView, onMoreOptions }) {
             <span>Ver</span>
           </button>
 
-          <button
-            type="button"
-            className="btn-survey-more"
-            onClick={() => onMoreOptions?.(id)}
-            aria-label="Más opciones"
-          >
-            <MdMoreVert aria-hidden="true" />
-          </button>
+          {onMoreOptions && (
+            <button
+              type="button"
+              className="btn-survey-more"
+              onClick={() => onMoreOptions(id)}
+              aria-label={`Más opciones para ${title}`}
+            >
+              <MdMoreVert aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
     </article>

@@ -29,13 +29,13 @@
   width: 100%;
   min-height: 60px;
   padding: 0 52px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border, #cfd8dd);
   border-radius: 10px;
   background-color: #ffffff;
   color: var(--color-text, #102a3a);
   font-size: 15px;
   font-weight: 600;
-  box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -49,17 +49,20 @@
 }
 
 .login-input-icon {
-  width: 22px;
-  height: 22px;
-  color: #8c9ba5;
   position: absolute;
   top: 50%;
   left: 16px;
+  width: 22px;
+  height: 22px;
+  color: #8c9ba5;
   transform: translateY(-50%);
   pointer-events: none;
 }
 
-.password-toggle {
+.login-form .password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
   width: 40px;
   height: 40px;
   border: 0;
@@ -70,39 +73,54 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: absolute;
-  top: 50%;
-  right: 8px;
   transform: translateY(-50%);
   transition: color 0.2s ease;
 }
 
-.password-toggle:hover {
+.login-form .password-toggle:hover {
   color: var(--color-accent, #00988a);
 }
 
-.password-toggle svg {
+.login-form .password-toggle svg {
   width: 22px;
   height: 22px;
 }
 
 .login-error-message {
-  margin: 0;
   min-height: 20px;
+  margin: 0;
   color: var(--color-error, #b42318);
+  display: flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 600;
   text-align: left;
+}
+
+.password-footer-row {
+  min-height: 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
+
+.password-footer-row .login-error-message {
+  flex: 1;
+}
+
 .forgot-password-link {
+  margin-top: 6px;
   align-self: flex-end;
   color: var(--color-accent, #00988a);
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  margin-top: 6px;
+}
+
+.password-footer-row .forgot-password-link {
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 .forgot-password-link:hover {
@@ -113,7 +131,7 @@
 .login-submit {
   width: 100%;
   min-height: 60px;
-  margin: 24px 0 12px 0;
+  margin: 24px 0 12px;
   border: 0;
   border-radius: 10px;
   background-color: var(--color-accent, #00988a);
@@ -123,31 +141,39 @@
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 152, 138, 0.25);
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease,
+    opacity 0.2s ease;
 }
 
-.login-submit:hover {
+.login-submit:hover:not(:disabled) {
   background-color: var(--color-primary-hover, #00675e);
 }
 
-.login-submit:active {
+.login-submit:active:not(:disabled) {
   transform: translateY(1px);
 }
 
+.login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .request-account-text {
-  margin: 16px 0 0 0;
+  margin: 16px 0 0;
   color: var(--color-text-muted, #5d6d77);
   font-size: 14px;
   text-align: center;
 }
 
-.request-account-link {
+.login-form .request-account-link {
   color: var(--color-accent, #00988a);
   font-weight: 700;
   text-decoration: none;
 }
 
-.request-account-link:hover {
+.login-form .request-account-link:hover {
   color: var(--color-primary-hover, #00675e);
   text-decoration: underline;
 }
@@ -163,9 +189,22 @@
 
 .login-input-wrapper input:focus,
 .login-input-wrapper input:focus-visible {
-  border-color: var(--color-accent-accessible, #00796b) !important;
-  outline: 2px solid var(--color-accent-accessible, #00796b) !important;
-  outline-offset: 0px !important;
-  box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.15) !important;
+  border-color: var(--color-accent-accessible, #00796b);
+  outline: 2px solid var(--color-accent-accessible, #00796b);
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.15);
 }
 
+.login-form .password-toggle:focus-visible,
+.login-submit:focus-visible,
+.forgot-password-link:focus-visible,
+.login-form .request-account-link:focus-visible {
+  outline: 3px solid rgba(0, 152, 138, 0.35);
+  outline-offset: 2px;
+}
+
+@media only screen and (max-width: 650px) {
+  .password-footer-row {
+    flex-wrap: wrap;
+  }
+}

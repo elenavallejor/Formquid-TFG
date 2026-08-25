@@ -6,6 +6,9 @@ import com.formquid.survey.entity.SurveyVisibility;
 
 import java.time.Instant;
 
+/**
+ * Representa la información resumida necesaria para supervisar una encuesta desde administración.
+ */
 public record AdminSurveySummaryDto(
     String id,
     String title,

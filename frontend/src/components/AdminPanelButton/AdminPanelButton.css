@@ -37,8 +37,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 65px;
-  height: 65px;
+  width: 67px;
+  height: 67px;
   border-radius: 10px;
   flex-shrink: 0;
 }
@@ -54,14 +54,14 @@
 }
 
 .admin-panel-icon {
-  font-size: 35px;
+  font-size: 40px;
 }
 
 
 
 .admin-panel-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 15.7px;
   font-weight: 700;
   color: var(--color-header);
   letter-spacing: 0.04em;

@@ -1,52 +1,35 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ImUser } from 'react-icons/im';
-import {
-  MdOutlineKeyboardArrowDown,
-  MdOutlineLogout,
-  MdOutlineNotificationsNone,
-  MdOutlinePerson,
-  MdOutlineDashboard,
-} from 'react-icons/md';
+import { MdOutlineDashboard, MdOutlineKeyboardArrowDown, MdOutlineLogout, MdOutlineNotificationsNone, MdOutlinePerson } from 'react-icons/md';
 
 import formQuidLogo from '../../assets/images/formquid-logo.png';
-
 import { useAuth } from '../../context/AuthContext.jsx';
-import { getUserInitials } from '../../utils/getUserInitials.js';
 import { getUnreadNotificationsCount } from '../../api/notificationsApi.js';
+import { getUserInitials } from '../../utils/getUserInitials.js';
 
 import './Header.css';
 
+/**
+ * Muestra la cabecera principal y adapta sus acciones al 
+ * estado de autenticación del usuario.
+ */
 const ROLE_LABELS = {
   EDITOR: 'Editor',
   ADMIN: 'Administrador',
-  ADMINISTRADOR: 'Administrador',
   SUPERADMIN: 'Superadministrador',
-  SUPER_ADMIN: 'Superadministrador',
-  SUPERADMINISTRADOR: 'Superadministrador',
 };
 
 function getUserDisplayName(user) {
-  return (
-    user?.name ||
-    user?.fullName ||
-    user?.email ||
-    'Usuario'
-  );
+  return user?.fullName || user?.name || user?.email || 'Usuario';
 }
 
-/**
- * Cabecera principal de FormQuid.
- */
 export function Header() {
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { user, isAuthenticated, logout } = useAuth();
 
-  const {
-    user,
-    isAuthenticated,
-    logout,
-  } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const userDisplayName = getUserDisplayName(user);
   const userRole = ROLE_LABELS[user?.role] ?? user?.role;
@@ -54,40 +37,50 @@ export function Header() {
   useEffect(() => {
     let isMounted = true;
 
-    if (isAuthenticated && user) {
-      getUnreadNotificationsCount()
-        .then((count) => {
-          if (isMounted) setUnreadCount(count);
-        })
-        .catch((error) => {
-          console.error('Error al obtener el número de notificaciones no leídas:', error);
-        });
+    if (!isAuthenticated || !user?.id) {
+      setUnreadCount(0);
+      return undefined;
     }
+
+    getUnreadNotificationsCount()
+      .then((count) => {
+        if (isMounted) {
+          setUnreadCount(count);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          'Error al obtener el número de notificaciones no leídas:',
+          error,
+        );
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   async function handleLogout() {
-    try {
-      await logout();
+    if (isLoggingOut) return;
 
-      navigate('/', {
-        replace: true,
-      });
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      navigate('/', { replace: true });
     } catch (error) {
-      console.error(
-        'No se ha podido cerrar la sesión.',
-        error
-      );
+      console.error('No se ha podido cerrar la sesión.', error);
+    } finally {
+      setIsLoggingOut(false);
     }
   }
 
-  // Cierra el menú desplegable cuando el puntero del ratón sale del área del menú
   function handleMouseLeave(event) {
     event.currentTarget.removeAttribute('open');
   }
+
+  const notificationLabel = unreadCount > 0
+    ? `Ver notificaciones. ${unreadCount} sin leer.`
+    : 'Ver notificaciones';
 
   return (
     <header id="main-header">
@@ -104,10 +97,7 @@ export function Header() {
             aria-hidden="true"
           />
 
-          <span
-            className="brand-name"
-            aria-hidden="true"
-          >
+          <span className="brand-name" aria-hidden="true">
             FORM<span>QUID</span>
           </span>
         </Link>
@@ -121,18 +111,34 @@ export function Header() {
               <button
                 className="notification-button"
                 type="button"
-                aria-label="Ver notificaciones"
+                aria-label={notificationLabel}
                 onClick={() => navigate('/notificaciones')}
               >
-                <span className="notification-label">NOTIFICACIONES</span>
-                <MdOutlineNotificationsNone className="notification-icon" aria-hidden="true" />
+                <span className="notification-label">
+                  NOTIFICACIONES
+                </span>
+
+                <MdOutlineNotificationsNone
+                  className="notification-icon"
+                  aria-hidden="true"
+                />
+
                 {unreadCount > 0 && (
-                  <span className="notification-badge" title={`${unreadCount} no leídas`} />
+                  <span
+                    className="notification-badge"
+                    aria-hidden="true"
+                  />
                 )}
               </button>
 
-              <details className="user-menu" onMouseLeave={handleMouseLeave}>
-                <summary className="user-menu-summary">
+              <details
+                className="user-menu"
+                onMouseLeave={handleMouseLeave}
+              >
+                <summary
+                  className="user-menu-summary"
+                  aria-label={`Menú de usuario de ${userDisplayName}`}
+                >
                   <span
                     className="user-avatar"
                     aria-hidden="true"
@@ -163,10 +169,7 @@ export function Header() {
                     className="user-menu-option"
                     to="/perfil"
                   >
-                    <MdOutlinePerson
-                      aria-hidden="true"
-                    />
-
+                    <MdOutlinePerson aria-hidden="true" />
                     <span>Mi perfil</span>
                   </Link>
 
@@ -174,10 +177,7 @@ export function Header() {
                     className="user-menu-option"
                     to="/panel"
                   >
-                    <MdOutlineDashboard
-                      aria-hidden="true"
-                    />
-
+                    <MdOutlineDashboard aria-hidden="true" />
                     <span>Mi panel</span>
                   </Link>
 
@@ -185,12 +185,12 @@ export function Header() {
                     className="user-menu-option logout-option"
                     type="button"
                     onClick={handleLogout}
+                    disabled={isLoggingOut}
                   >
-                    <MdOutlineLogout
-                      aria-hidden="true"
-                    />
-
-                    <span>Cerrar sesión</span>
+                    <MdOutlineLogout aria-hidden="true" />
+                    <span>
+                      {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+                    </span>
                   </button>
                 </div>
               </details>

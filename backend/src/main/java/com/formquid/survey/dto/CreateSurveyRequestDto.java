@@ -8,6 +8,9 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Recibe los metadatos necesarios para crear una encuesta.
+ */
 public record CreateSurveyRequestDto(
     @NotBlank @Size(max = 200) String title,
     String description,

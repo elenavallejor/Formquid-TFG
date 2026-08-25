@@ -1,23 +1,29 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MdSearch, MdKeyboardArrowRight } from 'react-icons/md';
 
-import { TarjetaSolicitud } from '../../../components/TarjetaSolicitud/TarjetaSolicitud.jsx';
-import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
-import {
-  getPendingRegistrationRequests,
-  approveRegistrationRequest,
-  rejectRegistrationRequest,
-} from '../../../api/registrationRequestsApi.js';
+import { TarjetaSolicitud } from '../../../components/TarjetaSolicitud/TarjetaSolicitud';
+import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
+import { getPendingRegistrationRequests, approveRegistrationRequest, rejectRegistrationRequest } from '../../../api/registrationRequestsApi';
 
 import './RegistrationRequestsPage.css';
 
+/**
+ * Página de gestión de solicitudes de registro. ADMIN y SUPERADMIN
+ * 
+ * Muestra y gestiona las solicitudes de registro pendientes, 
+ * permitiendo buscarlas, ordenarlas, aprobarlas o rechazarlas.
+ */
 export function RegistrationRequestsPage() {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('NEWEST');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  const actionLockRef = useRef(false);
 
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -31,19 +37,18 @@ export function RegistrationRequestsPage() {
     async function fetchRequests() {
       try {
         setIsLoading(true);
+        setErrorMessage('');
+
         const data = await getPendingRegistrationRequests();
+
         if (isMounted) {
           const items = Array.isArray(data) ? data : data?.content || [];
           setRequests(items);
         }
-      } catch (err) {
-        if (isMounted) {
-          setErrorMessage('No se pudieron obtener las solicitudes de registro.');
-        }
+      } catch {
+        if (isMounted) setErrorMessage('No se pudieron obtener las solicitudes de registro.');
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     }
 
@@ -55,46 +60,56 @@ export function RegistrationRequestsPage() {
   }, []);
 
   function handleOpenModal(actionType, solicitud) {
-    setModalState({
-      isOpen: true,
-      actionType,
-      solicitud,
-    });
+    if (actionLockRef.current) return;
+
+    setActionError('');
+    setModalState({ isOpen: true, actionType, solicitud });
   }
 
   function handleCloseModal() {
+    if (actionLockRef.current) return;
+
+    setActionError('');
     setModalState({ isOpen: false, actionType: null, solicitud: null });
   }
 
   async function handleConfirmAction() {
     const { actionType, solicitud } = modalState;
-    if (!solicitud) return;
+    if (!solicitud || actionLockRef.current) return;
+
+    actionLockRef.current = true;
+    setIsProcessing(true);
+    setActionError('');
 
     try {
       if (actionType === 'ACCEPT') {
         await approveRegistrationRequest(solicitud.id);
       } else if (actionType === 'DENY') {
         await rejectRegistrationRequest(solicitud.id);
+      } else {
+        return;
       }
 
-      setRequests((prev) => prev.filter((item) => item.id !== solicitud.id));
-    } catch (err) {
-      console.error('Error al procesar la solicitud:', err);
+      setRequests((previous) => previous.filter((item) => item.id !== solicitud.id));
+      setModalState({ isOpen: false, actionType: null, solicitud: null });
+    } catch (error) {
+      console.error('Error al procesar la solicitud:', error);
+      setActionError('No se ha podido procesar la solicitud. Inténtalo de nuevo.');
     } finally {
-      handleCloseModal();
+      actionLockRef.current = false;
+      setIsProcessing(false);
     }
   }
 
   const filteredRequests = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
     return requests
-      .filter((req) => {
-        const query = searchQuery.toLowerCase();
-        return (
-          req.name?.toLowerCase().includes(query) ||
-          req.email?.toLowerCase().includes(query) ||
-          req.institution?.toLowerCase().includes(query)
-        );
-      })
+      .filter((request) => (
+        request.name?.toLowerCase().includes(query) ||
+        request.email?.toLowerCase().includes(query) ||
+        request.institution?.toLowerCase().includes(query)
+      ))
       .sort((a, b) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
@@ -123,17 +138,13 @@ export function RegistrationRequestsPage() {
               type="text"
               placeholder="Buscar por nombre, correo o institución..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
 
           <div className="sort-selector-wrapper">
             <label htmlFor="sort-select">Ordenar por:</label>
-            <select
-              id="sort-select"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-            >
+            <select id="sort-select" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
               <option value="NEWEST">Más reciente</option>
               <option value="OLDEST">Más antigua</option>
             </select>
@@ -144,7 +155,7 @@ export function RegistrationRequestsPage() {
           {isLoading ? (
             <p className="requests-status-text">Cargando solicitudes...</p>
           ) : errorMessage ? (
-            <p className="requests-error-text">{errorMessage}</p>
+            <p className="requests-error-text" role="alert">{errorMessage}</p>
           ) : filteredRequests.length === 0 ? (
             <div className="empty-requests-card">
               <p>No se han encontrado solicitudes de registro pendientes.</p>
@@ -168,6 +179,8 @@ export function RegistrationRequestsPage() {
         onConfirm={handleConfirmAction}
         actionType={modalState.actionType}
         applicantName={modalState.solicitud?.name}
+        isProcessing={isProcessing}
+        errorMessage={actionError}
       />
     </main>
   );

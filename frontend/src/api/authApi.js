@@ -1,29 +1,19 @@
 import { apiClient } from './apiClient.js';
 
 /**
- * Inicia sesión en la plataforma.
+ * Gestiona las operaciones de autenticación y restauración de la sesión del usuario.
  */
-export async function login(credentials) {
+export function login(credentials) {
   return apiClient('/auth/login', {
     method: 'POST',
     body: credentials,
   });
 }
 
-/**
- * Cierra la sesión activa.
- */
-export async function logout() {
-  return apiClient('/auth/logout', {
-    method: 'POST',
-  });
+export function getCurrentUser() {
+  return apiClient('/users/me', { method: 'GET' });
 }
 
-/**
- * Obtiene el perfil del usuario autenticado (/users/me).
- */
-export async function getCurrentUser() {
-  return apiClient('/users/me', {
-    method: 'GET',
-  });
+export function logout() {
+  return apiClient('/auth/logout', { method: 'POST' });
 }

@@ -1,35 +1,65 @@
 import { useLocation, useRouteError } from 'react-router-dom';
+
 import errorBg from '../../../assets/images/error-page-background.png';
+
 import './ErrorPage.css';
 
-export function ErrorPage() {
+/**
+ * Muestra una página común para errores de navegación, 
+ * permisos y errores internos.
+ */
+export function ErrorPage({ code, title, message }) {
   const routeError = useRouteError();
   const location = useLocation();
 
-  const errorCode = routeError?.status || '404';
+  const errorCode = String(
+    code ||
+    routeError?.status ||
+    (routeError ? 500 : 404),
+  );
 
-  const defaultMessage = `No se ha encontrado la URL solicitada ${location.pathname}..`;
+  const defaultTitles = {
+    403: 'Acceso no permitido',
+    404: 'Página no encontrada',
+    500: 'Error interno',
+  };
+
+  const defaultMessages = {
+    403: 'No tienes permisos para acceder a esta sección de FormQuid.',
+    404: `No se ha encontrado la URL solicitada ${location.pathname}.`,
+    500: 'Se ha producido un error interno. Inténtalo de nuevo más tarde.',
+  };
+
+  const errorTitle =
+    title ||
+    defaultTitles[errorCode] ||
+    'Ha ocurrido un error';
 
   const errorMessage =
-    routeError?.statusText ||
-    routeError?.message ||
-    defaultMessage;
+    message ||
+    defaultMessages[errorCode] ||
+    'Se ha producido un error inesperado.';
 
   return (
     <main className="error-page">
       <div className="error-page-container">
         <div className="error-page-text">
           <h1 className="error-page-logo">FormQuid</h1>
+
           <p className="error-page-status">
-            <strong>{errorCode}.</strong> Ha ocurrido un error.
+            <strong>{errorCode}.</strong> {errorTitle}
           </p>
-          <p className="error-page-description">{errorMessage}</p>
+
+          <p className="error-page-description">
+            {errorMessage}
+          </p>
         </div>
 
         <div className="error-page-illustration">
           <img
             src={errorBg}
-            alt="Ilustración de error"
+            alt=""
+            aria-hidden="true"
             className="error-page-image"
           />
         </div>

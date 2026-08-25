@@ -32,6 +32,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Modela una encuesta y sus metadatos persistentes dentro de la plataforma.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

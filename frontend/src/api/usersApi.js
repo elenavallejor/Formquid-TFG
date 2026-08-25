@@ -1,25 +1,28 @@
 import { apiClient } from './apiClient.js';
 
-export async function getMe() {
+/**
+ * Gestiona las operaciones sobre usuarios, roles y transferencia de propiedad de encuestas.
+ */
+export function getMe() {
   return apiClient('/users/me', { method: 'GET' });
 }
 
-export async function getUsers() {
+export function getUsers() {
   return apiClient('/users', { method: 'GET' });
 }
 
-export async function updateUserRole(userId, role) {
+export function updateUserRole(userId, role) {
   return apiClient(`/users/${userId}/role`, {
     method: 'PATCH',
     body: { role },
   });
 }
 
-export async function deleteUser(userId) {
+export function deleteUser(userId) {
   return apiClient(`/users/${userId}`, { method: 'DELETE' });
 }
 
-export async function transferSurveyOwnership(surveyId, newOwnerId) {
+export function transferSurveyOwnership(surveyId, newOwnerId) {
   return apiClient(`/users/surveys/${surveyId}/transfer-ownership`, {
     method: 'POST',
     body: { newOwnerId },

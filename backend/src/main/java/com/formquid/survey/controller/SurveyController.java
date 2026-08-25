@@ -3,12 +3,17 @@ package com.formquid.survey.controller;
 import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
+import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
+import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,6 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Expone las operaciones autenticadas de creación, consulta y gestión de encuestas.
+ */
 @RestController
 @RequestMapping("/api/v1/surveys")
 @RequiredArgsConstructor
@@ -33,8 +41,22 @@ public class SurveyController {
     private final SurveyService surveyService;
 
     @GetMapping
-    public List<SurveyResponseDto> findMine(@AuthenticationPrincipal User user) {
-        return surveyService.findEditableByUser(user);
+    public SurveyPageResponseDto findMine(
+        @AuthenticationPrincipal User user,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @PageableDefault(
+            size = 8,
+            sort = "updatedAt",
+            direction = Sort.Direction.DESC
+        ) Pageable pageable
+    ) {
+        return surveyService.findEditableByUser(
+            user,
+            search,
+            lifecycleStatus,
+            pageable
+        );
     }
 
     @GetMapping("/registered")
@@ -82,7 +104,10 @@ public class SurveyController {
 
     @DeleteMapping("/{surveyId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String surveyId, @AuthenticationPrincipal User user) {
+    public void delete(
+        @PathVariable String surveyId,
+        @AuthenticationPrincipal User user
+    ) {
         surveyService.delete(surveyId, user);
     }
 }

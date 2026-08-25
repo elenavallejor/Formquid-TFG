@@ -1,9 +1,16 @@
 import { FiUserPlus } from 'react-icons/fi';
 import { MdOutlineBarChart, MdOutlineLightbulb } from 'react-icons/md';
+
 import { RegisterForm } from '../../../components/RegisterForm/RegisterForm';
 
 import './RegisterPage.css';
 
+/**
+ * Pagina de registro (Solicita cuenta de editor)
+ * 
+ * Muestra la página pública de solicitud de registro y presenta la 
+ * información sobre el acceso como editor.
+ */
 export function RegisterPage() {
   return (
     <main id="register-page" aria-labelledby="register-title">
@@ -17,8 +24,8 @@ export function RegisterPage() {
             <h1 id="register-title">Solicita tu registro como editor</h1>
 
             <p className="register-info-description">
-              Para garantizar la calidad y seguridad de la plataforma el acceso a
-              nuevos editores debe ser revisado por un administrador.
+              Para garantizar la calidad y seguridad de la plataforma, el acceso
+              de nuevos editores debe ser revisado por un administrador.
             </p>
           </div>
 

@@ -1,64 +1,83 @@
-import { useEffect, useRef } from 'react';
-import { MdOutlineWarning, MdClose } from 'react-icons/md';
+import { useEffect } from 'react';
+
 import './ConfirmModal.css';
 
-export function ConfirmModal({ isOpen, onClose, onConfirm, actionType, applicantName }) {
-  const modalRef = useRef(null);
-
+/**
+ * Componente de modal de confirmación.
+ * 
+ * Muestra un diálogo de confirmación para aprobar o rechazar una acción, 
+ * bloqueando interacciones mientras la operación está en curso.
+ */
+export function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  actionType,
+  applicantName,
+  isProcessing = false,
+  errorMessage = '',
+}) {
   useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+    if (!isOpen) return;
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !isProcessing) onClose();
     }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isProcessing, onClose]);
 
   if (!isOpen) return null;
 
-  const isAccept = actionType === 'ACCEPT';
+  const isAcceptAction = actionType === 'ACCEPT';
+  const title = isAcceptAction ? 'Aceptar solicitud' : 'Rechazar solicitud';
+  const message = isAcceptAction
+    ? `¿Confirmas que deseas aceptar la solicitud de ${applicantName || 'este usuario'}?`
+    : `¿Confirmas que deseas rechazar la solicitud de ${applicantName || 'este usuario'}?`;
+  const confirmLabel = isProcessing
+    ? 'Procesando...'
+    : isAcceptAction
+      ? 'Aceptar'
+      : 'Rechazar';
+
+  function handleOverlayClick(event) {
+    if (event.target === event.currentTarget && !isProcessing) onClose();
+  }
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div
-        className="modal-container"
-        ref={modalRef}
-        onClick={(e) => e.stopPropagation()}
+    <div className="confirm-modal-overlay" role="presentation" onMouseDown={handleOverlayClick}>
+      <section
+        className="confirm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        aria-describedby="confirm-modal-description"
+        aria-busy={isProcessing}
       >
-        <button className="modal-close-btn" onClick={onClose} aria-label="Cerrar ventana modal">
-          <MdClose />
-        </button>
+        <h2 id="confirm-modal-title" className="confirm-modal-title">{title}</h2>
 
-        <div className={`modal-icon-wrapper ${isAccept ? 'type-accept' : 'type-deny'}`}>
-          <MdOutlineWarning />
-        </div>
+        <p id="confirm-modal-description" className="confirm-modal-description">{message}</p>
 
-        <h3 id="modal-title" className="modal-title">
-          {isAccept
-            ? `¿APROBAR REGISTRO DE ${applicantName?.toUpperCase()}?`
-            : `¿DENEGAR Y ELIMINAR REGISTRO DE ${applicantName?.toUpperCase()}?`}
-        </h3>
+        {errorMessage && (
+          <p className="confirm-modal-error" role="alert" aria-live="assertive">{errorMessage}</p>
+        )}
 
-        <p className="modal-description">
-          {isAccept
-            ? `Se creará la cuenta de editor para ${applicantName} y esta acción no se podrá deshacer.`
-            : `Se eliminará permanentemente la solicitud de ${applicantName} del sistema sin posibilidad de recuperación.`}
-        </p>
-
-        <div className="modal-actions">
-          <button type="button" className="btn-modal-cancel" onClick={onClose}>
-            CANCELAR
+        <div className="confirm-modal-actions">
+          <button type="button" className="confirm-modal-cancel" onClick={onClose} disabled={isProcessing}>
+            Cancelar
           </button>
+
           <button
             type="button"
-            className={`btn-modal-confirm ${isAccept ? 'btn-modal-accept' : 'btn-modal-deny'}`}
+            className={`confirm-modal-confirm ${isAcceptAction ? 'confirm-modal-confirm-accept' : 'confirm-modal-confirm-deny'}`}
             onClick={onConfirm}
+            disabled={isProcessing}
           >
-            {isAccept ? 'SÍ, APROBAR' : 'SÍ, ELIMINAR'}
+            {confirmLabel}
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

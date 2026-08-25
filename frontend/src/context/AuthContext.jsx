@@ -1,54 +1,62 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '../api/authApi.js';
-import { ApiError } from '../api/apiClient.js';
 
+import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '../api/authApi.js';
+import { ApiError, setUnauthorizedHandler } from '../api/apiClient.js';
+
+/**
+ * Gestiona globalmente la autenticación, la restauración de sesión 
+ * y el usuario autenticado.
+ */
 const AuthContext = createContext(null);
 
 const AUTH_STATUS = {
+  UNKNOWN: 'unknown',
   AUTHENTICATED: 'authenticated',
   ANONYMOUS: 'anonymous',
   ERROR: 'error',
 };
 
 function getAuthenticatedUserFromResponse(response) {
-  return response?.user ?? response ?? null;
+  const user = response?.user ?? response ?? null;
+
+  if (!user?.id || !user?.email || !user?.role) {
+    return null;
+  }
+
+  return user;
 }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [authStatus, setAuthStatus] = useState(AUTH_STATUS.ANONYMOUS);
+  const [authStatus, setAuthStatus] = useState(AUTH_STATUS.UNKNOWN);
   const [authError, setAuthError] = useState('');
   const [isInitializing, setIsInitializing] = useState(true);
 
+  const userRef = useRef(null);
   const restorePromiseRef = useRef(null);
 
   const setAuthenticatedUser = useCallback((authenticatedUser) => {
     const nextUser = getAuthenticatedUserFromResponse(authenticatedUser);
+    if (!nextUser) return null;
 
-    if (!nextUser) {
-      return;
-    }
-
+    userRef.current = nextUser;
     setUser(nextUser);
     setAuthStatus(AUTH_STATUS.AUTHENTICATED);
     setAuthError('');
+
+    return nextUser;
   }, []);
 
   const clearAuthentication = useCallback(() => {
+    userRef.current = null;
     setUser(null);
     setAuthStatus(AUTH_STATUS.ANONYMOUS);
     setAuthError('');
-    restorePromiseRef.current = null;
   }, []);
 
   const restoreSession = useCallback(async () => {
-    if (user) {
-      return user;
-    }
-
-    if (restorePromiseRef.current) {
-      return restorePromiseRef.current;
-    }
+    if (userRef.current) return userRef.current;
+    if (restorePromiseRef.current) return restorePromiseRef.current;
 
     setAuthError('');
 
@@ -61,8 +69,7 @@ export function AuthProvider({ children }) {
           return null;
         }
 
-        setAuthenticatedUser(currentUser);
-        return currentUser;
+        return setAuthenticatedUser(currentUser);
       })
       .catch((error) => {
         if (error instanceof ApiError && error.status === 401) {
@@ -70,10 +77,11 @@ export function AuthProvider({ children }) {
           return null;
         }
 
+        userRef.current = null;
         setUser(null);
         setAuthStatus(AUTH_STATUS.ERROR);
         setAuthError(
-          error.message || 'No se ha podido comprobar la sesión.'
+          error.message || 'No se ha podido comprobar la sesión.',
         );
 
         return null;
@@ -85,9 +93,16 @@ export function AuthProvider({ children }) {
     restorePromiseRef.current = restorePromise;
 
     return restorePromise;
-  }, [clearAuthentication, setAuthenticatedUser, user]);
+  }, [clearAuthentication, setAuthenticatedUser]);
 
-  // Hidratación automática de sesión al arrancar la aplicación
+  useEffect(() => {
+    setUnauthorizedHandler(clearAuthentication);
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [clearAuthentication]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -112,16 +127,24 @@ export function AuthProvider({ children }) {
     async (credentials) => {
       try {
         setAuthError('');
-        const response = await loginRequest(credentials);
 
-        const currentUser = await restoreSession();
-        return currentUser || getAuthenticatedUserFromResponse(response);
+        const response = await loginRequest(credentials);
+        const authenticatedUser =
+          getAuthenticatedUserFromResponse(response);
+
+        if (!authenticatedUser) {
+          throw new Error(
+            'El servidor no ha devuelto los datos del usuario autenticado.',
+          );
+        }
+
+        return setAuthenticatedUser(authenticatedUser);
       } catch (error) {
         setAuthError(error.message || 'Error al iniciar sesión.');
         throw error;
       }
     },
-    [restoreSession]
+    [setAuthenticatedUser],
   );
 
   const logout = useCallback(async () => {
@@ -162,7 +185,7 @@ export function AuthProvider({ children }) {
       setAuthenticatedUser,
       restoreSession,
       clearAuthentication,
-    ]
+    ],
   );
 
   return (
