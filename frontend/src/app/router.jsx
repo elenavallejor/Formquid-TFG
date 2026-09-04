@@ -4,6 +4,7 @@ import { RequireAuth } from './guards/RequireAuth.jsx';
 import { RequireRole } from './guards/RequireRole.jsx';
 import { App } from './app';
 import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
+import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPage.jsx';
 import { ErrorPage } from './routes/ErrorPage/ErrorPage';
 import { LoginPage } from './routes/LoginPage/LoginPage';
 import { MainPage } from './routes/MainPage/MainPage';
@@ -58,6 +59,16 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <Navigate to="/catalogo/bloques" replace />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'catalogo/crear/pregunta',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={ADMIN_ROLES}>
+              <CreateQuestionPage />
+            </RequireRole>
           </RequireAuth>
         ),
       },

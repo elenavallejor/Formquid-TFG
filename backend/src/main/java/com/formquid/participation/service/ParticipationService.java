@@ -190,7 +190,7 @@ public class ParticipationService {
         QuestionType type = question.getQuestionType();
         if (type == QuestionType.TEXT ) {
             requireOnlyText(question, dto);
-        } else if (type == QuestionType.NUMBER || type == QuestionType.SCALE || type == QuestionType.BIPOLAR_SCALE) {
+        } else if (type == QuestionType.NUMBER || type == QuestionType.SCALE) {
             requireOnlyNumeric(question, dto);
         } else if (type == QuestionType.BOOLEAN) {
             requireOnlyBoolean(dto);
@@ -337,7 +337,6 @@ public class ParticipationService {
     private java.math.BigDecimal numericValue(Question question, SubmitAnswerRequestDto dto) {
         return question.getQuestionType() == QuestionType.NUMBER
             || question.getQuestionType() == QuestionType.SCALE
-            || question.getQuestionType() == QuestionType.BIPOLAR_SCALE
             ? dto.numericValue()
             : null;
     }

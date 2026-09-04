@@ -216,7 +216,7 @@ public class StatisticsService {
 
     private Double rawScore(Question question, Answer answer) {
         return switch (question.getQuestionType()) {
-            case NUMBER, SCALE, BIPOLAR_SCALE -> normalize(question, answer.getNumericValue());
+            case NUMBER, SCALE -> normalize(question, answer.getNumericValue());
             case BOOLEAN -> booleanScore(question, answer.getBooleanValue());
             case SINGLE_CHOICE, MULTIPLE_CHOICE -> choiceScore(answer);
             case MATRIX_SCALE -> average(answer.getMatrixValues().stream()

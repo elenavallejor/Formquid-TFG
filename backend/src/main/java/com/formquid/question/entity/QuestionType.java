@@ -7,6 +7,5 @@ public enum QuestionType {
     MULTIPLE_CHOICE,
     SCALE,
     MATRIX_SCALE,
-    BIPOLAR_SCALE,
     BOOLEAN
 }

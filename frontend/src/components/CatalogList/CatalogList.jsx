@@ -15,7 +15,6 @@ const QUESTION_TYPE_LABELS = {
   MULTIPLE_CHOICE: 'Opción múltiple',
   SCALE: 'Escala',
   MATRIX_SCALE: 'Matriz',
-  BIPOLAR_SCALE: 'Escala bipolar',
   BOOLEAN: 'Sí / No',
 };
 

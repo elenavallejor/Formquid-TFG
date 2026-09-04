@@ -1,0 +1,128 @@
+.create-question-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  background-color: var(--color-background);
+  padding: 32px 24px;
+  box-sizing: border-box;
+}
+
+.create-question-container {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.breadcrumb-nav a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb-nav a:hover {
+  color: var(--color-primary);
+}
+
+.page-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-main-header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-header);
+  letter-spacing: -0.01em;
+}
+
+.page-main-subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.btn-create-submit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background-color 0.2s ease;
+}
+
+.btn-create-submit:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-create-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-create-submit svg {
+  font-size: 20px;
+}
+
+.account-error-banner {
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background-color: #fde8e8;
+  border: 1px solid #f4b4b4;
+  border-radius: 8px;
+  color: #a61b1b;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.account-success-banner {
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #15803d;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.builder-skeleton-wrapper {
+  margin-top: 8px;
+}
+
+@media only screen and (max-width: 768px) {
+  .create-question-page {
+    padding: 16px 12px;
+  }
+
+  .page-main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .btn-create-submit {
+    width: 100%;
+    justify-content: center;
+  }
+}

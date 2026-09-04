@@ -262,8 +262,6 @@ public class QuestionService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Las matrices necesitan al menos una fila");
             }
             validateScaleQuestion(dto, false);
-        } else if (dto.questionType() == QuestionType.BIPOLAR_SCALE) {
-            validateScaleQuestion(dto, true);
         } else if (dto.questionType() == QuestionType.SINGLE_CHOICE || dto.questionType() == QuestionType.MULTIPLE_CHOICE) {
             validateChoiceQuestion(dto);
         } else if (dto.questionType() == QuestionType.BOOLEAN) {
