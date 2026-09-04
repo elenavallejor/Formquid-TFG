@@ -1,14 +1,28 @@
 import { apiClient } from './apiClient.js';
 
 /**
- * Gestiona las operaciones sobre usuarios, roles y transferencia de propiedad de encuestas.
+ * Gestiona las operaciones sobre usuarios, cuenta propia, roles y transferencia de propiedad.
  */
 export function getMe() {
   return apiClient('/users/me', { method: 'GET' });
 }
 
-export function getUsers() {
-  return apiClient('/users', { method: 'GET' });
+export function updateMyAccount(data) {
+  return apiClient('/users/me/account', {
+    method: 'PATCH',
+    body: data,
+  });
+}
+
+export function deleteMyAccount(data) {
+  return apiClient('/users/me', {
+    method: 'DELETE',
+    body: data,
+  });
+}
+
+export function getUsers(page = 0, size = 20) {
+  return apiClient(`/users?page=${page}&size=${size}`, { method: 'GET' });
 }
 
 export function updateUserRole(userId, role) {

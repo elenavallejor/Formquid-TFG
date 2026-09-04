@@ -188,7 +188,7 @@ public class ParticipationService {
 
     private void validateCompatible(Question question, SubmitAnswerRequestDto dto) {
         QuestionType type = question.getQuestionType();
-        if (type == QuestionType.SHORT_TEXT || type == QuestionType.LONG_TEXT) {
+        if (type == QuestionType.TEXT ) {
             requireOnlyText(question, dto);
         } else if (type == QuestionType.NUMBER || type == QuestionType.SCALE || type == QuestionType.BIPOLAR_SCALE) {
             requireOnlyNumeric(question, dto);
@@ -209,12 +209,15 @@ public class ParticipationService {
 
     private void requireOnlyText(Question question, SubmitAnswerRequestDto dto) {
         reject(dto.numericValue() != null || dto.booleanValue() != null || hasOptions(dto) || hasMatrix(dto));
+
         if (dto.textValue() == null || dto.textValue().isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta de texto necesita textValue");
         }
+
         int maxLength = question.getSettings() != null && question.getSettings().getMaxLength() != null
             ? question.getSettings().getMaxLength()
-            : (question.getQuestionType() == QuestionType.SHORT_TEXT ? 255 : 5000);
+            : 5000;
+
         if (dto.textValue().length() > maxLength) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La respuesta de texto supera la longitud máxima");
         }
@@ -326,7 +329,7 @@ public class ParticipationService {
     }
 
     private String textValue(Question question, SubmitAnswerRequestDto dto) {
-        return question.getQuestionType() == QuestionType.SHORT_TEXT || question.getQuestionType() == QuestionType.LONG_TEXT
+        return question.getQuestionType() == QuestionType.TEXT 
             ? dto.textValue()
             : null;
     }

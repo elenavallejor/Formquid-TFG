@@ -119,7 +119,7 @@ public class GlobalExceptionHandler {
         );
         return build(
             HttpStatus.INTERNAL_SERVER_ERROR,
-            "Ha ocurrido un error interno e inesperado en el servidor",
+            "Ha ocurrido un error interno",
             request
         );
     }

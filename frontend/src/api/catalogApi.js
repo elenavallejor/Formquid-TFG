@@ -1,27 +1,11 @@
 import { apiClient } from './apiClient.js';
 
-function buildCatalogListPath(path, {
-  search = '',
-  category = 'ALL',
-  sortOrder = 'NEWEST',
-  page = 0,
-  size = 10,
-} = {}) {
+/**
+ * Centraliza las operaciones disponibles sobre los elementos del catálogo.
+ */
+function buildPaginatedPath(path, { page = 0, size = 10 } = {}) {
   const params = new URLSearchParams();
-  const normalizedSearch = search.trim();
 
-  if (normalizedSearch) {
-    params.set('search', normalizedSearch);
-  }
-
-  if (category && category !== 'ALL') {
-    params.set('category', category);
-  }
-
-  params.set(
-    'sort',
-    `updatedAt,${sortOrder === 'OLDEST' ? 'asc' : 'desc'}`,
-  );
   params.set('page', String(page));
   params.set('size', String(size));
 
@@ -29,11 +13,15 @@ function buildCatalogListPath(path, {
 }
 
 export function getCatalogQuestions(options = {}) {
-  const { signal, ...query } = options;
-  return apiClient(buildCatalogListPath('/catalog/questions', query), {
-    method: 'GET',
-    signal,
-  });
+  const { signal, page = 0, size = 10 } = options;
+
+  return apiClient(
+    buildPaginatedPath('/catalog/questions', { page, size }),
+    {
+      method: 'GET',
+      signal,
+    },
+  );
 }
 
 export function getCatalogQuestionById(questionId) {
@@ -56,11 +44,15 @@ export function deleteCatalogQuestion(questionId) {
 }
 
 export function getCatalogBlocks(options = {}) {
-  const { signal, ...query } = options;
-  return apiClient(buildCatalogListPath('/catalog/blocks', query), {
-    method: 'GET',
-    signal,
-  });
+  const { signal, page = 0, size = 10 } = options;
+
+  return apiClient(
+    buildPaginatedPath('/catalog/blocks', { page, size }),
+    {
+      method: 'GET',
+      signal,
+    },
+  );
 }
 
 export function getCatalogBlockById(blockId) {
@@ -83,11 +75,15 @@ export function deleteCatalogBlock(blockId) {
 }
 
 export function getCatalogTemplates(options = {}) {
-  const { signal, ...query } = options;
-  return apiClient(buildCatalogListPath('/catalog/templates', query), {
-    method: 'GET',
-    signal,
-  });
+  const { signal, page = 0, size = 10 } = options;
+
+  return apiClient(
+    buildPaginatedPath('/catalog/templates', { page, size }),
+    {
+      method: 'GET',
+      signal,
+    },
+  );
 }
 
 export function getCatalogTemplateById(templateId) {

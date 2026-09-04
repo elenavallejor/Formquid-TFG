@@ -28,6 +28,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Representa a un usuario registrado y sus permisos dentro de la plataforma.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,7 +46,8 @@ import java.util.UUID;
     name = "users",
     uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
     indexes = {
-        @Index(name = "idx_users_role", columnList = "role")
+        @Index(name = "idx_users_role", columnList = "role"),
+        @Index(name = "idx_users_name", columnList = "name")
     }
 )
 public class User implements UserDetails {

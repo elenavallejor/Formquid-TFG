@@ -1,23 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  MdBusiness,
-  MdCheckCircleOutline,
-  MdEditNote,
-  MdLockOutline,
-  MdOutlineEmail,
-  MdPersonOutline,
-} from 'react-icons/md';
+import { MdBusiness, MdCheckCircleOutline, MdEditNote, MdLockOutline, MdOutlineEmail, MdPersonOutline } from 'react-icons/md';
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 import { createRegistrationRequest } from '../../api/registrationRequestsApi';
-import {
-  INITIAL_REGISTER_FORM_DATA,
-  REGISTER_FORM_LIMITS,
-  createRegistrationRequestPayload,
-  hasRegisterFormErrors,
-  validateRegisterForm,
-} from '../../utils/registerFormValidation';
+import { INITIAL_REGISTER_FORM_DATA, REGISTER_FORM_LIMITS, createRegistrationRequestPayload, hasRegisterFormErrors, validateRegisterForm } from '../../utils/registerFormValidation';
 
 import './RegisterForm.css';
 

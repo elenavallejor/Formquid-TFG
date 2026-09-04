@@ -41,7 +41,7 @@ import java.util.List;
 @Check(constraints = """
     id ~ '^Q[1-9][0-9]*$'
     and scope in ('CATALOG_FIXED', 'LOCAL', 'FIXED_SNAPSHOT')
-    and question_type in ('SHORT_TEXT', 'LONG_TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BIPOLAR_SCALE', 'BOOLEAN')
+    and question_type in ('TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BIPOLAR_SCALE', 'BOOLEAN')
     and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
     and (
         (scope = 'CATALOG_FIXED' and parent_item_id is null and catalog_name is not null and source_fixed_question_id is null)

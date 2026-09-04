@@ -1,25 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  MdAdd,
-  MdChevronLeft,
-  MdChevronRight,
-  MdOutlineBarChart,
-  MdOutlineDescription,
-  MdOutlineHelpOutline,
-  MdOutlineLightbulb,
-  MdOutlinePersonAdd,
-  MdOutlinePoll,
-  MdOutlineShield,
-  MdOutlineWidgets,
-  MdPeopleOutline,
-  MdSearch,
-} from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlinePoll, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
 import { getMySurveys } from '../../../api/surveysApi.js';
 import { AdminPanelButton } from '../../../components/AdminPanelButton/AdminPanelButton.jsx';
 import { PanelButton } from '../../../components/PanelButton/PanelButton.jsx';
+import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { Table } from '../../../components/Table/Table.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -110,7 +97,7 @@ const TABLE_HEADERS = [
 
 export function PanelPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isInitializing } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [dataError, setDataError] = useState('');
@@ -236,7 +223,15 @@ export function PanelPage() {
     currentPage,
   ]);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <main className="panel-page" aria-busy={isInitializing}>
+        <div className="panel-container">
+          <Skeleton variant="list" count={4} />
+        </div>
+      </main>
+    );
+  }
 
   const panelContent = ROLE_CONTENT[user.role];
 
@@ -356,12 +351,12 @@ export function PanelPage() {
 
                 <div className="catalog-buttons-grid">
                   <PanelButton
-                    title="Preguntas fijas"
-                    description="Consulta las preguntas disponibles en el catálogo."
-                    icon={MdOutlineHelpOutline}
-                    to="/catalogo/preguntas"
+                    title="Plantillas"
+                    description="Consulta las plantillas de encuesta."
+                    icon={MdOutlineDescription}
+                    to="/catalogo/plantillas"
                   />
-
+                  
                   <PanelButton
                     title="Bloques"
                     description="Consulta los bloques de preguntas reutilizables."
@@ -370,11 +365,12 @@ export function PanelPage() {
                   />
 
                   <PanelButton
-                    title="Plantillas"
-                    description="Consulta las plantillas de encuesta."
-                    icon={MdOutlineDescription}
-                    to="/catalogo/plantillas"
-                  />
+                    title="Preguntas fijas"
+                    description="Consulta las preguntas disponibles en el catálogo."
+                    icon={MdOutlineHelpOutline}
+                    to="/catalogo/preguntas"
+                  />  
+                  
                 </div>
               </div>
             </div>
@@ -465,12 +461,7 @@ export function PanelPage() {
               </div>
 
               {isLoading ? (
-                <p
-                  className="panel-status"
-                  aria-live="polite"
-                >
-                  Cargando encuestas...
-                </p>
+                <Skeleton variant="grid" count={4} />
               ) : !dataError && editorSurveys.length === 0 ? (
                 <p className="panel-status">
                   No se han encontrado encuestas.
@@ -612,7 +603,7 @@ export function PanelPage() {
             {isSuperAdmin && (
               <section className="admin-section">
                 <h2 className="admin-section-title">
-                  OTRAS GESTIONES (SOLO SUPERADMINISTRADOR)
+                  OTRAS GESTIONES
                 </h2>
 
                 <div className="admin-cards-grid-full">
@@ -634,36 +625,31 @@ export function PanelPage() {
                 <h2 className="admin-section-title">
                   ACCESO AL CATÁLOGO
                 </h2>
-
-                <Link
-                  to="/catalogo"
-                  className="btn-admin-action-link"
-                >
-                  Ver catálogo &rarr;
-                </Link>
               </div>
 
               <div className="catalog-buttons-grid">
                 <PanelButton
+                  title="Plantillas"
+                  description="Gestiona las plantillas de encuestas."
+                  icon={MdOutlineDescription}
+                  to="/catalogo/plantillas"
+                />
+
+                <PanelButton
+                  title="Bloques"
+                  description="Gestiona los bloques de preguntas."
+                  icon={MdOutlineWidgets}
+                  to="/catalogo/bloques"
+                />
+
+                 <PanelButton
                   title="Preguntas fijas"
                   description="Gestiona las preguntas disponibles en el catálogo."
                   icon={MdOutlineHelpOutline}
                   to="/catalogo/preguntas"
                 />
 
-                <PanelButton
-                  title="Bloques"
-                  description="Gestiona los bloques de preguntas reutilizables."
-                  icon={MdOutlineWidgets}
-                  to="/catalogo/bloques"
-                />
-
-                <PanelButton
-                  title="Plantillas"
-                  description="Gestiona las plantillas de encuesta."
-                  icon={MdOutlineDescription}
-                  to="/catalogo/plantillas"
-                />
+                
               </div>
             </section>
 
@@ -685,12 +671,7 @@ export function PanelPage() {
               </div>
 
               {isLoading ? (
-                <p
-                  className="panel-status"
-                  aria-live="polite"
-                >
-                  Cargando resumen de encuestas...
-                </p>
+                <Skeleton variant="table" count={5} />
               ) : !dataError ? (
                 <Table
                   headers={TABLE_HEADERS}

@@ -259,6 +259,36 @@ public class ContentService {
         return savedBlock;
     }
 
+    @Transactional
+    public void deleteBlockContent(Block block) {
+        List<ContentItem> items = contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId());
+        for (ContentItem item : items) {
+            questionRepository.findByParentItemId(item.getId()).ifPresent(questionRepository::delete);
+        }
+        questionRepository.flush();
+        contentItemRepository.deleteAll(items);
+        contentItemRepository.flush();
+    }
+
+    @Transactional
+    public void deleteTemplateContent(Template template) {
+        List<ContentItem> items = contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId());
+        for (ContentItem item : items) {
+            if (item.getItemType() == ContentItemType.QUESTION) {
+                questionRepository.findByParentItemId(item.getId()).ifPresent(questionRepository::delete);
+            } else if (item.getItemType() == ContentItemType.BLOCK) {
+                blockRepository.findByParentItemId(item.getId()).ifPresent(block -> {
+                    deleteBlockContent(block);
+                    blockRepository.delete(block);
+                    blockRepository.flush();
+                });
+            }
+        }
+        questionRepository.flush();
+        contentItemRepository.deleteAll(items);
+        contentItemRepository.flush();
+    }
+
     private ContentItem baseSurveyItem(Survey survey, ContentItemType type, Integer position) {
         return ContentItem.builder()
             .survey(survey)

@@ -1,9 +1,11 @@
 package com.formquid.question.service;
 
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.common.service.IdSequenceService;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.question.dto.CreateFixedQuestionRequestDto;
+import com.formquid.question.dto.FixedQuestionSummaryDto;
 import com.formquid.question.dto.MatrixRowDto;
 import com.formquid.question.dto.QuestionDraftDto;
 import com.formquid.question.dto.QuestionOptionDto;
@@ -19,6 +21,10 @@ import com.formquid.question.entity.QuestionType;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,11 +44,39 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final IdSequenceService idSequenceService;
 
-    public List<QuestionResponseDto> findFixedQuestions() {
-        return questionRepository.findByScopeOrderByCatalogNameAsc(QuestionScope.CATALOG_FIXED)
-            .stream()
-            .map(this::toResponse)
-            .toList();
+    @Transactional(readOnly = true)
+    public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(int page, int size) {
+        Pageable pageable = catalogPageable(page, size);
+        Page<FixedQuestionSummaryDto> questions =
+            questionRepository.findCatalogSummaries(QuestionScope.CATALOG_FIXED, pageable);
+        return new PageResponseDto<>(
+            questions.getContent(),
+            questions.getNumber(),
+            questions.getSize(),
+            questions.getTotalElements(),
+            questions.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public QuestionResponseDto findFixedQuestion(String questionId) {
+        Question question = getQuestion(questionId);
+        if (question.getScope() != QuestionScope.CATALOG_FIXED) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
+        }
+        return toResponse(question);
+    }
+
+    @Transactional
+    public void deleteFixedQuestion(String questionId) {
+        Question question = getQuestion(questionId);
+        if (question.getScope() != QuestionScope.CATALOG_FIXED) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
+        }
+        if (questionRepository.countBySourceFixedQuestionId(questionId) > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar una pregunta fija que está siendo utilizada");
+        }
+        questionRepository.delete(question);
     }
 
     public Question getQuestion(String questionId) {
@@ -205,7 +239,7 @@ public class QuestionService {
             && (dto.evaluationWeight() == null || dto.evaluationWeight().compareTo(BigDecimal.ZERO) <= 0)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas evaluables necesitan peso mayor que cero");
         }
-        if ((dto.questionType() == QuestionType.SHORT_TEXT || dto.questionType() == QuestionType.LONG_TEXT)
+        if ((dto.questionType() == QuestionType.TEXT)
             && dto.evaluationDirection() != EvaluationDirection.NEUTRAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas de texto deben ser neutrales");
         }
@@ -217,7 +251,7 @@ public class QuestionService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Solo las matrices admiten filas");
         }
 
-        if (dto.questionType() == QuestionType.SHORT_TEXT || dto.questionType() == QuestionType.LONG_TEXT) {
+        if (dto.questionType() == QuestionType.TEXT ) {
             validateTextQuestion(dto.settings());
         } else if (dto.questionType() == QuestionType.NUMBER) {
             validateNumberQuestion(dto);
@@ -553,6 +587,16 @@ public class QuestionService {
 
     private List<MatrixRowDto> safeRows(List<MatrixRowDto> rows) {
         return rows == null ? List.of() : rows.stream().filter(Objects::nonNull).toList();
+    }
+
+    private Pageable catalogPageable(int page, int size) {
+        if (page < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
+        }
+        if (size < 1 || size > 100) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y 100");
+        }
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
     }
 
     private String trimToNull(String value) {

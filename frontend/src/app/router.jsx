@@ -10,12 +10,14 @@ import { MainPage } from './routes/MainPage/MainPage';
 import { PanelPage } from './routes/PanelPage/PanelPage';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
+import { AccountPage } from './routes/AccountPage/AccountPage.jsx';
+import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagementPage.jsx';
 
 /**
- * Define las rutas de la aplicación y 
- * aplica las restricciones de autenticación y rol necesarias.
+ * Define las rutas de la aplicación y aplica las restricciones de autenticación y rol necesarias.
  */
 const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
+const SUPERADMIN_ROLE = ['SUPERADMIN'];
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +36,14 @@ export const router = createBrowserRouter([
       {
         path: 'solicita-cuenta',
         element: <RegisterPage />,
+      },
+      {
+        path: 'perfil',
+        element: (
+          <RequireAuth>
+            <AccountPage />
+          </RequireAuth>
+        ),
       },
       {
         path: 'panel',
@@ -65,6 +75,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={ADMIN_ROLES}>
               <RegistrationRequestsPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'superadmin/usuarios',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={SUPERADMIN_ROLE}>
+              <UsersManagementPage />
             </RequireRole>
           </RequireAuth>
         ),

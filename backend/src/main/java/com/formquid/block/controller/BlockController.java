@@ -1,27 +1,30 @@
 package com.formquid.block.controller;
 
 import com.formquid.block.dto.BlockResponseDto;
+import com.formquid.block.dto.BlockSummaryDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.service.BlockService;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * Controlador de bloques de catálogo.
  *
- * Expone las operaciones para consultar bloques y permite crear 
+ * Expone las operaciones para consultar bloques y permite crear
  * nuevos bloques.
  */
 @RestController
@@ -32,11 +35,19 @@ public class BlockController {
     private final BlockService blockService;
 
     /**
-     * Devuelve los bloques disponibles en el catálogo ordenados por nombre.
+     * Devuelve una página de bloques disponibles en el catálogo.
      */
     @GetMapping
-    public List<BlockResponseDto> findCatalogBlocks() {
-        return blockService.findCatalogBlocks();
+    public PageResponseDto<BlockSummaryDto> findCatalogBlocks(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return blockService.findCatalogBlocks(page, size);
+    }
+
+    @GetMapping("/{blockId}")
+    public BlockResponseDto findCatalogBlock(@PathVariable String blockId) {
+        return blockService.findCatalogBlock(blockId);
     }
 
     /**
@@ -50,5 +61,12 @@ public class BlockController {
         @Valid @RequestBody CreateBlockRequestDto request
     ) {
         return blockService.createCatalogBlock(request, user);
+    }
+
+    @DeleteMapping("/{blockId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    public void deleteCatalogBlock(@PathVariable String blockId) {
+        blockService.deleteCatalogBlock(blockId);
     }
 }

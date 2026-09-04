@@ -2,6 +2,7 @@ package com.formquid.template.service;
 
 import com.formquid.block.entity.Block;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.entity.ContentItem;
@@ -12,11 +13,16 @@ import com.formquid.question.entity.Question;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.question.service.QuestionService;
 import com.formquid.template.dto.CreateTemplateRequestDto;
+import com.formquid.template.dto.TemplateSummaryDto;
 import com.formquid.template.dto.TemplateResponseDto;
 import com.formquid.template.entity.Template;
 import com.formquid.template.repository.TemplateRepository;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,8 +42,29 @@ public class TemplateService {
     private final ContentService contentService;
     private final QuestionService questionService;
 
-    public List<TemplateResponseDto> findAll() {
-        return templateRepository.findAllByOrderByTitleAsc().stream().map(this::toResponse).toList();
+    @Transactional(readOnly = true)
+    public PageResponseDto<TemplateSummaryDto> findAll(int page, int size) {
+        Pageable pageable = catalogPageable(page, size);
+        Page<TemplateSummaryDto> templates = templateRepository.findCatalogSummaries(pageable);
+        return new PageResponseDto<>(
+            templates.getContent(),
+            templates.getNumber(),
+            templates.getSize(),
+            templates.getTotalElements(),
+            templates.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public TemplateResponseDto findById(UUID id) {
+        return toResponse(getTemplate(id));
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        Template template = getTemplate(id);
+        contentService.deleteTemplateContent(template);
+        templateRepository.delete(template);
     }
 
     public Template getTemplate(UUID id) {
@@ -123,6 +150,16 @@ public class TemplateService {
             template.getCreatedAt(),
             template.getUpdatedAt()
         );
+    }
+
+    private Pageable catalogPageable(int page, int size) {
+        if (page < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
+        }
+        if (size < 1 || size > 100) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y 100");
+        }
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
     }
 
     private String trimToNull(String value) {

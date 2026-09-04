@@ -1,8 +1,7 @@
 package com.formquid.question.entity;
 
 public enum QuestionType {
-    SHORT_TEXT,
-    LONG_TEXT,
+    TEXT,
     NUMBER,
     SINGLE_CHOICE,
     MULTIPLE_CHOICE,

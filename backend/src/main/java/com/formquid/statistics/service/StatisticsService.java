@@ -223,7 +223,7 @@ public class StatisticsService {
                 .map(value -> normalize(question, value.getNumericValue()))
                 .filter(value -> value != null)
                 .toList());
-            case SHORT_TEXT, LONG_TEXT -> null;
+            case TEXT -> null;
         };
     }
 
