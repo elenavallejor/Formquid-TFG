@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MdChevronRight, MdSave } from 'react-icons/md';
+import { MdChevronRight, MdClose, MdSave } from 'react-icons/md';
 
 import { createCatalogQuestion } from '../../../api/catalogApi.js';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
@@ -81,6 +81,14 @@ export function CreateQuestionPage() {
         {errorMsg && (
           <div className="account-error-banner" role="alert">
             <span>{errorMsg}</span>
+            <button
+              type="button"
+              className="error-banner-close-btn"
+              aria-label="Cerrar mensaje de error"
+              onClick={() => setErrorMsg('')}
+            >
+              <MdClose aria-hidden="true" />
+            </button>
           </div>
         )}
 

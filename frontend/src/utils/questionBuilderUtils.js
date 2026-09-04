@@ -154,7 +154,7 @@ export function buildQuestionDraftPayload(data) {
 }
 
 export function getOptionText(option) {
-  return String(option?.label ?? option?.text ?? '').trim();
+  return String(option?.label ?? option?.text ?? '');
 }
 
 export function getOptionFactor(option) {
@@ -162,7 +162,7 @@ export function getOptionFactor(option) {
 }
 
 export function getMatrixRowText(row) {
-  return String(typeof row === 'string' ? row : row?.label ?? '').trim();
+  return String(typeof row === 'string' ? row : row?.label ?? '');
 }
 
 export function parseNumberValue(value) {

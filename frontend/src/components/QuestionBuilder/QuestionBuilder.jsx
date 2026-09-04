@@ -16,9 +16,6 @@ import { Question } from '../Question/Question.jsx';
 
 import './QuestionBuilder.css';
 
-/**
- * Constructor de preguntas
- */
 export function QuestionBuilder({ data, onChange, isCatalog = true }) {
   const isTextQuestion = data.questionType === 'TEXT';
   const scaleDisplayType = getScaleDisplayValue(data);
@@ -102,7 +99,6 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
 
   return (
     <div className="question-builder-stack">
-      {/* INFORMACIÓN GENERAL */}
       <section className="builder-card">
         <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
 
@@ -148,7 +144,6 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
         </div>
       </section>
 
-      {/* TIPO DE PREGUNTA */}
       <section className="builder-card">
         <h2 className="builder-section-title">TIPO DE PREGUNTA</h2>
         <p className="builder-section-desc">Selecciona el tipo de respuesta que tendrá esta pregunta.</p>
@@ -183,7 +178,6 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
         </div>
       </section>
 
-      {/* CONFIGURACIÓN DE LA PREGUNTA */}
       <section className="builder-card">
         <h2 className="builder-section-title">CONFIGURACIÓN DE LA PREGUNTA</h2>
 
@@ -197,7 +191,7 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
                   checked={Boolean(data.isRequired)}
                   onChange={(event) => handleField('isRequired', event.target.checked)}
                 />
-                Respuesta obligatoria para el encuestado
+                <span>Respuesta obligatoria para el encuestado</span>
               </label>
             </div>
             <div className="config-help-cell">Impide enviar el cuestionario si la pregunta queda sin responder.</div>
@@ -276,54 +270,76 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
         {RANGE_QUESTION_TYPES.includes(data.questionType) && (
           <>
             <div className="config-grid-row">
-              <div className="config-label-cell">Rango:</div>
-              <div className="config-interactive-cell range-inputs">
-                <input
-                  type="number"
-                  value={isFixedVisualScale ? 1 : (data.minValue ?? '')}
-                  disabled={isFixedVisualScale}
-                  onChange={(event) => handleField('minValue', parseNumberValue(event.target.value))}
-                  placeholder="Mínimo"
-                />
-                <input
-                  type="number"
-                  value={isFixedVisualScale ? 5 : (data.maxValue ?? '')}
-                  disabled={isFixedVisualScale}
-                  onChange={(event) => handleField('maxValue', parseNumberValue(event.target.value))}
-                  placeholder="Máximo"
-                />
-                <input
-                  type="number"
-                  value={isFixedVisualScale ? 1 : (data.step ?? '')}
-                  disabled={isFixedVisualScale}
-                  onChange={(event) => handleField('step', parseNumberValue(event.target.value))}
-                  placeholder="Paso"
-                />
+              <div className="config-label-cell">
+                {data.questionType === 'NUMBER' ? 'Rango permitido:' : 'Rango:'}
+              </div>
+              <div className="config-interactive-cell limits-labeled-group">
+                <div className="labeled-input-item">
+                  <span className="mini-top-label">Mínimo</span>
+                  <input
+                    type="number"
+                    value={isFixedVisualScale ? 1 : (data.minValue ?? '')}
+                    disabled={isFixedVisualScale}
+                    onChange={(event) => handleField('minValue', parseNumberValue(event.target.value))}
+                    placeholder="1"
+                  />
+                </div>
+                <div className="labeled-input-item">
+                  <span className="mini-top-label">Máximo</span>
+                  <input
+                    type="number"
+                    value={isFixedVisualScale ? 5 : (data.maxValue ?? '')}
+                    disabled={isFixedVisualScale}
+                    onChange={(event) => handleField('maxValue', parseNumberValue(event.target.value))}
+                    placeholder="5"
+                  />
+                </div>
+
+                {data.questionType !== 'NUMBER' && (
+                  <div className="labeled-input-item">
+                    <span className="mini-top-label">Paso</span>
+                    <input
+                      type="number"
+                      value={isFixedVisualScale ? 1 : (data.step ?? '')}
+                      disabled={isFixedVisualScale}
+                      onChange={(event) => handleField('step', parseNumberValue(event.target.value))}
+                      placeholder="1"
+                    />
+                  </div>
+                )}
               </div>
               <div className="config-help-cell">
-                {isFixedVisualScale
-                  ? 'Fijado de 1 a 5 con incremento de 1 para este formato visual.'
-                  : 'Valores que delimitan la respuesta.'}
+                {data.questionType === 'NUMBER'
+                  ? 'Valores numéricos mínimo y máximo permitidos para la respuesta.'
+                  : isFixedVisualScale
+                    ? 'Fijado de 1 a 5 con incremento de 1 para este formato visual.'
+                    : 'Valores que delimitan la escala. El mínimo debe ser inferior al máximo y el paso mayor que cero.'}
               </div>
             </div>
 
             {data.questionType !== 'NUMBER' && (
               <>
-                <div className="config-grid-row">
+                <div className="config-grid-row config-row-wide">
                   <div className="config-label-cell">Etiquetas:</div>
-                  <div className="config-interactive-cell range-inputs">
-                    <input
-                      type="text"
-                      value={data.leftLabel || ''}
-                      placeholder="Etiqueta izquierda"
-                      onChange={(event) => handleField('leftLabel', event.target.value)}
-                    />
-                    <input
-                      type="text"
-                      value={data.rightLabel || ''}
-                      placeholder="Etiqueta derecha"
-                      onChange={(event) => handleField('rightLabel', event.target.value)}
-                    />
+                  <div className="config-interactive-cell limits-labeled-group">
+                    <div className="labeled-input-item">
+                      <span className="mini-top-label">Etiqueta inicial</span>
+                      <input
+                        type="text"
+                        value={data.leftLabel || ''}
+                        placeholder="Ej. Totalmente en desacuerdo"
+                        onChange={(event) => handleField('leftLabel', event.target.value)}
+                      />
+                    </div>
+                    <div className="labeled-input-item">
+                      <span className="mini-top-label">Etiqueta final</span>
+                      <input
+                        type="text"
+                        value={data.rightLabel || ''}
+                        placeholder="Ej. Totalmente de acuerdo"
+                        onChange={(event) => handleField('rightLabel', event.target.value)}
+                      />
+                    </div>
                   </div>
                   <div className="config-help-cell">Textos que explican los extremos de la escala.</div>
                 </div>
@@ -400,44 +416,61 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
                     </button>
                   </div>
                 ))}
-                <button type="button" className="btn-add-subitem" onClick={addOption}>
-                  <MdAdd aria-hidden="true" />
-                  Añadir opción
-                </button>
-                <label className="checkbox-sublabel">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(data.hasOtherOption)}
-                    onChange={(event) => handleField('hasOtherOption', event.target.checked)}
-                  />
-                  Permitir opción "Otro"
-                </label>
+
+                <div className="options-actions-bar">
+                  <button type="button" className="btn-add-subitem" onClick={addOption}>
+                    <MdAdd aria-hidden="true" />
+                    Añadir opción
+                  </button>
+
+                  <label className="checkbox-sublabel">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(data.hasOtherOption)}
+                      onChange={(event) => handleField('hasOtherOption', event.target.checked)}
+                    />
+                    <span>Permitir opción &quot;Otro&quot;</span>
+                  </label>
+                </div>
               </div>
               <div className="config-help-cell">Opciones seleccionables por el encuestado.</div>
             </div>
 
-            {data.questionType === 'MULTIPLE_CHOICE' && (
-              <div className="config-grid-row">
-                <div className="config-label-cell">Límites de selección:</div>
-                <div className="config-interactive-cell range-inputs">
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Mínimo"
-                    value={data.minSelections ?? ''}
-                    onChange={(event) => handleField('minSelections', parseIntegerValue(event.target.value))}
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Máximo"
-                    value={data.maxSelections ?? ''}
-                    onChange={(event) => handleField('maxSelections', parseIntegerValue(event.target.value))}
-                  />
+            {data.questionType === 'MULTIPLE_CHOICE' && (() => {
+              const totalAvailable = (data.options || []).length + (data.hasOtherOption ? 1 : 0);
+              return (
+                <div className="config-grid-row">
+                  <div className="config-label-cell">Límites de selección:</div>
+                  <div className="config-interactive-cell limits-labeled-group">
+                    <div className="labeled-input-item">
+                      <span className="mini-top-label">Mínimo</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={data.maxSelections || totalAvailable || 1}
+                        placeholder="1"
+                        value={data.minSelections ?? ''}
+                        onChange={(event) => handleField('minSelections', parseIntegerValue(event.target.value))}
+                      />
+                    </div>
+                    <div className="labeled-input-item">
+                      <span className="mini-top-label">Máximo</span>
+                      <input
+                        type="number"
+                        min={data.minSelections || 1}
+                        max={totalAvailable || 1}
+                        placeholder={String(totalAvailable || 1)}
+                        value={data.maxSelections ?? ''}
+                        onChange={(event) => handleField('maxSelections', parseIntegerValue(event.target.value))}
+                      />
+                    </div>
+                  </div>
+                  <div className="config-help-cell">
+                    Valores válidos: Mínimo desde 1 hasta el máximo seleccionado. Máximo hasta {totalAvailable} (total de opciones).
+                  </div>
                 </div>
-                <div className="config-help-cell">Número mínimo y máximo de opciones que pueden marcarse.</div>
-              </div>
-            )}
+              );
+            })()}
           </>
         )}
 
@@ -485,7 +518,6 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
         )}
       </section>
 
-      {/* VISTA PREVIA */}
       <section className="builder-card preview-section">
         <h2 className="builder-section-title">VISTA PREVIA DE LA PREGUNTA</h2>
         <div className="preview-container">
