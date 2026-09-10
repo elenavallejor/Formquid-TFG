@@ -38,20 +38,13 @@ public class AdminSurveyController {
     }
 
     @PatchMapping("/{surveyId}/lifecycle")
-    public SurveyResponseDto changeLifecycle(
-        @PathVariable String surveyId,
-        @AuthenticationPrincipal User user,
-        @Valid @RequestBody ChangeSurveyLifecycleRequestDto request
-    ) {
+    public SurveyResponseDto changeLifecycle(@PathVariable Long surveyId, @AuthenticationPrincipal User user, @Valid @RequestBody ChangeSurveyLifecycleRequestDto request) {
         return surveyService.adminChangeLifecycle(surveyId, request.lifecycleStatus(), user);
     }
 
     @DeleteMapping("/{surveyId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(
-        @PathVariable String surveyId,
-        @AuthenticationPrincipal User user
-    ) {
+    public void delete(@PathVariable Long surveyId, @AuthenticationPrincipal User user) {
         surveyService.adminDelete(surveyId, user);
     }
 }

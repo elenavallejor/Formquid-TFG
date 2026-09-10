@@ -14,10 +14,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.UUID;
 
 import java.util.List;
 
+/**
+ * Gestiona las operaciones relacionadas con las notificaciones del usuario autenticado.
+ */
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
@@ -36,19 +38,13 @@ public class NotificationController {
     }
 
     @PatchMapping("/{notificationId}/read")
-    public NotificationResponseDto markAsRead(
-        @PathVariable Long notificationId,
-        @AuthenticationPrincipal User user
-    ) {
+    public NotificationResponseDto markAsRead(@PathVariable Long notificationId, @AuthenticationPrincipal User user) {
         return notificationService.markAsRead(notificationId, user.getId());
     }
 
     @DeleteMapping("/{notificationId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(
-        @PathVariable Long notificationId,
-        @AuthenticationPrincipal User user
-    ) {
+    public void delete(@PathVariable Long notificationId, @AuthenticationPrincipal User user) {
         notificationService.delete(notificationId, user.getId());
     }
 }

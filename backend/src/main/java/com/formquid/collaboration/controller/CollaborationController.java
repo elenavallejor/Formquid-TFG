@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/surveys/{surveyId}")
@@ -34,7 +33,7 @@ public class CollaborationController {
 
     @GetMapping("/collaborators")
     public List<SurveyCollaboratorResponseDto> findCollaborators(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user
     ) {
         ensureCollaborationAccess(surveyId, user);
@@ -43,7 +42,7 @@ public class CollaborationController {
 
     @GetMapping("/collaboration-requests")
     public List<CollaborationRequestResponseDto> findRequests(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user
     ) {
         ensureCollaborationAccess(surveyId, user);
@@ -53,7 +52,7 @@ public class CollaborationController {
     @PostMapping("/collaboration-requests")
     @ResponseStatus(HttpStatus.CREATED)
     public CollaborationRequestResponseDto createRequest(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody CreateCollaborationRequestDto request
     ) {
@@ -62,7 +61,7 @@ public class CollaborationController {
 
     @PostMapping("/collaboration-requests/{requestId}/accept")
     public SurveyCollaboratorResponseDto accept(
-        @PathVariable UUID requestId,
+        @PathVariable Long requestId,
         @AuthenticationPrincipal User user
     ) {
         return collaborationService.accept(requestId, user.getId());
@@ -71,7 +70,7 @@ public class CollaborationController {
     @DeleteMapping("/collaboration-requests/{requestId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reject(
-        @PathVariable UUID requestId,
+        @PathVariable Long requestId,
         @AuthenticationPrincipal User user
     ) {
         collaborationService.reject(requestId, user.getId());
@@ -80,8 +79,8 @@ public class CollaborationController {
     @DeleteMapping("/collaborators/{collaboratorId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeCollaborator(
-        @PathVariable String surveyId,
-        @PathVariable UUID collaboratorId,
+        @PathVariable Long surveyId,
+        @PathVariable Long collaboratorId,
         @AuthenticationPrincipal User user
     ) {
         collaborationService.removeCollaborator(surveyId, collaboratorId, user.getId());
@@ -89,8 +88,8 @@ public class CollaborationController {
 
     @PostMapping("/publication-requests")
     @ResponseStatus(HttpStatus.CREATED)
-    public UUID requestPublication(
-        @PathVariable String surveyId,
+    public Long requestPublication(
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody CreatePublicationRequestDto request
     ) {
@@ -100,7 +99,7 @@ public class CollaborationController {
     @PostMapping("/publication-requests/{requestId}/accept")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void acceptPublication(
-        @PathVariable UUID requestId,
+        @PathVariable Long requestId,
         @AuthenticationPrincipal User user
     ) {
         collaborationService.acceptPublication(requestId, user.getId());
@@ -109,13 +108,13 @@ public class CollaborationController {
     @DeleteMapping("/publication-requests/{requestId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void rejectPublication(
-        @PathVariable UUID requestId,
+        @PathVariable Long requestId,
         @AuthenticationPrincipal User user
     ) {
         collaborationService.rejectPublication(requestId, user.getId());
     }
 
-    private void ensureCollaborationAccess(String surveyId, User user) {
+    private void ensureCollaborationAccess(Long surveyId, User user) {
         Survey survey = surveyService.getSurvey(surveyId);
         surveyService.ensureCanViewResults(survey, user);
     }

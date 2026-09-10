@@ -11,9 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface BlockRepository extends JpaRepository<Block, String> {
+public interface BlockRepository extends JpaRepository<Block, Long> {
 
     List<Block> findByScopeOrderByNameAsc(BlockScope scope);
 
@@ -49,7 +48,7 @@ public interface BlockRepository extends JpaRepository<Block, String> {
         Pageable pageable
     );
 
-    Optional<Block> findByParentItemId(UUID parentItemId);
+    Optional<Block> findByParentItemId(Long parentItemId);
 
-    long countBySourceBlockId(String sourceBlockId);
+    long countBySourceBlockId(Long sourceBlockId);
 }

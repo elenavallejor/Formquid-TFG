@@ -29,8 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
 /**
  * Expone las operaciones de usuario, cuenta propia, roles y transferencia de propiedad.
  */
@@ -49,10 +47,7 @@ public class UserController {
     }
 
     @PatchMapping("/me/account")
-    public ResponseEntity<UserResponseDto> updateMyAccount(
-        @AuthenticationPrincipal User user,
-        @Valid @RequestBody UpdateAccountRequestDto request
-    ) {
+    public ResponseEntity<UserResponseDto> updateMyAccount(@AuthenticationPrincipal User user, @Valid @RequestBody UpdateAccountRequestDto request) {
         UpdateAccountResult result = userService.updateMyAccount(user.getId(), request);
         ResponseEntity.BodyBuilder response = ResponseEntity.ok();
 
@@ -65,12 +60,8 @@ public class UserController {
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteMyAccount(
-        @AuthenticationPrincipal User user,
-        @Valid @RequestBody DeleteOwnAccountRequestDto request
-    ) {
+    public ResponseEntity<Void> deleteMyAccount(@AuthenticationPrincipal User user, @Valid @RequestBody DeleteOwnAccountRequestDto request) {
         userService.deleteMyAccount(user.getId(), request);
-
         return ResponseEntity.noContent()
             .header(HttpHeaders.SET_COOKIE, jwtCookieService.deleteCookie().toString())
             .build();
@@ -78,36 +69,26 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('SUPERADMIN')")
-    public PageResponseDto<UserResponseDto> findAll(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size
-    ) {
+    public PageResponseDto<UserResponseDto> findAll(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return userService.findAll(page, size);
     }
 
     @PatchMapping("/{userId}/role")
     @PreAuthorize("hasRole('SUPERADMIN')")
-    public UserResponseDto updateRole(
-        @PathVariable UUID userId,
-        @Valid @RequestBody UpdateUserRoleRequestDto request
-    ) {
+    public UserResponseDto updateRole(@PathVariable Long userId, @Valid @RequestBody UpdateUserRoleRequestDto request) {
         return userService.updateRole(userId, request.role());
     }
 
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('SUPERADMIN')")
-    public void delete(@PathVariable UUID userId) {
+    public void delete(@PathVariable Long userId) {
         userService.delete(userId);
     }
 
     @PostMapping("/surveys/{surveyId}/transfer-ownership")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void transferOwnership(
-        @PathVariable String surveyId,
-        @AuthenticationPrincipal User user,
-        @Valid @RequestBody TransferOwnershipRequestDto request
-    ) {
+    public void transferOwnership(@PathVariable Long surveyId, @AuthenticationPrincipal User user, @Valid @RequestBody TransferOwnershipRequestDto request) {
         userService.transferSurveyOwnership(surveyId, user.getId(), request.newOwnerId());
     }
 }

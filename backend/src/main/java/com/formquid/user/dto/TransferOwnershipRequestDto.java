@@ -2,9 +2,10 @@ package com.formquid.user.dto;
 
 import jakarta.validation.constraints.NotNull;
 
-import java.util.UUID;
-
+/**
+ * Recibe el usuario al que se transferirán los recursos de una cuenta.
+ */
 public record TransferOwnershipRequestDto(
-    @NotNull UUID newOwnerId
+    @NotNull Long newOwnerId
 ) {
 }

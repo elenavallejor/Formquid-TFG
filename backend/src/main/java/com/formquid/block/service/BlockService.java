@@ -8,7 +8,6 @@ import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
-import com.formquid.common.service.IdSequenceService;
 import com.formquid.content.service.ContentService;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ public class BlockService {
 
     private final BlockRepository blockRepository;
     private final ContentService contentService;
-    private final IdSequenceService idSequenceService;
 
     @Transactional(readOnly = true)
     public PageResponseDto<BlockSummaryDto> findCatalogBlocks(int page, int size) {
@@ -43,7 +41,7 @@ public class BlockService {
     }
 
     @Transactional(readOnly = true)
-    public BlockResponseDto findCatalogBlock(String blockId) {
+    public BlockResponseDto findCatalogBlock(Long blockId) {
         Block block = getBlock(blockId);
         if (block.getScope() != BlockScope.CATALOG) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
@@ -52,7 +50,7 @@ public class BlockService {
     }
 
     @Transactional
-    public void deleteCatalogBlock(String blockId) {
+    public void deleteCatalogBlock(Long blockId) {
         Block block = getBlock(blockId);
         if (block.getScope() != BlockScope.CATALOG) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
@@ -64,7 +62,7 @@ public class BlockService {
         blockRepository.delete(block);
     }
 
-    public Block getBlock(String blockId) {
+    public Block getBlock(Long blockId) {
         return blockRepository.findById(blockId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Bloque no encontrado"));
     }
@@ -78,7 +76,6 @@ public class BlockService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque debe contener al menos una pregunta");
         }
         Block block = blockRepository.save(Block.builder()
-            .id(idSequenceService.nextBlockId())
             .scope(BlockScope.CATALOG)
             .name(request.name().trim())
             .description(trimToNull(request.description()))

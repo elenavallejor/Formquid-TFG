@@ -4,9 +4,8 @@ import com.formquid.question.entity.QuestionOption;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.UUID;
 
-public interface QuestionOptionRepository extends JpaRepository<QuestionOption, UUID> {
+public interface QuestionOptionRepository extends JpaRepository<QuestionOption, Long> {
 
-    List<QuestionOption> findByQuestionIdOrderByPositionAsc(String questionId);
+    List<QuestionOption> findByQuestionIdOrderByPositionAsc(Long questionId);
 }

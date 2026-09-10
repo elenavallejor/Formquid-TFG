@@ -76,9 +76,19 @@ public class SurveyController {
         return surveyService.create(request, user);
     }
 
+    @PostMapping("/from-template/{templateId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SurveyResponseDto createFromTemplate(
+        @PathVariable Long templateId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateSurveyRequestDto request
+    ) {
+        return surveyService.createFromTemplate(templateId, request, user);
+    }
+
     @GetMapping("/{surveyId}")
     public SurveyResponseDto get(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user
     ) {
         return surveyService.getSurveyForUser(surveyId, user);
@@ -86,7 +96,7 @@ public class SurveyController {
 
     @PutMapping("/{surveyId}")
     public SurveyResponseDto update(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody UpdateSurveyRequestDto request
     ) {
@@ -95,7 +105,7 @@ public class SurveyController {
 
     @PatchMapping("/{surveyId}/lifecycle")
     public SurveyResponseDto changeLifecycle(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody ChangeSurveyLifecycleRequestDto request
     ) {
@@ -105,7 +115,7 @@ public class SurveyController {
     @DeleteMapping("/{surveyId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user
     ) {
         surveyService.delete(surveyId, user);

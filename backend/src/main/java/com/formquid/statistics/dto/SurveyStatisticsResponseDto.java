@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 public record SurveyStatisticsResponseDto(
-    String surveyId,
+    Long surveyId,
     long participations,
     Instant firstParticipation,
     Instant lastParticipation,

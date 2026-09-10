@@ -8,7 +8,7 @@ import java.time.Instant;
  * Contiene los datos necesarios para listar una pregunta fija del catálogo.
  */
 public record FixedQuestionSummaryDto(
-    String id,
+    Long id,
     String statement,
     QuestionType questionType,
     String creatorName,

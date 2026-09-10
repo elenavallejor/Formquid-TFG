@@ -8,23 +8,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.UUID;
 
-public interface ContentItemRepository extends JpaRepository<ContentItem, UUID> {
+public interface ContentItemRepository extends JpaRepository<ContentItem, Long> {
 
-    List<ContentItem> findBySurveyIdOrderByPositionAsc(String surveyId);
+    List<ContentItem> findBySurveyIdOrderByPositionAsc(Long surveyId);
 
-    List<ContentItem> findByTemplateIdOrderByPositionAsc(UUID templateId);
+    List<ContentItem> findByTemplateIdOrderByPositionAsc(Long templateId);
 
-    List<ContentItem> findByParentBlockIdOrderByPositionAsc(String blockId);
+    List<ContentItem> findByParentBlockIdOrderByPositionAsc(Long blockId);
 
-    boolean existsBySurveyIdAndItemType(String surveyId, ContentItemType itemType);
+    boolean existsBySurveyIdAndItemType(Long surveyId, ContentItemType itemType);
 
-    boolean existsByTemplateIdAndItemType(UUID templateId, ContentItemType itemType);
+    boolean existsByTemplateIdAndItemType(Long templateId, ContentItemType itemType);
 
-    boolean existsByParentBlockIdAndItemType(String blockId, ContentItemType itemType);
+    boolean existsByParentBlockIdAndItemType(Long blockId, ContentItemType itemType);
 
     @Modifying(flushAutomatically = true)
     @Query("update ContentItem item set item.position = :position where item.id = :itemId")
-    void updatePosition(@Param("itemId") UUID itemId, @Param("position") Integer position);
+    void updatePosition(@Param("itemId") Long itemId, @Param("position") Integer position);
 }

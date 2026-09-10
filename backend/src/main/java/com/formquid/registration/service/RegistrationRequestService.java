@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +28,11 @@ public class RegistrationRequestService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
-    /**
-     * Devuelve todas las solicitudes pendientes ordenadas por fecha.
-     */
     @Transactional(readOnly = true)
     public List<RegistrationRequestResponseDto> findPending() {
         return requestRepository.findAllResponses();
     }
 
-    /**
-     * Crea una nueva solicitud de registro.
-     */
     @Transactional
     public RegistrationRequestResponseDto create(CreateRegistrationRequestDto request) {
         String email = EmailNormalizer.normalize(request.email());
@@ -58,25 +51,16 @@ public class RegistrationRequestService {
             .build();
 
         RegistrationRequest saved = requestRepository.save(entity);
-
         notificationService.notifyAdminsAboutRegistrationRequest(saved);
-
         return toResponse(saved);
     }
 
-    /**
-     * Aprueba una solicitud, crea el usuario y elimina la solicitud.
-     */
     @Transactional
-    public UUID approve(UUID requestId) {
-
+    public Long approve(Long requestId) {
         RegistrationRequest request = getRequest(requestId);
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ApiException(
-                HttpStatus.CONFLICT,
-                "Ya existe un usuario con ese correo"
-            );
+            throw new ApiException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo");
         }
 
         User user = User.builder()
@@ -90,23 +74,13 @@ public class RegistrationRequestService {
 
         User saved = userRepository.save(user);
 
-        /*
-         * Se registra el correo de aprobación.
-         */
         notificationService.createEmail(
             saved,
             NotificationType.REGISTRATION_APPROVED,
             "Solicitud aprobada",
-            "Tu solicitud de registro ha sido aprobada. "
-                + "Tu cuenta de FormQuid ya está activa."
+            "Tu solicitud de registro ha sido aprobada. Tu cuenta de FormQuid ya está activa."
         );
 
-        /*
-         * También se crea una notificación interna para que el usuario
-         * pueda verla cuando acceda a la plataforma.
-         *
-         * El target es el propio usuario, que seguirá existiendo.
-         */
         notificationService.createUserNotification(
             saved,
             NotificationType.REGISTRATION_APPROVED,
@@ -115,71 +89,24 @@ public class RegistrationRequestService {
             saved
         );
 
-        /*
-         * Las notificaciones que apuntan a la solicitud dejan de ser útiles
-         * cuando esta se resuelve.
-         */
-        notificationService.deleteRegistrationRequestNotifications(
-            request.getId()
-        );
-
-        /*
-         * Una solicitud solo existe mientras está pendiente.
-         */
+        notificationService.deleteRegistrationRequestNotifications(request.getId());
         requestRepository.delete(request);
-
         return saved.getId();
     }
 
-    /**
-     * Rechaza y elimina una solicitud de registro.
-     */
     @Transactional
-    public void reject(UUID requestId) {
-
+    public void reject(Long requestId) {
         RegistrationRequest request = getRequest(requestId);
-
-        /*
-         * TODO IMPLEMENTAR CORREO.
-         *
-         * El correo de rechazo deberá enviarse mediante el servicio de
-         * correo externo antes de eliminar la solicitud.
-         *
-         * Ejemplo futuro:
-         *
-         * emailService.sendRegistrationRejected(
-         *     request.getEmail(),
-         *     request.getName()
-         * );
-         */
-
-        notificationService.deleteRegistrationRequestNotifications(
-            request.getId()
-        );
-
+        notificationService.deleteRegistrationRequestNotifications(request.getId());
         requestRepository.delete(request);
     }
 
-    /**
-     * Obtiene una solicitud pendiente.
-     *
-     * Si no existe, significa que ya fue aprobada, rechazada
-     * o que el identificador es incorrecto.
-     */
-    private RegistrationRequest getRequest(UUID requestId) {
+    private RegistrationRequest getRequest(Long requestId) {
         return requestRepository.findById(requestId)
-            .orElseThrow(() -> new ApiException(
-                HttpStatus.NOT_FOUND,
-                "Solicitud no encontrada"
-            ));
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Solicitud no encontrada"));
     }
 
-    /**
-     * Convierte una solicitud a su DTO de respuesta.
-     */
-    private RegistrationRequestResponseDto toResponse(
-        RegistrationRequest request
-    ) {
+    private RegistrationRequestResponseDto toResponse(RegistrationRequest request) {
         return new RegistrationRequestResponseDto(
             request.getId(),
             request.getEmail(),

@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
 
 /**
  * Expone las operaciones de consulta y creación de plantillas del catálogo.
@@ -42,7 +41,7 @@ public class TemplateController {
     }
 
     @GetMapping("/{templateId}")
-    public TemplateResponseDto findById(@PathVariable UUID templateId) {
+    public TemplateResponseDto findById(@PathVariable Long templateId) {
         return templateService.findById(templateId);
     }
 
@@ -59,7 +58,7 @@ public class TemplateController {
     @DeleteMapping("/{templateId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public void delete(@PathVariable UUID templateId) {
+    public void delete(@PathVariable Long templateId) {
         templateService.delete(templateId);
     }
 }

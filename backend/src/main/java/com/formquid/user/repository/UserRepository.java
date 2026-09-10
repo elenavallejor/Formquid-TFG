@@ -12,12 +12,11 @@ import org.springframework.data.repository.query.Param;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
- * Accede a usuarios.
+ * Accede a usuarios y proporciona consultas optimizadas para su administración.
  */
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
@@ -25,26 +24,26 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     long countByRole(UserRole role);
 
-    long countByRoleAndIdNot(UserRole role, UUID id);
+    long countByRoleAndIdNot(UserRole role, Long id);
 
     @Query(
         value = """
-        select new com.formquid.user.dto.UserResponseDto(
-            user.id,
-            user.role,
-            user.email,
-            user.name,
-            user.gender,
-            user.institution,
-            user.createdAt,
-            user.updatedAt
-        )
-        from User user
-        order by user.name asc
+            select new com.formquid.user.dto.UserResponseDto(
+                user.id,
+                user.role,
+                user.email,
+                user.name,
+                user.gender,
+                user.institution,
+                user.createdAt,
+                user.updatedAt
+            )
+            from User user
+            order by user.name asc
         """,
         countQuery = """
-        select count(user)
-        from User user
+            select count(user)
+            from User user
         """
     )
     Page<UserResponseDto> findResponses(Pageable pageable);
@@ -63,12 +62,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         from User user
         where user.id = :userId
     """)
-    Optional<UserResponseDto> findResponseById(@Param("userId") UUID userId);
+    Optional<UserResponseDto> findResponseById(@Param("userId") Long userId);
 
     @Query("""
         select user.id
         from User user
         where user.role in :roles
     """)
-    List<UUID> findIdsByRoleIn(@Param("roles") Collection<UserRole> roles);
+    List<Long> findIdsByRoleIn(@Param("roles") Collection<UserRole> roles);
 }

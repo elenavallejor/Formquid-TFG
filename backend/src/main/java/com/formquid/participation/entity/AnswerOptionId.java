@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -20,8 +19,8 @@ import java.util.UUID;
 public class AnswerOptionId implements Serializable {
 
     @Column(name = "answer_id")
-    private UUID answerId;
+    private Long answerId;
 
     @Column(name = "option_id")
-    private UUID optionId;
+    private Long optionId;
 }

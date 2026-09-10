@@ -9,7 +9,7 @@ import java.util.List;
  * Representa los datos mínimos necesarios para mostrar una encuesta en listados privados.
  */
 public record SurveySummaryDto(
-    String id,
+    Long id,
     String title,
     String imageKey,
     SurveyLifecycle lifecycleStatus,

@@ -2,7 +2,6 @@ package com.formquid.question.service;
 
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
-import com.formquid.common.service.IdSequenceService;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.question.dto.CreateFixedQuestionRequestDto;
 import com.formquid.question.dto.FixedQuestionSummaryDto;
@@ -45,13 +44,11 @@ import java.util.Set;
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
-    private final IdSequenceService idSequenceService;
 
     @Transactional(readOnly = true)
     public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(int page, int size) {
         Pageable pageable = catalogPageable(page, size);
-        Page<FixedQuestionSummaryDto> questions =
-            questionRepository.findCatalogSummaries(QuestionScope.CATALOG_FIXED, pageable);
+        Page<FixedQuestionSummaryDto> questions = questionRepository.findCatalogSummaries(QuestionScope.CATALOG_FIXED, pageable);
         return toPageResponse(questions);
     }
 
@@ -75,7 +72,7 @@ public class QuestionService {
     }
 
     @Transactional(readOnly = true)
-    public QuestionResponseDto findFixedQuestion(String questionId) {
+    public QuestionResponseDto findFixedQuestion(Long questionId) {
         Question question = getQuestion(questionId);
         if (question.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
@@ -84,7 +81,7 @@ public class QuestionService {
     }
 
     @Transactional
-    public void deleteFixedQuestion(String questionId) {
+    public void deleteFixedQuestion(Long questionId) {
         Question question = getQuestion(questionId);
         if (question.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
@@ -95,7 +92,7 @@ public class QuestionService {
         questionRepository.delete(question);
     }
 
-    public Question getQuestion(String questionId) {
+    public Question getQuestion(Long questionId) {
         return questionRepository.findById(questionId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Pregunta no encontrada"));
     }
@@ -109,13 +106,7 @@ public class QuestionService {
      */
     @Transactional
     public QuestionResponseDto createFixedQuestion(CreateFixedQuestionRequestDto request, User creator) {
-        Question question = buildQuestion(
-            request.question(),
-            QuestionScope.CATALOG_FIXED,
-            null,
-            null,
-            creator
-        );
+        Question question = buildQuestion(request.question(), QuestionScope.CATALOG_FIXED, null, null, creator);
         return toResponse(questionRepository.save(question));
     }
 
@@ -141,9 +132,7 @@ public class QuestionService {
      * Recibe una pregunta origen y devuelve una copia local.
      */
     public Question copyAsLocal(Question source, ContentItem parentItem, User creator) {
-        Question catalogSource = source.getScope() == QuestionScope.CATALOG_FIXED
-            ? source
-            : source.getSourceFixedQuestion();
+        Question catalogSource = source.getScope() == QuestionScope.CATALOG_FIXED ? source : source.getSourceFixedQuestion();
         QuestionScope scope = catalogSource == null ? QuestionScope.LOCAL : QuestionScope.FIXED_SNAPSHOT;
         return questionRepository.save(copyQuestion(source, scope, parentItem, catalogSource, creator));
     }
@@ -174,16 +163,9 @@ public class QuestionService {
         return questionRepository.save(question);
     }
 
-    private Question buildQuestion(
-        QuestionDraftDto dto,
-        QuestionScope scope,
-        ContentItem parentItem,
-        Question sourceFixedQuestion,
-        User creator
-    ) {
+    private Question buildQuestion(QuestionDraftDto dto, QuestionScope scope, ContentItem parentItem, Question sourceFixedQuestion, User creator) {
         validateQuestion(dto);
         Question question = Question.builder()
-            .id(idSequenceService.nextQuestionId())
             .parentItem(parentItem)
             .scope(scope)
             .statement(dto.statement().trim())
@@ -206,15 +188,8 @@ public class QuestionService {
         return question;
     }
 
-    private Question copyQuestion(
-        Question source,
-        QuestionScope scope,
-        ContentItem parentItem,
-        Question sourceFixedQuestion,
-        User creator
-    ) {
+    private Question copyQuestion(Question source, QuestionScope scope, ContentItem parentItem, Question sourceFixedQuestion, User creator) {
         Question copy = Question.builder()
-            .id(idSequenceService.nextQuestionId())
             .parentItem(parentItem)
             .scope(scope)
             .statement(source.getStatement())
@@ -254,8 +229,7 @@ public class QuestionService {
             && (dto.evaluationWeight() == null || dto.evaluationWeight().compareTo(BigDecimal.ZERO) <= 0)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas evaluables necesitan peso mayor que cero");
         }
-        if ((dto.questionType() == QuestionType.TEXT)
-            && dto.evaluationDirection() != EvaluationDirection.NEUTRAL) {
+        if ((dto.questionType() == QuestionType.TEXT) && dto.evaluationDirection() != EvaluationDirection.NEUTRAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas de texto deben ser neutrales");
         }
         if (dto.questionType() != QuestionType.SINGLE_CHOICE && dto.questionType() != QuestionType.MULTIPLE_CHOICE
@@ -266,7 +240,7 @@ public class QuestionService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Solo las matrices admiten filas");
         }
 
-        if (dto.questionType() == QuestionType.TEXT ) {
+        if (dto.questionType() == QuestionType.TEXT) {
             validateTextQuestion(dto.settings());
         } else if (dto.questionType() == QuestionType.NUMBER) {
             validateNumberQuestion(dto);

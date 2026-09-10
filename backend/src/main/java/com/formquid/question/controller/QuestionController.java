@@ -48,7 +48,7 @@ public class QuestionController {
     }
 
     @GetMapping("/{questionId}")
-    public QuestionResponseDto findFixedQuestion(@PathVariable String questionId) {
+    public QuestionResponseDto findFixedQuestion(@PathVariable Long questionId) {
         return questionService.findFixedQuestion(questionId);
     }
 
@@ -65,7 +65,7 @@ public class QuestionController {
     @DeleteMapping("/{questionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public void deleteFixedQuestion(@PathVariable String questionId) {
+    public void deleteFixedQuestion(@PathVariable Long questionId) {
         questionService.deleteFixedQuestion(questionId);
     }
 }

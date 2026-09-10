@@ -12,8 +12,7 @@ public class AdminDashboardRepository {
     private final EntityManager entityManager;
 
     /**
-     * Obtiene los tres contadores del dashboard en un único viaje a
-     * PostgreSQL.
+     * Obtiene los tres contadores del dashboard
      */
     public AdminDashboardCountsDto getCounts() {
         Object[] row = (Object[]) entityManager.createNativeQuery("""

@@ -2,15 +2,14 @@ package com.formquid.participation.dto;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 public record AnswerResponseDto(
-    UUID id,
-    String questionId,
+    Long id,
+    Long questionId,
     String textValue,
     BigDecimal numericValue,
     Boolean booleanValue,
-    List<UUID> selectedOptionIds,
-    List<UUID> matrixRowIds
+    List<Long> selectedOptionIds,
+    List<Long> matrixRowIds
 ) {
 }

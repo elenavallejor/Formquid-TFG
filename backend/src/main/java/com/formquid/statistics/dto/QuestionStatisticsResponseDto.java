@@ -5,7 +5,7 @@ import com.formquid.question.entity.QuestionType;
 import java.util.List;
 
 public record QuestionStatisticsResponseDto(
-    String questionId,
+    Long questionId,
     String statement,
     QuestionType questionType,
     long answers,

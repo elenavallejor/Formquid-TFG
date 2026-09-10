@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/surveys/{surveyId}/content")
@@ -42,7 +41,7 @@ public class ContentController {
     @PostMapping("/texts")
     @ResponseStatus(HttpStatus.CREATED)
     public ContentItemResponseDto addText(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody CreateTextItemRequestDto request
     ) {
@@ -53,7 +52,7 @@ public class ContentController {
     @PostMapping("/questions/local")
     @ResponseStatus(HttpStatus.CREATED)
     public ContentItemResponseDto addLocalQuestion(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody CreateQuestionItemRequestDto request
     ) {
@@ -64,7 +63,7 @@ public class ContentController {
     @PostMapping("/questions/fixed")
     @ResponseStatus(HttpStatus.CREATED)
     public ContentItemResponseDto addFixedQuestion(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody AddFixedQuestionItemRequestDto request
     ) {
@@ -75,7 +74,7 @@ public class ContentController {
     @PostMapping("/blocks")
     @ResponseStatus(HttpStatus.CREATED)
     public ContentItemResponseDto addBlock(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody AddBlockItemRequestDto request
     ) {
@@ -85,8 +84,8 @@ public class ContentController {
 
     @PutMapping("/texts/{itemId}")
     public ContentItemResponseDto updateText(
-        @PathVariable String surveyId,
-        @PathVariable UUID itemId,
+        @PathVariable Long surveyId,
+        @PathVariable Long itemId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody UpdateTextItemRequestDto request
     ) {
@@ -96,8 +95,8 @@ public class ContentController {
 
     @PutMapping("/questions/{itemId}")
     public ContentItemResponseDto updateQuestion(
-        @PathVariable String surveyId,
-        @PathVariable UUID itemId,
+        @PathVariable Long surveyId,
+        @PathVariable Long itemId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody UpdateQuestionItemRequestDto request
     ) {
@@ -107,8 +106,8 @@ public class ContentController {
 
     @PatchMapping("/questions/{itemId}/required")
     public ContentItemResponseDto updateRequired(
-        @PathVariable String surveyId,
-        @PathVariable UUID itemId,
+        @PathVariable Long surveyId,
+        @PathVariable Long itemId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody UpdateRequiredRequestDto request
     ) {
@@ -118,7 +117,7 @@ public class ContentController {
 
     @PatchMapping("/reorder")
     public List<ContentItemResponseDto> reorder(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user,
         @Valid @RequestBody ReorderContentRequestDto request
     ) {
@@ -129,15 +128,15 @@ public class ContentController {
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteItem(
-        @PathVariable String surveyId,
-        @PathVariable UUID itemId,
+        @PathVariable Long surveyId,
+        @PathVariable Long itemId,
         @AuthenticationPrincipal User user
     ) {
         Survey survey = editableSurvey(surveyId, user);
         contentService.deleteSurveyItem(survey, itemId);
     }
 
-    private Survey editableSurvey(String surveyId, User user) {
+    private Survey editableSurvey(Long surveyId, User user) {
         Survey survey = surveyService.getSurvey(surveyId);
         if (!surveyService.canEditSurvey(survey, user)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "No puedes editar esta encuesta");

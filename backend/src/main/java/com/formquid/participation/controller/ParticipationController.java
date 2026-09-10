@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Gestiona el envío público de participaciones en encuestas.
+ */
 @RestController
-@RequestMapping("/api/v1/public/surveys/{surveyId}/participations")
+@RequestMapping("/api/v1/public/surveys/{publicCode}/participations")
 @RequiredArgsConstructor
 public class ParticipationController {
 
@@ -22,10 +25,7 @@ public class ParticipationController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ParticipationResponseDto submit(
-        @PathVariable String surveyId,
-        @Valid @RequestBody SubmitParticipationRequestDto request
-    ) {
-        return participationService.submit(surveyId, request, null);
+    public ParticipationResponseDto submit(@PathVariable String publicCode, @Valid @RequestBody SubmitParticipationRequestDto request) {
+        return participationService.submit(publicCode, request, null);
     }
 }

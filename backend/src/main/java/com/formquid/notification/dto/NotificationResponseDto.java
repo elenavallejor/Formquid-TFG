@@ -13,7 +13,7 @@ public record NotificationResponseDto(
     String title,
     String message,
     NotificationTargetType targetType,
-    String targetId,
+    Long targetId,
     Instant createdAt,
     Instant readAt
 ) {

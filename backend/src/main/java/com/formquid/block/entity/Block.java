@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -38,8 +40,7 @@ import java.util.List;
 @Builder
 @Entity
 @Check(constraints = """
-    id ~ '^B[1-9][0-9]*$'
-    and scope in ('CATALOG', 'SNAPSHOT')
+    scope in ('CATALOG', 'SNAPSHOT')
     and (
         (scope = 'CATALOG' and parent_item_id is null)
         or (scope = 'SNAPSHOT' and parent_item_id is not null)
@@ -55,17 +56,13 @@ import java.util.List;
 )
 
 /**
- * Entidad que representa un bloque de preguntas.
- *
- * Puede ser un bloque de catálogo reutilizable o una copia insertada
- * en una encuesta o plantilla. Los bloques copiados mantienen referencia
- * al bloque original.
+ * Representa un bloque de catálogo o una copia incluida en otro contenido.
  */
 public class Block {
 
     @Id
-    @Column(length = 20)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_item_id", unique = true)

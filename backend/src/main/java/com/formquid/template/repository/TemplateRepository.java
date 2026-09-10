@@ -8,12 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Gestiona el acceso a plantillas y el listado ligero del catálogo.
  */
-public interface TemplateRepository extends JpaRepository<Template, UUID> {
+public interface TemplateRepository extends JpaRepository<Template, Long> {
 
     List<Template> findAllByOrderByTitleAsc();
 

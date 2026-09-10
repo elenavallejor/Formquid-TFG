@@ -12,13 +12,9 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Servicio de gestión de tokens JWT.
- *
- * El token contiene únicamente los datos necesarios para autenticar y
- * autorizar peticiones sin consultar la base de datos en cada request.
  */
 @Service
 public class JwtService {
@@ -68,7 +64,7 @@ public class JwtService {
         }
 
         return User.builder()
-            .id(UUID.fromString(userId))
+            .id(Long.parseLong(userId))
             .email(email)
             .role(UserRole.valueOf(role))
             .build();

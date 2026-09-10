@@ -6,10 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface RegistrationRequestRepository
-    extends JpaRepository<RegistrationRequest, UUID> {
+    extends JpaRepository<RegistrationRequest, Long> {
 
     boolean existsByEmail(String email);
 

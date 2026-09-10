@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -32,6 +34,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Representa una pregunta de catálogo, local o copiada dentro de otro contenido.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -39,8 +44,7 @@ import java.util.List;
 @Builder
 @Entity
 @Check(constraints = """
-    id ~ '^Q[1-9][0-9]*$'
-    and scope in ('CATALOG_FIXED', 'LOCAL', 'FIXED_SNAPSHOT')
+    scope in ('CATALOG_FIXED', 'LOCAL', 'FIXED_SNAPSHOT')
     and question_type in ('TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BOOLEAN')
     and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
     and (
@@ -65,8 +69,8 @@ import java.util.List;
 public class Question {
 
     @Id
-    @Column(length = 20)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_item_id", unique = true)

@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +45,7 @@ public class CollaborationService {
      * Devuelve los colaboradores de una encuesta.
      */
     @Transactional(readOnly = true)
-    public List<SurveyCollaboratorResponseDto> findCollaborators(String surveyId) {
+    public List<SurveyCollaboratorResponseDto> findCollaborators(Long surveyId) {
         return collaboratorRepository.findByIdSurveyId(surveyId)
             .stream()
             .map(this::toCollaboratorResponse)
@@ -57,7 +56,7 @@ public class CollaborationService {
      * Devuelve las solicitudes pendientes de una encuesta.
      */
     @Transactional(readOnly = true)
-    public List<CollaborationRequestResponseDto> findRequests(String surveyId) {
+    public List<CollaborationRequestResponseDto> findRequests(Long surveyId) {
         return requestRepository.findBySurveyIdOrderByCreatedAtDesc(surveyId)
             .stream()
             .map(this::toRequestResponse)
@@ -68,7 +67,7 @@ public class CollaborationService {
      * Crea una solicitud de colaboración.
      */
     @Transactional
-    public CollaborationRequestResponseDto request(String surveyId, UUID actorId, CreateCollaborationRequestDto dto) {
+    public CollaborationRequestResponseDto request(Long surveyId, Long actorId, CreateCollaborationRequestDto dto) {
         Survey survey = getSurvey(surveyId);
         User targetUser = getUser(dto.userId());
 
@@ -106,7 +105,7 @@ public class CollaborationService {
      * Acepta una solicitud de colaboración.
      */
     @Transactional
-    public SurveyCollaboratorResponseDto accept(UUID requestId, UUID actorId) {
+    public SurveyCollaboratorResponseDto accept(Long requestId, Long actorId) {
         CollaborationRequest request = getRequest(requestId);
         ensureCollaborationResolver(request, actorId);
 
@@ -137,7 +136,7 @@ public class CollaborationService {
      * Rechaza una solicitud de colaboración.
      */
     @Transactional
-    public void reject(UUID requestId, UUID actorId) {
+    public void reject(Long requestId, Long actorId) {
         CollaborationRequest request = getRequest(requestId);
         ensureCollaborationResolver(request, actorId);
 
@@ -160,7 +159,7 @@ public class CollaborationService {
      * Elimina un colaborador.
      */
     @Transactional
-    public void removeCollaborator(String surveyId, UUID collaboratorId, UUID ownerId) {
+    public void removeCollaborator(Long surveyId, Long collaboratorId, Long ownerId) {
         Survey survey = getSurvey(surveyId);
         ensureOwner(survey, ownerId);
 
@@ -171,7 +170,7 @@ public class CollaborationService {
      * Crea una solicitud de publicación.
      */
     @Transactional
-    public UUID requestPublication(String surveyId, UUID requesterId, String message) {
+    public Long requestPublication(Long surveyId, Long requesterId, String message) {
         Survey survey = getSurvey(surveyId);
 
         if (survey.getOwner().getId().equals(requesterId)) {
@@ -213,7 +212,7 @@ public class CollaborationService {
      * Acepta una solicitud de publicación.
      */
     @Transactional
-    public void acceptPublication(UUID requestId, UUID ownerId) {
+    public void acceptPublication(Long requestId, Long ownerId) {
         PublicationRequest request = getPublicationRequest(requestId);
         ensureOwner(request.getSurvey(), ownerId);
 
@@ -240,7 +239,7 @@ public class CollaborationService {
      * Rechaza una solicitud de publicación.
      */
     @Transactional
-    public void rejectPublication(UUID requestId, UUID ownerId) {
+    public void rejectPublication(Long requestId, Long ownerId) {
         PublicationRequest request = getPublicationRequest(requestId);
         ensureOwner(request.getSurvey(), ownerId);
 
@@ -260,7 +259,7 @@ public class CollaborationService {
     /**
      * Valida una solicitud de colaboración.
      */
-    private void validateCollaborationRequest(Survey survey, UUID actorId, UUID targetUserId, CollaborationRequestType type) {
+    private void validateCollaborationRequest(Survey survey, Long actorId, Long targetUserId, CollaborationRequestType type) {
         if (survey.getOwner().getId().equals(targetUserId)) {
             throw new ApiException(HttpStatus.CONFLICT, "El propietario no puede ser colaborador");
         }
@@ -285,7 +284,7 @@ public class CollaborationService {
     /**
      * Comprueba que el usuario es propietario.
      */
-    private void ensureOwner(Survey survey, UUID userId) {
+    private void ensureOwner(Survey survey, Long userId) {
         if (!survey.getOwner().getId().equals(userId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Solo el propietario puede resolver esta operación");
         }
@@ -294,7 +293,7 @@ public class CollaborationService {
     /**
      * Comprueba quién puede resolver una solicitud.
      */
-    private void ensureCollaborationResolver(CollaborationRequest request, UUID actorId) {
+    private void ensureCollaborationResolver(CollaborationRequest request, Long actorId) {
         if (request.getRequestType() == CollaborationRequestType.INVITATION) {
             if (!request.getUser().getId().equals(actorId)) {
                 throw new ApiException(HttpStatus.FORBIDDEN, "Solo el usuario invitado puede resolver la invitación");
@@ -317,14 +316,14 @@ public class CollaborationService {
     /**
      * Comprueba si la encuesta contiene preguntas.
      */
-    private boolean surveyHasQuestions(String surveyId) {
+    private boolean surveyHasQuestions(Long surveyId) {
         return contentService.hasQuestion(contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId));
     }
 
     /**
      * Obtiene una encuesta.
      */
-    private Survey getSurvey(String surveyId) {
+    private Survey getSurvey(Long surveyId) {
         return surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
     }
@@ -332,7 +331,7 @@ public class CollaborationService {
     /**
      * Obtiene una solicitud de colaboración.
      */
-    private CollaborationRequest getRequest(UUID requestId) {
+    private CollaborationRequest getRequest(Long requestId) {
         return requestRepository.findById(requestId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Solicitud de colaboración no encontrada"));
     }
@@ -340,7 +339,7 @@ public class CollaborationService {
     /**
      * Obtiene una solicitud de publicación.
      */
-    private PublicationRequest getPublicationRequest(UUID requestId) {
+    private PublicationRequest getPublicationRequest(Long requestId) {
         return publicationRequestRepository.findById(requestId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Solicitud de publicación no encontrada"));
     }
@@ -348,7 +347,7 @@ public class CollaborationService {
     /**
      * Obtiene un usuario.
      */
-    private User getUser(UUID userId) {
+    private User getUser(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }

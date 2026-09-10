@@ -11,7 +11,7 @@ import java.util.List;
  * Contiene la definición completa de una pregunta.
  */
 public record QuestionResponseDto(
-    String id,
+    Long id,
     QuestionScope scope,
     String statement,
     String annotation,
@@ -21,6 +21,6 @@ public record QuestionResponseDto(
     QuestionSettingsDto settings,
     List<QuestionOptionDto> options,
     List<MatrixRowDto> matrixRows,
-    String sourceFixedQuestionId
+    Long sourceFixedQuestionId
 ) {
 }

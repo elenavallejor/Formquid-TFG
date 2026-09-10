@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/registration-requests")
@@ -31,13 +30,13 @@ public class RegistrationRequestAdminController {
 
     @PostMapping("/{requestId}/approve")
     @ResponseStatus(HttpStatus.CREATED)
-    public UUID approve(@PathVariable UUID requestId) {
+    public Long approve(@PathVariable Long requestId) {
         return registrationRequestService.approve(requestId);
     }
 
     @DeleteMapping("/{requestId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reject(@PathVariable UUID requestId) {
+    public void reject(@PathVariable Long requestId) {
         registrationRequestService.reject(requestId);
     }
 }

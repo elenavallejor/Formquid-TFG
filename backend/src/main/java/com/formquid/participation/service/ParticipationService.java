@@ -42,8 +42,8 @@ import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,26 +64,28 @@ public class ParticipationService {
      * Recibe encuesta abierta y respuestas, devuelve la participación guardada.
      */
     @Transactional
-    public ParticipationResponseDto submit(String surveyId, SubmitParticipationRequestDto request, User authenticatedUser) {
-        Survey survey = surveyRepository.findById(surveyId)
+    public ParticipationResponseDto submit(String publicCode, SubmitParticipationRequestDto request, User authenticatedUser) {
+        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         validateSurveyAccess(survey, request.accessPassword(), authenticatedUser);
 
-        Map<String, Boolean> requiredByQuestion = loadSurveyQuestions(surveyId);
-        Set<String> receivedQuestionIds = new HashSet<>();
+        Map<Long, Boolean> requiredByQuestion = loadSurveyQuestions(survey.getId());
+        Set<Long> receivedQuestionIds = new HashSet<>();
         for (SubmitAnswerRequestDto answer : request.answers()) {
             if (!receivedQuestionIds.add(answer.questionId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La petición contiene respuestas duplicadas");
             }
         }
-        Map<String, SubmitAnswerRequestDto> answersByQuestion = request.answers().stream()
+
+        Map<Long, SubmitAnswerRequestDto> answersByQuestion = request.answers().stream()
             .collect(Collectors.toMap(SubmitAnswerRequestDto::questionId, answer -> answer, (a, b) -> b, LinkedHashMap::new));
 
-        for (String questionId : answersByQuestion.keySet()) {
+        for (Long questionId : answersByQuestion.keySet()) {
             if (!requiredByQuestion.containsKey(questionId)) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta " + questionId + " no pertenece a la encuesta");
             }
         }
+
         requiredByQuestion.forEach((questionId, required) -> {
             if (Boolean.TRUE.equals(required) && isEmpty(answersByQuestion.get(questionId))) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Falta una pregunta obligatoria: " + questionId);
@@ -115,8 +117,8 @@ public class ParticipationService {
         }
     }
 
-    private Map<String, Boolean> loadSurveyQuestions(String surveyId) {
-        Map<String, Boolean> questions = new LinkedHashMap<>();
+    private Map<Long, Boolean> loadSurveyQuestions(Long surveyId) {
+        Map<Long, Boolean> questions = new LinkedHashMap<>();
         for (ContentItem item : contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)) {
             if (item.getItemType() == ContentItemType.QUESTION) {
                 Question question = questionRepository.findByParentItemId(item.getId())
@@ -147,7 +149,7 @@ public class ParticipationService {
             .booleanValue(booleanValue(question, dto))
             .build());
 
-        Set<UUID> selectedOptionIds = new HashSet<>();
+        Set<Long> selectedOptionIds = new HashSet<>();
         for (OptionAnswerRequestDto optionDto : safeOptions(dto.selectedOptions())) {
             if (!selectedOptionIds.add(optionDto.optionId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La respuesta contiene opciones duplicadas");
@@ -165,7 +167,8 @@ public class ParticipationService {
                 .otherText(optionDto.otherText())
                 .build());
         }
-        Set<UUID> matrixRowIds = new HashSet<>();
+
+        Set<Long> matrixRowIds = new HashSet<>();
         for (MatrixAnswerRequestDto matrixDto : safeMatrixValues(dto.matrixValues())) {
             if (!matrixRowIds.add(matrixDto.matrixRowId())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La matriz contiene filas duplicadas");
@@ -248,8 +251,8 @@ public class ParticipationService {
         if (safeMatrixValues(dto.matrixValues()).size() != rows.size()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La matriz debe incluir todas sus filas");
         }
-        Set<UUID> expectedRows = rows.stream().map(MatrixRow::getId).collect(Collectors.toSet());
-        Set<UUID> receivedRows = safeMatrixValues(dto.matrixValues()).stream()
+        Set<Long> expectedRows = rows.stream().map(MatrixRow::getId).collect(Collectors.toSet());
+        Set<Long> receivedRows = safeMatrixValues(dto.matrixValues()).stream()
             .map(MatrixAnswerRequestDto::matrixRowId)
             .collect(Collectors.toSet());
         if (!expectedRows.equals(receivedRows)) {
@@ -329,7 +332,7 @@ public class ParticipationService {
     }
 
     private String textValue(Question question, SubmitAnswerRequestDto dto) {
-        return question.getQuestionType() == QuestionType.TEXT 
+        return question.getQuestionType() == QuestionType.TEXT
             ? dto.textValue()
             : null;
     }
@@ -360,7 +363,7 @@ public class ParticipationService {
             .toList();
         return new ParticipationResponseDto(
             participation.getId(),
-            participation.getSurvey().getId(),
+            participation.getSurvey().getPublicCode(),
             participation.getSubmittedAt(),
             answers
         );
@@ -372,5 +375,12 @@ public class ParticipationService {
 
     private List<MatrixAnswerRequestDto> safeMatrixValues(List<MatrixAnswerRequestDto> values) {
         return values == null ? List.of() : values;
+    }
+
+    private String normalizePublicCode(String publicCode) {
+        if (publicCode == null || publicCode.isBlank()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada");
+        }
+        return publicCode.trim().toUpperCase(Locale.ROOT);
     }
 }

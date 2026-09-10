@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface NotificationRepository
     extends JpaRepository<Notification, Long> {
@@ -35,21 +34,21 @@ public interface NotificationRepository
         order by notification.createdAt desc
     """)
     List<NotificationResponseDto> findResponsesByRecipientUserId(
-        @Param("userId") UUID userId
+        @Param("userId") Long userId
     );
 
     long countByRecipientUserIdAndChannelAndReadAtIsNull(
-        UUID recipientUserId,
+        Long recipientUserId,
         NotificationChannel channel
     );
 
     Optional<Notification> findByIdAndRecipientUserId(
         Long id,
-        UUID recipientUserId
+        Long recipientUserId
     );
 
     void deleteByTargetTypeAndTargetId(
         NotificationTargetType targetType,
-        String targetId
+        Long targetId
     );
 }

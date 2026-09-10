@@ -16,5 +16,5 @@ public interface MatrixAnswerValueRepository extends JpaRepository<MatrixAnswerV
         where value.answer.question.id = :questionId
         order by value.matrixRow.position asc
     """)
-    List<MatrixAnswerValue> findByQuestionId(@Param("questionId") String questionId);
+    List<MatrixAnswerValue> findByQuestionId(@Param("questionId") Long questionId);
 }

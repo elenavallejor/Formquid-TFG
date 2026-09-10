@@ -4,7 +4,6 @@ import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
-import com.formquid.common.service.IdSequenceService;
 import com.formquid.content.dto.AddBlockItemRequestDto;
 import com.formquid.content.dto.AddFixedQuestionItemRequestDto;
 import com.formquid.content.dto.ContentItemResponseDto;
@@ -33,7 +32,6 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -43,9 +41,8 @@ public class ContentService {
     private final QuestionRepository questionRepository;
     private final BlockRepository blockRepository;
     private final QuestionService questionService;
-    private final IdSequenceService idSequenceService;
 
-    public List<ContentItemResponseDto> findSurveyContent(String surveyId) {
+    public List<ContentItemResponseDto> findSurveyContent(Long surveyId) {
         return contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)
             .stream()
             .map(this::toResponse)
@@ -113,7 +110,7 @@ public class ContentService {
     }
 
     @Transactional
-    public ContentItemResponseDto updateSurveyText(Survey survey, UUID itemId, UpdateTextItemRequestDto dto) {
+    public ContentItemResponseDto updateSurveyText(Survey survey, Long itemId, UpdateTextItemRequestDto dto) {
         ContentItem item = getSurveyItem(survey, itemId);
         if (item.getItemType() != ContentItemType.TEXT) {
             throw new ApiException(HttpStatus.CONFLICT, "El elemento indicado no es texto");
@@ -123,7 +120,7 @@ public class ContentService {
     }
 
     @Transactional
-    public ContentItemResponseDto updateSurveyQuestion(Survey survey, UUID itemId, UpdateQuestionItemRequestDto dto) {
+    public ContentItemResponseDto updateSurveyQuestion(Survey survey, Long itemId, UpdateQuestionItemRequestDto dto) {
         ContentItem item = getSurveyItem(survey, itemId);
         if (item.getItemType() != ContentItemType.QUESTION) {
             throw new ApiException(HttpStatus.CONFLICT, "El elemento indicado no es una pregunta");
@@ -136,7 +133,7 @@ public class ContentService {
     }
 
     @Transactional
-    public ContentItemResponseDto updateSurveyQuestionRequired(Survey survey, UUID itemId, UpdateRequiredRequestDto dto) {
+    public ContentItemResponseDto updateSurveyQuestionRequired(Survey survey, Long itemId, UpdateRequiredRequestDto dto) {
         ContentItem item = getSurveyItem(survey, itemId);
         if (item.getItemType() != ContentItemType.QUESTION) {
             throw new ApiException(HttpStatus.CONFLICT, "Solo las preguntas tienen campo required");
@@ -146,7 +143,7 @@ public class ContentService {
     }
 
     @Transactional
-    public void deleteSurveyItem(Survey survey, UUID itemId) {
+    public void deleteSurveyItem(Survey survey, Long itemId) {
         ContentItem item = getSurveyItem(survey, itemId);
         contentItemRepository.delete(item);
     }
@@ -154,10 +151,10 @@ public class ContentService {
     @Transactional
     public List<ContentItemResponseDto> reorderSurveyContent(Survey survey, ReorderContentRequestDto dto) {
         List<ContentItem> currentItems = contentItemRepository.findBySurveyIdOrderByPositionAsc(survey.getId());
-        Set<UUID> currentIds = currentItems.stream()
+        Set<Long> currentIds = currentItems.stream()
             .map(ContentItem::getId)
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        Set<UUID> requestedIds = dto.items().stream()
+        Set<Long> requestedIds = dto.items().stream()
             .map(item -> item.itemId())
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         Set<Integer> requestedPositions = dto.items().stream()
@@ -172,7 +169,7 @@ public class ContentService {
         }
 
         int temporaryPosition = currentItems.size() + dto.items().size() + 1000;
-        for (UUID itemId : requestedIds) {
+        for (Long itemId : requestedIds) {
             contentItemRepository.updatePosition(itemId, temporaryPosition++);
         }
         dto.items().forEach(item -> contentItemRepository.updatePosition(item.itemId(), item.position()));
@@ -230,7 +227,6 @@ public class ContentService {
 
     public Block copyExistingBlock(Block source, ContentItem parentItem, User creator) {
         Block copy = Block.builder()
-            .id(idSequenceService.nextBlockId())
             .parentItem(parentItem)
             .scope(BlockScope.SNAPSHOT)
             .sourceBlock(source)
@@ -305,7 +301,7 @@ public class ContentService {
             .build();
     }
 
-    private Question getCatalogFixedQuestion(String questionId) {
+    private Question getCatalogFixedQuestion(Long questionId) {
         Question question = questionService.getQuestion(questionId);
         if (question.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.CONFLICT, "La pregunta indicada no pertenece al catálogo fijo");
@@ -313,7 +309,7 @@ public class ContentService {
         return question;
     }
 
-    private Block getCatalogBlock(String blockId) {
+    private Block getCatalogBlock(Long blockId) {
         Block block = blockRepository.findById(blockId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Bloque no encontrado"));
         if (block.getScope() != BlockScope.CATALOG) {
@@ -322,7 +318,7 @@ public class ContentService {
         return block;
     }
 
-    private ContentItem getSurveyItem(Survey survey, UUID itemId) {
+    private ContentItem getSurveyItem(Survey survey, Long itemId) {
         ContentItem item = contentItemRepository.findById(itemId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Elemento de contenido no encontrado"));
         if (item.getSurvey() == null || !item.getSurvey().getId().equals(survey.getId())) {

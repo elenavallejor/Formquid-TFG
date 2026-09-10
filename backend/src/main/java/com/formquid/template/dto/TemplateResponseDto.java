@@ -4,10 +4,12 @@ import com.formquid.content.dto.ContentItemResponseDto;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
+/**
+ * Representa el detalle completo de una plantilla y su contenido ordenado.
+ */
 public record TemplateResponseDto(
-    UUID id,
+    Long id,
     String title,
     String description,
     String imageKey,

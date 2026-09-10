@@ -11,14 +11,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 /**
  * Accede a las encuestas y concentra las consultas optimizadas de listados y administración.
  */
-public interface SurveyRepository extends JpaRepository<Survey, String> {
+public interface SurveyRepository extends JpaRepository<Survey, Long> {
 
-    long countByOwnerId(UUID ownerId);
+    long countByOwnerId(Long ownerId);
+
+    Optional<Survey> findByPublicCode(String publicCode);
+
+    boolean existsByPublicCode(String publicCode);
 
     List<Survey> findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
         SurveyLifecycle lifecycleStatus,
@@ -108,7 +112,7 @@ public interface SurveyRepository extends JpaRepository<Survey, String> {
         """
     )
     Page<Survey> findEditableByUser(
-        @Param("userId") UUID userId,
+        @Param("userId") Long userId,
         @Param("search") String search,
         @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
         Pageable pageable

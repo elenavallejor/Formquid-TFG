@@ -6,10 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface ElementRequestRepository
-    extends JpaRepository<ElementRequest, UUID> {
+    extends JpaRepository<ElementRequest, Long> {
 
     /**
      * Proyección de administración. Solo recupera los campos mostrados por

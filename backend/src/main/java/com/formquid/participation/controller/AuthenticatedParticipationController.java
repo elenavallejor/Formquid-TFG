@@ -15,8 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Gestiona el envío autenticado de participaciones en encuestas.
+ */
 @RestController
-@RequestMapping("/api/v1/surveys/{surveyId}/participations")
+@RequestMapping("/api/v1/surveys/{publicCode}/participations")
 @RequiredArgsConstructor
 public class AuthenticatedParticipationController {
 
@@ -24,11 +27,7 @@ public class AuthenticatedParticipationController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ParticipationResponseDto submit(
-        @PathVariable String surveyId,
-        @AuthenticationPrincipal User user,
-        @Valid @RequestBody SubmitParticipationRequestDto request
-    ) {
-        return participationService.submit(surveyId, request, user);
+    public ParticipationResponseDto submit(@PathVariable String publicCode, @AuthenticationPrincipal User user, @Valid @RequestBody SubmitParticipationRequestDto request) {
+        return participationService.submit(publicCode, request, user);
     }
 }

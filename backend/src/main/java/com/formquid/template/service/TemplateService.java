@@ -13,8 +13,8 @@ import com.formquid.question.entity.Question;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.question.service.QuestionService;
 import com.formquid.template.dto.CreateTemplateRequestDto;
-import com.formquid.template.dto.TemplateSummaryDto;
 import com.formquid.template.dto.TemplateResponseDto;
+import com.formquid.template.dto.TemplateSummaryDto;
 import com.formquid.template.entity.Template;
 import com.formquid.template.repository.TemplateRepository;
 import com.formquid.user.entity.User;
@@ -29,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -56,25 +55,22 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
-    public TemplateResponseDto findById(UUID id) {
+    public TemplateResponseDto findById(Long id) {
         return toResponse(getTemplate(id));
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(Long id) {
         Template template = getTemplate(id);
         contentService.deleteTemplateContent(template);
         templateRepository.delete(template);
     }
 
-    public Template getTemplate(UUID id) {
+    public Template getTemplate(Long id) {
         return templateRepository.findById(id)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Plantilla no encontrada"));
     }
 
-    /**
-     * Recibe una plantilla completa y devuelve la plantilla creada.
-     */
     @Transactional
     public TemplateResponseDto create(CreateTemplateRequestDto request, User creator) {
         Template template = templateRepository.save(Template.builder()
@@ -104,9 +100,6 @@ public class TemplateService {
         return toResponse(template);
     }
 
-    /**
-     * Recibe plantilla y encuesta destino. No devuelve contenido.
-     */
     @Transactional
     public void copyTemplateIntoSurvey(Template template, com.formquid.survey.entity.Survey survey, User creator) {
         List<ContentItem> items = contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId());
@@ -137,8 +130,7 @@ public class TemplateService {
     }
 
     public TemplateResponseDto toResponse(Template template) {
-        List<ContentItemResponseDto> items = contentService.findTemplateContent(template)
-            .stream()
+        List<ContentItemResponseDto> items = contentService.findTemplateContent(template).stream()
             .sorted(Comparator.comparing(ContentItemResponseDto::position))
             .toList();
         return new TemplateResponseDto(

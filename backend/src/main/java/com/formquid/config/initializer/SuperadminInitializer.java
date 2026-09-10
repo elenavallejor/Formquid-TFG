@@ -12,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Crea el superadministrador inicial cuando la base de datos todavía no contiene usuarios.
+ */
 @Component
 @RequiredArgsConstructor
 public class SuperadminInitializer implements CommandLineRunner {
@@ -34,9 +37,6 @@ public class SuperadminInitializer implements CommandLineRunner {
     @Value("${app.superadmin.institution:${SUPERADMIN_INSTITUTION:FormQuid}}")
     private String institution;
 
-    /**
-     * Recibe el arranque de la app. Crea el superadmin inicial si la base está vacía.
-     */
     @Override
     @Transactional
     public void run(String... args) {
@@ -53,7 +53,9 @@ public class SuperadminInitializer implements CommandLineRunner {
         }
 
         if (userRepository.countByRole(UserRole.SUPERADMIN) != 1) {
-            throw new IllegalStateException("La base debe contener exactamente un superadministrador");
+            throw new IllegalStateException(
+                "La base debe contener exactamente un superadministrador"
+            );
         }
     }
 

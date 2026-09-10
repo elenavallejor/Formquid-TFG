@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -19,9 +18,9 @@ import java.util.UUID;
 @Embeddable
 public class SurveyCollaboratorId implements Serializable {
 
-    @Column(name = "survey_id", length = 20)
-    private String surveyId;
+    @Column(name = "survey_id")
+    private Long surveyId;
 
     @Column(name = "user_id")
-    private UUID userId;
+    private Long userId;
 }

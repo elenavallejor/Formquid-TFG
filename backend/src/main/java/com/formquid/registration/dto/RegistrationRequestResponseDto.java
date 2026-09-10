@@ -3,10 +3,9 @@ package com.formquid.registration.dto;
 import com.formquid.user.entity.UserGender;
 
 import java.time.Instant;
-import java.util.UUID;
 
 public record RegistrationRequestResponseDto(
-    UUID id,
+    Long id,
     String email,
     String name,
     UserGender gender,

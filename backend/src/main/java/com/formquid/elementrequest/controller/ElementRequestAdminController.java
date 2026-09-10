@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/element-requests")
@@ -34,7 +33,7 @@ public class ElementRequestAdminController {
 
     @PostMapping("/{requestId}/approve")
     public ApproveElementRequestResponseDto approve(
-        @PathVariable UUID requestId,
+        @PathVariable Long requestId,
         @AuthenticationPrincipal User user
     ) {
         return elementRequestService.approve(requestId, user);
@@ -42,7 +41,7 @@ public class ElementRequestAdminController {
 
     @DeleteMapping("/{requestId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reject(@PathVariable UUID requestId) {
+    public void reject(@PathVariable Long requestId) {
         elementRequestService.reject(requestId);
     }
 }

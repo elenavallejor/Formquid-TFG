@@ -20,7 +20,7 @@ public class StatisticsController {
 
     @GetMapping
     public SurveyStatisticsResponseDto getSurveyStatistics(
-        @PathVariable String surveyId,
+        @PathVariable Long surveyId,
         @AuthenticationPrincipal User user
     ) {
         return statisticsService.getSurveyStatistics(surveyId, user);
@@ -28,8 +28,8 @@ public class StatisticsController {
 
     @GetMapping("/questions/{questionId}")
     public QuestionStatisticsResponseDto getQuestionStatistics(
-        @PathVariable String surveyId,
-        @PathVariable String questionId,
+        @PathVariable Long surveyId,
+        @PathVariable Long questionId,
         @AuthenticationPrincipal User user
     ) {
         return statisticsService.getQuestionStatistics(surveyId, questionId, user);

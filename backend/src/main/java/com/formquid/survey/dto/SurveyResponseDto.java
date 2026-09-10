@@ -7,15 +7,14 @@ import com.formquid.survey.entity.SurveyVisibility;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Representa el detalle completo de una encuesta, incluido su contenido.
  */
 public record SurveyResponseDto(
-    String id,
-    UUID ownerId,
-    UUID sourceTemplateId,
+    Long id,
+    String publicCode,
+    Long ownerId,
     String title,
     String description,
     String imageKey,

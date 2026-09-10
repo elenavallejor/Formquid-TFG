@@ -6,16 +6,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
- * Recibe los metadatos necesarios para crear una encuesta.
+ * Recibe los metadatos necesarios para crear una encuesta (DRAFT).
  */
 public record CreateSurveyRequestDto(
     @NotBlank @Size(max = 200) String title,
     String description,
     String imageKey,
-    UUID sourceTemplateId,
     SurveyAccessMode accessMode,
     SurveyVisibility visibility,
     String accessPassword,

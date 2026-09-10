@@ -5,10 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public record QuestionOptionDto(
-    UUID id,
+    Long id,
     @NotBlank String label,
     @NotNull @Min(1) Integer position,
     boolean other,

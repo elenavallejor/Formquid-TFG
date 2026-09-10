@@ -27,8 +27,8 @@ public class PublicSurveyController {
         return surveyService.findListedOpen(tags);
     }
 
-    @GetMapping("/{surveyId}")
-    public SurveyResponseDto get(@PathVariable String surveyId) {
-        return surveyService.getPublicSurvey(surveyId);
+    @GetMapping("/{publicCode}")
+    public SurveyResponseDto get(@PathVariable String publicCode) {
+        return surveyService.getPublicSurvey(publicCode);
     }
 }

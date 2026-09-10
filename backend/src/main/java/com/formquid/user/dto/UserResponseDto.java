@@ -1,13 +1,15 @@
 package com.formquid.user.dto;
 
-import com.formquid.user.entity.UserRole;
 import com.formquid.user.entity.UserGender;
+import com.formquid.user.entity.UserRole;
 
 import java.time.Instant;
-import java.util.UUID;
 
+/**
+ * Representa los datos públicos y administrativos de un usuario registrado.
+ */
 public record UserResponseDto(
-    UUID id,
+    Long id,
     UserRole role,
     String email,
     String name,

@@ -2,7 +2,6 @@ package com.formquid.survey.service;
 
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.common.exception.ApiException;
-import com.formquid.common.service.IdSequenceService;
 import com.formquid.common.service.TagNormalizer;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.repository.ContentItemRepository;
@@ -23,7 +22,6 @@ import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.template.entity.Template;
-import com.formquid.template.repository.TemplateRepository;
 import com.formquid.template.service.TemplateService;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
@@ -37,65 +35,48 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Centraliza la lógica de creación, consulta, permisos y gestión de las encuestas.
+ * Gestiona la creación, consulta, permisos y ciclo de vida de las encuestas.
  */
 @Service
 @RequiredArgsConstructor
 public class SurveyService {
 
+    private static final String PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int PUBLIC_CODE_LENGTH = 12;
+    private static final int PUBLIC_CODE_ATTEMPTS = 10;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final SurveyRepository surveyRepository;
     private final SurveyCollaboratorRepository collaboratorRepository;
-    private final TemplateRepository templateRepository;
     private final ContentItemRepository contentItemRepository;
     private final ParticipationRepository participationRepository;
     private final ContentService contentService;
     private final TemplateService templateService;
-    private final IdSequenceService idSequenceService;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    public SurveyPageResponseDto findEditableByUser(
-        User user,
-        String search,
-        SurveyLifecycle lifecycleStatus,
-        Pageable pageable
-    ) {
+    public SurveyPageResponseDto findEditableByUser(User user, String search, SurveyLifecycle lifecycleStatus, Pageable pageable) {
         if (user == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
         }
         if (pageable.getPageNumber() < 0 || pageable.getPageSize() < 1 || pageable.getPageSize() > 50) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
         }
-
         Sort.Order updatedAtOrder = pageable.getSort().getOrderFor("updatedAt");
         if (updatedAtOrder == null || pageable.getSort().stream().count() != 1) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Ordenación de encuestas no válida");
         }
-
-        String normalizedSearch = search == null
-            ? ""
-            : search.trim().toLowerCase(Locale.ROOT);
-
-        PageRequest safePageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(updatedAtOrder.getDirection(), "updatedAt")
-        );
-
-        Page<Survey> surveys = surveyRepository.findEditableByUser(
-            user.getId(),
-            normalizedSearch,
-            lifecycleStatus,
-            safePageable
-        );
-
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        PageRequest safePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(updatedAtOrder.getDirection(), "updatedAt"));
+        Page<Survey> surveys = surveyRepository.findEditableByUser(user.getId(), normalizedSearch, lifecycleStatus, safePageable);
         return new SurveyPageResponseDto(
             surveys.getContent().stream().map(this::toSummary).toList(),
             surveys.getNumber(),
@@ -113,10 +94,7 @@ public class SurveyService {
     @Transactional(readOnly = true)
     public List<PublicSurveySummaryDto> findListedOpen(List<String> tags) {
         List<String> normalizedTags = normalizeTags(tags);
-        return surveyRepository.findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
-                SurveyLifecycle.OPEN,
-                SurveyVisibility.LISTED
-            ).stream()
+        return surveyRepository.findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(SurveyLifecycle.OPEN, SurveyVisibility.LISTED).stream()
             .filter(survey -> survey.getAccessMode() != SurveyAccessMode.AUTHENTICATED)
             .filter(survey -> matchesTags(survey, normalizedTags))
             .map(this::toPublicSummary)
@@ -126,66 +104,120 @@ public class SurveyService {
     @Transactional(readOnly = true)
     public List<PublicSurveySummaryDto> findListedOpenForRegistered(User user, List<String> tags) {
         List<String> normalizedTags = normalizeTags(tags);
-        return surveyRepository.findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
-                SurveyLifecycle.OPEN,
-                SurveyVisibility.LISTED
-            ).stream()
+        return surveyRepository.findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(SurveyLifecycle.OPEN, SurveyVisibility.LISTED).stream()
             .filter(survey -> canViewOpenSurvey(survey, user))
             .filter(survey -> matchesTags(survey, normalizedTags))
             .map(this::toPublicSummary)
             .toList();
     }
 
-    private PublicSurveySummaryDto toPublicSummary(Survey survey) {
-        return new PublicSurveySummaryDto(
-            survey.getId(),
-            survey.getTitle(),
-            survey.getDescription(),
-            survey.getImageKey(),
-            survey.getAccessMode()
-        );
-    }
-
     @Transactional(readOnly = true)
-    public SurveyResponseDto getSurveyForUser(String surveyId, User user) {
+    public SurveyResponseDto getSurveyForUser(Long surveyId, User user) {
         Survey survey = getSurvey(surveyId);
         ensureCanViewSurvey(survey, user);
         return toResponse(survey);
     }
 
     @Transactional(readOnly = true)
-    public SurveyResponseDto getPublicSurvey(String surveyId) {
-        Survey survey = getSurvey(surveyId);
+    public SurveyResponseDto getPublicSurvey(String publicCode) {
+        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         if (!canViewPublicSurvey(survey)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no disponible públicamente");
         }
         return toResponse(survey);
     }
 
-    private boolean canViewPublicSurvey(Survey survey) {
-        return survey.getLifecycleStatus() == SurveyLifecycle.OPEN
-            && survey.getAccessMode() != SurveyAccessMode.AUTHENTICATED;
+    public Survey getSurvey(Long surveyId) {
+        return surveyRepository.findById(surveyId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
     }
 
-    private boolean canViewOpenSurvey(Survey survey, User user) {
-        return survey.getLifecycleStatus() == SurveyLifecycle.OPEN
-            && (survey.getAccessMode() != SurveyAccessMode.AUTHENTICATED || user != null);
+    @Transactional
+    public SurveyResponseDto create(CreateSurveyRequestDto request, User owner) {
+        Survey saved = createDraft(request, owner);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public SurveyResponseDto createFromTemplate(Long templateId, CreateSurveyRequestDto request, User owner) {
+        Template template = templateService.getTemplate(templateId);
+        Survey saved = createDraft(request, owner);
+        templateService.copyTemplateIntoSurvey(template, saved, owner);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public SurveyResponseDto update(Long surveyId, UpdateSurveyRequestDto request, User actor) {
+        Survey survey = getSurvey(surveyId);
+        ensureCanEdit(survey, actor);
+        SurveyAccessMode previousMode = survey.getAccessMode();
+        SurveyAccessMode requestedMode = request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode();
+        survey.setTitle(request.title().trim());
+        survey.setDescription(trimToNull(request.description()));
+        survey.setImageKey(trimToNull(request.imageKey()));
+        survey.setAccessMode(requestedMode);
+        survey.setVisibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
+        survey.setAccessPasswordHash(updatedPasswordHash(previousMode, requestedMode, survey.getAccessPasswordHash(), request.accessPassword()));
+        saveTags(survey, request.tags());
+        return toResponse(survey);
+    }
+
+    @Transactional
+    public SurveyResponseDto changeLifecycle(Long surveyId, SurveyLifecycle lifecycle, User actor) {
+        Survey survey = getSurvey(surveyId);
+        ensureOwnerOrSuperadmin(survey, actor);
+        prepareLifecycleChange(survey, lifecycle);
+        notifySurveyStatusChanged(
+            survey,
+            "Estado de encuesta actualizado",
+            "La encuesta " + survey.getTitle() + " ha pasado a estado " + lifecycle.name()
+        );
+        return toResponse(survey);
+    }
+
+    @Transactional
+    public void delete(Long surveyId, User actor) {
+        Survey survey = getSurvey(surveyId);
+        ensureOwner(survey, actor);
+        ensureClosedForDelete(survey);
+        surveyRepository.delete(survey);
+    }
+
+    @Transactional
+    public SurveyResponseDto adminChangeLifecycle(Long surveyId, SurveyLifecycle lifecycle, User admin) {
+        if (!isAdmin(admin)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo administración puede intervenir encuestas");
+        }
+        Survey survey = getSurvey(surveyId);
+        prepareLifecycleChange(survey, lifecycle);
+        notifySurveyStatusChanged(
+            survey,
+            "Intervención administrativa sobre encuesta",
+            "Administración ha cambiado la encuesta " + survey.getTitle() + " a estado " + lifecycle.name()
+        );
+        return toResponse(survey);
+    }
+
+    @Transactional
+    public void adminDelete(Long surveyId, User admin) {
+        if (!isAdmin(admin)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo administración puede eliminar encuestas");
+        }
+        Survey survey = getSurvey(surveyId);
+        ensureClosedForDelete(survey);
+        surveyRepository.delete(survey);
     }
 
     public void ensureCanViewSurvey(Survey survey, User user) {
-        if (isOwner(survey, user)
-            || isCollaborator(survey, user)
-            || isAdmin(user)
-            || canViewOpenSurvey(survey, user)) {
+        if (isOwner(survey, user) || isCollaborator(survey, user) || isAdmin(user) || canViewOpenSurvey(survey, user)) {
             return;
         }
         throw new ApiException(HttpStatus.FORBIDDEN, "No puedes consultar esta encuesta");
     }
 
     public void ensureCanViewResults(Survey survey, User user) {
-        if (isOwner(survey, user)
-            || isCollaborator(survey, user)
-            || isAdmin(user)) {
+        if (isOwner(survey, user) || isCollaborator(survey, user) || isAdmin(user)) {
             return;
         }
         throw new ApiException(HttpStatus.FORBIDDEN, "No puedes consultar las estadísticas de esta encuesta");
@@ -195,8 +227,112 @@ public class SurveyService {
         return isOwner(survey, user) || isCollaborator(survey, user) || isSuperadmin(user);
     }
 
-    public boolean canResolveSurveyAsAdmin(User user) {
-        return isAdmin(user);
+    public void ensureStructureEditable(Survey survey) {
+        if (participationRepository.existsBySurveyId(survey.getId())) {
+            throw new ApiException(HttpStatus.CONFLICT, "No puede modificarse la estructura de una encuesta con respuestas");
+        }
+    }
+
+    public SurveyResponseDto toResponse(Survey survey) {
+        List<ContentItemResponseDto> content = contentService.findSurveyContent(survey.getId()).stream()
+            .sorted(Comparator.comparing(ContentItemResponseDto::position))
+            .toList();
+        return new SurveyResponseDto(
+            survey.getId(),
+            survey.getPublicCode(),
+            survey.getOwner().getId(),
+            survey.getTitle(),
+            survey.getDescription(),
+            survey.getImageKey(),
+            survey.getLifecycleStatus(),
+            survey.getAccessMode(),
+            survey.getVisibility(),
+            tagsFrom(survey),
+            content,
+            survey.getCreatedAt(),
+            survey.getUpdatedAt()
+        );
+    }
+
+    private Survey createDraft(CreateSurveyRequestDto request, User owner) {
+        Survey survey = Survey.builder()
+            .owner(owner)
+            .title(request.title().trim())
+            .description(trimToNull(request.description()))
+            .imageKey(trimToNull(request.imageKey()))
+            .lifecycleStatus(SurveyLifecycle.DRAFT)
+            .accessMode(request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode())
+            .visibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility())
+            .accessPasswordHash(passwordHash(request.accessMode(), request.accessPassword()))
+            .build();
+        saveTags(survey, request.tags());
+        return surveyRepository.save(survey);
+    }
+
+    private void prepareLifecycleChange(Survey survey, SurveyLifecycle lifecycle) {
+        if (lifecycle == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El estado de la encuesta es obligatorio");
+        }
+        if (lifecycle == SurveyLifecycle.OPEN) {
+            if (!contentService.hasQuestion(contentItemRepository.findBySurveyIdOrderByPositionAsc(survey.getId()))) {
+                throw new ApiException(HttpStatus.CONFLICT, "La encuesta no puede abrirse sin preguntas");
+            }
+            if (survey.getPublicCode() == null) {
+                survey.setPublicCode(generatePublicCode());
+            }
+        }
+        survey.setLifecycleStatus(lifecycle);
+    }
+
+    private String generatePublicCode() {
+        for (int attempt = 0; attempt < PUBLIC_CODE_ATTEMPTS; attempt++) {
+            StringBuilder code = new StringBuilder(PUBLIC_CODE_LENGTH);
+            for (int index = 0; index < PUBLIC_CODE_LENGTH; index++) {
+                code.append(PUBLIC_CODE_ALPHABET.charAt(SECURE_RANDOM.nextInt(PUBLIC_CODE_ALPHABET.length())));
+            }
+            String candidate = code.toString();
+            if (!surveyRepository.existsByPublicCode(candidate)) {
+                return candidate;
+            }
+        }
+        throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar el código público de la encuesta");
+    }
+
+    private String normalizePublicCode(String publicCode) {
+        if (publicCode == null || publicCode.isBlank()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada");
+        }
+        return publicCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private boolean canViewPublicSurvey(Survey survey) {
+        return survey.getLifecycleStatus() == SurveyLifecycle.OPEN && survey.getAccessMode() != SurveyAccessMode.AUTHENTICATED;
+    }
+
+    private boolean canViewOpenSurvey(Survey survey, User user) {
+        return survey.getLifecycleStatus() == SurveyLifecycle.OPEN
+            && (survey.getAccessMode() != SurveyAccessMode.AUTHENTICATED || user != null);
+    }
+
+    private SurveySummaryDto toSummary(Survey survey) {
+        return new SurveySummaryDto(
+            survey.getId(),
+            survey.getTitle(),
+            survey.getImageKey(),
+            survey.getLifecycleStatus(),
+            tagsFrom(survey),
+            survey.getUpdatedAt()
+        );
+    }
+
+    private PublicSurveySummaryDto toPublicSummary(Survey survey) {
+        return new PublicSurveySummaryDto(
+            survey.getPublicCode(),
+            survey.getTitle(),
+            survey.getDescription(),
+            survey.getImageKey(),
+            survey.getAccessMode()
+        );
     }
 
     private List<String> normalizeTags(List<String> tags) {
@@ -211,138 +347,7 @@ public class SurveyService {
     }
 
     private boolean matchesTags(Survey survey, List<String> tags) {
-        if (tags.isEmpty()) {
-            return true;
-        }
-        return tagsFrom(survey).containsAll(tags);
-    }
-
-    public Survey getSurvey(String surveyId) {
-        return surveyRepository.findById(surveyId)
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
-    }
-    @Transactional
-    public SurveyResponseDto create(CreateSurveyRequestDto request, User owner) {
-        Template sourceTemplate = null;
-        if (request.sourceTemplateId() != null) {
-            sourceTemplate = templateRepository.findById(request.sourceTemplateId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Plantilla no encontrada"));
-        }
-        Survey survey = Survey.builder()
-            .id(idSequenceService.nextSurveyId())
-            .owner(owner)
-            .sourceTemplate(sourceTemplate)
-            .title(request.title().trim())
-            .description(trimToNull(request.description()))
-            .imageKey(trimToNull(request.imageKey()))
-            .lifecycleStatus(SurveyLifecycle.DRAFT)
-            .accessMode(request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode())
-            .visibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility())
-            .accessPasswordHash(passwordHash(request.accessMode(), request.accessPassword()))
-            .build();
-        Survey saved = surveyRepository.save(survey);
-        saveTags(saved, request.tags());
-        if (sourceTemplate != null) {
-            templateService.copyTemplateIntoSurvey(sourceTemplate, saved, owner);
-        }
-        return toResponse(saved);
-    }
-    @Transactional
-    public SurveyResponseDto update(String surveyId, UpdateSurveyRequestDto request, User actor) {
-        Survey survey = getSurvey(surveyId);
-        ensureCanEdit(survey, actor);
-        survey.setTitle(request.title().trim());
-        survey.setDescription(trimToNull(request.description()));
-        survey.setImageKey(trimToNull(request.imageKey()));
-        survey.setAccessMode(request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode());
-        survey.setVisibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
-        survey.setAccessPasswordHash(passwordHash(request.accessMode(), request.accessPassword()));
-        saveTags(survey, request.tags());
-        return toResponse(survey);
-    }
-    @Transactional
-    public SurveyResponseDto changeLifecycle(String surveyId, SurveyLifecycle lifecycle, User actor) {
-        Survey survey = getSurvey(surveyId);
-        ensureOwnerOrSuperadmin(survey, actor);
-        if (lifecycle == SurveyLifecycle.OPEN
-            && !contentService.hasQuestion(contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId))) {
-            throw new ApiException(HttpStatus.CONFLICT, "La encuesta no puede abrirse sin preguntas");
-        }
-        survey.setLifecycleStatus(lifecycle);
-        notifySurveyStatusChanged(survey, "Estado de encuesta actualizado", "La encuesta " + survey.getTitle() + " ha pasado a estado " + lifecycle.name());
-        return toResponse(survey);
-    }
-
-    @Transactional
-    public void delete(String surveyId, User actor) {
-        Survey survey = getSurvey(surveyId);
-        ensureOwner(survey, actor);
-        ensureClosedForDelete(survey);
-        surveyRepository.delete(survey);
-    }
-
-    @Transactional
-    public SurveyResponseDto adminChangeLifecycle(String surveyId, SurveyLifecycle lifecycle, User admin) {
-        if (!isAdmin(admin)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Solo administración puede intervenir encuestas");
-        }
-        Survey survey = getSurvey(surveyId);
-        if (lifecycle == SurveyLifecycle.OPEN
-            && !contentService.hasQuestion(contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId))) {
-            throw new ApiException(HttpStatus.CONFLICT, "La encuesta no puede abrirse sin preguntas");
-        }
-        survey.setLifecycleStatus(lifecycle);
-        notifySurveyStatusChanged(survey, "Intervención administrativa sobre encuesta", "Administración ha cambiado la encuesta " + survey.getTitle() + " a estado " + lifecycle.name());
-        return toResponse(survey);
-    }
-
-    @Transactional
-    public void adminDelete(String surveyId, User admin) {
-        if (!isAdmin(admin)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Solo administración puede eliminar encuestas");
-        }
-        Survey survey = getSurvey(surveyId);
-        ensureClosedForDelete(survey);
-        surveyRepository.delete(survey);
-    }
-
-    public void ensureStructureEditable(Survey survey) {
-        if (participationRepository.existsBySurveyId(survey.getId())) {
-            throw new ApiException(HttpStatus.CONFLICT, "No puede modificarse la estructura de una encuesta con respuestas");
-        }
-    }
-
-    private SurveySummaryDto toSummary(Survey survey) {
-        return new SurveySummaryDto(
-            survey.getId(),
-            survey.getTitle(),
-            survey.getImageKey(),
-            survey.getLifecycleStatus(),
-            tagsFrom(survey),
-            survey.getUpdatedAt()
-        );
-    }
-
-    public SurveyResponseDto toResponse(Survey survey) {
-        List<ContentItemResponseDto> content = contentService.findSurveyContent(survey.getId())
-            .stream()
-            .sorted(Comparator.comparing(ContentItemResponseDto::position))
-            .toList();
-        return new SurveyResponseDto(
-            survey.getId(),
-            survey.getOwner().getId(),
-            survey.getSourceTemplate() == null ? null : survey.getSourceTemplate().getId(),
-            survey.getTitle(),
-            survey.getDescription(),
-            survey.getImageKey(),
-            survey.getLifecycleStatus(),
-            survey.getAccessMode(),
-            survey.getVisibility(),
-            tagsFrom(survey),
-            content,
-            survey.getCreatedAt(),
-            survey.getUpdatedAt()
-        );
+        return tags.isEmpty() || tagsFrom(survey).containsAll(tags);
     }
 
     private void saveTags(Survey survey, List<String> tags) {
@@ -355,15 +360,28 @@ public class SurveyService {
     }
 
     private String passwordHash(SurveyAccessMode mode, String rawPassword) {
-        if (mode == SurveyAccessMode.PASSWORD_PROTECTED) {
-            if (rawPassword == null || rawPassword.isBlank()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Las encuestas con contraseña necesitan contraseña de acceso");
-            }
-            return passwordEncoder.encode(rawPassword);
+        SurveyAccessMode resolvedMode = mode == null ? SurveyAccessMode.PUBLIC : mode;
+        if (resolvedMode != SurveyAccessMode.PASSWORD_PROTECTED) {
+            return null;
         }
-        return null;
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Las encuestas con contraseña necesitan contraseña de acceso");
+        }
+        return passwordEncoder.encode(rawPassword);
     }
 
+    private String updatedPasswordHash(SurveyAccessMode previousMode, SurveyAccessMode requestedMode, String currentHash, String rawPassword) {
+        if (requestedMode != SurveyAccessMode.PASSWORD_PROTECTED) {
+            return null;
+        }
+        if (rawPassword != null && !rawPassword.isBlank()) {
+            return passwordEncoder.encode(rawPassword);
+        }
+        if (previousMode == SurveyAccessMode.PASSWORD_PROTECTED && currentHash != null) {
+            return currentHash;
+        }
+        throw new ApiException(HttpStatus.BAD_REQUEST, "Las encuestas con contraseña necesitan contraseña de acceso");
+    }
 
     private void ensureCanEdit(Survey survey, User user) {
         if (!canEditSurvey(survey, user)) {
@@ -372,7 +390,7 @@ public class SurveyService {
     }
 
     private void ensureOwner(Survey survey, User user) {
-        if (!survey.getOwner().getId().equals(user.getId())) {
+        if (!isOwner(survey, user)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Solo el propietario puede realizar esta operación");
         }
     }

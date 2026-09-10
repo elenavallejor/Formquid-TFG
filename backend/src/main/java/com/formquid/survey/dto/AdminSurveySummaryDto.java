@@ -10,7 +10,7 @@ import java.time.Instant;
  * Representa la información resumida necesaria para supervisar una encuesta desde administración.
  */
 public record AdminSurveySummaryDto(
-    String id,
+    Long id,
     String title,
     String editorName,
     SurveyLifecycle lifecycleStatus,

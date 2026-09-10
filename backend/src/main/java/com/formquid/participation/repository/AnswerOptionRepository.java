@@ -17,5 +17,5 @@ public interface AnswerOptionRepository extends JpaRepository<AnswerOption, Answ
         group by selected.option.id, selected.option.label, selected.option.position
         order by selected.option.position asc
     """)
-    List<Object[]> countOptionsByQuestion(@Param("questionId") String questionId);
+    List<Object[]> countOptionsByQuestion(@Param("questionId") Long questionId);
 }

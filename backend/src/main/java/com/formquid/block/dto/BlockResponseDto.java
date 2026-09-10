@@ -9,9 +9,9 @@ import java.util.List;
  * Respuesta con los datos de un bloque.
  */
 public record BlockResponseDto(
-    String id,
+    Long id,
     BlockScope scope,
-    String sourceBlockId,
+    Long sourceBlockId,
     String name,
     String description,
     List<ContentItemResponseDto> contentItems

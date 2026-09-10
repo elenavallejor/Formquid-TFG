@@ -10,12 +10,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Proporciona el acceso persistente a las preguntas y sus consultas de catálogo.
  */
-public interface QuestionRepository extends JpaRepository<Question, String> {
+public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query(
         value = """
@@ -60,7 +59,7 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
         Pageable pageable
     );
 
-    Optional<Question> findByParentItemId(UUID parentItemId);
+    Optional<Question> findByParentItemId(Long parentItemId);
 
-    long countBySourceFixedQuestionId(String sourceFixedQuestionId);
+    long countBySourceFixedQuestionId(Long sourceFixedQuestionId);
 }

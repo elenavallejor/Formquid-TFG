@@ -22,8 +22,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 /**
  * Gestiona usuarios, cuenta propia, roles y transferencia de propiedad.
  */
@@ -45,7 +43,7 @@ public class UserService {
         return new PageResponseDto<>(users.getContent(), users.getNumber(), users.getSize(), users.getTotalElements(), users.getTotalPages());
     }
 
-    public User getById(UUID id) {
+    public User getById(Long id) {
         return userRepository.findById(id)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }
@@ -57,7 +55,7 @@ public class UserService {
     }
 
     @Transactional
-    public UpdateAccountResult updateMyAccount(UUID id, UpdateAccountRequestDto request) {
+    public UpdateAccountResult updateMyAccount(Long id, UpdateAccountRequestDto request) {
         User user = getById(id);
         ensureCurrentPassword(user, request.currentPassword());
 
@@ -67,47 +65,40 @@ public class UserService {
         if (request.profile() != null) {
             changed = updateProfile(user, request.profile()) || changed;
         }
-
         if (request.password() != null) {
             changed = updatePassword(user, request.password()) || changed;
         }
-
         if (request.email() != null) {
             emailChanged = updateEmail(user, request.email());
             changed = emailChanged || changed;
         }
-
         if (!changed) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "No se ha detectado ningún cambio en la cuenta");
         }
-
         return new UpdateAccountResult(user, emailChanged);
     }
 
     @Transactional
-    public void deleteMyAccount(UUID id, DeleteOwnAccountRequestDto request) {
+    public void deleteMyAccount(Long id, DeleteOwnAccountRequestDto request) {
         User user = getById(id);
         ensureCurrentPassword(user, request.currentPassword());
 
         if (surveyRepository.countByOwnerId(id) > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "No puedes eliminar tu cuenta porque tienes encuestas propias");
         }
-
         if (user.getRole() == UserRole.SUPERADMIN) {
             ensureAnotherSuperadmin(id);
         }
-
         userRepository.delete(user);
     }
 
     @Transactional
-    public UserResponseDto updateRole(UUID id, UserRole newRole) {
+    public UserResponseDto updateRole(Long id, UserRole newRole) {
         User user = getById(id);
 
         if (user.getRole() == UserRole.SUPERADMIN && newRole != UserRole.SUPERADMIN) {
             ensureAnotherSuperadmin(user.getId());
         }
-
         if (newRole == UserRole.SUPERADMIN && userRepository.countByRole(UserRole.SUPERADMIN) >= 1 && user.getRole() != UserRole.SUPERADMIN) {
             throw new ApiException(HttpStatus.CONFLICT, "Solo puede existir un superadministrador");
         }
@@ -117,22 +108,20 @@ public class UserService {
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(Long id) {
         User user = getById(id);
 
         if (surveyRepository.countByOwnerId(id) > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "No puede eliminarse un propietario de encuestas");
         }
-
         if (user.getRole() == UserRole.SUPERADMIN) {
             ensureAnotherSuperadmin(id);
         }
-
         userRepository.delete(user);
     }
 
     @Transactional
-    public void transferSurveyOwnership(String surveyId, UUID currentOwnerId, UUID newOwnerId) {
+    public void transferSurveyOwnership(Long surveyId, Long currentOwnerId, Long newOwnerId) {
         var survey = surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
 
@@ -162,11 +151,9 @@ public class UserService {
         if (page < 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
         }
-
         if (size < 1 || size > MAX_PAGE_SIZE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y " + MAX_PAGE_SIZE);
         }
-
         return PageRequest.of(page, size);
     }
 
@@ -184,17 +171,14 @@ public class UserService {
             user.setName(name);
             changed = true;
         }
-
         if (!institution.equals(user.getInstitution())) {
             user.setInstitution(institution);
             changed = true;
         }
-
         if (profile.gender() != user.getGender()) {
             user.setGender(profile.gender());
             changed = true;
         }
-
         return changed;
     }
 
@@ -215,7 +199,6 @@ public class UserService {
         if (newEmail.equals(user.getEmail())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El nuevo correo debe ser distinto al actual");
         }
-
         if (userRepository.existsByEmail(newEmail)) {
             throw new ApiException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo electrónico");
         }
@@ -228,7 +211,6 @@ public class UserService {
         if (currentPassword == null || currentPassword.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Introduce tu contraseña actual");
         }
-
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "La contraseña actual no es correcta");
         }
@@ -238,11 +220,10 @@ public class UserService {
         if (value == null || value.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, message);
         }
-
         return value.trim();
     }
 
-    private void ensureAnotherSuperadmin(UUID currentSuperadminId) {
+    private void ensureAnotherSuperadmin(Long currentSuperadminId) {
         if (userRepository.countByRoleAndIdNot(UserRole.SUPERADMIN, currentSuperadminId) < 1) {
             throw new ApiException(HttpStatus.CONFLICT, "Debe existir siempre un superadministrador");
         }

@@ -46,7 +46,7 @@ public class BlockController {
     }
 
     @GetMapping("/{blockId}")
-    public BlockResponseDto findCatalogBlock(@PathVariable String blockId) {
+    public BlockResponseDto findCatalogBlock(@PathVariable Long blockId) {
         return blockService.findCatalogBlock(blockId);
     }
 
@@ -66,7 +66,7 @@ public class BlockController {
     @DeleteMapping("/{blockId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public void deleteCatalogBlock(@PathVariable String blockId) {
+    public void deleteCatalogBlock(@PathVariable Long blockId) {
         blockService.deleteCatalogBlock(blockId);
     }
 }

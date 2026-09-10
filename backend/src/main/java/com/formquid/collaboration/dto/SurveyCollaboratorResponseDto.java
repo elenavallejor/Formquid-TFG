@@ -1,11 +1,10 @@
 package com.formquid.collaboration.dto;
 
 import java.time.Instant;
-import java.util.UUID;
 
 public record SurveyCollaboratorResponseDto(
-    String surveyId,
-    UUID userId,
+    Long surveyId,
+    Long userId,
     String email,
     String name,
     Instant joinedAt

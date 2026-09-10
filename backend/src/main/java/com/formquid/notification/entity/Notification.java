@@ -52,6 +52,9 @@ import java.time.Instant;
         @Index(name = "idx_notifications_target", columnList = "target_type, target_id")
     }
 )
+/**
+ * Representa una notificación interna o por correo dirigida a un usuario.
+ */
 public class Notification {
 
     @Id
@@ -80,8 +83,8 @@ public class Notification {
     @Column(name = "target_type", nullable = false, length = 50)
     private NotificationTargetType targetType;
 
-    @Column(name = "target_id", length = 80)
-    private String targetId;
+    @Column(name = "target_id")
+    private Long targetId;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

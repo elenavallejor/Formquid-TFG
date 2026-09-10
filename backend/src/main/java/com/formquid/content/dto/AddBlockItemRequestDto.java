@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record AddBlockItemRequestDto(
     @NotNull @Min(1) Integer position,
-    @NotNull String blockId
+    @NotNull Long blockId
 ) {
 }

@@ -4,13 +4,12 @@ import com.formquid.participation.entity.Participation;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.UUID;
 
-public interface ParticipationRepository extends JpaRepository<Participation, UUID> {
+public interface ParticipationRepository extends JpaRepository<Participation, Long> {
 
-    long countBySurveyId(String surveyId);
+    long countBySurveyId(Long surveyId);
 
-    boolean existsBySurveyId(String surveyId);
+    boolean existsBySurveyId(Long surveyId);
 
-    List<Participation> findBySurveyIdOrderBySubmittedAtAsc(String surveyId);
+    List<Participation> findBySurveyIdOrderBySubmittedAtAsc(Long surveyId);
 }

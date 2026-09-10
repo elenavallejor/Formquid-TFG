@@ -42,7 +42,6 @@ import java.util.DoubleSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -58,11 +57,8 @@ public class StatisticsService {
     private final BlockRepository blockRepository;
     private final SurveyService surveyService;
 
-    /**
-     * Recibe una encuesta y usuario. Devuelve estadísticas calculadas.
-     */
     @Transactional(readOnly = true)
-    public SurveyStatisticsResponseDto getSurveyStatistics(String surveyId, User user) {
+    public SurveyStatisticsResponseDto getSurveyStatistics(Long surveyId, User user) {
         Survey survey = getSurveyWithResultsAccess(surveyId, user);
         List<Participation> participations = participationRepository.findBySurveyIdOrderBySubmittedAtAsc(surveyId);
         long participationCount = participations.size();
@@ -83,7 +79,7 @@ public class StatisticsService {
     }
 
     @Transactional(readOnly = true)
-    public QuestionStatisticsResponseDto getQuestionStatistics(String surveyId, String questionId, User user) {
+    public QuestionStatisticsResponseDto getQuestionStatistics(Long surveyId, Long questionId, User user) {
         getSurveyWithResultsAccess(surveyId, user);
         if (loadSurveyQuestions(surveyId).stream().noneMatch(question -> question.getId().equals(questionId))) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta no pertenece a la encuesta");
@@ -94,7 +90,7 @@ public class StatisticsService {
         return getQuestionStatistics(question, participationCount);
     }
 
-    private Survey getSurveyWithResultsAccess(String surveyId, User user) {
+    private Survey getSurveyWithResultsAccess(Long surveyId, User user) {
         Survey survey = surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         surveyService.ensureCanViewResults(survey, user);
@@ -132,11 +128,10 @@ public class StatisticsService {
         );
     }
 
-    private List<ChoiceOptionStatisticsDto> choiceStatistics(String questionId, long answerCount) {
-        return answerOptionRepository.countOptionsByQuestion(questionId)
-            .stream()
+    private List<ChoiceOptionStatisticsDto> choiceStatistics(Long questionId, long answerCount) {
+        return answerOptionRepository.countOptionsByQuestion(questionId).stream()
             .map(row -> {
-                UUID optionId = (UUID) row[0];
+                Long optionId = (Long) row[0];
                 String label = (String) row[1];
                 long count = ((Number) row[2]).longValue();
                 double percentage = answerCount == 0 ? 0 : (count * 100.0) / answerCount;
@@ -164,7 +159,7 @@ public class StatisticsService {
         if (question.getQuestionType() != QuestionType.MATRIX_SCALE) {
             return List.of();
         }
-        Map<UUID, List<BigDecimal>> valuesByRow = new LinkedHashMap<>();
+        Map<Long, List<BigDecimal>> valuesByRow = new LinkedHashMap<>();
         matrixAnswerValueRepository.findByQuestionId(question.getId()).forEach(value ->
             valuesByRow.computeIfAbsent(value.getMatrixRow().getId(), id -> new ArrayList<>()).add(value.getNumericValue())
         );
@@ -270,7 +265,7 @@ public class StatisticsService {
     }
 
     private Double globalTechnologyScore(List<QuestionStatisticsResponseDto> stats, List<Question> questions) {
-        Map<String, Question> questionsById = questions.stream()
+        Map<Long, Question> questionsById = questions.stream()
             .collect(java.util.stream.Collectors.toMap(Question::getId, question -> question));
         double weighted = 0;
         double totalWeight = 0;
@@ -293,15 +288,14 @@ public class StatisticsService {
         return values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
     }
 
-    private List<Question> loadSurveyQuestions(String surveyId) {
+    private List<Question> loadSurveyQuestions(Long surveyId) {
         List<Question> questions = new ArrayList<>();
         for (ContentItem item : contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)) {
             if (item.getItemType() == ContentItemType.QUESTION) {
                 questionRepository.findByParentItemId(item.getId()).ifPresent(questions::add);
             } else if (item.getItemType() == ContentItemType.BLOCK) {
                 blockRepository.findByParentItemId(item.getId()).ifPresent(block ->
-                    contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId())
-                        .stream()
+                    contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId()).stream()
                         .sorted(Comparator.comparing(ContentItem::getPosition))
                         .forEach(blockItem -> questionRepository.findByParentItemId(blockItem.getId()).ifPresent(questions::add))
                 );

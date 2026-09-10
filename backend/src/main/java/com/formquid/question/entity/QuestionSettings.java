@@ -42,8 +42,8 @@ import java.math.BigDecimal;
 public class QuestionSettings {
 
     @Id
-    @Column(name = "question_id", length = 20)
-    private String questionId;
+    @Column(name = "question_id")
+    private Long questionId;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId
