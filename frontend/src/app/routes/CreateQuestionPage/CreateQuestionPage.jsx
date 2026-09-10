@@ -5,11 +5,7 @@ import { MdChevronRight, MdClose, MdSave } from 'react-icons/md';
 import { createCatalogQuestion } from '../../../api/catalogApi.js';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
-import {
-  buildCreateFixedQuestionPayload,
-  getQuestionBuilderValidationError,
-  INITIAL_QUESTION_STATE,
-} from '../../../utils/questionBuilderUtils.js';
+import { buildCreateFixedQuestionPayload, getQuestionBuilderValidationError, INITIAL_QUESTION_STATE } from '../../../utils/questionBuilderUtils.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
 import './CreateQuestionPage.css';
@@ -30,7 +26,7 @@ export function CreateQuestionPage() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    const validationError = getQuestionBuilderValidationError(formData, true);
+    const validationError = getQuestionBuilderValidationError(formData);
 
     if (validationError) {
       setErrorMsg(validationError);

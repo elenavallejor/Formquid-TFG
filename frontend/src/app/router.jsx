@@ -5,6 +5,7 @@ import { RequireRole } from './guards/RequireRole.jsx';
 import { App } from './app';
 import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
 import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPage.jsx';
+import { CreateBlockPage } from './routes/CreateBlockPage/CreateBlockPage.jsx';
 import { ErrorPage } from './routes/ErrorPage/ErrorPage';
 import { LoginPage } from './routes/LoginPage/LoginPage';
 import { MainPage } from './routes/MainPage/MainPage';
@@ -68,6 +69,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={ADMIN_ROLES}>
               <CreateQuestionPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'catalogo/crear/bloque',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={ADMIN_ROLES}>
+              <CreateBlockPage />
             </RequireRole>
           </RequireAuth>
         ),

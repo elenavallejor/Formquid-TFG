@@ -9,7 +9,6 @@ import java.time.Instant;
  */
 public record FixedQuestionSummaryDto(
     String id,
-    String catalogName,
     String statement,
     QuestionType questionType,
     String creatorName,

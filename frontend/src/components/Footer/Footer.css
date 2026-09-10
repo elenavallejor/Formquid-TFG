@@ -2,7 +2,7 @@
   width: 100%;
   min-height: 48px;
   background-color: var(--color-header);
-  color: #b4c5c5;
+  color: var(--color-text-muted);
 }
 
 #main-footer .footer-content {
@@ -22,19 +22,19 @@
   font-size: 13px;
   line-height: 1.4;
   font-weight: 500;
-  color: #b4c5c5;
+  color: var(--color-text-muted);
 }
 
 #main-footer .footer-navigation {
   display: flex;
   align-items: center;
   gap: 16px;
-  color: rgba(255, 255, 255, 0.4); /* Color tenue para los separadores '|' */
+  color: color-mix(in srgb, var(--color-text-on-dark) 40%, transparent);
 }
 
 #main-footer .footer-link {
   min-height: 36px;
-  color: #ffffff;
+  color: var(--color-text-on-dark);
   display: inline-flex;
   align-items: center;
   font-size: 13px;
@@ -50,8 +50,8 @@
 }
 
 #main-footer .footer-link:focus-visible {
-  outline: var(--focus-outline, 3px solid #ffbf47);
-  outline-offset: var(--focus-outline-offset, 3px);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
   border-radius: 4px;
 }
 

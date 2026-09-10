@@ -7,10 +7,12 @@ import com.formquid.question.entity.QuestionType;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Contiene la definición completa de una pregunta.
+ */
 public record QuestionResponseDto(
     String id,
     QuestionScope scope,
-    String catalogName,
     String statement,
     String annotation,
     QuestionType questionType,

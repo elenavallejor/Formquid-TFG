@@ -44,10 +44,10 @@
   grid-template-columns: 3.5fr 1.5fr 1fr 1.2fr 60px;
   align-items: center;
   padding: 18px 24px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -56,7 +56,7 @@
 }
 
 .catalog-block-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
 }
 
 .catalog-item-main {
@@ -69,7 +69,7 @@
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background-color: #e6f4f1;
+  background-color: var(--color-accent-surface);
   color: var(--color-primary);
   display: flex;
   align-items: center;
@@ -106,8 +106,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #a0aec0;
-  color: #ffffff;
+  background-color: var(--color-text-muted);
+  color: var(--color-text-on-dark);
   font-size: 12px;
   font-weight: 800;
   display: flex;
@@ -156,17 +156,17 @@
 }
 
 .btn-item-more:hover {
-  background-color: #e2e8f0;
+  background-color: var(--color-surface-muted);
 }
 
 .catalog-action-menu {
   position: absolute;
   right: 0;
   top: 36px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -193,15 +193,15 @@
 }
 
 .menu-option:hover {
-  background-color: #f1f5f9;
+  background-color: var(--color-surface-muted);
 }
 
 .menu-option.option-delete {
-  color: #d32f2f;
+  color: var(--color-error);
 }
 
 .menu-option.option-delete:hover {
-  background-color: #fbeae8;
+  background-color: var(--color-error-surface);
 }
 
 .catalog-grid-body {
@@ -211,18 +211,18 @@
 }
 
 .catalog-grid-card {
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .catalog-grid-card:hover {
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
 }
 
 .catalog-grid-card .card-top {
@@ -259,7 +259,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  border-top: 1px solid #edf2f7;
+  border-top: 1px solid var(--color-border);
   padding-top: 14px;
   gap: 12px;
 }
@@ -293,7 +293,7 @@
   justify-content: center;
   min-height: 320px;
   padding: 40px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px dashed var(--color-border);
   border-radius: 12px;
   text-align: center;
@@ -353,7 +353,7 @@
 
   .user-creator-cell {
     width: 100%;
-    border-top: 1px solid #edf2f7;
+    border-top: 1px solid var(--color-border);
     padding-top: 12px;
   }
 

@@ -5,18 +5,18 @@
   width: 100%;
   max-width: 480px;
   padding: 20px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   text-decoration: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
 
 .panel-button:hover {
   border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.183);
   transform: translateY(-1px);
 }
 
@@ -24,7 +24,7 @@
   width: 65px;
   height: 65px;
   border-radius: 50%;
-  background-color: #e6f4f1; 
+  background-color: var(--color-accent-surface); 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -33,7 +33,7 @@
 
 .panel-button-icon {
   font-size: 35px;
-  color: #00897b;
+  color: var(--color-primary);
 }
 
 /* Textos */
@@ -48,24 +48,20 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text);
   line-height: 1.2;
 }
 
 .panel-button-description {
   margin: 0;
   font-size: 13.5px;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.4;
 }
 
 .panel-button-arrow {
   font-size: 22px;
-  color: #334155;
+  color: var(--color-text);
   flex-shrink: 0;
   transition: transform 0.2s ease;
-}
-
-.panel-button:hover .panel-button-arrow {
-  transform: translateX(3px);
 }

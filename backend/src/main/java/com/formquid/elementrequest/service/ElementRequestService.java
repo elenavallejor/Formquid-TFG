@@ -272,16 +272,6 @@ public class ElementRequestService {
                 CreateFixedQuestionRequestDto.class
             );
 
-        if (
-            dto.catalogName() == null
-                || dto.catalogName().isBlank()
-        ) {
-            throw new ApiException(
-                HttpStatus.BAD_REQUEST,
-                "La pregunta fija necesita nombre de catálogo"
-            );
-        }
-
         questionService.validateQuestionDraft(
             dto.question()
         );

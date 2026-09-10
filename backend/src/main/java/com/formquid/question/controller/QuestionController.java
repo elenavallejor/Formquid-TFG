@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Expone las operaciones de consulta y administración de preguntas fijas del catálogo.
+ */
 @RestController
 @RequestMapping("/api/v1/catalog/questions")
 @RequiredArgsConstructor
@@ -34,6 +37,14 @@ public class QuestionController {
         @RequestParam(defaultValue = "10") int size
     ) {
         return questionService.findFixedQuestions(page, size);
+    }
+
+    @GetMapping("/builder")
+    public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return questionService.findFixedQuestionsForBuilder(page, size);
     }
 
     @GetMapping("/{questionId}")

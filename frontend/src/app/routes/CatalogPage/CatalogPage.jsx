@@ -50,8 +50,8 @@ const SECTION_CONFIG = {
     icon: MdOutlineHelpOutline,
     load: getCatalogQuestions,
     deleteApi: deleteCatalogQuestion,
-    titleKey: 'catalogName',
-    descriptionKey: 'statement',
+    titleKey: 'statement',
+    descriptionKey: null,
     detailLabel: 'tipo',
     detailKey: 'questionType',
   },
@@ -150,7 +150,9 @@ export function CatalogPage() {
       .filter((item) => {
         if (!query) return true;
         const title = String(item[config.titleKey] ?? '').toLowerCase();
-        const description = String(item[config.descriptionKey] ?? '').toLowerCase();
+        const description = config.descriptionKey
+          ? String(item[config.descriptionKey] ?? '').toLowerCase()
+          : '';
         const creator = String(item.creatorName ?? '').toLowerCase();
         return title.includes(query) || description.includes(query) || creator.includes(query);
       })

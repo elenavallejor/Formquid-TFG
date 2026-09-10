@@ -11,7 +11,7 @@
 }
 
 .admin-panel-card:hover {
-  box-shadow: 0 4px 12px rgb(5 47 69 / 12%);
+  box-shadow: var(--card-shadow);
 }
 
 .admin-panel-card.full-width-variant {
@@ -44,13 +44,13 @@
 }
 
 .admin-panel-icon-container.theme-teal {
-  background-color: #e6f4f1;
+  background-color: var(--color-accent-surface);
   color: var(--color-primary);
 }
 
 .admin-panel-icon-container.theme-purple {
-  background-color: #f3e8ff;
-  color: #7e22ce;
+  background-color: var(--color-super-surface);
+  color: var(--color-super);
 }
 
 .admin-panel-icon {
@@ -99,7 +99,7 @@
 }
 
 .admin-panel-count-number.theme-purple {
-  color: #7e22ce;
+  color: var(--color-info);
 }
 
 .admin-panel-count-label {
@@ -123,21 +123,21 @@
 
 .admin-panel-action-button.theme-teal {
   border: 1.5px solid var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 .admin-panel-action-button.theme-teal:hover {
-  background-color: var(--color-accent);
+  background-color: var(--color-primary);
   color: var(--color-surface);
 }
 
 .admin-panel-action-button.theme-purple {
-  border: 1.5px solid #7e22ce;
-  color: #7e22ce;
+  border: 1.5px solid var(--color-super);
+  color: var(--color-super);
 }
 
 .admin-panel-action-button.theme-purple:hover {
-  background-color: #7e22ce;
+  background-color: var(--color-super);
   color: var(--color-surface);
 }
 

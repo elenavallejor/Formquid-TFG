@@ -44,9 +44,9 @@ import java.util.List;
     and question_type in ('TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BOOLEAN')
     and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
     and (
-        (scope = 'CATALOG_FIXED' and parent_item_id is null and catalog_name is not null and source_fixed_question_id is null)
-        or (scope = 'LOCAL' and parent_item_id is not null and catalog_name is null)
-        or (scope = 'FIXED_SNAPSHOT' and parent_item_id is not null and catalog_name is null)
+        (scope = 'CATALOG_FIXED' and parent_item_id is null and source_fixed_question_id is null)
+        or (scope = 'LOCAL' and parent_item_id is not null)
+        or (scope = 'FIXED_SNAPSHOT' and parent_item_id is not null)
     )
     and (
         (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)
@@ -75,9 +75,6 @@ public class Question {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private QuestionScope scope;
-
-    @Column(name = "catalog_name", length = 150)
-    private String catalogName;
 
     @Column(nullable = false, columnDefinition = "text")
     private String statement;

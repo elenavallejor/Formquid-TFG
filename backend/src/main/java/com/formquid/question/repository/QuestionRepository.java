@@ -9,19 +9,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Proporciona el acceso persistente a las preguntas y sus consultas de catálogo.
+ */
 public interface QuestionRepository extends JpaRepository<Question, String> {
-
-    List<Question> findByScopeOrderByCatalogNameAsc(QuestionScope scope);
 
     @Query(
         value = """
             select new com.formquid.question.dto.FixedQuestionSummaryDto(
                 question.id,
-                question.catalogName,
                 question.statement,
                 question.questionType,
                 creator.name,
@@ -38,6 +37,25 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
             """
     )
     Page<FixedQuestionSummaryDto> findCatalogSummaries(
+        @Param("scope") QuestionScope scope,
+        Pageable pageable
+    );
+
+    @Query(
+        value = """
+            select question
+            from Question question
+            left join fetch question.settings
+            left join fetch question.createdBy
+            where question.scope = :scope
+            """,
+        countQuery = """
+            select count(question.id)
+            from Question question
+            where question.scope = :scope
+            """
+    )
+    Page<Question> findCatalogQuestionsWithDetails(
         @Param("scope") QuestionScope scope,
         Pageable pageable
     );

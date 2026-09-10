@@ -77,14 +77,13 @@
   font-size: 15px;
   color: var(--color-text);
   box-sizing: border-box;
-  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-input-wrapper input:focus,
 .search-input-wrapper input:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.15);
+  box-shadow: var(--focus-shadow);
 }
 
 .sort-selector-wrapper {
@@ -105,14 +104,13 @@
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
-  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sort-selector-wrapper select:focus,
 .sort-selector-wrapper select:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.15);
+  box-shadow: var(--focus-shadow);
 }
 
 .requests-list {
@@ -131,7 +129,7 @@
 }
 
 .requests-error-text {
-  color: #d32f2f;
+  color: var(--color-error);
 }
 
 .empty-requests-card {

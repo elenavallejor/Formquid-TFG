@@ -1,17 +1,13 @@
 .panel-page {
   width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
   background-color: var(--color-background);
-  color: var(--color-text);
+  padding: 15px 40px 60px;
+  box-sizing: border-box;
 }
 
 .panel-type-editor {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
 .editor-panel-wrapper {
@@ -122,7 +118,7 @@
   padding: 6px 16px;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-primary);
   text-decoration: none;
   border: 1.5px solid var(--color-accent);
   border-radius: 50px;
@@ -130,7 +126,7 @@
 }
 
 .btn-admin-action-link:hover {
-  background-color: var(--color-accent);
+  background-color: var(--color-primary);
   color: var(--color-text-on-dark);
 }
 
@@ -149,13 +145,13 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--card-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .editor-action-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
 }
 
 .action-card-icon-circle {
@@ -167,7 +163,7 @@
   margin-bottom: 20px;
   font-size: 40px;
   color: var(--color-primary);
-  background-color: #d8ece8;
+  background-color: var(--color-accent-surface);
   border-radius: 50%;
 }
 
@@ -200,7 +196,7 @@
 }
 
 .action-card-btn:hover {
-  color: #ffffff;
+  color: var(--color-text-on-dark);
   background-color: var(--color-primary);
 }
 
@@ -211,7 +207,7 @@
 .editor-surveys-section {
   flex: 1;
   padding: 40px 24px 60px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border-top: 1px solid var(--color-border);
 }
 
@@ -247,7 +243,7 @@
 }
 
 .btn-see-all:hover {
-  color: #ffffff;
+  color: var(--color-text-on-dark);
   background-color: var(--color-primary);
 }
 
@@ -283,14 +279,13 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .surveys-search-wrapper input:focus,
 .surveys-search-wrapper input:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.15);
+  box-shadow: var(--focus-shadow);
 }
 
 .surveys-selects-group {
@@ -307,14 +302,13 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   cursor: pointer;
-  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .surveys-selects-group select:focus,
 .surveys-selects-group select:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.15);
+  box-shadow: var(--focus-shadow);
 }
 
 .surveys-cards-grid {
@@ -348,14 +342,14 @@
 
 .btn-pagination:hover:not(:disabled) {
   background-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-text-on-dark);
 }
 
 .btn-pagination:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   border-color: var(--color-border);
-  color: var(--color-text-muted);
+  color: var(--color-disabled);
 }
 
 .pagination-info {

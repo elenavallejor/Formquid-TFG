@@ -1,7 +1,7 @@
 .account-page {
   width: 100%;
   background-color: var(--color-background);
-  padding: 32px 24px 60px;
+  padding: 32px 40px 60px;
   box-sizing: border-box;
 }
 
@@ -56,7 +56,7 @@
   gap: 8px;
   padding: 12px 24px;
   background-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-text-on-dark);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -84,10 +84,10 @@
   gap: 12px;
   padding: 14px 20px;
   margin-bottom: 24px;
-  background-color: #fdf2f2;
-  border: 1px solid #f8b4b4;
+  background-color: var(--color-error-surface);
+  border: 1px solid var(--color-error-border);
   border-radius: 8px;
-  color: #c81e1e;
+  color: var(--color-error);
   font-size: 14px;
   font-weight: 600;
 }
@@ -104,10 +104,10 @@
 .account-success-banner {
   padding: 14px 20px;
   margin-bottom: 24px;
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background-color: var(--color-success-surface);
+  border: 1px solid var(--color-success-border);
   border-radius: 8px;
-  color: #15803d;
+  color: var(--color-success);
   font-size: 14px;
   font-weight: 600;
 }
@@ -120,10 +120,10 @@
 
 .account-card-section {
   padding: 28px 32px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--card-shadow);
 }
 
 .account-section-title {
@@ -167,25 +167,24 @@
 .input-field-group select {
   width: 100%;
   padding: 11px 14px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-text);
   font-size: 14px;
   box-sizing: border-box;
-  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-field-group input:focus,
 .input-field-group select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(6, 118, 71, 0.15);
+  box-shadow: var(--focus-shadow);
 }
 
 .input-disabled {
-  background-color: #f1f5f9 !important;
-  color: #64748b !important;
+  background-color: var(--color-surface-muted) !important;
+  color: var(--color-text-muted) !important;
   cursor: not-allowed;
 }
 
@@ -240,7 +239,7 @@
 .status-dot {
   width: 10px;
   height: 10px;
-  background-color: #cbd5e1;
+  background-color: var(--color-surface-muted);
   border-radius: 50%;
   transition: background-color 0.2s ease;
 }
@@ -268,27 +267,27 @@
   align-items: flex-start;
   gap: 14px;
   padding: 16px 20px;
-  background-color: #fffbeb;
-  border: 1px solid #fef08a;
+  background-color: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
   border-radius: 10px;
 }
 
 .warning-box-icon {
   flex-shrink: 0;
-  color: #d97706;
+  color: var(--color-warning);
   font-size: 28px;
 }
 
 .warning-box-content h3 {
   margin: 0 0 4px;
-  color: #b45309;
+  color: var(--color-warning);
   font-size: 14px;
   font-weight: 700;
 }
 
 .warning-box-content p {
   margin: 0;
-  color: #d97706;
+  color: var(--color-warning);
   font-size: 13px;
 }
 
@@ -297,10 +296,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background-color: #fff5f5;
-  border: 1px solid #feb2b2;
+  background-color: var(--color-error-surface);
+  border: 1px solid var(--color-error-border);
   border-radius: 8px;
-  color: #e53e3e;
+  color: var(--color-error);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -309,7 +308,7 @@
 }
 
 .btn-delete-account:hover:not(:disabled) {
-  background-color: #fed7d7;
+  background-color: var(--color-error-hover);
 }
 
 .btn-delete-account:disabled,
@@ -326,8 +325,8 @@
 .btn-save-changes:focus-visible,
 .btn-toggle-eye:focus-visible,
 .btn-delete-account:focus-visible {
-  outline: 3px solid rgba(0, 152, 138, 0.35);
-  outline-offset: 3px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .btn-toggle-eye:focus-visible {

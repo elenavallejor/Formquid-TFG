@@ -8,8 +8,7 @@ import { Skeleton } from '../Skeleton/Skeleton.jsx';
 import './CatalogList.css';
 
 const QUESTION_TYPE_LABELS = {
-  SHORT_TEXT: 'Texto corto',
-  LONG_TEXT: 'Texto largo',
+  TEXT: 'Texto',
   NUMBER: 'Número',
   SINGLE_CHOICE: 'Opción única',
   MULTIPLE_CHOICE: 'Opción múltiple',
@@ -127,7 +126,9 @@ export function CatalogList({
         <div className="catalog-grid-body">
           {items.map((item) => {
             const title = item[config.titleKey] || 'Sin título';
-            const description = item[config.descriptionKey] || 'Sin descripción.';
+            const description = config.descriptionKey
+              ? item[config.descriptionKey] || 'Sin descripción.'
+              : '';
             const creator = item.creatorName || '';
             const updatedAt = formatDate(item.updatedAt, { includeTime: true });
 
@@ -147,7 +148,7 @@ export function CatalogList({
                 </div>
                 <div className="card-body">
                   <h3>{title}</h3>
-                  <p>{description}</p>
+                  {description && <p>{description}</p>}
                 </div>
                 <div className="card-footer">
                   <div className="user-creator-cell grid-creator-cell">
@@ -189,7 +190,9 @@ export function CatalogList({
         <div className="catalog-blocks-list">
           {items.map((item) => {
             const title = item[config.titleKey] || 'Sin título';
-            const description = item[config.descriptionKey] || 'Sin descripción.';
+            const description = config.descriptionKey
+              ? item[config.descriptionKey] || 'Sin descripción.'
+              : '';
             const creator = item.creatorName || '';
             const updatedAt = formatDate(item.updatedAt, { includeTime: true });
             const detailValue =
@@ -208,7 +211,7 @@ export function CatalogList({
                   </div>
                   <div className="catalog-item-info">
                     <h3>{title}</h3>
-                    <p>{description}</p>
+                    {description && <p>{description}</p>}
                   </div>
                 </div>
                 <div className="col-creator user-creator-cell">

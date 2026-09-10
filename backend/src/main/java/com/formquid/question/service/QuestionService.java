@@ -37,6 +37,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Gestiona la creación, validación, consulta y transformación de preguntas.
+ */
 @Service
 @RequiredArgsConstructor
 public class QuestionService {
@@ -49,12 +52,25 @@ public class QuestionService {
         Pageable pageable = catalogPageable(page, size);
         Page<FixedQuestionSummaryDto> questions =
             questionRepository.findCatalogSummaries(QuestionScope.CATALOG_FIXED, pageable);
+        return toPageResponse(questions);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size) {
+        Pageable pageable = catalogPageable(page, size);
+        Page<QuestionResponseDto> questions = questionRepository
+            .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, pageable)
+            .map(this::toResponse);
+        return toPageResponse(questions);
+    }
+
+    private <T> PageResponseDto<T> toPageResponse(Page<T> page) {
         return new PageResponseDto<>(
-            questions.getContent(),
-            questions.getNumber(),
-            questions.getSize(),
-            questions.getTotalElements(),
-            questions.getTotalPages()
+            page.getContent(),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
         );
     }
 
@@ -100,7 +116,6 @@ public class QuestionService {
             null,
             creator
         );
-        question.setCatalogName(request.catalogName().trim());
         return toResponse(questionRepository.save(question));
     }
 
@@ -536,7 +551,6 @@ public class QuestionService {
         return new QuestionResponseDto(
             question.getId(),
             question.getScope(),
-            question.getCatalogName(),
             question.getStatement(),
             question.getAnnotation(),
             question.getQuestionType(),

@@ -1,14 +1,14 @@
 @keyframes skeleton-pulse {
-  0% { background-color: #edf2f7; }
-  50% { background-color: #e2e8f0; }
-  100% { background-color: #edf2f7; }
+  0% { background-color: var(--color-surface-muted); }
+  50% { background-color: var(--color-border); }
+  100% { background-color: var(--color-surface-muted); }
 }
 
 .skeleton-box,
 .skeleton-line {
   display: block;
   animation: skeleton-pulse 1.5s infinite ease-in-out;
-  background-color: #edf2f7;
+  background-color: var(--color-surface-muted);
   border-radius: 6px;
 }
 
@@ -23,7 +23,7 @@
 .skeleton-w-100 { width: 90%; }
 
 .skeleton-row-between { display: flex; align-items: center; justify-content: space-between; }
-.skeleton-border-top { border-top: 1px solid #edf2f7; padding-top: 14px; margin-top: 14px; }
+.skeleton-border-top { border-top: 1px solid var(--color-border); padding-top: 14px; margin-top: 14px; }
 .skeleton-user { display: flex; align-items: center; gap: 10px; }
 .skeleton-right { display: flex; justify-content: flex-end; }
 .skeleton-info { width: 100%; display: flex; flex-direction: column; }
@@ -34,7 +34,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 24px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
 }
@@ -44,7 +44,7 @@
 .skeleton-table {
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
@@ -54,7 +54,7 @@
   grid-template-columns: 3.5fr 1.5fr 1fr 1.2fr 60px;
   align-items: center;
   padding: 18px 24px;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid var(--color-border);
 }
 .skeleton-table-row.no-actions { grid-template-columns: 3.8fr 1.5fr 1fr 1.2fr; }
 
@@ -65,7 +65,7 @@
   width: 100%;
 }
 .skeleton-card {
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 20px;

@@ -7,13 +7,13 @@
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 28px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   gap: 24px;
 }
 
 .solicitud-card:hover {
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .solicitud-col {
@@ -45,7 +45,7 @@
 .solicitud-divider {
   width: 1px;
   height: 90px;
-  background-color: #e2e8f0;
+  background-color: var(--color-surface-muted);
   flex-shrink: 0;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .solicitud-motivation-text::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-surface-muted);
   border-radius: 4px;
 }
 
@@ -147,32 +147,31 @@
 }
 
 .btn-accept {
-  background-color: #eaf6ed;
-  border: 1.5px solid #2e7d32;
-  color: #2e7d32;
+  background-color: var(--color-success-surface);
+  border: 1.5px solid var(--color-success);
+  color: var(--color-success);
 }
 
 .btn-accept:hover {
-  background-color: #2e7d32;
-  color: #ffffff;
+  background-color: var(--color-success);
+  color: var(--color-text-on-dark);
 }
 
 .btn-deny {
-  background-color: #fbeae8;
-  border: 1.5px solid #d32f2f;
-  color: #d32f2f;
+  background-color: var(--color-error-surface);
+  border: 1.5px solid var(--color-error);
+  color: var(--color-error);
 }
 
 .btn-deny:hover {
-  background-color: #d32f2f;
-  color: #ffffff;
+  background-color: var(--color-error);
+  color: var(--color-text-on-dark);
 }
 
 .action-btn-icon {
   font-size: 20px;
 }
 
-/* Transformación de columnas a filas para tablets y móviles */
 @media only screen and (max-width: 1100px) {
   .solicitud-card {
     flex-direction: column;

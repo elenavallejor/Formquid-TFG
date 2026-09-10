@@ -1,6 +1,6 @@
 .academic-question-card {
   font-family: "Computer Modern", "Latin Modern Roman", Georgia, "Times New Roman", serif;
-  color: #111827;
+  color: var(--color-text);
   padding: 16px 8px;
   background: transparent;
   box-sizing: border-box;
@@ -11,27 +11,27 @@
   font-weight: 700;
   line-height: 1.45;
   margin: 0 0 14px 0;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .question-prefix {
-  color: #1e3a8a;
+  color: var(--color-info);
   font-weight: 700;
   margin-right: 2px;
 }
 
 .required-asterisk {
-  color: #dc2626;
+  color: var(--color-error);
   font-weight: 700;
 }
 
 .academic-annotation-box {
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-muted);
   padding: 8px 14px;
   border-radius: 0;
   font-size: 13.5px;
   font-style: italic;
-  color: #4b5563;
+  color: var(--color-text-muted);
   margin: 0 0 18px 0;
   line-height: 1.4;
 }
@@ -53,25 +53,24 @@
 .academic-text-field {
   width: 100%;
   padding: 12px 14px;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid var(--color-border);
   border-radius: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--color-surface-muted);
+  color: var(--color-text);
   font-family: inherit;
   font-size: 14.5px;
   line-height: 1.5;
   resize: vertical;
   box-sizing: border-box;
-  outline: none;
 }
 
 .academic-text-field:focus {
-  border-color: #008779;
-  background-color: #ffffff;
+  border-color: var(--color-primary);
+  background-color: var(--color-surface);
 }
 
 .academic-text-field:disabled {
-  color: #64748b;
+  color: var(--color-text-muted);
   cursor: default;
 }
 
@@ -85,29 +84,28 @@
 .academic-number-input {
   width: 110px;
   padding: 8px 12px;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid var(--color-border);
   border-radius: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--color-surface-muted);
+  color: var(--color-text);
   font-family: inherit;
   font-size: 15px;
   box-sizing: border-box;
-  outline: none;
 }
 
 .academic-number-input:focus {
-  border-color: #008779;
-  background-color: #ffffff;
+  border-color: var(--color-primary);
+  background-color: var(--color-surface);
 }
 
 .academic-number-input:disabled {
-  color: #64748b;
+  color: var(--color-text-muted);
   cursor: default;
 }
 
 .academic-number-hint {
   font-size: 13.5px;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -130,16 +128,16 @@
 
 .option-index {
   min-width: 20px;
-  color: #374151;
+  color: var(--color-text-muted);
 }
 
 .academic-radio-circle {
   display: inline-block;
   width: 13px;
   height: 13px;
-  border: 1.5px solid #374151;
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--color-surface);
   margin: 0 10px 0 2px;
   flex-shrink: 0;
 }
@@ -148,9 +146,9 @@
   display: inline-block;
   width: 13px;
   height: 13px;
-  border: 1px solid #374151;
+  border: 1px solid var(--color-border-strong);
   border-radius: 0;
-  background: #ffffff;
+  background: var(--color-surface);
   margin: 0 10px 0 2px;
   flex-shrink: 0;
 }
@@ -162,7 +160,7 @@
 }
 
 .option-label {
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 /* 5. SCALE */
@@ -178,7 +176,7 @@
 .scale-bound-label {
   font-size: 13.5px;
   font-style: italic;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .scale-columns-row {
@@ -197,7 +195,7 @@
 
 .scale-unit-number {
   font-size: 14px;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .scale-column-unit .academic-checkbox-square {
@@ -217,11 +215,11 @@
 }
 
 .scale-star-item.unselected {
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .scale-star-item.selected {
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .scale-star-item svg {
@@ -262,8 +260,8 @@
   padding: 10px 14px;
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
-  border-bottom: 2px solid #e2e8f0;
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-border);
 }
 
 .matrix-aspect-th {
@@ -284,7 +282,7 @@
 }
 
 .matrix-data-row {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .matrix-data-row td {
@@ -295,7 +293,7 @@
   text-align: left;
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .matrix-cell-radio {
@@ -306,9 +304,9 @@
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 1.5px solid #475569;
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--color-surface);
   margin: 0 auto;
 }
 
@@ -329,8 +327,8 @@
   gap: 12px;
   min-width: 140px;
   padding: 12px 24px;
-  background-color: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
   border-radius: 0;
   cursor: default;
   font-family: inherit;
@@ -341,14 +339,14 @@
 }
 
 .boolean-choice-pill.selected {
-  border-color: #008779;
-  background-color: #e8f5f4;
+  border-color: var(--color-primary);
+  background-color: var(--color-accent-surface);
 }
 
 .boolean-pill-text {
   font-size: 15px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .boolean-choice-pill .academic-checkbox-square {

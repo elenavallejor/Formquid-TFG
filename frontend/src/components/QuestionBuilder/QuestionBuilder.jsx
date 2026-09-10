@@ -1,28 +1,39 @@
-import { MdAdd, MdDeleteOutline, MdOutlineThumbDown, MdOutlineThumbUp } from 'react-icons/md';
-
-import {
-  CHOICE_QUESTION_TYPES,
-  QUESTION_TYPES,
-  RANGE_QUESTION_TYPES,
-  SCALE_DISPLAY_OPTIONS,
-  getMatrixRowText,
-  getOptionFactor,
-  getOptionText,
-  getScaleDisplayValue,
-  parseIntegerValue,
-  parseNumberValue,
-} from '../../utils/questionBuilderUtils.js';
+import { useState } from 'react';
+import { MdClose, MdAdd, MdDeleteOutline, MdOutlineThumbDown, MdOutlineThumbUp } from 'react-icons/md';
+import { CHOICE_QUESTION_TYPES, QUESTION_TYPES, RANGE_QUESTION_TYPES, SCALE_DISPLAY_OPTIONS, getMatrixRowText, getOptionFactor, getOptionText, getQuestionBuilderValidationError, getScaleDisplayValue, parseIntegerValue, parseNumberValue } from '../../utils/questionBuilderUtils.js';
 import { Question } from '../Question/Question.jsx';
 
 import './QuestionBuilder.css';
-
-export function QuestionBuilder({ data, onChange, isCatalog = true }) {
+export function QuestionBuilder({
+  data,
+  onChange,
+  isCatalog = true,
+  isModal = false,
+  isOpen = true,
+  onClose,
+  onSave,
+  modalTitle = 'Configurar pregunta',
+}) {
+  const [modalError, setModalError] = useState('');
   const isTextQuestion = data.questionType === 'TEXT';
   const scaleDisplayType = getScaleDisplayValue(data);
   const isFixedVisualScale = scaleDisplayType === 'STARS' || scaleDisplayType === 'FACES';
 
   function handleField(field, value) {
+    if (modalError) setModalError('');
     onChange({ ...data, [field]: value });
+  }
+
+  function handleModalSave() {
+    const validationError = getQuestionBuilderValidationError(data);
+
+    if (validationError) {
+      setModalError(validationError);
+      return;
+    }
+
+    setModalError('');
+    onSave?.();
   }
 
   function handleQuestionType(questionType) {
@@ -97,25 +108,10 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
     handleField('matrixRows', (data.matrixRows || []).filter((_, currentIndex) => currentIndex !== index));
   }
 
-  return (
-    <div className="question-builder-stack">
+  const builderContent = (
+    <div className={`question-builder-stack ${isModal ? 'modal-mode' : ''}`}>
       <section className="builder-card">
         <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
-
-        {isCatalog && (
-          <div className="builder-field">
-            <label htmlFor="catalogName">Nombre en el catálogo <span>*</span></label>
-            <input
-              id="catalogName"
-              type="text"
-              placeholder="Nombre corto para identificar la pregunta en el catálogo."
-              maxLength={150}
-              value={data.catalogName || ''}
-              onChange={(event) => handleField('catalogName', event.target.value)}
-            />
-            <span className="field-counter">{(data.catalogName || '').length}/150</span>
-          </div>
-        )}
 
         <div className="builder-field">
           <label htmlFor="statement">Enunciado <span>*</span></label>
@@ -529,6 +525,51 @@ export function QuestionBuilder({ data, onChange, isCatalog = true }) {
           />
         </div>
       </section>
+    </div>
+  );
+
+  if (!isModal) {
+    return builderContent;
+  }
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="builder-modal-overlay" onClick={onClose}>
+      <div
+        className="builder-modal-container"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="question-builder-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="builder-modal-header">
+          <h2 id="question-builder-modal-title" className="builder-modal-title">{modalTitle}</h2>
+          {onClose && (
+            <button
+              type="button"
+              className="builder-modal-close-btn"
+              aria-label="Cerrar modal"
+              onClick={onClose}
+            >
+              <MdClose aria-hidden="true" />
+            </button>
+          )}
+        </header>
+
+        <div className="builder-modal-body">
+          {builderContent}
+        </div>
+
+        {onSave && (
+          <footer className="builder-modal-footer">
+            {modalError && <p className="builder-modal-error" role="alert">{modalError}</p>}
+            <button type="button" className="btn-modal-save" onClick={handleModalSave}>Guardar</button>
+          </footer>
+        )}
+      </div>
     </div>
   );
 }

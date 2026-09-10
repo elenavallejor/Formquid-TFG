@@ -14,7 +14,7 @@
 
 .custom-table thead tr {
   border-bottom: 1px solid var(--color-border);
-  background-color: #cac8c8;
+  background-color: var(--color-surface-muted);
 }
 
 .custom-table th {
@@ -37,7 +37,7 @@
 }
 
 .custom-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--color-surface-muted);
 }
 
 .custom-table-empty {

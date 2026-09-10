@@ -1,7 +1,6 @@
 package com.formquid.survey.entity;
 
 import com.formquid.content.entity.ContentItem;
-import com.formquid.template.entity.Template;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -9,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -18,6 +19,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,8 +44,7 @@ import java.util.List;
 @Builder
 @Entity
 @Check(constraints = """
-    id ~ '^S[1-9][0-9]*$'
-    and lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
+    lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
     and access_mode in ('PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED')
     and visibility in ('LISTED', 'UNLISTED')
     and (
@@ -54,6 +55,7 @@ import java.util.List;
 """)
 @Table(
     name = "surveys",
+    uniqueConstraints = @UniqueConstraint(name = "uk_surveys_public_code", columnNames = "public_code"),
     indexes = {
         @Index(name = "idx_surveys_owner", columnList = "owner_id"),
         @Index(name = "idx_surveys_lifecycle_visibility", columnList = "lifecycle_status, visibility"),
@@ -63,16 +65,15 @@ import java.util.List;
 public class Survey {
 
     @Id
-    @Column(length = 20)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column( name = "public_code", unique = true, length = 12)
+    private String publicCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_template_id")
-    private Template sourceTemplate;
 
     @Column(nullable = false, length = 200)
     private String title;

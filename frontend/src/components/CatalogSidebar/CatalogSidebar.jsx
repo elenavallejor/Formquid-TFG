@@ -1,231 +1,334 @@
-import { useEffect, useState } from 'react';
-import { MdChevronLeft, MdChevronRight, MdSearch, MdAdd, MdOutlineVisibility, MdKeyboardArrowDown } from 'react-icons/md';
-import { getCatalogBlocks, getCatalogQuestions } from '../../api/catalogApi.js';
-import { Skeleton } from '../../components/Skeleton/Skeleton.jsx';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, MdOutlineVisibility, MdSearch } from 'react-icons/md';
+
+import { getCatalogBlocks, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
+import { Skeleton } from '../Skeleton/Skeleton.jsx';
 
 import './CatalogSidebar.css';
 
 /**
- * Panel lateral deslizante y paginado situado a la izquierda que permite 
- * consultar elementos existentes del catálogo con el diseño del mockup.
+ * Muestra los elementos habilitados del catálogo y permite añadirlos o arrastrarlos hacia un constructor.
  */
-export function CatalogSidebar({ 
-  showQuestions = true, 
-  showBlocks = true, 
-  onAddQuestion, 
-  onAddBlock, 
-  onPreviewBlock 
+export function CatalogSidebar({
+  showQuestions = true,
+  showBlocks = true,
+  allowedQuestionTypes,
+  onAddQuestion,
+  onAddBlock,
+  onPreviewBlock,
+  defaultOpen,
 }) {
-  const [isOpen, setIsOpen] = useState(true);
-
+  const sidebarId = `catalog-sidebar-${useId().replaceAll(':', '')}`;
+  const questionsTitleId = `${sidebarId}-questions-title`;
+  const blocksTitleId = `${sidebarId}-blocks-title`;
+  const instructionsId = `${sidebarId}-instructions`;
+  const sidebarRef = useRef(null);
+  const toggleRef = useRef(null);
+  const closeRef = useRef(null);
+  const shouldMoveFocusRef = useRef(false);
+  const requestControllersRef = useRef(new Set());
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches);
+  const [isOpen, setIsOpen] = useState(() => defaultOpen ?? !(typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches));
   const [questions, setQuestions] = useState([]);
   const [blocks, setBlocks] = useState([]);
-
   const [questionSearch, setQuestionSearch] = useState('');
   const [blockSearch, setBlockSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-
+  const [questionError, setQuestionError] = useState('');
+  const [blockError, setBlockError] = useState('');
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isLoadingBlocks, setIsLoadingBlocks] = useState(false);
+  const [hasLoadedQuestions, setHasLoadedQuestions] = useState(false);
+  const [hasLoadedBlocks, setHasLoadedBlocks] = useState(false);
+  const [questionPage, setQuestionPage] = useState(0);
+  const [blockPage, setBlockPage] = useState(0);
+  const [questionTotal, setQuestionTotal] = useState(0);
+  const [blockTotal, setBlockTotal] = useState(0);
+  const [pendingAction, setPendingAction] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  const [pages, setPages] = useState({ q: 0, b: 0 });
-  const [totals, setTotals] = useState({ q: 0, b: 0 });
+  const availableQuestionTypes = useMemo(() => {
+    if (!allowedQuestionTypes) return QUESTION_TYPES;
+    const allowedTypes = new Set(allowedQuestionTypes);
+    return QUESTION_TYPES.filter((type) => allowedTypes.has(type.id));
+  }, [allowedQuestionTypes]);
+
+  const createRequestController = useCallback(() => {
+    const controller = new AbortController();
+    requestControllersRef.current.add(controller);
+    return controller;
+  }, []);
+
+  const openSidebar = useCallback(() => {
+    shouldMoveFocusRef.current = true;
+    setIsOpen(true);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    shouldMoveFocusRef.current = true;
+    setIsOpen(false);
+  }, []);
+
+  const loadQuestions = useCallback(async (page = 0) => {
+    const controller = createRequestController();
+    setIsLoadingQuestions(true);
+    setQuestionError('');
+
+    try {
+      const response = await getCatalogQuestionsForBuilder({ page, size: 10, signal: controller.signal });
+      const items = Array.isArray(response) ? response : response?.content ?? [];
+      setQuestions((current) => page === 0 ? items : [...current, ...items]);
+      setQuestionTotal(response?.totalElements ?? items.length);
+      setQuestionPage(page);
+      setHasLoadedQuestions(true);
+    } catch (error) {
+      if (error.name !== 'AbortError') setQuestionError(error.message || 'No se han podido cargar las preguntas del catálogo.');
+    } finally {
+      requestControllersRef.current.delete(controller);
+      if (!controller.signal.aborted) setIsLoadingQuestions(false);
+    }
+  }, [createRequestController]);
+
+  const loadBlocks = useCallback(async (page = 0) => {
+    const controller = createRequestController();
+    setIsLoadingBlocks(true);
+    setBlockError('');
+
+    try {
+      const response = await getCatalogBlocks({ page, size: 10, signal: controller.signal });
+      const items = Array.isArray(response) ? response : response?.content ?? [];
+      setBlocks((current) => page === 0 ? items : [...current, ...items]);
+      setBlockTotal(response?.totalElements ?? items.length);
+      setBlockPage(page);
+      setHasLoadedBlocks(true);
+    } catch (error) {
+      if (error.name !== 'AbortError') setBlockError(error.message || 'No se han podido cargar los bloques del catálogo.');
+    } finally {
+      requestControllersRef.current.delete(controller);
+      if (!controller.signal.aborted) setIsLoadingBlocks(false);
+    }
+  }, [createRequestController]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    if (showQuestions && questions.length === 0) loadQuestions(0);
-    if (showBlocks && blocks.length === 0) loadBlocks(0);
+    if (isOpen && showQuestions && !hasLoadedQuestions && !isLoadingQuestions && !questionError) loadQuestions();
+  }, [isOpen, showQuestions, hasLoadedQuestions, isLoadingQuestions, questionError, loadQuestions]);
+
+  useEffect(() => {
+    if (isOpen && showBlocks && !hasLoadedBlocks && !isLoadingBlocks && !blockError) loadBlocks();
+  }, [isOpen, showBlocks, hasLoadedBlocks, isLoadingBlocks, blockError, loadBlocks]);
+
+  useEffect(() => {
+    if (typeFilter && !availableQuestionTypes.some((type) => type.id === typeFilter)) setTypeFilter('');
+  }, [availableQuestionTypes, typeFilter]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 700px)');
+    const handleChange = (event) => setIsMobile(event.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => () => {
+    requestControllersRef.current.forEach((controller) => controller.abort());
+    requestControllersRef.current.clear();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldMoveFocusRef.current) return;
+    const animationFrame = window.requestAnimationFrame(() => {
+      (isOpen ? closeRef : toggleRef).current?.focus();
+      shouldMoveFocusRef.current = false;
+    });
+    return () => window.cancelAnimationFrame(animationFrame);
   }, [isOpen]);
 
-  const loadQuestions = async (page) => {
-    try {
-      setIsLoadingQuestions(true);
-      const res = await getCatalogQuestions({ page, size: 10 });
-      setQuestions((prev) => (page === 0 ? res.content : [...prev, ...res.content]));
-      setTotals((prev) => ({ ...prev, q: res.totalElements }));
-      setPages((prev) => ({ ...prev, q: page }));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoadingQuestions(false);
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeSidebar();
+        return;
+      }
+
+      if (!isMobile || event.key !== 'Tab') return;
+      const focusableElements = [...sidebarRef.current.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')];
+      if (focusableElements.length === 0) return;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements.at(-1);
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
     }
-  };
 
-  const loadBlocks = async (page) => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [closeSidebar, isMobile, isOpen]);
+
+  const filteredQuestions = useMemo(() => {
+    const search = questionSearch.trim().toLocaleLowerCase('es');
+    const visibleTypes = new Set(availableQuestionTypes.map((type) => type.id));
+    return questions.filter((question) => {
+      const text = question.statement || '';
+      return visibleTypes.has(question.questionType) && (!search || text.toLocaleLowerCase('es').includes(search)) && (!typeFilter || question.questionType === typeFilter);
+    });
+  }, [availableQuestionTypes, questionSearch, questions, typeFilter]);
+
+  const filteredBlocks = useMemo(() => {
+    const search = blockSearch.trim().toLocaleLowerCase('es');
+    return blocks.filter((block) => !search || (block.name || block.title || '').toLocaleLowerCase('es').includes(search));
+  }, [blockSearch, blocks]);
+
+  function handleDragStart(event, type, item) {
+    const payload = JSON.stringify(type === 'QUESTION' ? { type: 'CATALOG_QUESTION', question: item } : { type: 'CATALOG_BLOCK', block: item });
+    event.dataTransfer.setData('application/x-formquid-catalog-item', payload);
+    event.dataTransfer.setData('text/plain', payload);
+    event.dataTransfer.effectAllowed = 'copy';
+    event.currentTarget.classList.add('dragging');
+  }
+
+  async function handleAdd(type, item) {
+    const callback = type === 'QUESTION' ? onAddQuestion : onAddBlock;
+    if (!callback) return;
+    const actionId = `${type}-${item.id}`;
+    setPendingAction(actionId);
+    setActionError('');
+
     try {
-      setIsLoadingBlocks(true);
-      const res = await getCatalogBlocks({ page, size: 10 });
-      setBlocks((prev) => (page === 0 ? res.content : [...prev, ...res.content]));
-      setTotals((prev) => ({ ...prev, b: res.totalElements }));
-      setPages((prev) => ({ ...prev, b: page }));
-    } catch (e) {
-      console.error(e);
+      await callback(item);
+    } catch (error) {
+      setActionError(error.message || 'No se ha podido añadir el elemento.');
     } finally {
-      setIsLoadingBlocks(false);
+      setPendingAction('');
     }
-  };
+  }
 
-  const filteredQuestions = questions.filter((q) => {
-    const matchesSearch = (q.statement || q.catalogName || '').toLowerCase().includes(questionSearch.toLowerCase());
-    const matchesType = !typeFilter || q.questionType === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  function renderQuestionList() {
+    if (isLoadingQuestions && questions.length === 0) return <Skeleton variant="list" count={4} hasActions={false} />;
+    if (questionError && questions.length === 0) {
+      return (
+        <div className="catalog-error" role="alert">
+          <p>{questionError}</p>
+          <button type="button" onClick={() => loadQuestions()}>Reintentar</button>
+        </div>
+      );
+    }
+    if (filteredQuestions.length === 0) return <p className="catalog-empty" role="status">No se han encontrado preguntas que coincidan con la búsqueda o el filtro seleccionado.</p>;
 
-  const filteredBlocks = blocks.filter((b) => {
-    return (b.name || '').toLowerCase().includes(blockSearch.toLowerCase());
-  });
+    return (
+      <div className="catalog-list">
+        {filteredQuestions.map((question) => {
+          const typeConfig = QUESTION_TYPES.find((type) => type.id === question.questionType) ?? QUESTION_TYPES[0];
+          const Icon = typeConfig.icon;
+          const questionName = question.statement || 'Pregunta sin enunciado';
+          const actionId = `QUESTION-${question.id}`;
+
+          return (
+            <article key={question.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'QUESTION', question)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
+              <span className="catalog-icon" style={{ color: typeConfig.color, borderColor: typeConfig.color }} aria-hidden="true"><Icon /></span>
+              <div className="catalog-info"><h4>{questionName}</h4><span>{typeConfig.title}</span></div>
+              {onAddQuestion && (
+                <button type="button" className="catalog-action" aria-label={`Añadir pregunta: ${questionName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('QUESTION', question)}>
+                  <MdAdd aria-hidden="true" />
+                </button>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function renderBlockList() {
+    if (isLoadingBlocks && blocks.length === 0) return <Skeleton variant="list" count={2} hasActions={false} />;
+    if (blockError && blocks.length === 0) {
+      return (
+        <div className="catalog-error" role="alert">
+          <p>{blockError}</p>
+          <button type="button" onClick={() => loadBlocks()}>Reintentar</button>
+        </div>
+      );
+    }
+    if (filteredBlocks.length === 0) return <p className="catalog-empty" role="status">No se han encontrado bloques que coincidan con la búsqueda.</p>;
+
+    return (
+      <div className="catalog-list">
+        {filteredBlocks.map((block) => {
+          const blockName = block.name || block.title || 'Bloque sin título';
+          const actionId = `BLOCK-${block.id}`;
+
+          return (
+            <article key={block.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'BLOCK', block)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
+              <span className="catalog-icon catalog-block-icon" aria-hidden="true"><MdLayers /></span>
+              <div className="catalog-info"><h4>{blockName}</h4><span>{block.questions?.length ?? block.questionCount ?? 0} preguntas</span></div>
+              {(onAddBlock || onPreviewBlock) && (
+                <div className="catalog-actions">
+                  {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
+                  {onPreviewBlock && <button type="button" className="catalog-action" aria-label={`Ver detalles del bloque: ${blockName}`} onClick={() => onPreviewBlock(block)}><MdOutlineVisibility aria-hidden="true" /></button>}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <>
-      <button
-        type="button"
-        className={`sidebar-dock-btn left ${isOpen ? 'hidden' : ''}`}
-        onClick={() => setIsOpen(true)}
-        aria-label="Abrir catálogo"
-      >
-        <MdChevronRight />
+      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'hidden' : ''}`} aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
+        <MdLayers aria-hidden="true" /><span>CATÁLOGO</span><MdChevronRight aria-hidden="true" />
       </button>
 
-      <aside className={`catalog-sidebar-drawer left ${isOpen ? 'open' : ''}`}>
-        <header className="sidebar-header-green">
+      <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
+
+      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''}`} aria-label="Catálogo de elementos" aria-hidden={!isOpen} aria-modal={isMobile && isOpen ? 'true' : undefined} role={isMobile ? 'dialog' : undefined}>
+        <header className="catalog-header">
           <h2>CATÁLOGO DE ELEMENTOS</h2>
-          <button 
-            type="button" 
-            className="btn-toggle-drawer" 
-            onClick={() => setIsOpen(false)} 
-            aria-label="Ocultar catálogo"
-          >
-            <MdChevronLeft />
-          </button>
+          <button ref={closeRef} type="button" className="catalog-close" aria-label="Cerrar catálogo de elementos" aria-controls={sidebarId} onClick={closeSidebar}><MdChevronLeft aria-hidden="true" /></button>
         </header>
 
-        <div className="sidebar-scrollable-content">
-          {showQuestions && (
-            <section className="sidebar-section">
-              <h3 className="sidebar-section-title">PREGUNTAS FIJAS:</h3>
+        <div className="catalog-content">
+          <p id={instructionsId} className="sr-only">Utiliza el botón de añadir para colocar el elemento al final o arrástralo hasta la posición deseada en el constructor.</p>
+          {actionError && <p className="catalog-action-error" role="alert">{actionError}</p>}
 
-              <div className="sidebar-filter-row">
-                <div className="sidebar-search-wrapper">
-                  <MdSearch className="search-icon-inside" />
-                  <input
-                    type="text"
-                    placeholder="Buscar preguntas..."
-                    value={questionSearch}
-                    onChange={(e) => setQuestionSearch(e.target.value)}
-                  />
-                </div>
-                <div className="sidebar-select-wrapper">
-                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          {showQuestions && availableQuestionTypes.length > 0 && (
+            <section className="catalog-section" aria-labelledby={questionsTitleId}>
+              <h3 id={questionsTitleId} className="catalog-title">PREGUNTAS FIJAS:</h3>
+              <div className="catalog-filters">
+                <div className="catalog-search"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar preguntas fijas" placeholder="Buscar preguntas..." value={questionSearch} onChange={(event) => setQuestionSearch(event.target.value)} /></div>
+                <div className="catalog-select">
+                  <select aria-label="Filtrar preguntas por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
                     <option value="">Filtrar por tipo</option>
-                    {QUESTION_TYPES.map((t) => (
-                      <option key={t.id} value={t.id}>{t.title}</option>
-                    ))}
+                    {availableQuestionTypes.map((type) => <option key={type.id} value={type.id}>{type.title}</option>)}
                   </select>
-                  <MdKeyboardArrowDown className="select-arrow-icon" />
+                  <MdKeyboardArrowDown aria-hidden="true" />
                 </div>
               </div>
-
-              {isLoadingQuestions && questions.length === 0 ? (
-                <Skeleton variant="list" count={4} hasActions={false} />
-              ) : (
-                <div className="sidebar-cards-list">
-                  {filteredQuestions.map((q) => {
-                    const typeConfig = QUESTION_TYPES.find((t) => t.id === q.questionType) || QUESTION_TYPES[0];
-                    const Icon = typeConfig.icon;
-                    return (
-                      <article key={q.id} className="sidebar-item-card">
-                        <span 
-                          className="item-icon-box"
-                          style={{ color: typeConfig.color, borderColor: typeConfig.color }}
-                        >
-                          <Icon />
-                        </span>
-                        <div className="item-text-wrapper">
-                          <h4>{q.statement || q.catalogName}</h4>
-                          <span className="item-type-label">{typeConfig.title}</span>
-                        </div>
-                        <button 
-                          type="button" 
-                          className="btn-add-item-action" 
-                          onClick={() => onAddQuestion && onAddQuestion(q)}
-                          aria-label="Añadir pregunta"
-                        >
-                          <MdAdd />
-                        </button>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-
-              {questions.length < totals.q && (
-                <button
-                  type="button"
-                  className="btn-show-more-full"
-                  disabled={isLoadingQuestions}
-                  onClick={() => loadQuestions(pages.q + 1)}
-                >
-                  <span>{isLoadingQuestions ? 'Cargando...' : 'Ver más preguntas'}</span>
-                  <MdKeyboardArrowDown />
-                </button>
-              )}
+              {renderQuestionList()}
+              {questions.length < questionTotal && <button type="button" className="catalog-more" disabled={isLoadingQuestions} aria-busy={isLoadingQuestions} onClick={() => loadQuestions(questionPage + 1)}><span>{isLoadingQuestions ? 'Cargando...' : 'Ver más preguntas'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
 
           {showBlocks && (
-            <section className="sidebar-section">
-              <h3 className="sidebar-section-title">BLOQUES DE PREGUNTAS:</h3>
-
-              <div className="sidebar-search-wrapper single-field">
-                <MdSearch className="search-icon-inside" />
-                <input
-                  type="text"
-                  placeholder="Buscar bloques..."
-                  value={blockSearch}
-                  onChange={(e) => setBlockSearch(e.target.value)}
-                />
-              </div>
-
-              {isLoadingBlocks && blocks.length === 0 ? (
-                <Skeleton variant="list" count={2} hasActions={false} />
-              ) : (
-                <div className="sidebar-cards-list">
-                  {filteredBlocks.map((b) => (
-                    <article key={b.id} className="sidebar-item-card">
-                      <span className="item-icon-box teal-block-icon">
-                        <MdAdd />
-                      </span>
-                      <div className="item-text-wrapper">
-                        <h4>{b.name}</h4>
-                        <span className="item-type-label">{b.questionCount || 0} preguntas</span>
-                      </div>
-                      <div className="item-actions-double">
-                        <button 
-                          type="button" 
-                          className="btn-add-item-action"
-                          onClick={() => onAddBlock && onAddBlock(b)}
-                          aria-label="Añadir bloque"
-                        >
-                          <MdAdd />
-                        </button>
-                        <button 
-                          type="button" 
-                          className="btn-preview-item-action"
-                          onClick={() => onPreviewBlock && onPreviewBlock(b)}
-                          aria-label="Ver bloque"
-                        >
-                          <MdOutlineVisibility />
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
+            <section className="catalog-section" aria-labelledby={blocksTitleId}>
+              <h3 id={blocksTitleId} className="catalog-title">BLOQUES DE PREGUNTAS:</h3>
+              <div className="catalog-search catalog-search-full"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar bloques de preguntas" placeholder="Buscar bloques..." value={blockSearch} onChange={(event) => setBlockSearch(event.target.value)} /></div>
+              {renderBlockList()}
+              {blocks.length < blockTotal && <button type="button" className="catalog-more" disabled={isLoadingBlocks} aria-busy={isLoadingBlocks} onClick={() => loadBlocks(blockPage + 1)}><span>{isLoadingBlocks ? 'Cargando...' : 'Ver más bloques'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
         </div>
       </aside>
+
+      <button type="button" className={`catalog-backdrop ${isOpen ? 'visible' : ''}`} aria-hidden="true" tabIndex={-1} onClick={closeSidebar} />
     </>
   );
 }

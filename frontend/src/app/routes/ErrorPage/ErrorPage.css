@@ -1,7 +1,7 @@
 .error-page {
   width: 100%;
   min-height: 100vh;
-  padding: 40px 24px;
+  padding: 32px 40px 60px;
   box-sizing: border-box;
   background-color: var(--color-background);
   display: flex;
@@ -40,7 +40,7 @@
 }
 
 .error-page-status strong {
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-weight: 700;
 }
 
