@@ -1,9 +1,11 @@
 package com.formquid.elementrequest.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formquid.block.dto.CreateBlockItemRequestDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.service.BlockService;
 import com.formquid.common.exception.ApiException;
+import com.formquid.content.entity.ContentItemType;
 import com.formquid.elementrequest.dto.ApproveElementRequestResponseDto;
 import com.formquid.elementrequest.dto.CreateElementRequestDto;
 import com.formquid.elementrequest.dto.ElementRequestResponseDto;
@@ -25,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Gestiona la creación, validación y resolución de solicitudes de elementos del catálogo.
+ * Gestiona las solicitudes de creación de elementos del catálogo.
  */
 @Service
 @RequiredArgsConstructor
@@ -144,29 +146,38 @@ public class ElementRequestService {
     }
 
     private void validateBlock(CreateElementRequestDto request) {
-        CreateBlockRequestDto dto = objectMapper.convertValue(
-            request.requestPayload(),
-            CreateBlockRequestDto.class
-        );
-        if (dto.name() == null || dto.name().isBlank() || dto.questions() == null || dto.questions().isEmpty()) {
-            throw new ApiException(
-                HttpStatus.BAD_REQUEST,
-                "Un bloque solicitado necesita nombre y al menos una pregunta"
-            );
+        CreateBlockRequestDto dto = objectMapper.convertValue(request.requestPayload(), CreateBlockRequestDto.class);
+        if (dto.name() == null || dto.name().isBlank() || dto.items() == null || dto.items().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque solicitado necesita nombre y al menos una pregunta");
         }
-        dto.questions().forEach(question -> {
-            if (question == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene una pregunta nula");
+        boolean hasQuestion = false;
+        for (CreateBlockItemRequestDto item : dto.items()) {
+            if (item == null || item.itemType() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene un elemento inválido");
             }
-            questionService.validateQuestionDraft(question.question());
-        });
+            if (item.itemType() == ContentItemType.QUESTION) {
+                if (item.question() == null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene una pregunta nula");
+                }
+                questionService.validateQuestionDraft(item.question());
+                hasQuestion = true;
+                continue;
+            }
+            if (item.itemType() == ContentItemType.TEXT) {
+                if (item.textBody() == null || item.textBody().isBlank()) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene un texto vacío");
+                }
+                continue;
+            }
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque no puede contener otros bloques");
+        }
+        if (!hasQuestion) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque solicitado debe contener al menos una pregunta");
+        }
     }
 
     private void validateTemplate(CreateElementRequestDto request) {
-        CreateTemplateRequestDto dto = objectMapper.convertValue(
-            request.requestPayload(),
-            CreateTemplateRequestDto.class
-        );
+        CreateTemplateRequestDto dto = objectMapper.convertValue(request.requestPayload(), CreateTemplateRequestDto.class);
         if (dto.title() == null || dto.title().isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla solicitada necesita título");
         }

@@ -1,9 +1,9 @@
 package com.formquid.block.dto;
 
-import com.formquid.content.dto.CreateQuestionItemRequestDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
@@ -13,6 +13,6 @@ import java.util.List;
 public record CreateBlockRequestDto(
     @NotBlank String name,
     String description,
-    @NotEmpty List<@Valid CreateQuestionItemRequestDto> questions
+    @NotEmpty List<@NotNull @Valid CreateBlockItemRequestDto> items
 ) {
 }

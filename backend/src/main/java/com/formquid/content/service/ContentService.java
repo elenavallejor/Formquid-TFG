@@ -225,6 +225,20 @@ public class ContentService {
         return toResponse(savedItem);
     }
 
+    @Transactional
+    public ContentItemResponseDto addTextToBlock(Block block, CreateTextItemRequestDto dto) {
+        if (block.getScope() == BlockScope.SNAPSHOT) {
+            throw new ApiException(HttpStatus.CONFLICT, "No se puede modificar el contenido interno de un bloque copiado");
+        }
+        ContentItem item = ContentItem.builder()
+            .parentBlock(block)
+            .itemType(ContentItemType.TEXT)
+            .position(dto.position())
+            .textBody(dto.textBody().trim())
+            .build();
+        return toResponse(contentItemRepository.save(item));
+    }
+
     public Block copyExistingBlock(Block source, ContentItem parentItem, User creator) {
         Block copy = Block.builder()
             .parentItem(parentItem)
@@ -238,8 +252,17 @@ public class ContentService {
 
         List<ContentItem> sourceItems = contentItemRepository.findByParentBlockIdOrderByPositionAsc(source.getId());
         for (ContentItem sourceItem : sourceItems) {
+            if (sourceItem.getItemType() == ContentItemType.TEXT) {
+                contentItemRepository.save(ContentItem.builder()
+                    .parentBlock(savedBlock)
+                    .itemType(ContentItemType.TEXT)
+                    .position(sourceItem.getPosition())
+                    .textBody(sourceItem.getTextBody())
+                    .build());
+                continue;
+            }
             if (sourceItem.getItemType() != ContentItemType.QUESTION) {
-                throw new ApiException(HttpStatus.CONFLICT, "Los bloques solo pueden contener preguntas");
+                throw new ApiException(HttpStatus.CONFLICT, "El bloque contiene un tipo de elemento no permitido");
             }
             Question sourceQuestion = questionRepository.findByParentItemId(sourceItem.getId())
                 .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "El bloque contiene un elemento sin pregunta asociada"));

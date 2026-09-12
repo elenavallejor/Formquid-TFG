@@ -452,13 +452,6 @@
   background: var(--color-surface-muted);
 }
 
-.builder-modal-error {
-  margin: 0;
-  color: var(--color-error);
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .btn-modal-save {
   margin-left: auto;
   padding: 10px 20px;

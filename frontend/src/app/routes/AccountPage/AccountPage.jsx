@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MdChevronRight, MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
 import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
+import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { loadUserData } from '../../../utils/loadUserData.js';
 import { GENDER_OPTIONS, hasAccountFormErrors, hasFormChanges, validateEmailChange, validatePasswordChange, validatePersonalInfo } from '../../../utils/accountFormUtils.js';
-
 import './AccountPage.css';
 
 /**
@@ -16,7 +16,7 @@ import './AccountPage.css';
 export function AccountPage() {
   const navigate = useNavigate();
   const redirectTimeoutRef = useRef(null);
-  const { setAuthenticatedUser, setUser } = useAuth();
+  const { setAuthenticatedUser, clearAuthentication } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,20 +66,6 @@ export function AccountPage() {
 
   const togglePasswordVisibility = (field) => {
     setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const syncAuthUser = (response) => {
-    const updatedUser = response?.user ?? response;
-    if (!updatedUser) return;
-
-    if (setAuthenticatedUser) {
-      setAuthenticatedUser(updatedUser);
-      return;
-    }
-
-    if (setUser) {
-      setUser((prev) => ({ ...prev, ...updatedUser }));
-    }
   };
 
   const handlePersonalChange = (event) => {
@@ -132,6 +118,7 @@ export function AccountPage() {
 
   const handleInitDelete = () => {
     if (hasBlockingSurveys) return;
+
     setGlobalError('');
     setGlobalSuccess('');
     setPwdModalError('');
@@ -148,10 +135,10 @@ export function AccountPage() {
     try {
       if (pendingAction === 'DELETE') {
         await deleteMyAccount({ currentPassword });
-        if (setUser) setUser(null);
+        clearAuthentication();
         setPendingAction(null);
         setIsPwdModalOpen(false);
-        navigate('/login', { replace: true });
+        navigate('/inicia-sesion', { replace: true });
         return;
       }
 
@@ -202,7 +189,7 @@ export function AccountPage() {
           });
         }
 
-        syncAuthUser(updatedUser);
+        setAuthenticatedUser(updatedUser);
         setPendingAction(null);
         setIsPwdModalOpen(false);
         setGlobalSuccess('Los cambios se han guardado correctamente. Redirigiendo al panel...');
@@ -220,6 +207,7 @@ export function AccountPage() {
 
   const handleClosePasswordModal = () => {
     if (isSaving) return;
+
     setIsPwdModalOpen(false);
     setPendingAction(null);
     setPwdModalError('');
@@ -258,12 +246,7 @@ export function AccountPage() {
           </button>
         </header>
 
-        {globalError && (
-          <div className="account-error-banner" role="alert">
-            <MdOutlineWarningAmber className="error-banner-icon" aria-hidden="true" />
-            <span>{globalError}</span>
-          </div>
-        )}
+        <ErrorMessage message={globalError} onClose={() => setGlobalError('')} />
 
         {globalSuccess && (
           <div className="account-success-banner" role="status">
@@ -384,7 +367,14 @@ export function AccountPage() {
         </form>
       </div>
 
-      <PasswordConfirmModal isOpen={isPwdModalOpen} onClose={handleClosePasswordModal} onConfirm={handleConfirmPasswordModal} isProcessing={isSaving} errorMessage={pwdModalError} />
+      <PasswordConfirmModal
+        isOpen={isPwdModalOpen}
+        onClose={handleClosePasswordModal}
+        onConfirm={handleConfirmPasswordModal}
+        isProcessing={isSaving}
+        errorMessage={pwdModalError}
+        onClearError={() => setPwdModalError('')}
+      />
     </main>
   );
 }

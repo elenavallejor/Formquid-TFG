@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, MdOutlineVisibility, MdSearch } from 'react-icons/md';
 
+import { createPortal } from 'react-dom';
+
 import { getCatalogBlocks, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
@@ -18,12 +20,17 @@ export function CatalogSidebar({
   onAddBlock,
   onPreviewBlock,
   defaultOpen,
+  headerSelector = '#main-header',
 }) {
   const sidebarId = `catalog-sidebar-${useId().replaceAll(':', '')}`;
   const questionsTitleId = `${sidebarId}-questions-title`;
   const blocksTitleId = `${sidebarId}-blocks-title`;
   const instructionsId = `${sidebarId}-instructions`;
   const sidebarRef = useRef(null);
+  const overlayRef = useRef(null);
+  const pendingActionRef = useRef(false);
+  const questionRequestRef = useRef(null);
+  const blockRequestRef = useRef(null);
   const toggleRef = useRef(null);
   const closeRef = useRef(null);
   const shouldMoveFocusRef = useRef(false);
@@ -71,42 +78,54 @@ export function CatalogSidebar({
   }, []);
 
   const loadQuestions = useCallback(async (page = 0) => {
+    if (questionRequestRef.current && !questionRequestRef.current.signal.aborted) return;
     const controller = createRequestController();
+    questionRequestRef.current = controller;
     setIsLoadingQuestions(true);
     setQuestionError('');
 
     try {
       const response = await getCatalogQuestionsForBuilder({ page, size: 10, signal: controller.signal });
+      if (controller.signal.aborted) return;
       const items = Array.isArray(response) ? response : response?.content ?? [];
       setQuestions((current) => page === 0 ? items : [...current, ...items]);
       setQuestionTotal(response?.totalElements ?? items.length);
       setQuestionPage(page);
       setHasLoadedQuestions(true);
     } catch (error) {
-      if (error.name !== 'AbortError') setQuestionError(error.message || 'No se han podido cargar las preguntas del catálogo.');
+      if (!controller.signal.aborted && error?.name !== 'AbortError') setQuestionError(error?.message || 'No se han podido cargar las preguntas del catálogo.');
     } finally {
       requestControllersRef.current.delete(controller);
-      if (!controller.signal.aborted) setIsLoadingQuestions(false);
+      if (questionRequestRef.current === controller) {
+        questionRequestRef.current = null;
+        setIsLoadingQuestions(false);
+      }
     }
   }, [createRequestController]);
 
   const loadBlocks = useCallback(async (page = 0) => {
+    if (blockRequestRef.current && !blockRequestRef.current.signal.aborted) return;
     const controller = createRequestController();
+    blockRequestRef.current = controller;
     setIsLoadingBlocks(true);
     setBlockError('');
 
     try {
       const response = await getCatalogBlocks({ page, size: 10, signal: controller.signal });
+      if (controller.signal.aborted) return;
       const items = Array.isArray(response) ? response : response?.content ?? [];
       setBlocks((current) => page === 0 ? items : [...current, ...items]);
       setBlockTotal(response?.totalElements ?? items.length);
       setBlockPage(page);
       setHasLoadedBlocks(true);
     } catch (error) {
-      if (error.name !== 'AbortError') setBlockError(error.message || 'No se han podido cargar los bloques del catálogo.');
+      if (!controller.signal.aborted && error?.name !== 'AbortError') setBlockError(error?.message || 'No se han podido cargar los bloques del catálogo.');
     } finally {
       requestControllersRef.current.delete(controller);
-      if (!controller.signal.aborted) setIsLoadingBlocks(false);
+      if (blockRequestRef.current === controller) {
+        blockRequestRef.current = null;
+        setIsLoadingBlocks(false);
+      }
     }
   }, [createRequestController]);
 
@@ -135,9 +154,45 @@ export function CatalogSidebar({
   }, []);
 
   useEffect(() => {
+    const host = overlayRef.current;
+    if (!host) return;
+    const header = document.querySelector(headerSelector);
+    let frame = 0;
+    function updatePosition() {
+      frame = 0;
+      const top = Math.max(0, Math.min(header?.getBoundingClientRect().bottom ?? 0, window.innerHeight));
+      host.style.setProperty('--catalog-top', `${top}px`);
+    }
+    function scheduleUpdate() {
+      if (!frame) frame = window.requestAnimationFrame(updatePosition);
+    }
+    const observer = new ResizeObserver(scheduleUpdate);
+    if (header) observer.observe(header);
+    window.addEventListener('scroll', scheduleUpdate, { passive: true, capture: true });
+    window.addEventListener('resize', scheduleUpdate);
+    window.visualViewport?.addEventListener('resize', scheduleUpdate);
+    updatePosition();
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', scheduleUpdate, true);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.visualViewport?.removeEventListener('resize', scheduleUpdate);
+    };
+  }, [headerSelector]);
+
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus({ preventScroll: true });
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isMobile, isOpen]);
+
+  useEffect(() => {
     if (!shouldMoveFocusRef.current) return;
     const animationFrame = window.requestAnimationFrame(() => {
-      (isOpen ? closeRef : toggleRef).current?.focus();
+      (isOpen ? closeRef : toggleRef).current?.focus({ preventScroll: true });
       shouldMoveFocusRef.current = false;
     });
     return () => window.cancelAnimationFrame(animationFrame);
@@ -147,7 +202,8 @@ export function CatalogSidebar({
     if (!isOpen) return undefined;
 
     function handleKeyDown(event) {
-      if (event.key === 'Escape') {
+      if (event.defaultPrevented) return;
+      if (event.key === 'Escape' && sidebarRef.current?.contains(event.target)) {
         event.preventDefault();
         closeSidebar();
         return;
@@ -159,10 +215,10 @@ export function CatalogSidebar({
       const firstElement = focusableElements[0];
       const lastElement = focusableElements.at(-1);
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (event.shiftKey && (document.activeElement === firstElement || !sidebarRef.current.contains(document.activeElement))) {
         event.preventDefault();
         lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
+      } else if (!event.shiftKey && (document.activeElement === lastElement || !sidebarRef.current.contains(document.activeElement))) {
         event.preventDefault();
         firstElement.focus();
       }
@@ -196,16 +252,19 @@ export function CatalogSidebar({
 
   async function handleAdd(type, item) {
     const callback = type === 'QUESTION' ? onAddQuestion : onAddBlock;
-    if (!callback) return;
+    if (!callback || pendingActionRef.current) return;
+    pendingActionRef.current = true;
     const actionId = `${type}-${item.id}`;
     setPendingAction(actionId);
     setActionError('');
 
     try {
       await callback(item);
+      if (isMobile) closeSidebar();
     } catch (error) {
-      setActionError(error.message || 'No se ha podido añadir el elemento.');
+      setActionError(error?.message || 'No se ha podido añadir el elemento.');
     } finally {
+      pendingActionRef.current = false;
       setPendingAction('');
     }
   }
@@ -267,7 +326,7 @@ export function CatalogSidebar({
           return (
             <article key={block.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'BLOCK', block)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
               <span className="catalog-icon catalog-block-icon" aria-hidden="true"><MdLayers /></span>
-              <div className="catalog-info"><h4>{blockName}</h4><span>{block.questions?.length ?? block.questionCount ?? 0} preguntas</span></div>
+              <div className="catalog-info"><h4>{blockName}</h4><span>{block.questionCount ?? block.questions?.length ?? block.items?.filter((item) => item.itemType !== 'TEXT').length ?? 0} preguntas</span></div>
               {(onAddBlock || onPreviewBlock) && (
                 <div className="catalog-actions">
                   {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
@@ -283,13 +342,14 @@ export function CatalogSidebar({
 
   return (
     <>
-      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'hidden' : ''}`} aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
+      <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
+      {typeof document !== 'undefined' && createPortal(
+        <div ref={overlayRef} className="catalog-overlay-root">
+      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'catalog-toggle-hidden' : ''}`} aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
         <MdLayers aria-hidden="true" /><span>CATÁLOGO</span><MdChevronRight aria-hidden="true" />
       </button>
 
-      <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
-
-      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''}`} aria-label="Catálogo de elementos" aria-hidden={!isOpen} aria-modal={isMobile && isOpen ? 'true' : undefined} role={isMobile ? 'dialog' : undefined}>
+      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''}`} aria-label="Catálogo de elementos" aria-hidden={!isOpen} inert={!isOpen} aria-modal={isMobile && isOpen ? 'true' : undefined} role={isMobile ? 'dialog' : undefined}>
         <header className="catalog-header">
           <h2>CATÁLOGO DE ELEMENTOS</h2>
           <button ref={closeRef} type="button" className="catalog-close" aria-label="Cerrar catálogo de elementos" aria-controls={sidebarId} onClick={closeSidebar}><MdChevronLeft aria-hidden="true" /></button>
@@ -313,6 +373,7 @@ export function CatalogSidebar({
                 </div>
               </div>
               {renderQuestionList()}
+              {questionError && questions.length > 0 && <p className="catalog-action-error" role="alert">{questionError}</p>}
               {questions.length < questionTotal && <button type="button" className="catalog-more" disabled={isLoadingQuestions} aria-busy={isLoadingQuestions} onClick={() => loadQuestions(questionPage + 1)}><span>{isLoadingQuestions ? 'Cargando...' : 'Ver más preguntas'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
@@ -322,6 +383,7 @@ export function CatalogSidebar({
               <h3 id={blocksTitleId} className="catalog-title">BLOQUES DE PREGUNTAS:</h3>
               <div className="catalog-search catalog-search-full"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar bloques de preguntas" placeholder="Buscar bloques..." value={blockSearch} onChange={(event) => setBlockSearch(event.target.value)} /></div>
               {renderBlockList()}
+              {blockError && blocks.length > 0 && <p className="catalog-action-error" role="alert">{blockError}</p>}
               {blocks.length < blockTotal && <button type="button" className="catalog-more" disabled={isLoadingBlocks} aria-busy={isLoadingBlocks} onClick={() => loadBlocks(blockPage + 1)}><span>{isLoadingBlocks ? 'Cargando...' : 'Ver más bloques'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
@@ -329,6 +391,9 @@ export function CatalogSidebar({
       </aside>
 
       <button type="button" className={`catalog-backdrop ${isOpen ? 'visible' : ''}`} aria-hidden="true" tabIndex={-1} onClick={closeSidebar} />
+        </div>,
+        document.body,
+      )}
     </>
   );
 }

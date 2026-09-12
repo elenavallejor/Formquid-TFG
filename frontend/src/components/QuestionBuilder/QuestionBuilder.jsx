@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MdClose, MdAdd, MdDeleteOutline, MdOutlineThumbDown, MdOutlineThumbUp } from 'react-icons/md';
 import { CHOICE_QUESTION_TYPES, QUESTION_TYPES, RANGE_QUESTION_TYPES, SCALE_DISPLAY_OPTIONS, getMatrixRowText, getOptionFactor, getOptionText, getQuestionBuilderValidationError, getScaleDisplayValue, parseIntegerValue, parseNumberValue } from '../../utils/questionBuilderUtils.js';
+import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
 import { Question } from '../Question/Question.jsx';
 
 import './QuestionBuilder.css';
@@ -9,7 +10,6 @@ export function QuestionBuilder({
   onChange,
   isCatalog = true,
   isModal = false,
-  isOpen = true,
   onClose,
   onSave,
   modalTitle = 'Configurar pregunta',
@@ -18,10 +18,15 @@ export function QuestionBuilder({
   const isTextQuestion = data.questionType === 'TEXT';
   const scaleDisplayType = getScaleDisplayValue(data);
   const isFixedVisualScale = scaleDisplayType === 'STARS' || scaleDisplayType === 'FACES';
+  const totalAvailable = (data.options || []).length + (data.hasOtherOption ? 1 : 0);
+
+  function updateData(nextData) {
+    if (modalError) setModalError('');
+    onChange(nextData);
+  }
 
   function handleField(field, value) {
-    if (modalError) setModalError('');
-    onChange({ ...data, [field]: value });
+    updateData({ ...data, [field]: value });
   }
 
   function handleModalSave() {
@@ -42,7 +47,7 @@ export function QuestionBuilder({
       nextData.evaluationDirection = 'NEUTRAL';
       nextData.evaluationWeight = null;
     }
-    onChange(nextData);
+    updateData(nextData);
   }
 
   function handleEvaluationDirection(evaluationDirection) {
@@ -59,7 +64,7 @@ export function QuestionBuilder({
       nextData.trueFactor = data.trueFactor === '' || data.trueFactor === null || data.trueFactor === undefined ? 1 : data.trueFactor;
       nextData.falseFactor = data.falseFactor === '' || data.falseFactor === null || data.falseFactor === undefined ? 0 : data.falseFactor;
     }
-    onChange(nextData);
+    updateData(nextData);
   }
 
   function handleScaleDisplayType(value) {
@@ -69,7 +74,7 @@ export function QuestionBuilder({
       nextData.maxValue = 5;
       nextData.step = 1;
     }
-    onChange(nextData);
+    updateData(nextData);
   }
 
   function handleOptionChange(index, field, value) {
@@ -432,41 +437,38 @@ export function QuestionBuilder({
               <div className="config-help-cell">Opciones seleccionables por el encuestado.</div>
             </div>
 
-            {data.questionType === 'MULTIPLE_CHOICE' && (() => {
-              const totalAvailable = (data.options || []).length + (data.hasOtherOption ? 1 : 0);
-              return (
-                <div className="config-grid-row">
-                  <div className="config-label-cell">Límites de selección:</div>
-                  <div className="config-interactive-cell limits-labeled-group">
-                    <div className="labeled-input-item">
-                      <span className="mini-top-label">Mínimo</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={data.maxSelections || totalAvailable || 1}
-                        placeholder="1"
-                        value={data.minSelections ?? ''}
-                        onChange={(event) => handleField('minSelections', parseIntegerValue(event.target.value))}
-                      />
-                    </div>
-                    <div className="labeled-input-item">
-                      <span className="mini-top-label">Máximo</span>
-                      <input
-                        type="number"
-                        min={data.minSelections || 1}
-                        max={totalAvailable || 1}
-                        placeholder={String(totalAvailable || 1)}
-                        value={data.maxSelections ?? ''}
-                        onChange={(event) => handleField('maxSelections', parseIntegerValue(event.target.value))}
-                      />
-                    </div>
+            {data.questionType === 'MULTIPLE_CHOICE' && (
+              <div className="config-grid-row">
+                <div className="config-label-cell">Límites de selección:</div>
+                <div className="config-interactive-cell limits-labeled-group">
+                  <div className="labeled-input-item">
+                    <span className="mini-top-label">Mínimo</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={data.maxSelections || totalAvailable || 1}
+                      placeholder="1"
+                      value={data.minSelections ?? ''}
+                      onChange={(event) => handleField('minSelections', parseIntegerValue(event.target.value))}
+                    />
                   </div>
-                  <div className="config-help-cell">
-                    Valores válidos: Mínimo desde 1 hasta el máximo seleccionado. Máximo hasta {totalAvailable} (total de opciones).
+                  <div className="labeled-input-item">
+                    <span className="mini-top-label">Máximo</span>
+                    <input
+                      type="number"
+                      min={data.minSelections || 1}
+                      max={totalAvailable || 1}
+                      placeholder={String(totalAvailable || 1)}
+                      value={data.maxSelections ?? ''}
+                      onChange={(event) => handleField('maxSelections', parseIntegerValue(event.target.value))}
+                    />
                   </div>
                 </div>
-              );
-            })()}
+                <div className="config-help-cell">
+                  Valores válidos: Mínimo desde 1 hasta el máximo seleccionado. Máximo hasta {totalAvailable} (total de opciones).
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -532,10 +534,6 @@ export function QuestionBuilder({
     return builderContent;
   }
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
     <div className="builder-modal-overlay" onClick={onClose}>
       <div
@@ -565,7 +563,7 @@ export function QuestionBuilder({
 
         {onSave && (
           <footer className="builder-modal-footer">
-            {modalError && <p className="builder-modal-error" role="alert">{modalError}</p>}
+            <ErrorMessage message={modalError} onClose={() => setModalError('')} />
             <button type="button" className="btn-modal-save" onClick={handleModalSave}>Guardar</button>
           </footer>
         )}

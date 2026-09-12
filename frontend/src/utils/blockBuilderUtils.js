@@ -10,34 +10,43 @@ export const INITIAL_BLOCK_STATE = {
 };
 
 export function getBlockBuilderValidationError(data) {
-  if (!data.name?.trim()) {
-    return 'Debe asignar un nombre al bloque.';
-  }
-
-  if (!data.questions?.length) {
+  if (!hasText(data?.name)) return 'Debes asignar un nombre al bloque.';
+  const items = getBlockItems(data);
+  if (!items.some((item) => item.itemType === 'QUESTION'))
     return 'El bloque debe contener al menos una pregunta.';
-  }
 
-  for (let index = 0; index < data.questions.length; index += 1) {
-    const questionError = getQuestionBuilderValidationError(data.questions[index]);
-
-    if (questionError) {
-      return `Pregunta ${index + 1}: ${questionError}`;
+  let questionNumber = 0;
+  for (const item of items) {
+    if (item.itemType === 'TEXT') {
+      if (!hasText(item.textBody))
+        return 'Los elementos de texto no pueden estar vacíos.';
+      continue;
     }
+    questionNumber += 1;
+    const questionError = getQuestionBuilderValidationError(item, false);
+    if (questionError) return `Pregunta ${questionNumber}: ${questionError}`;
   }
-
   return '';
 }
 
 export function buildCreateCatalogBlockPayload(data) {
   return {
     name: data.name.trim(),
-    description: data.description?.trim() || null,
-    questions: data.questions.map((question, index) => ({
-      position: index + 1,
-      required: Boolean(question.isRequired),
-      question: buildQuestionDraftPayload(question),
-    })),
+    description: trimToNull(data.description),
+    items: getBlockItems(data).map((item, index) =>
+      item.itemType === 'TEXT'
+        ? {
+            itemType: 'TEXT',
+            position: index + 1,
+            textBody: item.textBody.trim(),
+          }
+        : {
+            itemType: 'QUESTION',
+            position: index + 1,
+            required: Boolean(item.isRequired),
+            question: buildQuestionDraftPayload(item),
+          },
+    ),
   };
 }
 
@@ -81,4 +90,31 @@ export function buildBlockQuestionFromCatalog(question) {
     })),
     isRequired: false,
   };
+}
+
+export function buildBlockTextItem(textBody = '') {
+  return {
+    itemType: 'TEXT',
+    localId: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    textBody,
+  };
+}
+
+export function getBlockItems(data) {
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.questions)) {
+    return data.questions.map((question) => ({
+      ...question,
+      itemType: 'QUESTION',
+    }));
+  }
+  return [];
+}
+
+function trimToNull(value) {
+  return hasText(value) ? String(value).trim() : null;
+}
+
+function hasText(value) {
+  return typeof value === 'string' && value.trim().length > 0;
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MdChevronRight, MdClose, MdSave } from 'react-icons/md';
 
@@ -7,8 +7,7 @@ import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx'
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { INITIAL_BLOCK_STATE, buildBlockQuestionFromCatalog, buildCreateCatalogBlockPayload, getBlockBuilderValidationError } from '../../../utils/blockBuilderUtils.js';
-
+import { INITIAL_BLOCK_STATE, buildBlockQuestionFromCatalog, buildCreateCatalogBlockPayload, getBlockItems, getBlockBuilderValidationError } from "../../../utils/blockBuilderUtils.js";
 import './CreateBlockPage.css';
 
 /**
@@ -17,27 +16,30 @@ import './CreateBlockPage.css';
 export function CreateBlockPage() {
   const navigate = useNavigate();
   const { isInitializing } = useAuth();
+  const saveLockRef = useRef(false);
 
   const [formData, setFormData] = useState(INITIAL_BLOCK_STATE);
   const [isSaving, setIsSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   function handleAddQuestionFromSidebar(question, targetIndex) {
-    setErrorMsg('');
+    setErrorMsg("");
     const newQuestion = buildBlockQuestionFromCatalog(question);
 
     setFormData((current) => {
-      const questions = [...current.questions];
-      const insertionIndex = Number.isInteger(targetIndex) ? Math.max(0, Math.min(targetIndex, questions.length)) : questions.length;
-      questions.splice(insertionIndex, 0, newQuestion);
-      return { ...current, questions };
+      const items = [...getBlockItems(current)];
+      const insertionIndex = Number.isInteger(targetIndex)
+        ? Math.max(0, Math.min(targetIndex, items.length))
+        : items.length;
+      items.splice(insertionIndex, 0, newQuestion);
+      return { ...current, items };
     });
   }
 
   async function handleSaveBlock() {
-    setErrorMsg('');
-    setSuccessMsg('');
+    setErrorMsg("");
+    setSuccessMsg("");
 
     const validationError = getBlockBuilderValidationError(formData);
 
@@ -46,19 +48,21 @@ export function CreateBlockPage() {
       return;
     }
 
+    if (saveLockRef.current) return;
+    saveLockRef.current = true;
+
     try {
       setIsSaving(true);
-
       await createCatalogBlock(buildCreateCatalogBlockPayload(formData));
-
-      setSuccessMsg('Bloque creado con éxito. Redirigiendo...');
+      setSuccessMsg("Bloque creado con éxito. Redirigiendo...");
 
       window.setTimeout(() => {
-        navigate('/catalogo/bloques');
+        navigate("/catalogo/bloques");
       }, 1200);
     } catch (error) {
-      setErrorMsg(error.message || 'No se ha podido guardar el bloque.');
+      setErrorMsg(error.message || "No se ha podido guardar el bloque.");
     } finally {
+      saveLockRef.current = false;
       setIsSaving(false);
     }
   }
@@ -85,7 +89,8 @@ export function CreateBlockPage() {
             <div>
               <h1>CREA TU BLOQUE</h1>
               <p className="page-main-subtitle">
-                Crea un bloque utilizando preguntas propias y preguntas fijas del catálogo.
+                Combina preguntas propias, preguntas fijas y textos informativos
+                en un único bloque.
               </p>
             </div>
 
@@ -96,7 +101,7 @@ export function CreateBlockPage() {
               onClick={handleSaveBlock}
             >
               <MdSave aria-hidden="true" />
-              <span>{isSaving ? 'Guardando...' : 'Crear bloque'}</span>
+              <span>{isSaving ? "Guardando..." : "Crear bloque"}</span>
             </button>
           </header>
 
@@ -108,7 +113,7 @@ export function CreateBlockPage() {
                 type="button"
                 className="error-banner-close-btn"
                 aria-label="Cerrar mensaje de error"
-                onClick={() => setErrorMsg('')}
+                onClick={() => setErrorMsg("")}
               >
                 <MdClose aria-hidden="true" />
               </button>

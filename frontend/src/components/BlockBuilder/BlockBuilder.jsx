@@ -1,230 +1,224 @@
-import { useState } from 'react';
-import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert, MdOutlineVisibility } from 'react-icons/md';
-import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
-import { Question } from '../Question/Question.jsx';
-import { QuestionBuilder } from '../QuestionBuilder/QuestionBuilder.jsx';
-
-import './BlockBuilder.css';
+import { useState } from "react";
+import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert, MdOutlineVisibility } from "react-icons/md";
+import { buildBlockTextItem, getBlockItems, INITIAL_BLOCK_STATE } from "../../utils/blockBuilderUtils.js";
+import { getDragData, getDropIndex, reorderItems } from "../../utils/builderDragUtils.js";
+import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from "../../utils/questionBuilderUtils.js";
+import { CREATABLE_ELEMENT_TYPE, CreateElementButton, ELEMENT_CREATOR_CONTEXT } from "../CreateElementButton/CreateElementButton.jsx";
+import { ErrorMessage } from "../ErrorMessage/ErrorMessage.jsx";
+import { Question } from "../Question/Question.jsx";
+import { QuestionBuilder } from "../QuestionBuilder/QuestionBuilder.jsx";
+import { TextContent, TextContentIcon } from "../TextContent/TextContent.jsx";
+import "./BlockBuilder.css";
 
 /**
- * Permite configurar un bloque, insertar preguntas en cualquier posición y reorganizarlas.
+ * Gestiona preguntas y textos de un bloque utilizando las utilidades compartidas de arrastre.
  */
 export function BlockBuilder({
-  data = { name: '', description: '', questions: [] },
+  data = INITIAL_BLOCK_STATE,
   onChange = () => {},
   onDropQuestionFromSidebar,
   isModal = false,
   isOpen = true,
   onClose,
   onSave,
-  modalTitle = 'Configurar bloque',
+  modalTitle = "Configurar bloque",
 }) {
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
-  const [questionModalMode, setQuestionModalMode] = useState(null);
-  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(null);
-  const [editingQuestionData, setEditingQuestionData] = useState(INITIAL_QUESTION_STATE);
+  const [modalMode, setModalMode] = useState(null);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(null);
+  const [editingQuestion, setEditingQuestion] = useState(INITIAL_QUESTION_STATE);
+  const [editingText, setEditingText] = useState("");
+  const [modalError, setModalError] = useState("");
   const [dropIndex, setDropIndex] = useState(null);
-  const [reorderMessage, setReorderMessage] = useState('');
+  const [reorderMessage, setReorderMessage] = useState("");
 
-  const questions = data.questions || [];
-  const selectedQuestion =
-    selectedQuestionIndex === null ? null : questions[selectedQuestionIndex];
+  const items = getBlockItems(data);
+  const selectedItem = selectedItemIndex === null ? null : items[selectedItemIndex];
+  let questionCount = 0;
+  const questionNumberByIndex = items.map((item) =>
+    item.itemType !== "TEXT" ? ++questionCount : null,
+  );
 
-  function handleField(field, value) {
-    onChange({ ...data, [field]: value });
+  function updateData(changes) {
+    const currentData = { ...data };
+    delete currentData.questions;
+    onChange({ ...currentData, ...changes });
   }
 
-  function getDragData(event) {
-    try {
-      const value = event.dataTransfer.getData('application/x-formquid-catalog-item') || event.dataTransfer.getData('text/plain');
-      return value ? JSON.parse(value) : null;
-    } catch {
-      return null;
-    }
+  function updateItems(nextItems) {
+    updateData({ items: nextItems });
   }
 
   function preventDrop(event) {
     event.preventDefault();
     event.stopPropagation();
-    event.dataTransfer.dropEffect = 'none';
+    event.dataTransfer.dropEffect = "none";
   }
 
   function handleDragStart(event, index) {
-    event.dataTransfer.setData(
-      'text/plain',
-      JSON.stringify({ type: 'INTERNAL_SORT', index }),
-    );
-    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData("text/plain", JSON.stringify({ type: "INTERNAL_SORT", index }));
+    event.dataTransfer.effectAllowed = "move";
   }
 
-  function moveQuestion(fromIndex, toIndex) {
-    if (fromIndex < 0 || fromIndex >= questions.length) return;
+  function moveItem(fromIndex, toIndex) {
+    const updated = reorderItems(items, fromIndex, toIndex);
+    if (updated === items) return;
 
-    const updated = [...questions];
-    const [question] = updated.splice(fromIndex, 1);
-    const adjustedIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
-    const insertionIndex = Math.max(0, Math.min(adjustedIndex, updated.length));
-
-    if (insertionIndex === fromIndex) return;
-    updated.splice(insertionIndex, 0, question);
-
-    handleField('questions', updated);
-    setReorderMessage(`Pregunta movida a la posición ${insertionIndex + 1}.`);
+    updateItems(updated);
+    setReorderMessage("Orden de los elementos actualizado.");
   }
 
-  function getTargetIndex(event, questionIndex) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    return event.clientY < bounds.top + bounds.height / 2 ? questionIndex : questionIndex + 1;
-  }
-
-  function handleQuestionDragOver(event, questionIndex) {
+  function handleItemDragOver(event, itemIndex) {
     event.preventDefault();
     event.stopPropagation();
-    event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy';
-    setDropIndex(getTargetIndex(event, questionIndex));
+    event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "move" ? "move" : "copy";
+    setDropIndex(getDropIndex(event, itemIndex));
   }
 
-  function handleQuestionDrop(event, questionIndex) {
-    const dragData = getDragData(event);
+  function handleDropAt(event, targetIndex) {
     event.preventDefault();
     event.stopPropagation();
     setDropIndex(null);
-    const targetIndex = getTargetIndex(event, questionIndex);
 
-    if (dragData?.type === 'CATALOG_QUESTION') {
+    const dragData = getDragData(event);
+
+    if (dragData?.type === "CATALOG_QUESTION") {
       onDropQuestionFromSidebar?.(dragData.question, targetIndex);
-    } else if (dragData?.type === 'INTERNAL_SORT') {
-      moveQuestion(dragData.index, targetIndex);
+    } else if (dragData?.type === "INTERNAL_SORT") {
+      moveItem(dragData.index, targetIndex);
     }
+  }
+
+  function handleItemDrop(event, itemIndex) {
+    handleDropAt(event, getDropIndex(event, itemIndex));
   }
 
   function handleStructureDrop(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    setDropIndex(null);
-    const dragData = getDragData(event);
-
-    if (dragData?.type === 'CATALOG_QUESTION') {
-      onDropQuestionFromSidebar?.(dragData.question, questions.length);
-      return;
-    }
-
-    if (dragData?.type === 'INTERNAL_SORT') {
-      moveQuestion(dragData.index, questions.length);
-    }
+    handleDropAt(event, items.length);
   }
 
   function handleReorderKeyDown(event, index) {
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
-    moveQuestion(index, event.key === 'ArrowUp' ? index - 1 : index + 2);
+    moveItem(index, event.key === "ArrowUp" ? index - 1 : index + 2);
   }
 
   function openCreateQuestionModal() {
-    setEditingQuestionData({
+    setEditingQuestion({
       ...INITIAL_QUESTION_STATE,
+      itemType: "QUESTION",
       isRequired: false,
     });
-    setSelectedQuestionIndex(null);
-    setQuestionModalMode('CREATE');
+    setSelectedItemIndex(null);
+    setModalError("");
+    setModalMode("CREATE_QUESTION");
   }
 
-  function openQuestionModal(mode, index) {
-    setSelectedQuestionIndex(index);
+  function openCreateTextModal() {
+    setEditingText("");
+    setSelectedItemIndex(null);
+    setModalError("");
+    setModalMode("CREATE_TEXT");
+  }
+
+  function handleCreateElement(type) {
+    if (type === CREATABLE_ELEMENT_TYPE.TEXT) openCreateTextModal();
+    if (type === CREATABLE_ELEMENT_TYPE.QUESTION) openCreateQuestionModal();
+  }
+
+  function openItemModal(mode, index) {
+    const item = items[index];
+    setSelectedItemIndex(index);
     setActiveMenuIndex(null);
+    setModalError("");
 
-    if (mode === 'EDIT') {
-      setEditingQuestionData({ ...questions[index] });
-    }
+    if (mode === "EDIT_QUESTION") setEditingQuestion({ ...item });
+    if (mode === "EDIT_TEXT") setEditingText(item.textBody || "");
 
-    setQuestionModalMode(mode);
+    setModalMode(mode);
   }
 
-  function closeQuestionModal() {
-    setQuestionModalMode(null);
-    setSelectedQuestionIndex(null);
-    setEditingQuestionData(INITIAL_QUESTION_STATE);
+  function closeModal() {
+    setModalMode(null);
+    setSelectedItemIndex(null);
+    setEditingQuestion(INITIAL_QUESTION_STATE);
+    setEditingText("");
+    setModalError("");
   }
 
   function handleSaveQuestion() {
-    if (questionModalMode === 'CREATE') {
-      handleField('questions', [
-        ...questions,
-        {
-          ...editingQuestionData,
-          isCatalog: false,
-        },
-      ]);
+    const question = { ...editingQuestion, itemType: "QUESTION" };
 
-      closeQuestionModal();
+    if (modalMode === "CREATE_QUESTION") {
+      updateItems([...items, question]);
+    } else if (modalMode === "EDIT_QUESTION" && selectedItemIndex !== null) {
+      const updated = [...items];
+      updated[selectedItemIndex] = question;
+      updateItems(updated);
+    }
+
+    closeModal();
+  }
+
+  function handleSaveText() {
+    const normalizedText = editingText.trim();
+
+    if (!normalizedText) {
+      setModalError("El texto no puede estar vacío.");
       return;
     }
 
-    if (questionModalMode === 'EDIT' && selectedQuestionIndex !== null) {
-      const updated = [...questions];
-      updated[selectedQuestionIndex] = { ...editingQuestionData };
-
-      handleField('questions', updated);
-      closeQuestionModal();
+    if (modalMode === "CREATE_TEXT") {
+      updateItems([...items, buildBlockTextItem(normalizedText)]);
+    } else if (modalMode === "EDIT_TEXT" && selectedItemIndex !== null) {
+      const updated = [...items];
+      updated[selectedItemIndex] = {
+        ...updated[selectedItemIndex],
+        textBody: normalizedText,
+      };
+      updateItems(updated);
     }
+
+    closeModal();
   }
 
-  function handleDeleteQuestion() {
-    if (selectedQuestionIndex === null) return;
-
-    handleField(
-      'questions',
-      questions.filter((_, index) => index !== selectedQuestionIndex),
-    );
-
-    closeQuestionModal();
+  function handleDeleteItem() {
+    if (selectedItemIndex === null) return;
+    updateItems(items.filter((_, index) => index !== selectedItemIndex));
+    closeModal();
   }
 
   const builderContent = (
-    <div className={`block-builder-stack ${isModal ? 'modal-mode' : ''}`}>
-      <section
-        className="builder-card"
-        onDragOverCapture={preventDrop}
-        onDropCapture={preventDrop}
-      >
+    <div className={`block-builder-stack ${isModal ? "modal-mode" : ""}`}>
+      <section className="builder-card" onDragOverCapture={preventDrop} onDropCapture={preventDrop}>
         <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
 
         <div className="builder-field">
           <label htmlFor="block-name">
             Nombre del bloque <span>*</span>
           </label>
-
           <input
             id="block-name"
             type="text"
             placeholder="Introduce un nombre descriptivo para el bloque..."
             maxLength={150}
-            value={data.name || ''}
-            onChange={(event) => handleField('name', event.target.value)}
+            value={data.name || ""}
+            onChange={(event) => updateData({ name: event.target.value })}
           />
-
-          <span className="field-counter">
-            {(data.name || '').length}/150
-          </span>
+          <span className="field-counter">{(data.name || "").length}/150</span>
         </div>
 
         <div className="builder-field">
-          <label htmlFor="block-description">
-            Descripción
-          </label>
-
+          <label htmlFor="block-description">Descripción</label>
           <textarea
             id="block-description"
             rows={4}
-            placeholder="Añade detalles o contexto sobre el propósito de este bloque de preguntas..."
+            placeholder="Añade detalles o contexto sobre el propósito de este bloque..."
             maxLength={500}
-            value={data.description || ''}
-            onChange={(event) => handleField('description', event.target.value)}
+            value={data.description || ""}
+            onChange={(event) => updateData({ description: event.target.value })}
           />
-
-          <span className="field-counter">
-            {(data.description || '').length}/500
-          </span>
+          <span className="field-counter">{(data.description || "").length}/500</span>
         </div>
       </section>
 
@@ -237,107 +231,91 @@ export function BlockBuilder({
         }}
       >
         <div className="structure-header">
-          <h2 className="builder-section-title">
-            ESTRUCTURA DEL BLOQUE
-          </h2>
-
-          <button
-            type="button"
-            className="btn-add-block-question"
-            onClick={openCreateQuestionModal}
-          >
-            <MdAdd aria-hidden="true" />
-            <span>Añadir nueva pregunta</span>
-          </button>
+          <div>
+            <h2 className="builder-section-title">ESTRUCTURA DEL BLOQUE</h2>
+            <p className="builder-section-desc">
+              Combina preguntas y textos, y ordénalos como aparecerán.
+            </p>
+          </div>
+          <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.BLOCK} onSelect={handleCreateElement} />
         </div>
 
         <div className="block-questions-list">
           <p className="sr-only" aria-live="polite">{reorderMessage}</p>
 
-          {questions.map((question, index) => {
+          {items.map((item, index) => {
+            const isText = item.itemType === "TEXT";
             const isMenuOpen = activeMenuIndex === index;
-            const typeConfig = QUESTION_TYPES.find(
-              (type) => type.id === question.questionType,
-            );
+            const typeConfig = isText
+              ? null
+              : QUESTION_TYPES.find((type) => type.id === item.questionType);
             const TypeIcon = typeConfig?.icon;
 
             return (
               <div
-                key={question.id || index}
-                className={`block-question-item ${dropIndex === index ? 'drop-before' : ''} ${index === questions.length - 1 && dropIndex === questions.length ? 'drop-after' : ''}`}
-                onDragOver={(event) => handleQuestionDragOver(event, index)}
-                onDrop={(event) => handleQuestionDrop(event, index)}
+                key={item.localId || item.id || index}
+                className={`block-question-item ${dropIndex === index ? "drop-before" : ""} ${index === items.length - 1 && dropIndex === items.length ? "drop-after" : ""}`}
+                onDragOver={(event) => handleItemDragOver(event, index)}
+                onDrop={(event) => handleItemDrop(event, index)}
               >
                 <div className="question-item-left">
                   <button
                     type="button"
                     className="drag-handle"
                     draggable
-                    aria-label={`Reordenar pregunta ${index + 1}. Usa las flechas arriba y abajo o arrastra el control.`}
+                    aria-label={`Reordenar elemento ${index + 1}. Usa las flechas arriba y abajo o arrastra el control.`}
                     title="Arrastra o usa las flechas para reordenar"
                     onDragStart={(event) => handleDragStart(event, index)}
+                    onDragEnd={() => setDropIndex(null)}
                     onKeyDown={(event) => handleReorderKeyDown(event, index)}
                   >
                     <MdDragIndicator aria-hidden="true" />
                   </button>
 
-                  {TypeIcon && (
+                  {isText ? (
+                    <TextContentIcon />
+                  ) : TypeIcon ? (
                     <span
                       className="question-type-badge"
-                      style={{
-                        color: typeConfig.color,
-                        borderColor: `${typeConfig.color}60`,
-                      }}
+                      style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
                       title={typeConfig.title}
                     >
                       <TypeIcon aria-hidden="true" />
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="question-item-preview">
-                  <Question
-                    questionNumber={`${index + 1}`}
-                    data={question}
-                    interactive={false}
-                  />
+                  {isText ? (
+                    <TextContent data={item} />
+                  ) : (
+                    <Question questionNumber={`${questionNumberByIndex[index]}`} data={item} interactive={false} />
+                  )}
                 </div>
 
                 <div className="question-item-actions">
                   <button
                     type="button"
                     className="action-dots-btn"
-                    aria-label="Opciones de la pregunta"
-                    onClick={() =>
-                      setActiveMenuIndex(isMenuOpen ? null : index)
-                    }
+                    aria-label={`Opciones de ${isText ? "texto" : "pregunta"}`}
+                    onClick={() => setActiveMenuIndex(isMenuOpen ? null : index)}
                   >
                     <MdMoreVert aria-hidden="true" />
                   </button>
 
                   {isMenuOpen && (
                     <div className="actions-floating-menu">
-                      <button
-                        type="button"
-                        onClick={() => openQuestionModal('VIEW', index)}
-                      >
-                        <MdOutlineVisibility aria-hidden="true" />
-                        Ver detalles
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => openQuestionModal('EDIT', index)}
-                      >
+                      {!isText && (
+                        <button type="button" onClick={() => openItemModal("VIEW_QUESTION", index)}>
+                          <MdOutlineVisibility aria-hidden="true" />
+                          Ver detalles
+                        </button>
+                      )}
+                      <button type="button" onClick={() => openItemModal(isText ? "EDIT_TEXT" : "EDIT_QUESTION", index)}>
                         <MdEdit aria-hidden="true" />
-                        Editar pregunta
+                        Editar {isText ? "texto" : "pregunta"}
                       </button>
-
-                      <button
-                        type="button"
-                        className="delete-opt"
-                        onClick={() => openQuestionModal('DELETE', index)}
-                      >
+                      <button type="button" className="delete-opt" onClick={() => openItemModal("DELETE", index)}>
                         <MdDeleteOutline aria-hidden="true" />
                         Eliminar del bloque
                       </button>
@@ -350,187 +328,188 @@ export function BlockBuilder({
         </div>
 
         <div
-          className={`block-empty-dropzone ${dropIndex === questions.length ? 'drop-active' : ''}`}
+          className={`block-empty-dropzone ${dropIndex === items.length ? "drop-active" : ""}`}
           onDragOver={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy';
-            setDropIndex(questions.length);
+            event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "move" ? "move" : "copy";
+            setDropIndex(items.length);
           }}
           onDrop={handleStructureDrop}
         >
           <div className="dropzone-text-group">
             <span className="dropzone-title">
               <MdAdd aria-hidden="true" />
-              Agrega preguntas
+              Agrega contenido
             </span>
-
             <p className="dropzone-sub">
-              Arrástralas desde el catálogo o créalas con el botón superior.
+              Arrastra preguntas desde el catálogo o utiliza el botón «Crear elemento».
             </p>
           </div>
         </div>
       </section>
 
-      {(questionModalMode === 'CREATE' ||
-        questionModalMode === 'EDIT') && (
+      {(modalMode === "CREATE_QUESTION" || modalMode === "EDIT_QUESTION") && (
         <QuestionBuilder
-          data={editingQuestionData}
-          onChange={setEditingQuestionData}
+          data={editingQuestion}
+          onChange={setEditingQuestion}
           isCatalog={false}
           isModal
-          isOpen
-          modalTitle={
-            questionModalMode === 'CREATE'
-              ? 'CREAR PREGUNTA PROPIA'
-              : 'EDITAR PREGUNTA'
-          }
-          onClose={closeQuestionModal}
+          modalTitle={modalMode === "CREATE_QUESTION" ? "Crear pregunta propia" : "Editar pregunta"}
+          onClose={closeModal}
           onSave={handleSaveQuestion}
         />
       )}
 
-      {questionModalMode === 'VIEW' && selectedQuestion && (
-        <div
-          className="block-modal-overlay"
-          onClick={closeQuestionModal}
-        >
-          <div
-            className="block-modal-container"
+      {(modalMode === "CREATE_TEXT" || modalMode === "EDIT_TEXT") && (
+        <div className="block-modal-overlay" onClick={closeModal}>
+          <section
+            className="block-modal-container text-editor-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="text-editor-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="block-modal-header">
+              <h2 id="text-editor-title">
+                {modalMode === "CREATE_TEXT" ? "AÑADIR TEXTO" : "EDITAR TEXTO"}
+              </h2>
+              <button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}>
+                <MdClose aria-hidden="true" />
+              </button>
+            </header>
+
+            <div className="block-modal-body">
+              <div className="builder-field">
+                <label htmlFor="block-text-body">
+                  Contenido <span>*</span>
+                </label>
+                <textarea
+                  id="block-text-body"
+                  rows={8}
+                  maxLength={5000}
+                  placeholder="Escribe una introducción, explicación o indicación para este apartado..."
+                  value={editingText}
+                  onChange={(event) => {
+                    setEditingText(event.target.value);
+                    setModalError("");
+                  }}
+                  autoFocus
+                />
+                <span className="field-counter">{editingText.length}/5000</span>
+              </div>
+
+              <ErrorMessage message={modalError} onClose={() => setModalError("")} />
+            </div>
+
+            <footer className="block-modal-footer">
+              <button type="button" className="btn-cancel" onClick={closeModal}>
+                Cancelar
+              </button>
+              <button type="button" className="btn-confirm" onClick={handleSaveText}>
+                Guardar texto
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+
+      {modalMode === "VIEW_QUESTION" && selectedItem && (
+        <div className="block-modal-overlay" onClick={closeModal}>
+          <section
+            className="block-modal-container question-view-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="question-details-title"
             onClick={(event) => event.stopPropagation()}
           >
             <header className="block-modal-header">
-              <h2 id="question-details-title">
-                DETALLE DE LA PREGUNTA
-              </h2>
-
-              <button
-                type="button"
-                className="btn-close-modal"
-                aria-label="Cerrar modal"
-                onClick={closeQuestionModal}
-              >
+              <h2 id="question-details-title">DETALLE DE LA PREGUNTA</h2>
+              <button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}>
                 <MdClose aria-hidden="true" />
               </button>
             </header>
-
             <div className="block-modal-body">
               <Question
-                questionNumber={`${selectedQuestionIndex + 1}`}
-                data={selectedQuestion}
+                questionNumber={`${questionNumberByIndex[selectedItemIndex]}`}
+                data={selectedItem}
                 interactive={false}
               />
             </div>
-          </div>
+          </section>
         </div>
       )}
 
-      {questionModalMode === 'DELETE' && selectedQuestion && (
-        <div
-          className="block-modal-overlay"
-          onClick={closeQuestionModal}
-        >
-          <div
+      {modalMode === "DELETE" && selectedItem && (
+        <div className="block-modal-overlay" onClick={closeModal}>
+          <section
             className="block-modal-container delete-modal-box"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="delete-question-title"
+            aria-labelledby="delete-item-title"
             onClick={(event) => event.stopPropagation()}
           >
             <header className="block-modal-header">
-              <h2 id="delete-question-title">
-                ELIMINAR PREGUNTA
+              <h2 id="delete-item-title">
+                ELIMINAR {selectedItem.itemType === "TEXT" ? "TEXTO" : "PREGUNTA"}
               </h2>
-
-              <button
-                type="button"
-                className="btn-close-modal"
-                aria-label="Cerrar modal"
-                onClick={closeQuestionModal}
-              >
+              <button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}>
                 <MdClose aria-hidden="true" />
               </button>
             </header>
-
             <div className="block-modal-body">
-              <p>
-                ¿Estás seguro de que deseas retirar esta pregunta del bloque?
-              </p>
+              <p>¿Estás seguro de que deseas retirar este elemento del bloque?</p>
             </div>
-
             <footer className="block-modal-footer">
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={closeQuestionModal}
-              >
+              <button type="button" className="btn-cancel" onClick={closeModal}>
                 Cancelar
               </button>
-
-              <button
-                type="button"
-                className="btn-danger-confirm"
-                onClick={handleDeleteQuestion}
-              >
+              <button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>
                 Eliminar
               </button>
             </footer>
-          </div>
+          </section>
         </div>
       )}
     </div>
   );
 
-  if (!isModal) {
-    return builderContent;
-  }
-
-  if (!isOpen) {
-    return null;
-  }
+  if (!isModal) return builderContent;
+  if (!isOpen) return null;
 
   return (
-    <div
-      className="block-modal-overlay"
-      onClick={onClose}
-    >
-      <div
+    <div className="block-modal-overlay" onClick={onClose}>
+      <section
         className="block-modal-container block-builder-modal-wrapper"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="block-builder-modal-title"
+        aria-labelledby="block-builder-title"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="block-modal-header">
-          <h2 id="block-builder-modal-title">
-            {modalTitle}
-          </h2>
-
+          <h2 id="block-builder-title">{modalTitle}</h2>
           {onClose && (
-            <button
-              type="button"
-              className="btn-close-modal"
-              aria-label="Cerrar modal"
-              onClick={onClose}
-            >
+            <button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={onClose}>
               <MdClose aria-hidden="true" />
             </button>
           )}
         </header>
-
-        <div className="block-modal-body">
-          {builderContent}
-        </div>
-
-        {onSave && (
+        <div className="block-modal-body">{builderContent}</div>
+        {(onClose || onSave) && (
           <footer className="block-modal-footer">
-            <button type="button" className="btn-confirm" onClick={onSave}>Guardar bloque</button>
+            {onClose && (
+              <button type="button" className="btn-cancel" onClick={onClose}>
+                Cancelar
+              </button>
+            )}
+            {onSave && (
+              <button type="button" className="btn-confirm" onClick={onSave}>
+                Guardar bloque
+              </button>
+            )}
           </footer>
         )}
-      </div>
+      </section>
     </div>
   );
 }

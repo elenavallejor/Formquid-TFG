@@ -1,6 +1,7 @@
-:root {
+.catalog-overlay-root {
   --catalog-width: 380px;
-  --catalog-header-height: 70px;
+  --catalog-top: 0px;
+  display: contents;
 }
 
 .catalog-space {
@@ -10,18 +11,19 @@
 }
 
 .catalog-space.open {
-  width: var(--catalog-width);
+  width: var(--catalog-width, 380px);
 }
 
 .catalog-sidebar {
   position: fixed;
-  top: var(--catalog-header-height);
+  top: var(--catalog-top, 0px);
   left: 0;
   z-index: 20;
   display: flex;
   flex-direction: column;
-  width: var(--catalog-width);
-  height: calc(100dvh - var(--catalog-header-height));
+  width: var(--catalog-width, 380px);
+  height: calc(100vh - var(--catalog-top, 0px));
+  height: calc(100dvh - var(--catalog-top, 0px));
   box-sizing: border-box;
   overflow: hidden;
   border-right: 1px solid var(--color-border);
@@ -41,7 +43,7 @@
 
 .catalog-toggle {
   position: fixed;
-  top: 140px;
+  top: calc(var(--catalog-top, 0px) + 70px);
   left: 0;
   z-index: 40;
   display: flex;
@@ -62,7 +64,7 @@
   transition: transform 0.3s ease, opacity 0.25s ease, background-color 0.2s ease, visibility 0s;
 }
 
-.catalog-toggle.hidden {
+.catalog-toggle.catalog-toggle-hidden {
   opacity: 0;
   transform: translateX(-100%);
   visibility: hidden;
@@ -147,6 +149,7 @@
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   scrollbar-gutter: stable;
 }
 
@@ -451,7 +454,7 @@
 }
 
 @media screen and (max-width: 700px) {
-  :root {
+  .catalog-overlay-root {
     --catalog-width: min(380px, 90vw);
   }
 
@@ -461,7 +464,7 @@
   }
 
   .catalog-sidebar {
-    width: var(--catalog-width);
+    width: var(--catalog-width, 380px);
   }
 
   .catalog-filters {
@@ -469,12 +472,12 @@
   }
 
   .catalog-toggle {
-    top: 110px;
+    top: calc(var(--catalog-top, 0px) + 40px);
   }
 
   .catalog-backdrop {
     position: fixed;
-    inset: var(--catalog-header-height) 0 0;
+    inset: var(--catalog-top, 0px) 0 0;
     z-index: 19;
     display: block;
     padding: 0;
@@ -492,6 +495,7 @@
     pointer-events: auto;
     transition: opacity 0.25s ease, visibility 0s;
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -507,6 +511,7 @@
   .catalog-backdrop {
     transition-duration: 0.01ms;
   }
+
 }
 
 @media (forced-colors: active) {
@@ -524,4 +529,20 @@
   .catalog-error {
     border: 1px solid CanvasText;
   }
+
+}
+
+
+.catalog-overlay-root .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.catalog-overlay-root button:disabled {
+  cursor: not-allowed;
 }

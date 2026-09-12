@@ -612,7 +612,7 @@ export function PanelPage() {
                     description="Gestiona usuarios y permisos en la plataforma."
                     icon={MdOutlineShield}
                     to="/superadmin/usuarios"
-                    buttonLabel="Ver registros"
+                    buttonLabel="Ver usuarios"
                     theme="purple"
                     fullWidth
                   />

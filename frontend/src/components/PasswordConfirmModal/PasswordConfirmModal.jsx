@@ -1,37 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from 'react-icons/md';
-
+import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
 import './PasswordConfirmModal.css';
 
 /**
- * Solicita la contraseña actual antes de confirmar acciones sensibles de la cuenta.
+ * Solicita la contraseña actual para confirmar una acción y muestra los errores recibidos.
  */
-export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing = false, errorMessage = '' }) {
+export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing = false, errorMessage = '', onClearError }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const modalRef = useRef(null);
   const inputRef = useRef(null);
-  const previousFocusRef = useRef(null);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen) return;
 
-    previousFocusRef.current = document.activeElement;
+    const previousFocus = document.activeElement;
     setPassword('');
     setShowPassword(false);
-
-    const focusTimer = window.setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
+    inputRef.current?.focus();
 
     return () => {
-      window.clearTimeout(focusTimer);
-      previousFocusRef.current?.focus?.();
+      if (previousFocus?.isConnected) {
+        previousFocus.focus({ preventScroll: true });
+      }
     };
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen) return;
 
     function handleKeyDown(event) {
       if (event.key === 'Escape' && !isProcessing) {
@@ -42,19 +39,22 @@ export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing 
 
       if (event.key !== 'Tab') return;
 
-      const focusableElements = modalRef.current?.querySelectorAll(
-        'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'
-      );
-
-      if (!focusableElements?.length) return;
-
+      const focusableElements = modalRef.current.querySelectorAll('button:not(:disabled), input:not(:disabled)');
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+      const focusOutside = !modalRef.current.contains(activeElement);
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (!focusableElements.length) {
+        event.preventDefault();
+        modalRef.current.focus();
+        return;
+      }
+
+      if (event.shiftKey && (activeElement === firstElement || activeElement === modalRef.current || focusOutside)) {
         event.preventDefault();
         lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
+      } else if (!event.shiftKey && (activeElement === lastElement || activeElement === modalRef.current || focusOutside)) {
         event.preventDefault();
         firstElement.focus();
       }
@@ -66,21 +66,39 @@ export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing 
 
   if (!isOpen) return null;
 
-  const handleSubmit = (event) => {
+  function handleSubmit(event) {
     event.preventDefault();
     if (!password || isProcessing) return;
     onConfirm(password);
-  };
+  }
 
-  const handleOverlayMouseDown = (event) => {
+  function handleOverlayMouseDown(event) {
     if (event.target === event.currentTarget && !isProcessing) {
       onClose();
     }
-  };
+  }
+
+  function handleClearError() {
+    onClearError();
+    if (isProcessing) {
+      modalRef.current.focus();
+    } else {
+      inputRef.current.focus();
+    }
+  }
 
   return (
     <div className="pwd-modal-overlay" role="presentation" onMouseDown={handleOverlayMouseDown}>
-      <section ref={modalRef} className="pwd-modal-card" role="dialog" aria-modal="true" aria-labelledby="pwd-modal-title" aria-describedby="pwd-modal-description" aria-busy={isProcessing}>
+      <section
+        ref={modalRef}
+        tabIndex={-1}
+        className="pwd-modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pwd-modal-title"
+        aria-describedby="pwd-modal-description"
+        aria-busy={isProcessing}
+      >
         <h2 id="pwd-modal-title" className="pwd-modal-title">
           Confirmar contraseña
         </h2>
@@ -89,11 +107,7 @@ export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing 
           Introduce tu contraseña actual para confirmar esta acción.
         </p>
 
-        {errorMessage && (
-          <p className="pwd-modal-error" role="alert">
-            {errorMessage}
-          </p>
-        )}
+        <ErrorMessage message={errorMessage} onClose={handleClearError} />
 
         <form onSubmit={handleSubmit} className="pwd-modal-form">
           <div className="pwd-modal-field">
@@ -110,7 +124,13 @@ export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing 
                 disabled={isProcessing}
                 required
               />
-              <button type="button" className="btn-pwd-modal-eye" onClick={() => setShowPassword((prev) => !prev)} aria-label={showPassword ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'} disabled={isProcessing}>
+              <button
+                type="button"
+                className="btn-pwd-modal-eye"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
+                disabled={isProcessing}
+              >
                 {showPassword ? <MdOutlineVisibilityOff aria-hidden="true" /> : <MdOutlineVisibility aria-hidden="true" />}
               </button>
             </div>
@@ -120,7 +140,6 @@ export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing 
             <button type="button" className="btn-pwd-modal-cancel" onClick={onClose} disabled={isProcessing}>
               Cancelar
             </button>
-
             <button type="submit" className="btn-pwd-modal-confirm" disabled={isProcessing || !password}>
               {isProcessing ? 'Procesando...' : 'Confirmar'}
             </button>
