@@ -45,6 +45,14 @@ public class BlockController {
         return blockService.findCatalogBlocks(page, size);
     }
 
+    @GetMapping("/builder")
+    public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return blockService.findCatalogBlocksForBuilder(page, size);
+    }
+
     @GetMapping("/{blockId}")
     public BlockResponseDto findCatalogBlock(@PathVariable Long blockId) {
         return blockService.findCatalogBlock(blockId);

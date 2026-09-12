@@ -49,6 +49,21 @@ public class BlockService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(int page, int size) {
+        Pageable pageable = catalogPageable(page, size);
+        Page<BlockResponseDto> blocks = blockRepository
+            .findCatalogBlocksWithDetails(BlockScope.CATALOG, pageable)
+            .map(this::toResponse);
+        return new PageResponseDto<>(
+            blocks.getContent(),
+            blocks.getNumber(),
+            blocks.getSize(),
+            blocks.getTotalElements(),
+            blocks.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
     public BlockResponseDto findCatalogBlock(Long blockId) {
         Block block = getBlock(blockId);
         if (block.getScope() != BlockScope.CATALOG) {
@@ -121,7 +136,7 @@ public class BlockService {
         return value.trim();
     }
 
-    private void validateItems(List<CreateBlockItemRequestDto> items) {
+    public void validateItems(List<CreateBlockItemRequestDto> items) {
         if (items == null || items.stream().noneMatch(item -> item.itemType() == ContentItemType.QUESTION)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque debe contener al menos una pregunta");
         }

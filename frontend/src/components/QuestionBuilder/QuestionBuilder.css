@@ -393,9 +393,10 @@
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
+  height: 82vh;
+  max-height: 82vh;
   width: 100%;
-  max-width: 1500px;
+  max-width: 1250px;
   box-shadow: var(--card-shadow);
   box-sizing: border-box;
   animation: fadeIn 0.2s ease;
@@ -416,6 +417,7 @@
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .builder-modal-close-btn {

@@ -48,6 +48,23 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
         Pageable pageable
     );
 
+    @Query(
+        value = """
+            select block
+            from Block block
+            where block.scope = :scope
+            """,
+        countQuery = """
+            select count(block.id)
+            from Block block
+            where block.scope = :scope
+            """
+    )
+    Page<Block> findCatalogBlocksWithDetails(
+        @Param("scope") BlockScope scope,
+        Pageable pageable
+    );
+
     Optional<Block> findByParentItemId(Long parentItemId);
 
     long countBySourceBlockId(Long sourceBlockId);

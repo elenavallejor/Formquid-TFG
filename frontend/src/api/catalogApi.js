@@ -168,6 +168,27 @@ export function getCatalogBlocks(options = {}) {
   );
 }
 
+export function getCatalogBlocksForBuilder(options = {}) {
+  const {
+    signal,
+    page = 0,
+    size = 10,
+    refresh = false,
+  } = options;
+
+  const path = buildPaginatedPath('/catalog/blocks/builder', {
+    page,
+    size,
+  });
+
+  return getCachedPage(
+    pageCaches.blocks,
+    path,
+    signal,
+    refresh,
+  );
+}
+
 export function getCatalogBlockById(blockId) {
   return apiClient(`/catalog/blocks/${blockId}`, {
     method: 'GET',

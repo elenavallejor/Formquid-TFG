@@ -17,6 +17,7 @@ import com.formquid.notification.service.NotificationService;
 import com.formquid.question.dto.CreateFixedQuestionRequestDto;
 import com.formquid.question.service.QuestionService;
 import com.formquid.template.dto.CreateTemplateRequestDto;
+import com.formquid.template.dto.CreateTemplateItemRequestDto;
 import com.formquid.template.service.TemplateService;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -147,6 +148,10 @@ public class ElementRequestService {
 
     private void validateBlock(CreateElementRequestDto request) {
         CreateBlockRequestDto dto = objectMapper.convertValue(request.requestPayload(), CreateBlockRequestDto.class);
+        validateBlock(dto);
+    }
+
+    private void validateBlock(CreateBlockRequestDto dto) {
         if (dto.name() == null || dto.name().isBlank() || dto.items() == null || dto.items().isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque solicitado necesita nombre y al menos una pregunta");
         }
@@ -182,20 +187,30 @@ public class ElementRequestService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla solicitada necesita título");
         }
         long questionCount = 0;
-        if (dto.localQuestions() != null) {
-            dto.localQuestions().forEach(question -> {
-                if (question == null) {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene una pregunta local nula");
+        if (dto.items() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla solicitada necesita contenido");
+        }
+        for (CreateTemplateItemRequestDto item : dto.items()) {
+            if (item == null || item.itemType() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene un elemento inválido");
+            }
+            if (item.itemType() == ContentItemType.TEXT) {
+                if (item.textBody() == null || item.textBody().isBlank()) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene un texto vacío");
                 }
-                questionService.validateQuestionDraft(question.question());
-            });
-            questionCount += dto.localQuestions().size();
-        }
-        if (dto.fixedQuestions() != null) {
-            questionCount += dto.fixedQuestions().size();
-        }
-        if (dto.blocks() != null) {
-            questionCount += dto.blocks().size();
+                continue;
+            }
+            if (item.itemType() == ContentItemType.QUESTION) {
+                if (item.question() != null) {
+                    questionService.validateQuestionDraft(item.question());
+                }
+                questionCount += 1;
+                continue;
+            }
+            if (item.block() != null) {
+                validateBlock(item.block());
+            }
+            questionCount += 1;
         }
         if (questionCount == 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Una plantilla solicitada debe contener preguntas o bloques");

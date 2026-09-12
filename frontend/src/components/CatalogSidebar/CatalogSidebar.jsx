@@ -3,7 +3,7 @@ import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, Md
 
 import { createPortal } from 'react-dom';
 
-import { getCatalogBlocks, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
+import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
 
@@ -21,6 +21,7 @@ export function CatalogSidebar({
   onPreviewBlock,
   defaultOpen,
   headerSelector = '#main-header',
+  embedded = false,
 }) {
   const sidebarId = `catalog-sidebar-${useId().replaceAll(':', '')}`;
   const questionsTitleId = `${sidebarId}-questions-title`;
@@ -36,7 +37,7 @@ export function CatalogSidebar({
   const shouldMoveFocusRef = useRef(false);
   const requestControllersRef = useRef(new Set());
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches);
-  const [isOpen, setIsOpen] = useState(() => defaultOpen ?? !(typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches));
+  const [isOpen, setIsOpen] = useState(() => embedded || (defaultOpen ?? !(typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches)));
   const [questions, setQuestions] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [questionSearch, setQuestionSearch] = useState('');
@@ -111,7 +112,7 @@ export function CatalogSidebar({
     setBlockError('');
 
     try {
-      const response = await getCatalogBlocks({ page, size: 10, signal: controller.signal });
+      const response = await getCatalogBlocksForBuilder({ page, size: 10, signal: controller.signal });
       if (controller.signal.aborted) return;
       const items = Array.isArray(response) ? response : response?.content ?? [];
       setBlocks((current) => page === 0 ? items : [...current, ...items]);
@@ -182,24 +183,24 @@ export function CatalogSidebar({
   }, [headerSelector]);
 
   useEffect(() => {
-    if (!isMobile || !isOpen) return;
+    if (embedded || !isMobile || !isOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     closeRef.current?.focus({ preventScroll: true });
     return () => { document.body.style.overflow = previousOverflow; };
-  }, [isMobile, isOpen]);
+  }, [embedded, isMobile, isOpen]);
 
   useEffect(() => {
-    if (!shouldMoveFocusRef.current) return;
+    if (embedded || !shouldMoveFocusRef.current) return;
     const animationFrame = window.requestAnimationFrame(() => {
       (isOpen ? closeRef : toggleRef).current?.focus({ preventScroll: true });
       shouldMoveFocusRef.current = false;
     });
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [isOpen]);
+  }, [embedded, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (embedded || !isOpen) return undefined;
 
     function handleKeyDown(event) {
       if (event.defaultPrevented) return;
@@ -226,7 +227,7 @@ export function CatalogSidebar({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeSidebar, isMobile, isOpen]);
+  }, [closeSidebar, embedded, isMobile, isOpen]);
 
   const filteredQuestions = useMemo(() => {
     const search = questionSearch.trim().toLocaleLowerCase('es');
@@ -244,6 +245,10 @@ export function CatalogSidebar({
 
   function handleDragStart(event, type, item) {
     const payload = JSON.stringify(type === 'QUESTION' ? { type: 'CATALOG_QUESTION', question: item } : { type: 'CATALOG_BLOCK', block: item });
+    event.dataTransfer.setData(
+      type === 'QUESTION' ? 'application/x-formquid-question' : 'application/x-formquid-block',
+      '1',
+    );
     event.dataTransfer.setData('application/x-formquid-catalog-item', payload);
     event.dataTransfer.setData('text/plain', payload);
     event.dataTransfer.effectAllowed = 'copy';
@@ -260,7 +265,7 @@ export function CatalogSidebar({
 
     try {
       await callback(item);
-      if (isMobile) closeSidebar();
+      if (isMobile && !embedded) closeSidebar();
     } catch (error) {
       setActionError(error?.message || 'No se ha podido añadir el elemento.');
     } finally {
@@ -340,19 +345,11 @@ export function CatalogSidebar({
     );
   }
 
-  return (
-    <>
-      <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
-      {typeof document !== 'undefined' && createPortal(
-        <div ref={overlayRef} className="catalog-overlay-root">
-      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'catalog-toggle-hidden' : ''}`} aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
-        <MdLayers aria-hidden="true" /><span>CATÁLOGO</span><MdChevronRight aria-hidden="true" />
-      </button>
-
-      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''}`} aria-label="Catálogo de elementos" aria-hidden={!isOpen} inert={!isOpen} aria-modal={isMobile && isOpen ? 'true' : undefined} role={isMobile ? 'dialog' : undefined}>
+  const sidebar = (
+      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''} ${embedded ? 'catalog-sidebar-embedded' : ''}`} aria-label="Catálogo de elementos" aria-hidden={embedded ? undefined : !isOpen} inert={embedded ? undefined : !isOpen} aria-modal={!embedded && isMobile && isOpen ? 'true' : undefined} role={!embedded && isMobile ? 'dialog' : undefined}>
         <header className="catalog-header">
-          <h2>CATÁLOGO DE ELEMENTOS</h2>
-          <button ref={closeRef} type="button" className="catalog-close" aria-label="Cerrar catálogo de elementos" aria-controls={sidebarId} onClick={closeSidebar}><MdChevronLeft aria-hidden="true" /></button>
+          <h2>{embedded ? 'CATÁLOGO DE PREGUNTAS' : 'CATÁLOGO DE ELEMENTOS'}</h2>
+          {!embedded && <button ref={closeRef} type="button" className="catalog-close" aria-label="Cerrar catálogo de elementos" aria-controls={sidebarId} onClick={closeSidebar}><MdChevronLeft aria-hidden="true" /></button>}
         </header>
 
         <div className="catalog-content">
@@ -387,8 +384,22 @@ export function CatalogSidebar({
               {blocks.length < blockTotal && <button type="button" className="catalog-more" disabled={isLoadingBlocks} aria-busy={isLoadingBlocks} onClick={() => loadBlocks(blockPage + 1)}><span>{isLoadingBlocks ? 'Cargando...' : 'Ver más bloques'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
-        </div>
+          </div>
       </aside>
+  );
+
+  if (embedded) return <div className="catalog-embedded-root">{sidebar}</div>;
+
+  return (
+    <>
+      <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
+      {typeof document !== 'undefined' && createPortal(
+        <div ref={overlayRef} className="catalog-overlay-root">
+      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'catalog-toggle-hidden' : ''}`} aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
+        <MdLayers aria-hidden="true" /><span>CATÁLOGO</span><MdChevronRight aria-hidden="true" />
+      </button>
+
+      {sidebar}
 
       <button type="button" className={`catalog-backdrop ${isOpen ? 'visible' : ''}`} aria-hidden="true" tabIndex={-1} onClick={closeSidebar} />
         </div>,

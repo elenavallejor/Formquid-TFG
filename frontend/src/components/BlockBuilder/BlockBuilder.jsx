@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert, MdOutlineVisibility } from "react-icons/md";
-import { buildBlockTextItem, getBlockItems, INITIAL_BLOCK_STATE } from "../../utils/blockBuilderUtils.js";
+import { buildBlockQuestionFromCatalog, buildBlockTextItem, getBlockItems, INITIAL_BLOCK_STATE } from "../../utils/blockBuilderUtils.js";
 import { getDragData, getDropIndex, reorderItems } from "../../utils/builderDragUtils.js";
 import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from "../../utils/questionBuilderUtils.js";
 import { CREATABLE_ELEMENT_TYPE, CreateElementButton, ELEMENT_CREATOR_CONTEXT } from "../CreateElementButton/CreateElementButton.jsx";
+import { CatalogSidebar } from "../CatalogSidebar/CatalogSidebar.jsx";
 import { ErrorMessage } from "../ErrorMessage/ErrorMessage.jsx";
 import { Question } from "../Question/Question.jsx";
 import { QuestionBuilder } from "../QuestionBuilder/QuestionBuilder.jsx";
+import { RequiredToggle } from "../RequiredToggle/RequiredToggle.jsx";
 import { TextContent, TextContentIcon } from "../TextContent/TextContent.jsx";
 import "./BlockBuilder.css";
 
@@ -22,6 +24,8 @@ export function BlockBuilder({
   onClose,
   onSave,
   modalTitle = "Configurar bloque",
+  errorMessage = "",
+  onClearError,
 }) {
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const [modalMode, setModalMode] = useState(null);
@@ -60,6 +64,20 @@ export function BlockBuilder({
     event.dataTransfer.effectAllowed = "move";
   }
 
+  function handleCatalogQuestion(question, targetIndex) {
+    if (onDropQuestionFromSidebar) {
+      onDropQuestionFromSidebar(question, targetIndex);
+      return;
+    }
+
+    const updated = [...items];
+    const insertionIndex = Number.isInteger(targetIndex)
+      ? Math.max(0, Math.min(targetIndex, updated.length))
+      : updated.length;
+    updated.splice(insertionIndex, 0, buildBlockQuestionFromCatalog(question));
+    updateItems(updated);
+  }
+
   function moveItem(fromIndex, toIndex) {
     const updated = reorderItems(items, fromIndex, toIndex);
     if (updated === items) return;
@@ -83,7 +101,7 @@ export function BlockBuilder({
     const dragData = getDragData(event);
 
     if (dragData?.type === "CATALOG_QUESTION") {
-      onDropQuestionFromSidebar?.(dragData.question, targetIndex);
+      handleCatalogQuestion(dragData.question, targetIndex);
     } else if (dragData?.type === "INTERNAL_SORT") {
       moveItem(dragData.index, targetIndex);
     }
@@ -101,6 +119,12 @@ export function BlockBuilder({
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
     moveItem(index, event.key === "ArrowUp" ? index - 1 : index + 2);
+  }
+
+  function handleRequiredChange(index, isRequired) {
+    const updated = [...items];
+    updated[index] = { ...updated[index], isRequired };
+    updateItems(updated);
   }
 
   function openCreateQuestionModal() {
@@ -294,6 +318,12 @@ export function BlockBuilder({
                 </div>
 
                 <div className="question-item-actions">
+                  {!isText && (
+                    <RequiredToggle
+                      checked={item.isRequired}
+                      onChange={(isRequired) => handleRequiredChange(index, isRequired)}
+                    />
+                  )}
                   <button
                     type="button"
                     className="action-dots-btn"
@@ -494,7 +524,20 @@ export function BlockBuilder({
             </button>
           )}
         </header>
-        <div className="block-modal-body">{builderContent}</div>
+        <div className="block-modal-body block-builder-modal-body">
+          <CatalogSidebar
+            embedded
+            showQuestions
+            showBlocks={false}
+            onAddQuestion={handleCatalogQuestion}
+          />
+          <div className="block-builder-modal-content">
+            {builderContent}
+            <div className="block-modal-error-message">
+              <ErrorMessage message={errorMessage} onClose={onClearError} />
+            </div>
+          </div>
+        </div>
         {(onClose || onSave) && (
           <footer className="block-modal-footer">
             {onClose && (

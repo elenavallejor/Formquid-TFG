@@ -2,6 +2,8 @@ package com.formquid.content.service;
 
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
+import com.formquid.block.dto.CreateBlockItemRequestDto;
+import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
 import com.formquid.content.dto.AddBlockItemRequestDto;
@@ -207,6 +209,49 @@ public class ContentService {
         ContentItem savedItem = contentItemRepository.save(item);
         copyExistingBlock(getCatalogBlock(dto.blockId()), savedItem, creator);
         return toResponse(savedItem);
+    }
+
+    @Transactional
+    public ContentItemResponseDto addLocalBlockToTemplate(
+        Template template,
+        Integer position,
+        CreateBlockRequestDto dto,
+        User creator
+    ) {
+        ContentItem parentItem = contentItemRepository.save(
+            baseTemplateItem(template, ContentItemType.BLOCK, position)
+        );
+        Block block = blockRepository.save(Block.builder()
+            .parentItem(parentItem)
+            .scope(BlockScope.SNAPSHOT)
+            .name(dto.name().trim())
+            .description(dto.description() == null || dto.description().isBlank() ? null : dto.description().trim())
+            .createdBy(creator)
+            .build());
+
+        dto.items().stream()
+            .sorted(Comparator.comparing(CreateBlockItemRequestDto::position))
+            .forEach(item -> {
+                if (item.itemType() == ContentItemType.TEXT) {
+                    contentItemRepository.save(ContentItem.builder()
+                        .parentBlock(block)
+                        .itemType(ContentItemType.TEXT)
+                        .position(item.position())
+                        .textBody(item.textBody().trim())
+                        .build());
+                    return;
+                }
+
+                ContentItem questionItem = contentItemRepository.save(ContentItem.builder()
+                    .parentBlock(block)
+                    .itemType(ContentItemType.QUESTION)
+                    .position(item.position())
+                    .required(item.required())
+                    .build());
+                questionService.createLocalQuestion(item.question(), questionItem, creator);
+            });
+
+        return toResponse(parentItem);
     }
 
     @Transactional

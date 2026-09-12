@@ -122,6 +122,9 @@
 
 .question-item-actions {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding-top: 14px;
 }
 
@@ -255,7 +258,9 @@
 
 .block-builder-modal-wrapper {
   width: 100%;
-  max-width: 1500px;
+  max-width: 1400px;
+  height: 88vh;
+  max-height: 88vh;
 }
 
 .delete-modal-box {
@@ -315,6 +320,24 @@
   flex: 1;
   padding: 24px 28px;
   overflow-y: auto;
+}
+
+.block-modal-body.block-builder-modal-body {
+  display: flex;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.block-builder-modal-content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 28px;
+  overflow-y: auto;
+}
+
+.block-modal-error-message {
+  margin-top: 16px;
 }
 
 .block-modal-error {
@@ -398,5 +421,9 @@
   .block-modal-footer {
     padding-left: 18px;
     padding-right: 18px;
+  }
+
+  .block-builder-modal-content {
+    padding: 18px;
   }
 }

@@ -73,6 +73,7 @@ export function CreateBlockPage() {
         <CatalogSidebar
           showQuestions
           showBlocks={false}
+          defaultOpen={false}
           onAddQuestion={handleAddQuestionFromSidebar}
         />
       )}

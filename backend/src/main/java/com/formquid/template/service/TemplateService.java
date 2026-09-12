@@ -2,6 +2,7 @@ package com.formquid.template.service;
 
 import com.formquid.block.entity.Block;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.block.service.BlockService;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.content.dto.ContentItemResponseDto;
@@ -13,6 +14,7 @@ import com.formquid.question.entity.Question;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.question.service.QuestionService;
 import com.formquid.template.dto.CreateTemplateRequestDto;
+import com.formquid.template.dto.CreateTemplateItemRequestDto;
 import com.formquid.template.dto.TemplateResponseDto;
 import com.formquid.template.dto.TemplateSummaryDto;
 import com.formquid.template.entity.Template;
@@ -28,7 +30,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,7 @@ public class TemplateService {
     private final ContentItemRepository contentItemRepository;
     private final QuestionRepository questionRepository;
     private final BlockRepository blockRepository;
+    private final BlockService blockService;
     private final ContentService contentService;
     private final QuestionService questionService;
 
@@ -73,6 +78,7 @@ public class TemplateService {
 
     @Transactional
     public TemplateResponseDto create(CreateTemplateRequestDto request, User creator) {
+        validateItems(request.items());
         Template template = templateRepository.save(Template.builder()
             .title(request.title().trim())
             .description(trimToNull(request.description()))
@@ -80,24 +86,85 @@ public class TemplateService {
             .createdBy(creator)
             .build());
 
-        if (request.texts() != null) {
-            request.texts().forEach(text -> contentService.addTextToTemplate(template, text));
-        }
-        if (request.localQuestions() != null) {
-            request.localQuestions().forEach(question -> contentService.addLocalQuestionToTemplate(template, question, creator));
-        }
-        if (request.fixedQuestions() != null) {
-            request.fixedQuestions().forEach(question -> contentService.addFixedQuestionToTemplate(template, question, creator));
-        }
-        if (request.blocks() != null) {
-            request.blocks().forEach(block -> contentService.addBlockToTemplate(template, block, creator));
-        }
+        request.items().stream()
+            .sorted(Comparator.comparing(CreateTemplateItemRequestDto::position))
+            .forEach(item -> addItem(template, item, creator));
 
         List<ContentItem> items = contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId());
         if (!contentService.hasQuestion(items)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Una plantilla debe contener al menos una pregunta");
         }
         return toResponse(template);
+    }
+
+    private void addItem(Template template, CreateTemplateItemRequestDto item, User creator) {
+        if (item.itemType() == ContentItemType.TEXT) {
+            contentService.addTextToTemplate(
+                template,
+                new com.formquid.content.dto.CreateTextItemRequestDto(item.position(), item.textBody())
+            );
+            return;
+        }
+        if (item.itemType() == ContentItemType.QUESTION) {
+            if (item.fixedQuestionId() != null) {
+                contentService.addFixedQuestionToTemplate(
+                    template,
+                    new com.formquid.content.dto.AddFixedQuestionItemRequestDto(
+                        item.position(), item.required(), item.fixedQuestionId()
+                    ),
+                    creator
+                );
+            } else {
+                contentService.addLocalQuestionToTemplate(
+                    template,
+                    new com.formquid.content.dto.CreateQuestionItemRequestDto(
+                        item.position(), item.required(), item.question()
+                    ),
+                    creator
+                );
+            }
+            return;
+        }
+        if (item.blockId() != null) {
+            contentService.addBlockToTemplate(
+                template,
+                new com.formquid.content.dto.AddBlockItemRequestDto(item.position(), item.blockId()),
+                creator
+            );
+        } else {
+            contentService.addLocalBlockToTemplate(template, item.position(), item.block(), creator);
+        }
+    }
+
+    private void validateItems(List<CreateTemplateItemRequestDto> items) {
+        Set<Integer> positions = new HashSet<>();
+        for (CreateTemplateItemRequestDto item : items) {
+            if (!positions.add(item.position())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene posiciones duplicadas");
+            }
+            if (item.itemType() == ContentItemType.TEXT
+                && (item.textBody() == null || item.textBody().isBlank())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Los elementos de texto no pueden estar vacíos");
+            }
+            if (item.itemType() == ContentItemType.QUESTION) {
+                if (item.required() == null || (item.question() == null) == (item.fixedQuestionId() == null)) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Cada pregunta debe tener un único origen");
+                }
+            }
+            if (item.itemType() == ContentItemType.BLOCK) {
+                if ((item.block() == null) == (item.blockId() == null)) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Cada bloque debe tener un único origen");
+                }
+                if (item.block() != null) {
+                    blockService.validateItems(item.block().items());
+                }
+            }
+        }
+        for (int position = 1; position <= items.size(); position++) {
+            if (!positions.contains(position)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Las posiciones de la plantilla deben ser consecutivas");
+            }
+        }
     }
 
     @Transactional
