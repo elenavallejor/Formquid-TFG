@@ -131,12 +131,12 @@ export function CatalogSidebar({
   }, [createRequestController]);
 
   useEffect(() => {
-    if (isOpen && showQuestions && !hasLoadedQuestions && !isLoadingQuestions && !questionError) loadQuestions();
-  }, [isOpen, showQuestions, hasLoadedQuestions, isLoadingQuestions, questionError, loadQuestions]);
+    if (showQuestions && !hasLoadedQuestions && !isLoadingQuestions && !questionError) loadQuestions();
+  }, [showQuestions, hasLoadedQuestions, isLoadingQuestions, questionError, loadQuestions]);
 
   useEffect(() => {
-    if (isOpen && showBlocks && !hasLoadedBlocks && !isLoadingBlocks && !blockError) loadBlocks();
-  }, [isOpen, showBlocks, hasLoadedBlocks, isLoadingBlocks, blockError, loadBlocks]);
+    if (showBlocks && !hasLoadedBlocks && !isLoadingBlocks && !blockError) loadBlocks();
+  }, [showBlocks, hasLoadedBlocks, isLoadingBlocks, blockError, loadBlocks]);
 
   useEffect(() => {
     if (typeFilter && !availableQuestionTypes.some((type) => type.id === typeFilter)) setTypeFilter('');
@@ -327,11 +327,16 @@ export function CatalogSidebar({
         {filteredBlocks.map((block) => {
           const blockName = block.name || block.title || 'Bloque sin título';
           const actionId = `BLOCK-${block.id}`;
+          const questionCount = block.questionCount
+            ?? block.contentItems?.filter((item) => item.itemType === 'QUESTION').length
+            ?? block.questions?.length
+            ?? block.items?.filter((item) => item.itemType === 'QUESTION').length
+            ?? 0;
 
           return (
             <article key={block.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'BLOCK', block)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
               <span className="catalog-icon catalog-block-icon" aria-hidden="true"><MdLayers /></span>
-              <div className="catalog-info"><h4>{blockName}</h4><span>{block.questionCount ?? block.questions?.length ?? block.items?.filter((item) => item.itemType !== 'TEXT').length ?? 0} preguntas</span></div>
+              <div className="catalog-info"><h4>{blockName}</h4><span>{questionCount} {questionCount === 1 ? 'pregunta' : 'preguntas'}</span></div>
               {(onAddBlock || onPreviewBlock) && (
                 <div className="catalog-actions">
                   {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}

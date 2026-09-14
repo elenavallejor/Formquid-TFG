@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,6 +59,18 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     Page<Question> findCatalogQuestionsWithDetails(
         @Param("scope") QuestionScope scope,
         Pageable pageable
+    );
+
+    @Query("""
+        select distinct question
+        from Question question
+        left join fetch question.settings
+        left join fetch question.sourceFixedQuestion
+        left join fetch question.options
+        where question.parentItem.id in :parentItemIds
+        """)
+    List<Question> findByParentItemIdsWithDetails(
+        @Param("parentItemIds") Collection<Long> parentItemIds
     );
 
     Optional<Question> findByParentItemId(Long parentItemId);

@@ -8,6 +8,7 @@ import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
 import com.formquid.content.dto.AddBlockItemRequestDto;
 import com.formquid.content.dto.AddFixedQuestionItemRequestDto;
+import com.formquid.content.dto.BlockContentItemRowDto;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateQuestionItemRequestDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
@@ -30,9 +31,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -63,6 +67,41 @@ public class ContentService {
             .stream()
             .map(this::toResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, List<ContentItemResponseDto>> findBlocksContent(List<Block> blocks) {
+        Map<Long, List<ContentItemResponseDto>> contentByBlock = new LinkedHashMap<>();
+        blocks.forEach(block -> contentByBlock.put(block.getId(), new ArrayList<>()));
+        if (blocks.isEmpty()) return contentByBlock;
+
+        List<BlockContentItemRowDto> items = contentItemRepository.findBlockContentRows(
+            blocks.stream().map(Block::getId).toList()
+        );
+        List<Long> questionItemIds = items.stream()
+            .filter(item -> item.itemType() == ContentItemType.QUESTION)
+            .map(BlockContentItemRowDto::id)
+            .toList();
+
+        Map<Long, Question> questionsByItem = new LinkedHashMap<>();
+        if (!questionItemIds.isEmpty()) {
+            questionRepository.findByParentItemIdsWithDetails(questionItemIds)
+                .forEach(question -> questionsByItem.put(question.getParentItem().getId(), question));
+        }
+
+        for (BlockContentItemRowDto item : items) {
+            Question question = questionsByItem.get(item.id());
+            contentByBlock.get(item.parentBlockId()).add(new ContentItemResponseDto(
+                item.id(),
+                item.itemType(),
+                item.position(),
+                item.required(),
+                item.textBody(),
+                question == null ? null : questionService.toResponse(question),
+                null
+            ));
+        }
+        return contentByBlock;
     }
 
     /**

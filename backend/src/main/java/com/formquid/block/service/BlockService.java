@@ -9,6 +9,7 @@ import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
+import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateQuestionItemRequestDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
 import com.formquid.content.entity.ContentItemType;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -51,11 +53,14 @@ public class BlockService {
     @Transactional(readOnly = true)
     public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(int page, int size) {
         Pageable pageable = catalogPageable(page, size);
-        Page<BlockResponseDto> blocks = blockRepository
-            .findCatalogBlocksWithDetails(BlockScope.CATALOG, pageable)
-            .map(this::toResponse);
+        Page<Block> blocks = blockRepository.findCatalogBlocksWithDetails(BlockScope.CATALOG, pageable);
+        Map<Long, List<ContentItemResponseDto>> contentByBlock = contentService
+            .findBlocksContent(blocks.getContent());
+        List<BlockResponseDto> responses = blocks.getContent().stream()
+            .map(block -> toResponse(block, contentByBlock.getOrDefault(block.getId(), List.of())))
+            .toList();
         return new PageResponseDto<>(
-            blocks.getContent(),
+            responses,
             blocks.getNumber(),
             blocks.getSize(),
             blocks.getTotalElements(),
@@ -109,13 +114,17 @@ public class BlockService {
     }
 
     public BlockResponseDto toResponse(Block block) {
+        return toResponse(block, contentService.findBlockContent(block));
+    }
+
+    private BlockResponseDto toResponse(Block block, List<ContentItemResponseDto> contentItems) {
         return new BlockResponseDto(
             block.getId(),
             block.getScope(),
             block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
-            contentService.findBlockContent(block)
+            contentItems
         );
     }
 

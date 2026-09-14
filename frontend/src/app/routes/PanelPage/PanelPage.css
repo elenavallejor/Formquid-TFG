@@ -5,17 +5,6 @@
   box-sizing: border-box;
 }
 
-.panel-type-editor {
-  max-width: 1500px;
-  margin: 0 auto;
-}
-
-.editor-panel-wrapper {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  width: 100%;
-}
 
 .panel-page > .panel-container,
 .editor-top-section {
