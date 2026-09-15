@@ -7,12 +7,14 @@ import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
 import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPage.jsx';
 import { CreateBlockPage } from './routes/CreateBlockPage/CreateBlockPage.jsx';
 import { CreateTemplatePage } from './routes/CreateTemplatePage/CreateTemplatePage.jsx';
+import { EditElementPage } from './routes/EditElementPage/EditElementPage.jsx';
 import { ErrorPage } from './routes/ErrorPage/ErrorPage';
 import { LoginPage } from './routes/LoginPage/LoginPage';
 import { MainPage } from './routes/MainPage/MainPage';
 import { PanelPage } from './routes/PanelPage/PanelPage';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
+import { SuggestElementPage } from './routes/SuggestElementPage/SuggestElementPage.jsx';
 import { AccountPage } from './routes/AccountPage/AccountPage.jsx';
 import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagementPage.jsx';
 
@@ -20,6 +22,7 @@ import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagemen
  * Define las rutas de la aplicación y aplica las restricciones de autenticación y rol necesarias.
  */
 const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
+const EDITOR_ROLE = ['EDITOR'];
 const SUPERADMIN_ROLE = ['SUPERADMIN'];
 
 export const router = createBrowserRouter([
@@ -57,6 +60,16 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'sugerir-elemento',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={EDITOR_ROLE}>
+              <SuggestElementPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'catalogo',
         element: (
           <RequireAuth>
@@ -90,6 +103,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={ADMIN_ROLES}>
               <CreateTemplatePage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'catalogo/editar/:elementType/:elementId',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={ADMIN_ROLES}>
+              <EditElementPage />
             </RequireRole>
           </RequireAuth>
         ),

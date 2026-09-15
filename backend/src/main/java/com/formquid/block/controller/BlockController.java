@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,10 +40,12 @@ public class BlockController {
      */
     @GetMapping
     public PageResponseDto<BlockSummaryDto> findCatalogBlocks(
+        @AuthenticationPrincipal User user,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "false") boolean mine
     ) {
-        return blockService.findCatalogBlocks(page, size);
+        return blockService.findCatalogBlocks(page, size, user, mine);
     }
 
     @GetMapping("/builder")
@@ -71,10 +74,23 @@ public class BlockController {
         return blockService.createCatalogBlock(request, user);
     }
 
+    @PutMapping("/{blockId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    public BlockResponseDto update(
+        @PathVariable Long blockId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateBlockRequestDto request
+    ) {
+        return blockService.updateCatalogBlock(blockId, request, user);
+    }
+
     @DeleteMapping("/{blockId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public void deleteCatalogBlock(@PathVariable Long blockId) {
-        blockService.deleteCatalogBlock(blockId);
+    public void deleteCatalogBlock(
+        @PathVariable Long blockId,
+        @AuthenticationPrincipal User user
+    ) {
+        blockService.deleteCatalogBlock(blockId, user);
     }
 }

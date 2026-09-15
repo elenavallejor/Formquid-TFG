@@ -4,6 +4,7 @@ import { MdChevronLeft, MdChevronRight, MdKeyboardArrowRight, MdMailOutline, MdO
 
 import { deleteUser, getUsers, updateUserRole } from '../../../api/usersApi.js';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
+import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { DEFAULT_USERS_PAGE_SIZE, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserGenderLabel, getUserRoleLabel, getVisiblePages, getVisibleUsers } from '../../../utils/usersManagementUtils.js';
@@ -124,6 +125,9 @@ export function UsersManagementPage() {
 
   const startItem = totalItems === 0 ? 0 : currentPage * itemsPerPage + 1;
   const endItem = Math.min((currentPage + 1) * itemsPerPage, totalItems);
+  const isPromotion = roleModalState.nextRole === 'ADMIN';
+  const roleTargetName = roleModalState.targetUser?.name || 'este usuario';
+  const deleteTargetName = deleteModalState.targetUser?.name || 'este usuario';
 
   return (
     <main className="users-page">
@@ -153,11 +157,11 @@ export function UsersManagementPage() {
           <div className="catalog-filters-right">
             <div className="sort-select-wrapper">
               <span className="sort-label">Ordenar por:</span>
-              <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+              <Dropdown value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                 {USER_SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
-              </select>
+              </Dropdown>
             </div>
           </div>
         </section>
@@ -279,7 +283,7 @@ export function UsersManagementPage() {
             </div>
 
             <div className="pagination-per-page">
-              <select
+              <Dropdown
                 value={itemsPerPage}
                 disabled={isLoading}
                 onChange={(e) => {
@@ -290,7 +294,7 @@ export function UsersManagementPage() {
                 {USERS_PAGE_SIZE_OPTIONS.map((option) => (
                   <option key={option} value={option}>{option} por página</option>
                 ))}
-              </select>
+              </Dropdown>
             </div>
           </footer>
         )}
@@ -300,8 +304,12 @@ export function UsersManagementPage() {
         isOpen={roleModalState.isOpen}
         onClose={() => setRoleModalState({ isOpen: false, targetUser: null, nextRole: null })}
         onConfirm={handleConfirmRoleChange}
-        actionType={roleModalState.nextRole === 'ADMIN' ? 'ACCEPT' : 'DENY'}
-        applicantName={`los permisos de ${roleModalState.targetUser?.name || 'este usuario'}`}
+        title={isPromotion ? 'Ascender a administrador' : 'Eliminar permisos de administrador'}
+        message={isPromotion
+          ? `¿Confirmas que deseas ascender a ${roleTargetName} a administrador?`
+          : `¿Confirmas que deseas retirar los permisos de administrador a ${roleTargetName}?`}
+        confirmLabel={isPromotion ? 'Ascender' : 'Eliminar permisos'}
+        variant={isPromotion ? 'primary' : 'danger'}
         isProcessing={isProcessingAction}
         errorMessage={actionError}
       />
@@ -310,8 +318,10 @@ export function UsersManagementPage() {
         isOpen={deleteModalState.isOpen}
         onClose={() => setDeleteModalState({ isOpen: false, targetUser: null })}
         onConfirm={handleConfirmDeleteUser}
-        actionType="DENY"
-        applicantName={`la cuenta de ${deleteModalState.targetUser?.name || 'este usuario'}`}
+        title="Eliminar cuenta"
+        message={`¿Confirmas que deseas eliminar la cuenta de ${deleteTargetName}? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar cuenta"
+        variant="danger"
         isProcessing={isProcessingAction}
         errorMessage={actionError}
       />

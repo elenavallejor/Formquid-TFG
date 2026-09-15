@@ -19,6 +19,7 @@ import com.formquid.question.entity.QuestionSettings;
 import com.formquid.question.entity.QuestionType;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.user.entity.User;
+import com.formquid.user.entity.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -46,9 +48,14 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
 
     @Transactional(readOnly = true)
-    public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(int page, int size) {
+    public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(int page, int size, User user, boolean mine) {
         Pageable pageable = catalogPageable(page, size);
-        Page<FixedQuestionSummaryDto> questions = questionRepository.findCatalogSummaries(QuestionScope.CATALOG_FIXED, pageable);
+        Page<FixedQuestionSummaryDto> questions = questionRepository.findCatalogSummaries(
+            QuestionScope.CATALOG_FIXED,
+            user.getId(),
+            mine,
+            pageable
+        );
         return toPageResponse(questions);
     }
 
@@ -81,11 +88,12 @@ public class QuestionService {
     }
 
     @Transactional
-    public void deleteFixedQuestion(Long questionId) {
+    public void deleteFixedQuestion(Long questionId, User user) {
         Question question = getQuestion(questionId);
         if (question.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
+        requireManagementPermission(question.getCreatedBy(), user);
         if (questionRepository.countBySourceFixedQuestionId(questionId) > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar una pregunta fija que está siendo utilizada");
         }
@@ -108,6 +116,20 @@ public class QuestionService {
     public QuestionResponseDto createFixedQuestion(CreateFixedQuestionRequestDto request, User creator) {
         Question question = buildQuestion(request.question(), QuestionScope.CATALOG_FIXED, null, null, creator);
         return toResponse(questionRepository.save(question));
+    }
+
+    @Transactional
+    public QuestionResponseDto updateFixedQuestion(
+        Long questionId,
+        CreateFixedQuestionRequestDto request,
+        User user
+    ) {
+        Question question = getQuestion(questionId);
+        if (question.getScope() != QuestionScope.CATALOG_FIXED) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
+        }
+        requireManagementPermission(question.getCreatedBy(), user);
+        return toResponse(applyQuestionDraft(question, request.question()));
     }
 
     /**
@@ -145,12 +167,17 @@ public class QuestionService {
         if (question.getScope() == QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.CONFLICT, "Las preguntas de catálogo no se editan desde una encuesta");
         }
+        return applyQuestionDraft(question, dto);
+    }
+
+    private Question applyQuestionDraft(Question question, QuestionDraftDto dto) {
         validateQuestion(dto);
         question.setStatement(dto.statement().trim());
         question.setAnnotation(trimToNull(dto.annotation()));
         question.setQuestionType(dto.questionType());
         question.setEvaluationDirection(dto.evaluationDirection());
         question.setEvaluationWeight(weightFor(dto.evaluationDirection(), dto.evaluationWeight()));
+        question.setUpdatedAt(Instant.now());
         if (question.getSettings() == null) {
             question.setSettings(toSettings(dto.settings()));
         } else {
@@ -161,6 +188,13 @@ public class QuestionService {
         question.getMatrixRows().clear();
         safeRows(dto.matrixRows()).stream().map(this::toRow).forEach(question::addMatrixRow);
         return questionRepository.save(question);
+    }
+
+    private void requireManagementPermission(User creator, User user) {
+        if (user.getRole() == UserRole.SUPERADMIN) return;
+        if (creator == null || !creator.getId().equals(user.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo puedes gestionar tus propias preguntas");
+        }
     }
 
     private Question buildQuestion(QuestionDraftDto dto, QuestionScope scope, ContentItem parentItem, Question sourceFixedQuestion, User creator) {

@@ -20,6 +20,7 @@ import com.formquid.template.dto.TemplateSummaryDto;
 import com.formquid.template.entity.Template;
 import com.formquid.template.repository.TemplateRepository;
 import com.formquid.user.entity.User;
+import com.formquid.user.entity.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -47,9 +49,13 @@ public class TemplateService {
     private final QuestionService questionService;
 
     @Transactional(readOnly = true)
-    public PageResponseDto<TemplateSummaryDto> findAll(int page, int size) {
+    public PageResponseDto<TemplateSummaryDto> findAll(int page, int size, User user, boolean mine) {
         Pageable pageable = catalogPageable(page, size);
-        Page<TemplateSummaryDto> templates = templateRepository.findCatalogSummaries(pageable);
+        Page<TemplateSummaryDto> templates = templateRepository.findCatalogSummaries(
+            user.getId(),
+            mine,
+            pageable
+        );
         return new PageResponseDto<>(
             templates.getContent(),
             templates.getNumber(),
@@ -65,8 +71,9 @@ public class TemplateService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, User user) {
         Template template = getTemplate(id);
+        requireManagementPermission(template.getCreatedBy(), user);
         contentService.deleteTemplateContent(template);
         templateRepository.delete(template);
     }
@@ -95,6 +102,34 @@ public class TemplateService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Una plantilla debe contener al menos una pregunta");
         }
         return toResponse(template);
+    }
+
+    @Transactional
+    public TemplateResponseDto update(Long id, CreateTemplateRequestDto request, User user) {
+        Template template = getTemplate(id);
+        requireManagementPermission(template.getCreatedBy(), user);
+        validateItems(request.items());
+        contentService.deleteTemplateContent(template);
+        template.setTitle(request.title().trim());
+        template.setDescription(trimToNull(request.description()));
+        template.setImageKey(trimToNull(request.imageKey()));
+        template.setUpdatedAt(Instant.now());
+        request.items().stream()
+            .sorted(Comparator.comparing(CreateTemplateItemRequestDto::position))
+            .forEach(item -> addItem(template, item, user));
+
+        List<ContentItem> items = contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId());
+        if (!contentService.hasQuestion(items)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una plantilla debe contener al menos una pregunta");
+        }
+        return toResponse(templateRepository.save(template));
+    }
+
+    private void requireManagementPermission(User creator, User user) {
+        if (user.getRole() == UserRole.SUPERADMIN) return;
+        if (creator == null || !creator.getId().equals(user.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo puedes gestionar tus propias plantillas");
+        }
     }
 
     private void addItem(Template template, CreateTemplateItemRequestDto item, User creator) {

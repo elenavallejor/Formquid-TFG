@@ -2,6 +2,7 @@ package com.formquid.content.service;
 
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
+import com.formquid.block.dto.BlockResponseDto;
 import com.formquid.block.dto.CreateBlockItemRequestDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.repository.BlockRepository;
@@ -58,7 +59,7 @@ public class ContentService {
     public List<ContentItemResponseDto> findTemplateContent(Template template) {
         return contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId())
             .stream()
-            .map(this::toResponse)
+            .map(item -> toResponse(item, true))
             .toList();
     }
 
@@ -98,6 +99,7 @@ public class ContentService {
                 item.required(),
                 item.textBody(),
                 question == null ? null : questionService.toResponse(question),
+                null,
                 null
             ));
         }
@@ -435,8 +437,20 @@ public class ContentService {
     }
 
     public ContentItemResponseDto toResponse(ContentItem item) {
+        return toResponse(item, false);
+    }
+
+    private ContentItemResponseDto toResponse(ContentItem item, boolean includeBlockContent) {
         Question question = questionRepository.findByParentItemId(item.getId()).orElse(null);
         Block block = blockRepository.findByParentItemId(item.getId()).orElse(null);
+        BlockResponseDto blockResponse = block == null || !includeBlockContent ? null : new BlockResponseDto(
+            block.getId(),
+            block.getScope(),
+            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
+            block.getName(),
+            block.getDescription(),
+            findBlockContent(block)
+        );
         return new ContentItemResponseDto(
             item.getId(),
             item.getItemType(),
@@ -444,7 +458,8 @@ public class ContentService {
             item.getRequired(),
             item.getTextBody(),
             question == null ? null : questionService.toResponse(question),
-            block == null ? null : block.getId()
+            block == null ? null : block.getId(),
+            blockResponse
         );
     }
 

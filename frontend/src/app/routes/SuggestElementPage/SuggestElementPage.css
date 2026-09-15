@@ -1,0 +1,98 @@
+.suggest-element-message {
+  margin-bottom: 20px;
+}
+
+.suggest-element-card {
+  margin-bottom: 20px;
+  padding: 24px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+}
+
+.suggest-element-card h2 {
+  margin: 0 0 18px;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.suggest-element-types {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.suggest-element-type {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.suggest-element-type:hover:not(.selected) {
+  background-color: var(--color-surface-muted);
+  border-color: var(--color-primary);
+}
+
+.suggest-element-type.selected {
+  background-color: var(--color-accent-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.suggest-element-type > svg {
+  flex-shrink: 0;
+  font-size: 26px;
+}
+
+.suggest-element-type span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.suggest-element-type strong {
+  font-size: 15px;
+}
+
+.suggest-element-type small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.suggest-element-card label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.suggest-element-card textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media only screen and (max-width: 768px) {
+  .suggest-element-types {
+    grid-template-columns: 1fr;
+  }
+}

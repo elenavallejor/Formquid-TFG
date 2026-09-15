@@ -4,6 +4,7 @@ import { MdSearch, MdKeyboardArrowRight } from 'react-icons/md';
 
 import { TarjetaSolicitud } from '../../../components/TarjetaSolicitud/TarjetaSolicitud';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
+import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { getPendingRegistrationRequests, approveRegistrationRequest, rejectRegistrationRequest } from '../../../api/registrationRequestsApi';
 
 import './RegistrationRequestsPage.css';
@@ -117,6 +118,9 @@ export function RegistrationRequestsPage() {
       });
   }, [requests, searchQuery, sortOrder]);
 
+  const isAcceptAction = modalState.actionType === 'ACCEPT';
+  const applicantName = modalState.solicitud?.name || 'este usuario';
+
   return (
     <main className="admin-requests-page">
       <div className="admin-requests-container">
@@ -144,10 +148,10 @@ export function RegistrationRequestsPage() {
 
           <div className="sort-selector-wrapper">
             <label htmlFor="sort-select">Ordenar por:</label>
-            <select id="sort-select" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+            <Dropdown id="sort-select" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
               <option value="NEWEST">Más reciente</option>
               <option value="OLDEST">Más antigua</option>
-            </select>
+            </Dropdown>
           </div>
         </section>
 
@@ -177,8 +181,10 @@ export function RegistrationRequestsPage() {
         isOpen={modalState.isOpen}
         onClose={handleCloseModal}
         onConfirm={handleConfirmAction}
-        actionType={modalState.actionType}
-        applicantName={modalState.solicitud?.name}
+        title={isAcceptAction ? 'Aceptar solicitud' : 'Rechazar solicitud'}
+        message={`¿Confirmas que deseas ${isAcceptAction ? 'aceptar' : 'rechazar'} la solicitud de ${applicantName}?`}
+        confirmLabel={isAcceptAction ? 'Aceptar' : 'Rechazar'}
+        variant={isAcceptAction ? 'primary' : 'danger'}
         isProcessing={isProcessing}
         errorMessage={actionError}
       />

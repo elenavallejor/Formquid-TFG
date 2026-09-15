@@ -12,6 +12,7 @@ public record FixedQuestionSummaryDto(
     String statement,
     QuestionType questionType,
     String creatorName,
+    Instant createdAt,
     Instant updatedAt
 ) {
 }

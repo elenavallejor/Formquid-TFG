@@ -15,6 +15,7 @@ import com.formquid.content.dto.CreateTextItemRequestDto;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.service.ContentService;
 import com.formquid.user.entity.User;
+import com.formquid.user.entity.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -38,9 +40,14 @@ public class BlockService {
     private final ContentService contentService;
 
     @Transactional(readOnly = true)
-    public PageResponseDto<BlockSummaryDto> findCatalogBlocks(int page, int size) {
+    public PageResponseDto<BlockSummaryDto> findCatalogBlocks(int page, int size, User user, boolean mine) {
         Pageable pageable = catalogPageable(page, size);
-        Page<BlockSummaryDto> blocks = blockRepository.findCatalogSummaries(BlockScope.CATALOG, pageable);
+        Page<BlockSummaryDto> blocks = blockRepository.findCatalogSummaries(
+            BlockScope.CATALOG,
+            user.getId(),
+            mine,
+            pageable
+        );
         return new PageResponseDto<>(
             blocks.getContent(),
             blocks.getNumber(),
@@ -78,11 +85,12 @@ public class BlockService {
     }
 
     @Transactional
-    public void deleteCatalogBlock(Long blockId) {
+    public void deleteCatalogBlock(Long blockId, User user) {
         Block block = getBlock(blockId);
         if (block.getScope() != BlockScope.CATALOG) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
         }
+        requireManagementPermission(block.getCreatedBy(), user);
         if (blockRepository.countBySourceBlockId(blockId) > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar un bloque que está siendo utilizado");
         }
@@ -111,6 +119,31 @@ public class BlockService {
             .sorted(Comparator.comparing(CreateBlockItemRequestDto::position))
             .forEach(item -> addItem(block, item, creator));
         return toResponse(block);
+    }
+
+    @Transactional
+    public BlockResponseDto updateCatalogBlock(Long blockId, CreateBlockRequestDto request, User user) {
+        Block block = getBlock(blockId);
+        if (block.getScope() != BlockScope.CATALOG) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
+        }
+        requireManagementPermission(block.getCreatedBy(), user);
+        validateItems(request.items());
+        contentService.deleteBlockContent(block);
+        block.setName(request.name().trim());
+        block.setDescription(trimToNull(request.description()));
+        block.setUpdatedAt(Instant.now());
+        request.items().stream()
+            .sorted(Comparator.comparing(CreateBlockItemRequestDto::position))
+            .forEach(item -> addItem(block, item, user));
+        return toResponse(blockRepository.save(block));
+    }
+
+    private void requireManagementPermission(User creator, User user) {
+        if (user.getRole() == UserRole.SUPERADMIN) return;
+        if (creator == null || !creator.getId().equals(user.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo puedes gestionar tus propios bloques");
+        }
     }
 
     public BlockResponseDto toResponse(Block block) {

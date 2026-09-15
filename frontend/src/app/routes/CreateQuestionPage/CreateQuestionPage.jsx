@@ -35,7 +35,8 @@ export function CreateQuestionPage() {
 
     try {
       setIsSaving(true);
-      await createCatalogQuestion(buildCreateFixedQuestionPayload(formData));
+      const payload = buildCreateFixedQuestionPayload(formData);
+      await createCatalogQuestion(payload);
       setSuccessMsg('Pregunta fija creada con éxito. Redirigiendo...');
 
       window.setTimeout(() => {

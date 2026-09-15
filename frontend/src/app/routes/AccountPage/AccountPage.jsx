@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MdChevronRight, MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
 import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
+import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
@@ -273,13 +274,13 @@ export function AccountPage() {
             <div className="account-grid-2 margin-top-field">
               <div className="input-field-group">
                 <label htmlFor="genero">Género</label>
-                <select id="genero" name="genero" value={personalData.genero} onChange={handlePersonalChange}>
+                <Dropdown id="genero" name="genero" value={personalData.genero} onChange={handlePersonalChange}>
                   {GENDER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </Dropdown>
               </div>
             </div>
           </section>

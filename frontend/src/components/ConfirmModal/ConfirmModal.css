@@ -83,19 +83,19 @@
   border: none;
 }
 
-.confirm-modal-confirm-accept {
+.confirm-modal-confirm-primary {
   background-color: var(--color-primary);
 }
 
-.confirm-modal-confirm-accept:hover:not(:disabled) {
+.confirm-modal-confirm-primary:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
 }
 
-.confirm-modal-confirm-deny {
+.confirm-modal-confirm-danger {
   background-color: var(--color-error);
 }
 
-.confirm-modal-confirm-deny:hover:not(:disabled) {
+.confirm-modal-confirm-danger:hover:not(:disabled) {
   background-color: var(--color-error);
 }
 

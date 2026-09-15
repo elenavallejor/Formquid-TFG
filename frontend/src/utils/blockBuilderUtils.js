@@ -56,6 +56,7 @@ export function buildBlockQuestionFromCatalog(question) {
 
   return {
     ...INITIAL_QUESTION_STATE,
+    itemType: 'QUESTION',
     statement: question.statement || '',
     annotation: question.annotation || '',
     questionType: question.questionType,

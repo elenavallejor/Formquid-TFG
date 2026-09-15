@@ -24,27 +24,40 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
                 block.description,
                 creator.name,
                 count(item.id),
+                block.createdAt,
                 block.updatedAt
             )
             from Block block
             left join block.createdBy creator
             left join block.contentItems item
             where block.scope = :scope
+                and (
+                    (:mine = true and creator.id = :userId)
+                    or (:mine = false and (creator.id is null or creator.id <> :userId))
+                )
             group by
                 block.id,
                 block.name,
                 block.description,
                 creator.name,
+                block.createdAt,
                 block.updatedAt
             """,
         countQuery = """
             select count(block.id)
             from Block block
+            left join block.createdBy creator
             where block.scope = :scope
+                and (
+                    (:mine = true and creator.id = :userId)
+                    or (:mine = false and (creator.id is null or creator.id <> :userId))
+                )
             """
     )
     Page<BlockSummaryDto> findCatalogSummaries(
         @Param("scope") BlockScope scope,
+        @Param("userId") Long userId,
+        @Param("mine") boolean mine,
         Pageable pageable
     );
 

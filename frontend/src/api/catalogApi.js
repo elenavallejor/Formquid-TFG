@@ -7,11 +7,12 @@ const pageCaches = {
   templates: new Map(),
 };
 
-function buildPaginatedPath(path, { page = 0, size = 10 } = {}) {
+function buildPaginatedPath(path, { page = 0, size = 10, mine } = {}) {
   const params = new URLSearchParams();
 
   params.set('page', String(page));
   params.set('size', String(size));
+  if (typeof mine === 'boolean') params.set('mine', String(mine));
 
   return `${path}?${params.toString()}`;
 }
@@ -80,12 +81,14 @@ export function getCatalogQuestions(options = {}) {
     signal,
     page = 0,
     size = 10,
+    mine = false,
     refresh = false,
   } = options;
 
   const path = buildPaginatedPath('/catalog/questions', {
     page,
     size,
+    mine,
   });
 
   return getCachedPage(
@@ -134,6 +137,15 @@ export async function createCatalogQuestion(data) {
   return response;
 }
 
+export async function updateCatalogQuestion(questionId, data) {
+  const response = await apiClient(`/catalog/questions/${questionId}`, {
+    method: 'PUT',
+    body: data,
+  });
+  clearCache(pageCaches.questions);
+  return response;
+}
+
 export async function deleteCatalogQuestion(questionId) {
   const response = await apiClient(
     `/catalog/questions/${questionId}`,
@@ -152,12 +164,14 @@ export function getCatalogBlocks(options = {}) {
     signal,
     page = 0,
     size = 10,
+    mine = false,
     refresh = false,
   } = options;
 
   const path = buildPaginatedPath('/catalog/blocks', {
     page,
     size,
+    mine,
   });
 
   return getCachedPage(
@@ -206,6 +220,15 @@ export async function createCatalogBlock(data) {
   return response;
 }
 
+export async function updateCatalogBlock(blockId, data) {
+  const response = await apiClient(`/catalog/blocks/${blockId}`, {
+    method: 'PUT',
+    body: data,
+  });
+  clearCache(pageCaches.blocks);
+  return response;
+}
+
 export async function deleteCatalogBlock(blockId) {
   const response = await apiClient(
     `/catalog/blocks/${blockId}`,
@@ -224,12 +247,14 @@ export function getCatalogTemplates(options = {}) {
     signal,
     page = 0,
     size = 10,
+    mine = false,
     refresh = false,
   } = options;
 
   const path = buildPaginatedPath('/catalog/templates', {
     page,
     size,
+    mine,
   });
 
   return getCachedPage(
@@ -254,6 +279,15 @@ export async function createCatalogTemplate(data) {
 
   clearCache(pageCaches.templates);
 
+  return response;
+}
+
+export async function updateCatalogTemplate(templateId, data) {
+  const response = await apiClient(`/catalog/templates/${templateId}`, {
+    method: 'PUT',
+    body: data,
+  });
+  clearCache(pageCaches.templates);
   return response;
 }
 

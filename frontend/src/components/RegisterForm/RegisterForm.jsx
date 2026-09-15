@@ -5,6 +5,7 @@ import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 import { createRegistrationRequest } from '../../api/registrationRequestsApi';
 import { INITIAL_REGISTER_FORM_DATA, REGISTER_FORM_LIMITS, createRegistrationRequestPayload, hasRegisterFormErrors, validateRegisterForm } from '../../utils/registerFormValidation';
+import { Dropdown } from '../Dropdown/Dropdown.jsx';
 
 import './RegisterForm.css';
 
@@ -136,7 +137,7 @@ export function RegisterForm() {
       <div className="register-field">
         <label htmlFor="register-gender">Género</label>
         <div className="register-input-wrapper">
-          <select
+          <Dropdown
             id="register-gender"
             name="gender"
             value={formData.gender}
@@ -148,7 +149,7 @@ export function RegisterForm() {
             <option value="FEMALE">Mujer</option>
             <option value="MALE">Hombre</option>
             <option value="OTHER">Otro / Prefiero no indicarlo</option>
-          </select>
+          </Dropdown>
         </div>
         <p id="register-gender-error" className="register-error-message">
           {errors.gender || ''}

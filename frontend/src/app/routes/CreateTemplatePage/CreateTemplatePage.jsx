@@ -51,7 +51,8 @@ export function CreateTemplatePage() {
 
     try {
       setIsSaving(true);
-      await createCatalogTemplate(buildCreateCatalogTemplatePayload(formData));
+      const payload = buildCreateCatalogTemplatePayload(formData);
+      await createCatalogTemplate(payload);
       setSuccessMsg('Plantilla creada con éxito. Redirigiendo...');
       window.setTimeout(() => navigate('/catalogo/plantillas'), 1200);
     } catch (error) {

@@ -61,6 +61,38 @@ export function buildEditableTemplateBlock(block) {
   };
 }
 
+export function buildTemplateStateFromResponse(template) {
+  return {
+    title: template?.title || '',
+    description: template?.description || '',
+    items: (template?.contentItems || []).map((item) => {
+      if (item.itemType === 'TEXT') {
+        return {
+          itemType: 'TEXT',
+          localId: createLocalId('template-text'),
+          textBody: item.textBody || '',
+        };
+      }
+
+      if (item.itemType === 'BLOCK') {
+        return {
+          itemType: 'BLOCK',
+          localId: createLocalId('template-block'),
+          block: buildEditableTemplateBlock(item.block),
+        };
+      }
+
+      return {
+        ...buildBlockQuestionFromCatalog(item.question),
+        itemType: 'QUESTION',
+        localId: createLocalId('template-question'),
+        isRequired: Boolean(item.required),
+        fixedQuestionId: item.question?.sourceFixedQuestionId || undefined,
+      };
+    }),
+  };
+}
+
 export function addCatalogQuestionToTemplateBlock(templateBlock, question, targetIndex) {
   const block = buildEditableTemplateBlock(templateBlock.block || templateBlock);
   const items = [...block.items];

@@ -11,6 +11,7 @@ public record BlockSummaryDto(
     String description,
     String creatorName,
     long questionCount,
+    Instant createdAt,
     Instant updatedAt
 ) {
 }

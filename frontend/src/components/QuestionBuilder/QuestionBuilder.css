@@ -176,8 +176,7 @@
   padding-top: 10px;
 }
 
-.config-interactive-cell input,
-.config-interactive-cell select {
+.config-interactive-cell input {
   width: 100%;
   padding: 10px 12px;
   border-radius: 6px;
@@ -189,8 +188,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.config-interactive-cell input:focus,
-.config-interactive-cell select:focus {
+.config-interactive-cell input:focus {
   border-color: var(--color-primary);
   box-shadow: var(--focus-shadow);
 }

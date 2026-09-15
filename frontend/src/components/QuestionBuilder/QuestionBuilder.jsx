@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MdClose, MdAdd, MdDeleteOutline, MdOutlineThumbDown, MdOutlineThumbUp } from 'react-icons/md';
 import { CHOICE_QUESTION_TYPES, QUESTION_TYPES, RANGE_QUESTION_TYPES, SCALE_DISPLAY_OPTIONS, getMatrixRowText, getOptionFactor, getOptionText, getQuestionBuilderValidationError, getScaleDisplayValue, parseIntegerValue, parseNumberValue } from '../../utils/questionBuilderUtils.js';
+import { Dropdown } from '../Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
 import { Question } from '../Question/Question.jsx';
 
@@ -348,13 +349,13 @@ export function QuestionBuilder({
                 <div className="config-grid-row">
                   <div className="config-label-cell">Tipo visual:</div>
                   <div className="config-interactive-cell">
-                    <select value={getScaleDisplayValue(data)} onChange={(event) => handleScaleDisplayType(event.target.value)}>
+                    <Dropdown value={getScaleDisplayValue(data)} onChange={(event) => handleScaleDisplayType(event.target.value)}>
                       {SCALE_DISPLAY_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
                       ))}
-                    </select>
+                    </Dropdown>
                   </div>
                   <div className="config-help-cell">Forma en la que se mostrará la escala al encuestado.</div>
                 </div>

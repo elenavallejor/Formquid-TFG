@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { MdMoreVert, MdOutlineDelete, MdOutlineEdit } from 'react-icons/md';
+import { useEffect, useId, useRef, useState } from 'react';
+import { MdMoreVert, MdOutlineDelete, MdOutlineEdit, MdOutlineVisibility } from 'react-icons/md';
 
 import { formatDate } from '../../utils/formatDate.js';
 import { getUserInitials } from '../../utils/getUserInitials.js';
@@ -25,11 +25,15 @@ export function CatalogList({
   viewMode,
   canManageCatalog,
   itemsPerPage,
+  onView,
   onEdit,
   onDelete,
 }) {
   const [openRowMenuId, setOpenRowMenuId] = useState(null);
   const actionMenuRef = useRef(null);
+  const scrollHelpId = `catalog-scroll-help-${useId().replaceAll(':', '')}`;
+  const hasActions = canManageCatalog || Boolean(onView);
+  const isScrollable = items.length > 5;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,8 +49,8 @@ export function CatalogList({
     return (
       <Skeleton
         variant={viewMode === 'GRID' ? 'grid' : 'list'}
-        count={itemsPerPage}
-        hasActions={canManageCatalog}
+        count={Math.min(itemsPerPage, 5)}
+        hasActions={hasActions}
       />
     );
   }
@@ -63,7 +67,7 @@ export function CatalogList({
 
   if (items.length === 0) {
     return (
-      <section className="catalog-list-section">
+      <section className="catalog-list-section catalog-list-section--empty">
         <div className="empty-catalog-card">
           <p>No se encontraron {config.label.toLowerCase()} disponibles.</p>
         </div>
@@ -74,7 +78,21 @@ export function CatalogList({
   const ItemIcon = config.icon;
 
   function renderActions(item) {
-    if (!canManageCatalog) return null;
+    if (!canManageCatalog) {
+      if (!onView) return null;
+      return (
+        <div className="catalog-actions-cell">
+          <button
+            type="button"
+            className="btn-item-view"
+            aria-label={`Ver detalles de ${item[config.titleKey] || config.singularLabel}`}
+            onClick={() => onView(item)}
+          >
+            <MdOutlineVisibility aria-hidden="true" />
+          </button>
+        </div>
+      );
+    }
 
     return (
       <div className="catalog-actions-cell">
@@ -92,6 +110,19 @@ export function CatalogList({
 
         {openRowMenuId === item.id && (
           <div className="catalog-action-menu" ref={actionMenuRef}>
+            {onView && (
+              <button
+                type="button"
+                className="menu-option"
+                onClick={() => {
+                  setOpenRowMenuId(null);
+                  onView(item);
+                }}
+              >
+                <MdOutlineVisibility aria-hidden="true" />
+                <span>Ver detalles</span>
+              </button>
+            )}
             <button
               type="button"
               className="menu-option"
@@ -130,6 +161,7 @@ export function CatalogList({
               ? item[config.descriptionKey] || 'Sin descripción.'
               : '';
             const creator = item.creatorName || '';
+            const createdAt = formatDate(item.createdAt, { includeTime: true });
             const updatedAt = formatDate(item.updatedAt, { includeTime: true });
 
             const isQuestion = config.detailKey === 'questionType';
@@ -160,6 +192,10 @@ export function CatalogList({
                       {detailValue}
                     </span>
                     <span>
+                      <strong>Creado: </strong>
+                      {createdAt.date}
+                    </span>
+                    <span>
                       <strong>Actualizado: </strong>
                       {updatedAt.date}
                     </span>
@@ -174,26 +210,37 @@ export function CatalogList({
   }
 
   return (
-    <section
-      className="catalog-list-section catalog-list-section--fixed"
-      style={{ '--catalog-page-size': itemsPerPage }}
-    >
+    <section className="catalog-list-section">
       <div className="catalog-blocks-wrapper">
-        <div className={`catalog-list-columns-header ${!canManageCatalog ? 'no-actions' : ''}`}>
+        <div className={`catalog-list-columns-header ${!hasActions ? 'no-actions' : ''}`}>
           <span className="col-main-header">{config.singularLabel.toUpperCase()}</span>
           <span className="col-creator-header">CREADOR</span>
           <span className="col-count-header">{config.detailLabel.toUpperCase()}</span>
+          <span className="col-created-header">CREADO</span>
           <span className="col-updated-header">ACTUALIZADO</span>
-          {canManageCatalog && <span className="col-actions-header">ACCIONES</span>}
+          {hasActions && <span className="col-actions-header">ACCIONES</span>}
         </div>
 
-        <div className="catalog-blocks-list">
+        {isScrollable && (
+          <p id={scrollHelpId} className="catalog-scroll-help">
+            Lista desplazable: usa la rueda o las flechas para ver más resultados.
+          </p>
+        )}
+
+        <div
+          className={`catalog-blocks-list ${isScrollable ? 'catalog-items-scroll' : ''}`}
+          role={isScrollable ? 'region' : undefined}
+          aria-label={isScrollable ? `${config.label}: resultados desplazables` : undefined}
+          aria-describedby={isScrollable ? scrollHelpId : undefined}
+          tabIndex={isScrollable ? 0 : undefined}
+        >
           {items.map((item) => {
             const title = item[config.titleKey] || 'Sin título';
             const description = config.descriptionKey
               ? item[config.descriptionKey] || 'Sin descripción.'
               : '';
             const creator = item.creatorName || '';
+            const createdAt = formatDate(item.createdAt, { includeTime: true });
             const updatedAt = formatDate(item.updatedAt, { includeTime: true });
             const detailValue =
               config.detailKey === 'questionType'
@@ -203,7 +250,7 @@ export function CatalogList({
             return (
               <article
                 key={item.id}
-                className={`catalog-block-card ${!canManageCatalog ? 'no-actions' : ''}`}
+                className={`catalog-block-card ${!hasActions ? 'no-actions' : ''}`}
               >
                 <div className="col-main catalog-item-main">
                   <div className="catalog-item-icon">
@@ -221,6 +268,10 @@ export function CatalogList({
                   <span className="user-creator-name">{creator || '—'}</span>
                 </div>
                 <div className="col-count font-numeric">{detailValue}</div>
+                <div className="col-created font-numeric font-date">
+                  <div>{createdAt.date}</div>
+                  {createdAt.time && <div className="time-subtext">{createdAt.time}</div>}
+                </div>
                 <div className="col-updated font-numeric font-date">
                   <div>{updatedAt.date}</div>
                   {updatedAt.time && <div className="time-subtext">{updatedAt.time}</div>}

@@ -192,8 +192,7 @@
   margin-bottom: 16px;
 }
 
-.catalog-search > svg,
-.catalog-select > svg {
+.catalog-search > svg {
   position: absolute;
   top: 50%;
   color: var(--color-text-muted);
@@ -206,12 +205,7 @@
   left: 10px;
 }
 
-.catalog-select > svg {
-  right: 8px;
-}
-
-.catalog-search input,
-.catalog-select select {
+.catalog-search input {
   width: 100%;
   min-height: 40px;
   box-sizing: border-box;
@@ -227,19 +221,12 @@
   padding: 8px 10px 8px 32px;
 }
 
-.catalog-select select {
-  padding: 8px 28px 8px 10px;
-  appearance: none;
-  cursor: pointer;
-}
-
 .catalog-search input::placeholder {
   color: var(--color-text-muted);
   opacity: 1;
 }
 
-.catalog-search input:focus-visible,
-.catalog-select select:focus-visible {
+.catalog-search input:focus-visible {
   border-color: var(--color-primary);
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
@@ -590,7 +577,6 @@
   .catalog-item,
   .catalog-action,
   .catalog-search input,
-  .catalog-select select,
   .catalog-empty,
   .catalog-error {
     border: 1px solid CanvasText;

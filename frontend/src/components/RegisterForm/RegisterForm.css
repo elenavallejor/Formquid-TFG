@@ -22,6 +22,10 @@
   align-items: center;
 }
 
+.register-input-wrapper .custom-dropdown {
+  flex: 1;
+}
+
 .register-input-icon {
   position: absolute;
   left: 14px;
@@ -35,7 +39,6 @@
 }
 
 .register-input-wrapper input,
-.register-input-wrapper select,
 .register-input-wrapper textarea {
   width: 100%;
   padding: 10px 14px 10px 42px;
@@ -51,12 +54,6 @@
   padding-right: 44px;
 }
 
-.register-input-wrapper select {
-  padding-left: 14px;
-  cursor: pointer;
-  appearance: none;
-}
-
 .register-textarea-wrapper textarea {
   min-height: 80px;
   padding-top: 12px;
@@ -64,7 +61,6 @@
 }
 
 .register-input-wrapper input:focus,
-.register-input-wrapper select:focus,
 .register-input-wrapper textarea:focus {
   border-color: var(--color-accent);
   box-shadow: var(--focus-shadow);

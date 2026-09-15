@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdFormatListBulleted, MdGridView, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdFormatListBulleted, MdGridView, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
 
 import {
   deleteCatalogBlock,
@@ -12,7 +12,9 @@ import {
 } from '../../../api/catalogApi.js';
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
+import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { formatDate } from '../../../utils/formatDate.js';
 
 import './CatalogPage.css';
 
@@ -21,6 +23,7 @@ const DEFAULT_PAGE_SIZE = 10;
 const SECTION_CONFIG = {
   plantillas: {
     label: 'Plantillas',
+    ownLabel: 'MIS PLANTILLAS',
     singularLabel: 'plantilla',
     editPathPrefix: '/catalogo/editar/plantilla',
     icon: MdOutlineDescription,
@@ -33,6 +36,7 @@ const SECTION_CONFIG = {
   },
   bloques: {
     label: 'Bloques',
+    ownLabel: 'MIS BLOQUES',
     singularLabel: 'bloque',
     editPathPrefix: '/catalogo/editar/bloque',
     icon: MdOutlineWidgets,
@@ -45,6 +49,7 @@ const SECTION_CONFIG = {
   },
   preguntas: {
     label: 'Preguntas fijas',
+    ownLabel: 'MIS PREGUNTAS',
     singularLabel: 'pregunta',
     editPathPrefix: '/catalogo/editar/pregunta',
     icon: MdOutlineHelpOutline,
@@ -57,12 +62,53 @@ const SECTION_CONFIG = {
   },
 };
 
+const QUESTION_TYPE_LABELS = {
+  TEXT: 'Texto',
+  NUMBER: 'Número',
+  SINGLE_CHOICE: 'Opción única',
+  MULTIPLE_CHOICE: 'Opción múltiple',
+  SCALE: 'Escala',
+  MATRIX_SCALE: 'Matriz',
+  BOOLEAN: 'Sí / No',
+};
+
+function emptyCatalogState(isLoading = true) {
+  return {
+    items: [],
+    totalItems: 0,
+    totalPages: 0,
+    isLoading,
+    errorMessage: '',
+  };
+}
+
 function getVisiblePages(currentPage, totalPages) {
   if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index);
   }
   const firstPage = Math.min(Math.max(currentPage - 2, 0), totalPages - 5);
   return Array.from({ length: 5 }, (_, index) => firstPage + index);
+}
+
+function filterAndSortItems(items, config, searchQuery, sortOrder) {
+  if (!config) return [];
+  const query = searchQuery.trim().toLowerCase();
+
+  return items
+    .filter((item) => {
+      if (!query) return true;
+      const title = String(item[config.titleKey] ?? '').toLowerCase();
+      const description = config.descriptionKey
+        ? String(item[config.descriptionKey] ?? '').toLowerCase()
+        : '';
+      const creator = String(item.creatorName ?? '').toLowerCase();
+      return title.includes(query) || description.includes(query) || creator.includes(query);
+    })
+    .sort((first, second) => {
+      const firstDate = new Date(first.updatedAt ?? 0).getTime();
+      const secondDate = new Date(second.updatedAt ?? 0).getTime();
+      return sortOrder === 'OLDEST' ? firstDate - secondDate : secondDate - firstDate;
+    });
 }
 
 export function CatalogPage() {
@@ -74,26 +120,36 @@ export function CatalogPage() {
   const requestVersionRef = useRef(0);
   const createMenuRef = useRef(null);
 
-  const [items, setItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [ownCatalog, setOwnCatalog] = useState(() => emptyCatalogState());
+  const [publicCatalog, setPublicCatalog] = useState(() => emptyCatalogState());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('NEWEST');
   const [viewMode, setViewMode] = useState('LIST');
-  const [currentPage, setCurrentPage] = useState(0);
+  const [ownCurrentPage, setOwnCurrentPage] = useState(0);
+  const [publicCurrentPage, setPublicCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
-  const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, item: null });
+  const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, item: null, source: null });
+  const [detailItem, setDetailItem] = useState(null);
 
-  const canManageCatalog = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+  const canCreateCatalog = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+  const isSuperadmin = user?.role === 'SUPERADMIN';
 
   useEffect(() => {
-    setCurrentPage(0);
+    setOwnCurrentPage(0);
+    setPublicCurrentPage(0);
     setSearchQuery('');
+    setDetailItem(null);
   }, [section]);
+
+  useEffect(() => {
+    if (!detailItem) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setDetailItem(null);
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [detailItem]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -106,89 +162,173 @@ export function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    if (!config) return undefined;
+    if (!config || !user?.id) return undefined;
 
     const requestVersion = ++requestVersionRef.current;
 
-    async function loadCatalog() {
+    async function loadCatalog(mine, page, setCatalog) {
+      setCatalog(emptyCatalogState());
       try {
-        setIsLoading(true);
-        setErrorMessage('');
-        setItems([]);
-
         const response = await config.load({
-          page: currentPage,
+          page,
           size: itemsPerPage,
+          mine,
         });
 
         if (requestVersion !== requestVersionRef.current) return;
 
-        setItems(Array.isArray(response?.content) ? response.content : []);
-        setTotalItems(Number(response?.totalElements ?? 0));
-        setTotalPages(Number(response?.totalPages ?? 0));
+        setCatalog({
+          items: Array.isArray(response?.content) ? response.content : [],
+          totalItems: Number(response?.totalElements ?? 0),
+          totalPages: Number(response?.totalPages ?? 0),
+          isLoading: false,
+          errorMessage: '',
+        });
       } catch (error) {
         if (requestVersion !== requestVersionRef.current) return;
         console.error('Error al cargar el catálogo:', error);
-        setItems([]);
-        setTotalItems(0);
-        setTotalPages(0);
-        setErrorMessage('No se pudieron cargar los elementos del catálogo.');
-      } finally {
-        if (requestVersion === requestVersionRef.current) setIsLoading(false);
+        setCatalog({
+          ...emptyCatalogState(false),
+          errorMessage: 'No se pudieron cargar los elementos del catálogo.',
+        });
       }
     }
 
-    void loadCatalog();
+    if (canCreateCatalog) {
+      void loadCatalog(true, ownCurrentPage, setOwnCatalog);
+    } else {
+      setOwnCatalog(emptyCatalogState(false));
+    }
+    void loadCatalog(false, publicCurrentPage, setPublicCatalog);
     return undefined;
-  }, [config, currentPage, itemsPerPage]);
+  }, [canCreateCatalog, config, itemsPerPage, ownCurrentPage, publicCurrentPage, user?.id]);
 
-  const visibleItems = useMemo(() => {
-    if (!config) return [];
-    const query = searchQuery.trim().toLowerCase();
-
-    return items
-      .filter((item) => {
-        if (!query) return true;
-        const title = String(item[config.titleKey] ?? '').toLowerCase();
-        const description = config.descriptionKey
-          ? String(item[config.descriptionKey] ?? '').toLowerCase()
-          : '';
-        const creator = String(item.creatorName ?? '').toLowerCase();
-        return title.includes(query) || description.includes(query) || creator.includes(query);
-      })
-      .sort((first, second) => {
-        const firstDate = new Date(first.updatedAt ?? 0).getTime();
-        const secondDate = new Date(second.updatedAt ?? 0).getTime();
-        return sortOrder === 'OLDEST' ? firstDate - secondDate : secondDate - firstDate;
-      });
-  }, [items, searchQuery, sortOrder, config]);
-
-  const visiblePages = useMemo(
-    () => getVisiblePages(currentPage, totalPages),
-    [currentPage, totalPages]
-  );
+  const visibleOwnItems = filterAndSortItems(ownCatalog.items, config, searchQuery, sortOrder);
+  const visiblePublicItems = filterAndSortItems(publicCatalog.items, config, searchQuery, sortOrder);
 
   if (!config) {
     return <Navigate to="/catalogo/bloques" replace />;
   }
 
   async function handleDeleteConfirm() {
-    const itemToDelete = deleteModalState.item;
+    const { item: itemToDelete, source } = deleteModalState;
     if (!itemToDelete) return;
 
     try {
       await config.deleteApi(itemToDelete.id);
-      setItems((prev) => prev.filter((item) => item.id !== itemToDelete.id));
-      setTotalItems((prev) => Math.max(0, prev - 1));
+      const removeItem = (current) => ({
+        ...current,
+        items: current.items.filter((item) => item.id !== itemToDelete.id),
+        totalItems: Math.max(0, current.totalItems - 1),
+      });
+      if (source === 'own') setOwnCatalog(removeItem);
+      else setPublicCatalog(removeItem);
     } catch (error) {
       console.error('Error al eliminar elemento:', error);
     } finally {
-      setDeleteModalState({ isOpen: false, item: null });
+      setDeleteModalState({ isOpen: false, item: null, source: null });
     }
   }
 
-  const startItem = totalItems === 0 ? 0 : currentPage * itemsPerPage + 1;
-  const endItem = Math.min((currentPage + 1) * itemsPerPage, totalItems);
+  function handlePageSizeChange(value) {
+    setItemsPerPage(value);
+    setOwnCurrentPage(0);
+    setPublicCurrentPage(0);
+  }
+
+  function renderPagination(catalog, currentPage, setCurrentPage) {
+    if (catalog.isLoading || catalog.errorMessage || catalog.totalItems === 0) return null;
+    const startItem = currentPage * itemsPerPage + 1;
+    const endItem = Math.min((currentPage + 1) * itemsPerPage, catalog.totalItems);
+
+    return (
+      <footer className="catalog-pagination-footer">
+        <div className="pagination-count-label">
+          Mostrando {startItem} a {endItem} de {catalog.totalItems} {config.label.toLowerCase()}
+        </div>
+
+        <div className="pagination-numbers-bar">
+          <button
+            type="button"
+            className="btn-page-nav"
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage((page) => Math.max(page - 1, 0))}
+          >
+            <MdChevronLeft aria-hidden="true" />
+          </button>
+
+          {getVisiblePages(currentPage, catalog.totalPages).map((page) => (
+            <button
+              key={page}
+              type="button"
+              className={`btn-page-number ${currentPage === page ? 'active' : ''}`}
+              onClick={() => setCurrentPage(page)}
+            >
+              {page + 1}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="btn-page-nav"
+            disabled={currentPage >= catalog.totalPages - 1}
+            onClick={() => setCurrentPage((page) => Math.min(page + 1, catalog.totalPages - 1))}
+          >
+            <MdChevronRight aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="pagination-per-page">
+          <Dropdown value={itemsPerPage} onChange={(event) => handlePageSizeChange(Number(event.target.value))}>
+            <option value={5}>5 por página</option>
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+          </Dropdown>
+        </div>
+      </footer>
+    );
+  }
+
+  function renderCatalogSection({
+    title,
+    catalog,
+    visibleItems,
+    currentPage,
+    setCurrentPage,
+    canManage,
+    source,
+  }) {
+    return (
+      <section className="catalog-results-section" aria-labelledby={`catalog-${source}-title`}>
+        <header className="catalog-results-header">
+          <h2 id={`catalog-${source}-title`}>{title}</h2>
+        </header>
+
+        <CatalogList
+          items={visibleItems}
+          config={config}
+          isLoading={catalog.isLoading}
+          errorMessage={catalog.errorMessage}
+          viewMode={viewMode}
+          canManageCatalog={canManage}
+          itemsPerPage={itemsPerPage}
+          onView={setDetailItem}
+          onEdit={(id) => navigate(`${config.editPathPrefix}/${id}`)}
+          onDelete={(item) => setDeleteModalState({ isOpen: true, item, source })}
+        />
+
+        {renderPagination(catalog, currentPage, setCurrentPage)}
+      </section>
+    );
+  }
+
+  const detailCreatedAt = formatDate(detailItem?.createdAt, { includeTime: true });
+  const detailUpdatedAt = formatDate(detailItem?.updatedAt, { includeTime: true });
+  const detailValue = detailItem
+    ? config.detailKey === 'questionType'
+      ? QUESTION_TYPE_LABELS[detailItem.questionType] ?? detailItem.questionType ?? '—'
+      : detailItem[config.detailKey] ?? 0
+    : null;
 
   return (
     <main className="catalog-page">
@@ -201,7 +341,7 @@ export function CatalogPage() {
 
         <header className="catalog-page-header">
           <h1>CATÁLOGO</h1>
-          {canManageCatalog && (
+          {canCreateCatalog && (
             <div className="create-element-dropdown-container" ref={createMenuRef}>
               <button
                 type="button"
@@ -261,13 +401,13 @@ export function CatalogPage() {
           <div className="catalog-filters-right">
             <div className="sort-select-wrapper">
               <span className="sort-label">Ordenar por:</span>
-              <select
+              <Dropdown
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
               >
                 <option value="NEWEST">Más reciente</option>
                 <option value="OLDEST">Más antigua</option>
-              </select>
+              </Dropdown>
             </div>
             <div className="view-mode-toggle">
               <button
@@ -288,81 +428,65 @@ export function CatalogPage() {
           </div>
         </section>
 
-        <CatalogList
-          items={visibleItems}
-          config={config}
-          isLoading={isLoading}
-          errorMessage={errorMessage}
-          viewMode={viewMode}
-          canManageCatalog={canManageCatalog}
-          itemsPerPage={itemsPerPage}
-          onEdit={(id) => navigate(`${config.editPathPrefix}/${id}`)}
-          onDelete={(item) => setDeleteModalState({ isOpen: true, item })}
-        />
+        <div className="catalog-results">
+          {canCreateCatalog && renderCatalogSection({
+            title: config.ownLabel,
+            catalog: ownCatalog,
+            visibleItems: visibleOwnItems,
+            currentPage: ownCurrentPage,
+            setCurrentPage: setOwnCurrentPage,
+            canManage: true,
+            source: 'own',
+          })}
 
-        {!isLoading && !errorMessage && (totalItems > 0 || totalPages > 0) && (
-          <footer className="catalog-pagination-footer">
-            <div className="pagination-count-label">
-              Mostrando {startItem} a {endItem} de {totalItems} {config.label.toLowerCase()}
-            </div>
-
-            <div className="pagination-numbers-bar">
-              <button
-                type="button"
-                className="btn-page-nav"
-                disabled={currentPage === 0 || isLoading}
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
-              >
-                <MdChevronLeft aria-hidden="true" />
-              </button>
-
-              {visiblePages.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`btn-page-number ${currentPage === page ? 'active' : ''}`}
-                  disabled={isLoading}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page + 1}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                className="btn-page-nav"
-                disabled={currentPage >= totalPages - 1 || isLoading}
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages - 1))}
-              >
-                <MdChevronRight aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="pagination-per-page">
-              <select
-                value={itemsPerPage}
-                disabled={isLoading}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(0);
-                }}
-              >
-                <option value={5}>5 por página</option>
-                <option value={10}>10 por página</option>
-                <option value={20}>20 por página</option>
-              </select>
-            </div>
-          </footer>
-        )}
+          {renderCatalogSection({
+            title: 'LISTA PÚBLICA',
+            catalog: publicCatalog,
+            visibleItems: visiblePublicItems,
+            currentPage: publicCurrentPage,
+            setCurrentPage: setPublicCurrentPage,
+            canManage: isSuperadmin,
+            source: 'public',
+          })}
+        </div>
       </div>
 
       <ConfirmModal
         isOpen={deleteModalState.isOpen}
-        onClose={() => setDeleteModalState({ isOpen: false, item: null })}
+        onClose={() => setDeleteModalState({ isOpen: false, item: null, source: null })}
         onConfirm={handleDeleteConfirm}
-        actionType="DENY"
-        applicantName={deleteModalState.item?.[config.titleKey] || 'elemento del catálogo'}
+        title={`Eliminar ${config.singularLabel}`}
+        message={`¿Confirmas que deseas eliminar “${deleteModalState.item?.[config.titleKey] || 'este elemento'}”? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        variant="danger"
       />
+
+      {detailItem && (
+        <div
+          className="catalog-details-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setDetailItem(null);
+          }}
+        >
+          <section className="catalog-details-modal" role="dialog" aria-modal="true" aria-labelledby="catalog-details-title">
+            <header className="catalog-details-header">
+              <h2 id="catalog-details-title">DETALLE DE {config.singularLabel.toUpperCase()}</h2>
+              <button type="button" aria-label="Cerrar detalles" onClick={() => setDetailItem(null)}>
+                <MdClose aria-hidden="true" />
+              </button>
+            </header>
+
+            <dl className="catalog-details-data">
+              <div><dt>{config.singularLabel.toUpperCase()}</dt><dd>{detailItem[config.titleKey] || 'Sin título'}</dd></div>
+              {config.descriptionKey && <div><dt>DESCRIPCIÓN</dt><dd>{detailItem[config.descriptionKey] || 'Sin descripción.'}</dd></div>}
+              <div><dt>CREADOR</dt><dd>{detailItem.creatorName || '—'}</dd></div>
+              <div><dt>{config.detailLabel.toUpperCase()}</dt><dd>{detailValue}</dd></div>
+              <div><dt>CREADO</dt><dd>{detailCreatedAt.date}{detailCreatedAt.time ? `, ${detailCreatedAt.time}` : ''}</dd></div>
+              <div><dt>ÚLTIMA EDICIÓN</dt><dd>{detailUpdatedAt.date}{detailUpdatedAt.time ? `, ${detailUpdatedAt.time}` : ''}</dd></div>
+            </dl>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

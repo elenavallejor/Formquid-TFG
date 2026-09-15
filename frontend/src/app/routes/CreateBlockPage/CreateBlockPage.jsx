@@ -53,8 +53,9 @@ export function CreateBlockPage() {
 
     try {
       setIsSaving(true);
-      await createCatalogBlock(buildCreateCatalogBlockPayload(formData));
-      setSuccessMsg("Bloque creado con éxito. Redirigiendo...");
+      const payload = buildCreateCatalogBlockPayload(formData);
+      await createCatalogBlock(payload);
+      setSuccessMsg('Bloque creado con éxito. Redirigiendo...');
 
       window.setTimeout(() => {
         navigate("/catalogo/bloques");

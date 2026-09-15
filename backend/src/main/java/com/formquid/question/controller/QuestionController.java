@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,10 +34,12 @@ public class QuestionController {
 
     @GetMapping
     public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(
+        @AuthenticationPrincipal User user,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "false") boolean mine
     ) {
-        return questionService.findFixedQuestions(page, size);
+        return questionService.findFixedQuestions(page, size, user, mine);
     }
 
     @GetMapping("/builder")
@@ -62,10 +65,23 @@ public class QuestionController {
         return questionService.createFixedQuestion(request, user);
     }
 
+    @PutMapping("/{questionId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    public QuestionResponseDto updateFixedQuestion(
+        @PathVariable Long questionId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateFixedQuestionRequestDto request
+    ) {
+        return questionService.updateFixedQuestion(questionId, request, user);
+    }
+
     @DeleteMapping("/{questionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public void deleteFixedQuestion(@PathVariable Long questionId) {
-        questionService.deleteFixedQuestion(questionId);
+    public void deleteFixedQuestion(
+        @PathVariable Long questionId,
+        @AuthenticationPrincipal User user
+    ) {
+        questionService.deleteFixedQuestion(questionId, user);
     }
 }

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 
 import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
+import { Dropdown } from '../Dropdown/Dropdown.jsx';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
 
 import './CatalogSidebar.css';
@@ -367,11 +368,10 @@ export function CatalogSidebar({
               <div className="catalog-filters">
                 <div className="catalog-search"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar preguntas fijas" placeholder="Buscar preguntas..." value={questionSearch} onChange={(event) => setQuestionSearch(event.target.value)} /></div>
                 <div className="catalog-select">
-                  <select aria-label="Filtrar preguntas por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                  <Dropdown aria-label="Filtrar preguntas por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
                     <option value="">Filtrar por tipo</option>
                     {availableQuestionTypes.map((type) => <option key={type.id} value={type.id}>{type.title}</option>)}
-                  </select>
-                  <MdKeyboardArrowDown aria-hidden="true" />
+                  </Dropdown>
                 </div>
               </div>
               {renderQuestionList()}

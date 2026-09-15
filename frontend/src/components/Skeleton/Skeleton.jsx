@@ -78,6 +78,7 @@ export function Skeleton({ variant = 'list', count = 3, hasActions = true }) {
             </div>
             <span className="skeleton-line skeleton-w-40" />
             <span className="skeleton-line skeleton-w-80" />
+            <span className="skeleton-line skeleton-w-80" />
             {hasActions && <span className="skeleton-box skeleton-action" />}
           </div>
         </div>

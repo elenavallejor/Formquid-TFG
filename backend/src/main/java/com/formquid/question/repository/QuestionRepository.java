@@ -25,20 +25,32 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 question.statement,
                 question.questionType,
                 creator.name,
+                question.createdAt,
                 question.updatedAt
             )
             from Question question
             left join question.createdBy creator
             where question.scope = :scope
+                and (
+                    (:mine = true and creator.id = :userId)
+                    or (:mine = false and (creator.id is null or creator.id <> :userId))
+                )
             """,
         countQuery = """
             select count(question.id)
             from Question question
+            left join question.createdBy creator
             where question.scope = :scope
+                and (
+                    (:mine = true and creator.id = :userId)
+                    or (:mine = false and (creator.id is null or creator.id <> :userId))
+                )
             """
     )
     Page<FixedQuestionSummaryDto> findCatalogSummaries(
         @Param("scope") QuestionScope scope,
+        @Param("userId") Long userId,
+        @Param("mine") boolean mine,
         Pageable pageable
     );
 

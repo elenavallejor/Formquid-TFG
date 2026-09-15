@@ -4,16 +4,16 @@ import './ConfirmModal.css';
 
 /**
  * Componente de modal de confirmación.
- * 
- * Muestra un diálogo de confirmación para aprobar o rechazar una acción, 
- * bloqueando interacciones mientras la operación está en curso.
+ * Muestra el contenido de la acción indicado por la pantalla que lo utiliza.
  */
 export function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
-  actionType,
-  applicantName,
+  title,
+  message,
+  confirmLabel,
+  variant = 'primary',
   isProcessing = false,
   errorMessage = '',
 }) {
@@ -29,17 +29,6 @@ export function ConfirmModal({
   }, [isOpen, isProcessing, onClose]);
 
   if (!isOpen) return null;
-
-  const isAcceptAction = actionType === 'ACCEPT';
-  const title = isAcceptAction ? 'Aceptar solicitud' : 'Rechazar solicitud';
-  const message = isAcceptAction
-    ? `¿Confirmas que deseas aceptar la solicitud de ${applicantName || 'este usuario'}?`
-    : `¿Confirmas que deseas rechazar la solicitud de ${applicantName || 'este usuario'}?`;
-  const confirmLabel = isProcessing
-    ? 'Procesando...'
-    : isAcceptAction
-      ? 'Aceptar'
-      : 'Rechazar';
 
   function handleOverlayClick(event) {
     if (event.target === event.currentTarget && !isProcessing) onClose();
@@ -70,11 +59,11 @@ export function ConfirmModal({
 
           <button
             type="button"
-            className={`confirm-modal-confirm ${isAcceptAction ? 'confirm-modal-confirm-accept' : 'confirm-modal-confirm-deny'}`}
+            className={`confirm-modal-confirm confirm-modal-confirm-${variant}`}
             onClick={onConfirm}
             disabled={isProcessing}
           >
-            {confirmLabel}
+            {isProcessing ? 'Procesando...' : confirmLabel}
           </button>
         </div>
       </section>

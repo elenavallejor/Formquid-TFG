@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -32,6 +33,7 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
                         else 0
                     end
                 ), 0),
+                template.createdAt,
                 template.updatedAt
             )
             from Template template
@@ -39,18 +41,30 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
             left join template.contentItems item
             left join item.block nestedBlock
             left join nestedBlock.contentItems blockItem
+            where
+                (:mine = true and creator.id = :userId)
+                or (:mine = false and (creator.id is null or creator.id <> :userId))
             group by
                 template.id,
                 template.title,
                 template.description,
                 template.imageKey,
                 creator.name,
+                template.createdAt,
                 template.updatedAt
             """,
         countQuery = """
             select count(template.id)
             from Template template
+            left join template.createdBy creator
+            where
+                (:mine = true and creator.id = :userId)
+                or (:mine = false and (creator.id is null or creator.id <> :userId))
             """
     )
-    Page<TemplateSummaryDto> findCatalogSummaries(Pageable pageable);
+    Page<TemplateSummaryDto> findCatalogSummaries(
+        @Param("userId") Long userId,
+        @Param("mine") boolean mine,
+        Pageable pageable
+    );
 }

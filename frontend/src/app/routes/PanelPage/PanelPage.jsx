@@ -5,6 +5,7 @@ import { MdAdd, MdChevronLeft, MdChevronRight, MdOutlineBarChart, MdOutlineDescr
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
 import { getMySurveys } from '../../../api/surveysApi.js';
 import { AdminPanelButton } from '../../../components/AdminPanelButton/AdminPanelButton.jsx';
+import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { PanelButton } from '../../../components/PanelButton/PanelButton.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
@@ -420,7 +421,7 @@ export function PanelPage() {
                 </div>
 
                 <div className="surveys-selects-group">
-                  <select
+                  <Dropdown
                     value={statusFilter}
                     aria-label="Filtrar encuestas por estado"
                     onChange={(event) => {
@@ -440,9 +441,9 @@ export function PanelPage() {
                     <option value="CLOSED">
                       Cerradas
                     </option>
-                  </select>
+                  </Dropdown>
 
-                  <select
+                  <Dropdown
                     value={sortOrder}
                     aria-label="Ordenar encuestas"
                     onChange={(event) => {
@@ -456,7 +457,7 @@ export function PanelPage() {
                     <option value="OLDEST">
                       Más antiguas primero
                     </option>
-                  </select>
+                  </Dropdown>
                 </div>
               </div>
 

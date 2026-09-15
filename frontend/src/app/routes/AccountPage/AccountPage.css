@@ -163,8 +163,7 @@
   font-weight: 700;
 }
 
-.input-field-group input,
-.input-field-group select {
+.input-field-group input {
   width: 100%;
   padding: 11px 14px;
   background-color: var(--color-surface);
@@ -176,8 +175,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.input-field-group input:focus,
-.input-field-group select:focus {
+.input-field-group input:focus {
   border-color: var(--color-primary);
   box-shadow: var(--focus-shadow);
 }

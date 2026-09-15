@@ -95,24 +95,6 @@
   color: var(--color-text-muted);
 }
 
-.sort-selector-wrapper select {
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.sort-selector-wrapper select:focus,
-.sort-selector-wrapper select:focus-visible {
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-shadow);
-}
-
 .requests-list {
   display: flex;
   flex-direction: column;

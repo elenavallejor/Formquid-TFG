@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,10 +35,12 @@ public class TemplateController {
 
     @GetMapping
     public PageResponseDto<TemplateSummaryDto> findAll(
+        @AuthenticationPrincipal User user,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "false") boolean mine
     ) {
-        return templateService.findAll(page, size);
+        return templateService.findAll(page, size, user, mine);
     }
 
     @GetMapping("/{templateId}")
@@ -55,10 +58,23 @@ public class TemplateController {
         return templateService.create(request, user);
     }
 
+    @PutMapping("/{templateId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    public TemplateResponseDto update(
+        @PathVariable Long templateId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateTemplateRequestDto request
+    ) {
+        return templateService.update(templateId, request, user);
+    }
+
     @DeleteMapping("/{templateId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
-    public void delete(@PathVariable Long templateId) {
-        templateService.delete(templateId);
+    public void delete(
+        @PathVariable Long templateId,
+        @AuthenticationPrincipal User user
+    ) {
+        templateService.delete(templateId, user);
     }
 }

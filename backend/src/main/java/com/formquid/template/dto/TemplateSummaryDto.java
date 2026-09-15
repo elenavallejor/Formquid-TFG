@@ -12,6 +12,7 @@ public record TemplateSummaryDto(
     String imageKey,
     String creatorName,
     long questionCount,
+    Instant createdAt,
     Instant updatedAt
 ) {
 }
