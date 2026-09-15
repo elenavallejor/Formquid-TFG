@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -111,6 +112,7 @@ public class ContentService {
      */
     @Transactional
     public ContentItemResponseDto addTextToSurvey(Survey survey, CreateTextItemRequestDto dto) {
+        makeRoomForSurveyItem(survey, dto.position());
         ContentItem item = baseSurveyItem(survey, ContentItemType.TEXT, dto.position());
         item.setTextBody(dto.textBody().trim());
         return toResponse(contentItemRepository.save(item));
@@ -122,6 +124,7 @@ public class ContentService {
         CreateQuestionItemRequestDto dto,
         User creator
     ) {
+        makeRoomForSurveyItem(survey, dto.position());
         ContentItem item = baseSurveyItem(survey, ContentItemType.QUESTION, dto.position());
         item.setRequired(dto.required());
         ContentItem savedItem = contentItemRepository.save(item);
@@ -135,6 +138,7 @@ public class ContentService {
         AddFixedQuestionItemRequestDto dto,
         User creator
     ) {
+        makeRoomForSurveyItem(survey, dto.position());
         ContentItem item = baseSurveyItem(survey, ContentItemType.QUESTION, dto.position());
         item.setRequired(dto.required());
         ContentItem savedItem = contentItemRepository.save(item);
@@ -145,6 +149,7 @@ public class ContentService {
 
     @Transactional
     public ContentItemResponseDto addBlockToSurvey(Survey survey, AddBlockItemRequestDto dto, User creator) {
+        makeRoomForSurveyItem(survey, dto.position());
         ContentItem item = baseSurveyItem(survey, ContentItemType.BLOCK, dto.position());
         ContentItem savedItem = contentItemRepository.save(item);
         Block catalogBlock = getCatalogBlock(dto.blockId());
@@ -189,11 +194,16 @@ public class ContentService {
     public void deleteSurveyItem(Survey survey, Long itemId) {
         ContentItem item = getSurveyItem(survey, itemId);
         contentItemRepository.delete(item);
+        contentItemRepository.flush();
+        normalizeSurveyPositions(survey.getId());
     }
 
     @Transactional
     public List<ContentItemResponseDto> reorderSurveyContent(Survey survey, ReorderContentRequestDto dto) {
         List<ContentItem> currentItems = contentItemRepository.findBySurveyIdOrderByPositionAsc(survey.getId());
+        if (dto == null || dto.items() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El reordenado debe incluir sus elementos");
+        }
         Set<Long> currentIds = currentItems.stream()
             .map(ContentItem::getId)
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -210,12 +220,18 @@ public class ContentService {
         if (!currentIds.equals(requestedIds)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El reordenado debe incluir todos los elementos principales de la encuesta");
         }
-
-        int temporaryPosition = currentItems.size() + dto.items().size() + 1000;
-        for (Long itemId : requestedIds) {
-            contentItemRepository.updatePosition(itemId, temporaryPosition++);
+        for (int position = 1; position <= currentItems.size(); position++) {
+            if (!requestedPositions.contains(position)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Las posiciones deben ser consecutivas desde 1");
+            }
         }
-        dto.items().forEach(item -> contentItemRepository.updatePosition(item.itemId(), item.position()));
+
+        Map<Long, Integer> positionsById = dto.items().stream()
+            .collect(java.util.stream.Collectors.toMap(
+                item -> item.itemId(),
+                item -> item.position()
+            ));
+        rewritePositions(currentItems, positionsById);
         return findSurveyContent(survey.getId());
     }
 
@@ -289,7 +305,15 @@ public class ContentService {
                     .position(item.position())
                     .required(item.required())
                     .build());
-                questionService.createLocalQuestion(item.question(), questionItem, creator);
+                if (item.fixedQuestionId() != null) {
+                    questionService.createFixedSnapshot(
+                        getCatalogFixedQuestion(item.fixedQuestionId()),
+                        questionItem,
+                        creator
+                    );
+                } else {
+                    questionService.createLocalQuestion(item.question(), questionItem, creator);
+                }
             });
 
         return toResponse(parentItem);
@@ -312,6 +336,26 @@ public class ContentService {
     }
 
     @Transactional
+    public ContentItemResponseDto addFixedQuestionToBlock(
+        Block block,
+        AddFixedQuestionItemRequestDto dto,
+        User creator
+    ) {
+        if (block.getScope() == BlockScope.SNAPSHOT) {
+            throw new ApiException(HttpStatus.CONFLICT, "No se puede modificar el contenido interno de un bloque copiado");
+        }
+        ContentItem item = ContentItem.builder()
+            .parentBlock(block)
+            .itemType(ContentItemType.QUESTION)
+            .position(dto.position())
+            .required(dto.required())
+            .build();
+        ContentItem savedItem = contentItemRepository.save(item);
+        questionService.createFixedSnapshot(getCatalogFixedQuestion(dto.fixedQuestionId()), savedItem, creator);
+        return toResponse(savedItem);
+    }
+
+    @Transactional
     public ContentItemResponseDto addTextToBlock(Block block, CreateTextItemRequestDto dto) {
         if (block.getScope() == BlockScope.SNAPSHOT) {
             throw new ApiException(HttpStatus.CONFLICT, "No se puede modificar el contenido interno de un bloque copiado");
@@ -329,7 +373,7 @@ public class ContentService {
         Block copy = Block.builder()
             .parentItem(parentItem)
             .scope(BlockScope.SNAPSHOT)
-            .sourceBlock(source)
+            .sourceBlock(resolveCatalogSource(source))
             .name(source.getName())
             .description(source.getDescription())
             .createdBy(creator)
@@ -362,6 +406,18 @@ public class ContentService {
             questionService.copyAsLocal(sourceQuestion, savedItem, creator);
         }
         return savedBlock;
+    }
+
+    private Block resolveCatalogSource(Block source) {
+        Block candidate = source;
+        Set<Long> visitedIds = new HashSet<>();
+        while (candidate != null && candidate.getScope() != BlockScope.CATALOG) {
+            if (candidate.getId() != null && !visitedIds.add(candidate.getId())) {
+                throw new ApiException(HttpStatus.CONFLICT, "La procedencia del bloque contiene un ciclo");
+            }
+            candidate = candidate.getSourceBlock();
+        }
+        return candidate;
     }
 
     @Transactional
@@ -400,6 +456,51 @@ public class ContentService {
             .itemType(type)
             .position(position)
             .build();
+    }
+
+    private void makeRoomForSurveyItem(Survey survey, Integer requestedPosition) {
+        List<ContentItem> items = contentItemRepository.findBySurveyIdOrderByPositionAsc(survey.getId());
+        if (requestedPosition == null || requestedPosition < 1 || requestedPosition > items.size() + 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La posición debe estar entre 1 y " + (items.size() + 1));
+        }
+
+        Map<Long, Integer> positionsById = new LinkedHashMap<>();
+        for (int index = 0; index < items.size(); index++) {
+            int normalizedPosition = index + 1;
+            positionsById.put(
+                items.get(index).getId(),
+                normalizedPosition >= requestedPosition ? normalizedPosition + 1 : normalizedPosition
+            );
+        }
+        rewritePositions(items, positionsById);
+    }
+
+    private void normalizeSurveyPositions(Long surveyId) {
+        List<ContentItem> items = contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId);
+        Map<Long, Integer> positionsById = new LinkedHashMap<>();
+        for (int index = 0; index < items.size(); index++) {
+            positionsById.put(items.get(index).getId(), index + 1);
+        }
+        rewritePositions(items, positionsById);
+    }
+
+    private void rewritePositions(List<ContentItem> items, Map<Long, Integer> positionsById) {
+        if (items.isEmpty()) {
+            return;
+        }
+        int temporaryPosition = items.stream()
+            .map(ContentItem::getPosition)
+            .filter(java.util.Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(0) + items.size() + 1000;
+        for (ContentItem item : items) {
+            item.setPosition(temporaryPosition++);
+        }
+        contentItemRepository.flush();
+        for (ContentItem item : items) {
+            item.setPosition(positionsById.get(item.getId()));
+        }
+        contentItemRepository.flush();
     }
 
     private ContentItem baseTemplateItem(Template template, ContentItemType type, Integer position) {
@@ -449,7 +550,12 @@ public class ContentService {
             block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
-            findBlockContent(block)
+            findBlockContent(block),
+            block.getCreatedBy() == null ? null : block.getCreatedBy().getId(),
+            block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
+            block.getCreatedAt(),
+            block.getUpdatedAt(),
+            null
         );
         return new ContentItemResponseDto(
             item.getId(),

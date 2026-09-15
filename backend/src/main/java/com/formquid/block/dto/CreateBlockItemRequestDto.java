@@ -14,6 +14,7 @@ public record CreateBlockItemRequestDto(
     @NotNull @Min(1) Integer position,
     Boolean required,
     @Valid QuestionDraftDto question,
+    Long fixedQuestionId,
     String textBody
 ) {
 }

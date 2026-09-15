@@ -9,6 +9,7 @@ import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
+import com.formquid.content.dto.AddFixedQuestionItemRequestDto;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateQuestionItemRequestDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
@@ -81,7 +82,11 @@ public class BlockService {
         if (block.getScope() != BlockScope.CATALOG) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
         }
-        return toResponse(block);
+        return toResponse(
+            block,
+            contentService.findBlockContent(block),
+            blockRepository.countBySourceBlockId(blockId)
+        );
     }
 
     @Transactional
@@ -108,7 +113,7 @@ public class BlockService {
      */
     @Transactional
     public BlockResponseDto createCatalogBlock(CreateBlockRequestDto request, User creator) {
-        validateItems(request.items());
+        validateDraft(request);
         Block block = blockRepository.save(Block.builder()
             .scope(BlockScope.CATALOG)
             .name(request.name().trim())
@@ -128,7 +133,7 @@ public class BlockService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
         }
         requireManagementPermission(block.getCreatedBy(), user);
-        validateItems(request.items());
+        validateDraft(request);
         contentService.deleteBlockContent(block);
         block.setName(request.name().trim());
         block.setDescription(trimToNull(request.description()));
@@ -147,17 +152,31 @@ public class BlockService {
     }
 
     public BlockResponseDto toResponse(Block block) {
-        return toResponse(block, contentService.findBlockContent(block));
+        return toResponse(block, contentService.findBlockContent(block), null);
     }
 
     private BlockResponseDto toResponse(Block block, List<ContentItemResponseDto> contentItems) {
+        return toResponse(block, contentItems, null);
+    }
+
+    private BlockResponseDto toResponse(
+        Block block,
+        List<ContentItemResponseDto> contentItems,
+        Long usageCount
+    ) {
+        User creator = block.getCreatedBy();
         return new BlockResponseDto(
             block.getId(),
             block.getScope(),
             block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
-            contentItems
+            contentItems,
+            creator == null ? null : creator.getId(),
+            creator == null ? null : creator.getName(),
+            block.getCreatedAt(),
+            block.getUpdatedAt(),
+            usageCount
         );
     }
 
@@ -179,7 +198,9 @@ public class BlockService {
     }
 
     public void validateItems(List<CreateBlockItemRequestDto> items) {
-        if (items == null || items.stream().noneMatch(item -> item.itemType() == ContentItemType.QUESTION)) {
+        if (items == null || items.stream().noneMatch(item ->
+            item != null && item.itemType() == ContentItemType.QUESTION
+        )) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque debe contener al menos una pregunta");
         }
         Set<Integer> positions = new HashSet<>();
@@ -190,11 +211,19 @@ public class BlockService {
             if (!positions.add(item.position())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La estructura del bloque contiene posiciones duplicadas");
             }
-            if (item.itemType() == ContentItemType.QUESTION && (item.required() == null || item.question() == null)) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Cada elemento de pregunta debe incluir su configuración");
+            if (item.itemType() == ContentItemType.QUESTION
+                && (item.required() == null || (item.question() == null) == (item.fixedQuestionId() == null))) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Cada pregunta debe tener un único origen");
+            }
+            if (item.itemType() == ContentItemType.QUESTION && item.textBody() != null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Una pregunta no puede incluir contenido de texto independiente");
             }
             if (item.itemType() == ContentItemType.TEXT && (item.textBody() == null || item.textBody().isBlank())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Los elementos de texto no pueden estar vacíos");
+            }
+            if (item.itemType() == ContentItemType.TEXT
+                && (item.required() != null || item.question() != null || item.fixedQuestionId() != null)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Un texto no puede incluir configuración de pregunta");
             }
             if (item.itemType() == ContentItemType.BLOCK) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque no puede contener otros bloques");
@@ -207,15 +236,33 @@ public class BlockService {
         }
     }
 
+    public void validateDraft(CreateBlockRequestDto request) {
+        if (request == null || request.name() == null || request.name().isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque necesita un nombre");
+        }
+        if (request.name().trim().length() > 150) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El nombre del bloque no puede superar 150 caracteres");
+        }
+        validateItems(request.items());
+    }
+
     private void addItem(Block block, CreateBlockItemRequestDto item, User creator) {
         if (item.itemType() == ContentItemType.TEXT) {
             contentService.addTextToBlock(block, new CreateTextItemRequestDto(item.position(), item.textBody()));
             return;
         }
-        contentService.addLocalQuestionToBlock(
-            block,
-            new CreateQuestionItemRequestDto(item.position(), item.required(), item.question()),
-            creator
-        );
+        if (item.fixedQuestionId() != null) {
+            contentService.addFixedQuestionToBlock(
+                block,
+                new AddFixedQuestionItemRequestDto(item.position(), item.required(), item.fixedQuestionId()),
+                creator
+            );
+        } else {
+            contentService.addLocalQuestionToBlock(
+                block,
+                new CreateQuestionItemRequestDto(item.position(), item.required(), item.question()),
+                creator
+            );
+        }
     }
 }

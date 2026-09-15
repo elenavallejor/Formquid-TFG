@@ -52,9 +52,9 @@ public class SuperadminInitializer implements CommandLineRunner {
             return;
         }
 
-        if (userRepository.countByRole(UserRole.SUPERADMIN) != 1) {
+        if (userRepository.countByRole(UserRole.SUPERADMIN) < 1) {
             throw new IllegalStateException(
-                "La base debe contener exactamente un superadministrador"
+                "La base debe contener al menos un superadministrador"
             );
         }
     }

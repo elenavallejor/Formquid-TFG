@@ -77,6 +77,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         select distinct question
         from Question question
         left join fetch question.settings
+        left join fetch question.createdBy
         left join fetch question.sourceFixedQuestion
         left join fetch question.options
         where question.parentItem.id in :parentItemIds

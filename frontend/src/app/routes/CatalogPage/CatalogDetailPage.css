@@ -1,0 +1,345 @@
+.catalog-detail-page {
+  width: 100%;
+  padding: 20px 40px 60px;
+  background: var(--color-background);
+}
+
+.catalog-detail-container {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.catalog-detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.catalog-detail-breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.catalog-detail-breadcrumb a:hover {
+  color: var(--color-primary);
+}
+
+.catalog-detail-page-header {
+  margin-bottom: 24px;
+}
+
+.catalog-detail-page-header h1 {
+  margin: 0;
+  color: var(--color-header);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.catalog-detail-page-header p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.catalog-detail-card {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+
+.catalog-detail-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 78px;
+  padding: 16px 34px;
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+}
+
+.catalog-detail-title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 25px;
+}
+
+.catalog-detail-title-bar h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.catalog-detail-body {
+  padding: 28px 34px 34px;
+}
+
+.catalog-detail-description {
+  margin: 0 0 20px;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.catalog-detail-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.catalog-detail-metadata div {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.catalog-detail-metadata dt,
+.catalog-detail-metadata dd {
+  margin: 0;
+  font-size: 15px;
+}
+
+.catalog-detail-metadata dt {
+  color: var(--color-header);
+  font-weight: 800;
+}
+
+.catalog-detail-metadata dd {
+  color: var(--color-text);
+}
+
+.catalog-detail-usage {
+  margin: 16px 0 0;
+  color: var(--color-header);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.catalog-detail-structure {
+  margin-top: 24px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.catalog-detail-structure-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.catalog-detail-structure-header h3 {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.catalog-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.catalog-detail-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 19px;
+}
+
+.catalog-detail-actions button:hover {
+  background: var(--color-accent-surface);
+}
+
+.catalog-detail-actions .catalog-detail-delete:hover {
+  background: var(--color-error-surface);
+  color: var(--color-error);
+}
+
+.catalog-detail-structure-content {
+  padding: 20px;
+}
+
+.catalog-detail-structure--block {
+  overflow: visible;
+  padding: 28px 32px;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.catalog-detail-structure--block .catalog-detail-structure-header {
+  min-height: 0;
+  margin-bottom: 24px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.catalog-detail-structure--block .catalog-detail-structure-header h3 {
+  font-size: 16px;
+}
+
+.catalog-detail-structure--block .catalog-detail-structure-content {
+  padding: 0;
+}
+
+.catalog-detail-block-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.catalog-detail-block-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.catalog-detail-block-item-icon {
+  display: flex;
+  align-items: center;
+  padding-top: 18px;
+}
+
+.catalog-detail-question-type-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid;
+  border-radius: 6px;
+  background: var(--color-surface);
+  font-size: 16px;
+}
+
+.catalog-detail-block-item-preview {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog-detail-question,
+.catalog-detail-content-item {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.catalog-detail-question {
+  padding: 16px;
+}
+
+.catalog-detail-question .academic-question-card {
+  margin: 0;
+}
+
+.catalog-detail-template-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.catalog-detail-content-item {
+  padding: 12px;
+}
+
+.catalog-detail-content-item.catalog-detail-question {
+  padding: 16px;
+}
+
+.catalog-detail-loading,
+.catalog-detail-error {
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.catalog-detail-error p {
+  margin: 0 0 12px;
+  color: var(--color-error);
+}
+
+.catalog-detail-error a {
+  font-weight: 700;
+}
+
+@media only screen and (max-width: 768px) {
+  .catalog-detail-page {
+    padding: 16px 12px 40px;
+  }
+
+  .catalog-detail-title-bar {
+    align-items: flex-start;
+    padding: 16px 18px;
+  }
+
+  .catalog-detail-title-bar h2 {
+    font-size: 18px;
+  }
+
+  .catalog-detail-body {
+    padding: 20px 16px 24px;
+  }
+
+  .catalog-detail-structure-content {
+    padding: 12px;
+  }
+
+  .catalog-detail-structure--block {
+    padding: 20px 16px;
+  }
+
+  .catalog-detail-structure--block .catalog-detail-structure-header {
+    align-items: flex-start;
+  }
+
+  .catalog-detail-block-item {
+    padding: 14px;
+  }
+
+  .catalog-detail-block-item-icon {
+    display: none;
+  }
+
+  .catalog-detail-metadata div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+}

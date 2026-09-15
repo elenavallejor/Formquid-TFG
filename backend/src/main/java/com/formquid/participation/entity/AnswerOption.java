@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -21,7 +22,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "answer_options")
+@Table(
+    name = "answer_options",
+    indexes = @Index(name = "idx_answer_options_option", columnList = "option_id")
+)
 public class AnswerOption {
 
     @EmbeddedId

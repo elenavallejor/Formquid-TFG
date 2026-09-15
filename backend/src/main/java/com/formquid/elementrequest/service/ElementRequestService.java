@@ -1,7 +1,6 @@
 package com.formquid.elementrequest.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.formquid.block.dto.CreateBlockItemRequestDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.service.BlockService;
 import com.formquid.common.exception.ApiException;
@@ -17,7 +16,6 @@ import com.formquid.notification.service.NotificationService;
 import com.formquid.question.dto.CreateFixedQuestionRequestDto;
 import com.formquid.question.service.QuestionService;
 import com.formquid.template.dto.CreateTemplateRequestDto;
-import com.formquid.template.dto.CreateTemplateItemRequestDto;
 import com.formquid.template.service.TemplateService;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -152,69 +150,15 @@ public class ElementRequestService {
     }
 
     private void validateBlock(CreateBlockRequestDto dto) {
-        if (dto.name() == null || dto.name().isBlank() || dto.items() == null || dto.items().isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque solicitado necesita nombre y al menos una pregunta");
-        }
-        boolean hasQuestion = false;
-        for (CreateBlockItemRequestDto item : dto.items()) {
-            if (item == null || item.itemType() == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene un elemento inválido");
-            }
-            if (item.itemType() == ContentItemType.QUESTION) {
-                if (item.question() == null) {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene una pregunta nula");
-                }
-                questionService.validateQuestionDraft(item.question());
-                hasQuestion = true;
-                continue;
-            }
-            if (item.itemType() == ContentItemType.TEXT) {
-                if (item.textBody() == null || item.textBody().isBlank()) {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, "El bloque contiene un texto vacío");
-                }
-                continue;
-            }
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque no puede contener otros bloques");
-        }
-        if (!hasQuestion) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque solicitado debe contener al menos una pregunta");
-        }
+        blockService.validateDraft(dto);
+        dto.items().stream()
+            .filter(item -> item.itemType() == ContentItemType.QUESTION)
+            .forEach(item -> questionService.validateQuestionDraft(item.question()));
     }
 
     private void validateTemplate(CreateElementRequestDto request) {
         CreateTemplateRequestDto dto = objectMapper.convertValue(request.requestPayload(), CreateTemplateRequestDto.class);
-        if (dto.title() == null || dto.title().isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla solicitada necesita título");
-        }
-        long questionCount = 0;
-        if (dto.items() == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla solicitada necesita contenido");
-        }
-        for (CreateTemplateItemRequestDto item : dto.items()) {
-            if (item == null || item.itemType() == null) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene un elemento inválido");
-            }
-            if (item.itemType() == ContentItemType.TEXT) {
-                if (item.textBody() == null || item.textBody().isBlank()) {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene un texto vacío");
-                }
-                continue;
-            }
-            if (item.itemType() == ContentItemType.QUESTION) {
-                if (item.question() != null) {
-                    questionService.validateQuestionDraft(item.question());
-                }
-                questionCount += 1;
-                continue;
-            }
-            if (item.block() != null) {
-                validateBlock(item.block());
-            }
-            questionCount += 1;
-        }
-        if (questionCount == 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Una plantilla solicitada debe contener preguntas o bloques");
-        }
+        templateService.validateDraft(dto);
     }
 
     private ElementRequestResponseDto toResponse(ElementRequest request) {

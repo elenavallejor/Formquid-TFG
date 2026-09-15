@@ -42,7 +42,7 @@ import java.util.List;
 @Check(constraints = """
     scope in ('CATALOG', 'SNAPSHOT')
     and (
-        (scope = 'CATALOG' and parent_item_id is null)
+        (scope = 'CATALOG' and parent_item_id is null and source_block_id is null)
         or (scope = 'SNAPSHOT' and parent_item_id is not null)
     )""")
 @Table(

@@ -3,6 +3,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { RequireAuth } from './guards/RequireAuth.jsx';
 import { RequireRole } from './guards/RequireRole.jsx';
 import { App } from './app';
+import { CatalogDetailPage } from './routes/CatalogPage/CatalogDetailPage.jsx';
 import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
 import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPage.jsx';
 import { CreateBlockPage } from './routes/CreateBlockPage/CreateBlockPage.jsx';
@@ -114,6 +115,14 @@ export const router = createBrowserRouter([
             <RequireRole allowedRoles={ADMIN_ROLES}>
               <EditElementPage />
             </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'catalogo/detalles/:elementType/:elementId',
+        element: (
+          <RequireAuth>
+            <CatalogDetailPage />
           </RequireAuth>
         ),
       },

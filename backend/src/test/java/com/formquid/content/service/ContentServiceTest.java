@@ -1,0 +1,111 @@
+package com.formquid.content.service;
+
+import com.formquid.block.entity.Block;
+import com.formquid.block.entity.BlockScope;
+import com.formquid.block.repository.BlockRepository;
+import com.formquid.content.dto.ContentItemResponseDto;
+import com.formquid.content.dto.CreateTextItemRequestDto;
+import com.formquid.content.dto.ReorderContentItemRequestDto;
+import com.formquid.content.dto.ReorderContentRequestDto;
+import com.formquid.content.entity.ContentItem;
+import com.formquid.content.entity.ContentItemType;
+import com.formquid.content.repository.ContentItemRepository;
+import com.formquid.question.repository.QuestionRepository;
+import com.formquid.question.service.QuestionService;
+import com.formquid.survey.entity.Survey;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class ContentServiceTest {
+
+    @Mock
+    private ContentItemRepository contentItemRepository;
+    @Mock
+    private QuestionRepository questionRepository;
+    @Mock
+    private BlockRepository blockRepository;
+    @Mock
+    private QuestionService questionService;
+
+    @InjectMocks
+    private ContentService contentService;
+
+    @Test
+    void copiedSnapshotReferencesCatalogRootInsteadOfIntermediateSnapshot() {
+        Block catalog = Block.builder().id(1L).scope(BlockScope.CATALOG).name("Catálogo").build();
+        Block templateSnapshot = Block.builder()
+            .id(2L)
+            .scope(BlockScope.SNAPSHOT)
+            .sourceBlock(catalog)
+            .name("Copia")
+            .build();
+        ContentItem surveyItem = ContentItem.builder().id(10L).itemType(ContentItemType.BLOCK).build();
+
+        when(blockRepository.save(any(Block.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(contentItemRepository.findByParentBlockIdOrderByPositionAsc(2L)).thenReturn(List.of());
+
+        Block copy = contentService.copyExistingBlock(templateSnapshot, surveyItem, null);
+
+        assertThat(copy.getSourceBlock()).isSameAs(catalog);
+    }
+
+    @Test
+    void insertingSurveyItemCompactsExistingPositionsAndMakesRoom() {
+        Survey survey = Survey.builder().id(1L).build();
+        ContentItem first = surveyItem(10L, survey, 1);
+        ContentItem second = surveyItem(11L, survey, 4);
+        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of(first, second));
+        when(contentItemRepository.save(any(ContentItem.class))).thenAnswer(invocation -> {
+            ContentItem item = invocation.getArgument(0);
+            item.setId(12L);
+            return item;
+        });
+
+        ContentItemResponseDto response = contentService.addTextToSurvey(
+            survey,
+            new CreateTextItemRequestDto(2, "Texto")
+        );
+
+        assertThat(first.getPosition()).isEqualTo(1);
+        assertThat(second.getPosition()).isEqualTo(3);
+        assertThat(response.position()).isEqualTo(2);
+    }
+
+    @Test
+    void reorderRejectsNonConsecutivePositions() {
+        Survey survey = Survey.builder().id(1L).build();
+        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of(
+            surveyItem(10L, survey, 1),
+            surveyItem(11L, survey, 2)
+        ));
+
+        ReorderContentRequestDto request = new ReorderContentRequestDto(List.of(
+            new ReorderContentItemRequestDto(10L, 1),
+            new ReorderContentItemRequestDto(11L, 3)
+        ));
+
+        assertThatThrownBy(() -> contentService.reorderSurveyContent(survey, request))
+            .hasMessage("Las posiciones deben ser consecutivas desde 1");
+    }
+
+    private ContentItem surveyItem(Long id, Survey survey, int position) {
+        return ContentItem.builder()
+            .id(id)
+            .survey(survey)
+            .itemType(ContentItemType.TEXT)
+            .position(position)
+            .textBody("Texto")
+            .build();
+    }
+}

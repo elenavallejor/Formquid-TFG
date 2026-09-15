@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdFormatListBulleted, MdGridView, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
 
 import {
   deleteCatalogBlock,
@@ -14,7 +14,6 @@ import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { formatDate } from '../../../utils/formatDate.js';
 
 import './CatalogPage.css';
 
@@ -25,6 +24,7 @@ const SECTION_CONFIG = {
     label: 'Plantillas',
     ownLabel: 'MIS PLANTILLAS',
     singularLabel: 'plantilla',
+    elementType: 'plantilla',
     editPathPrefix: '/catalogo/editar/plantilla',
     icon: MdOutlineDescription,
     load: getCatalogTemplates,
@@ -38,6 +38,7 @@ const SECTION_CONFIG = {
     label: 'Bloques',
     ownLabel: 'MIS BLOQUES',
     singularLabel: 'bloque',
+    elementType: 'bloque',
     editPathPrefix: '/catalogo/editar/bloque',
     icon: MdOutlineWidgets,
     load: getCatalogBlocks,
@@ -51,6 +52,7 @@ const SECTION_CONFIG = {
     label: 'Preguntas fijas',
     ownLabel: 'MIS PREGUNTAS',
     singularLabel: 'pregunta',
+    elementType: 'pregunta',
     editPathPrefix: '/catalogo/editar/pregunta',
     icon: MdOutlineHelpOutline,
     load: getCatalogQuestions,
@@ -60,16 +62,6 @@ const SECTION_CONFIG = {
     detailLabel: 'tipo',
     detailKey: 'questionType',
   },
-};
-
-const QUESTION_TYPE_LABELS = {
-  TEXT: 'Texto',
-  NUMBER: 'Número',
-  SINGLE_CHOICE: 'Opción única',
-  MULTIPLE_CHOICE: 'Opción múltiple',
-  SCALE: 'Escala',
-  MATRIX_SCALE: 'Matriz',
-  BOOLEAN: 'Sí / No',
 };
 
 function emptyCatalogState(isLoading = true) {
@@ -124,13 +116,11 @@ export function CatalogPage() {
   const [publicCatalog, setPublicCatalog] = useState(() => emptyCatalogState());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('NEWEST');
-  const [viewMode, setViewMode] = useState('LIST');
   const [ownCurrentPage, setOwnCurrentPage] = useState(0);
   const [publicCurrentPage, setPublicCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, item: null, source: null });
-  const [detailItem, setDetailItem] = useState(null);
 
   const canCreateCatalog = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   const isSuperadmin = user?.role === 'SUPERADMIN';
@@ -139,17 +129,7 @@ export function CatalogPage() {
     setOwnCurrentPage(0);
     setPublicCurrentPage(0);
     setSearchQuery('');
-    setDetailItem(null);
   }, [section]);
-
-  useEffect(() => {
-    if (!detailItem) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') setDetailItem(null);
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [detailItem]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -309,10 +289,9 @@ export function CatalogPage() {
           config={config}
           isLoading={catalog.isLoading}
           errorMessage={catalog.errorMessage}
-          viewMode={viewMode}
           canManageCatalog={canManage}
           itemsPerPage={itemsPerPage}
-          onView={setDetailItem}
+          onView={(item) => navigate(`/catalogo/detalles/${config.elementType}/${item.id}`)}
           onEdit={(id) => navigate(`${config.editPathPrefix}/${id}`)}
           onDelete={(item) => setDeleteModalState({ isOpen: true, item, source })}
         />
@@ -321,14 +300,6 @@ export function CatalogPage() {
       </section>
     );
   }
-
-  const detailCreatedAt = formatDate(detailItem?.createdAt, { includeTime: true });
-  const detailUpdatedAt = formatDate(detailItem?.updatedAt, { includeTime: true });
-  const detailValue = detailItem
-    ? config.detailKey === 'questionType'
-      ? QUESTION_TYPE_LABELS[detailItem.questionType] ?? detailItem.questionType ?? '—'
-      : detailItem[config.detailKey] ?? 0
-    : null;
 
   return (
     <main className="catalog-page">
@@ -409,22 +380,6 @@ export function CatalogPage() {
                 <option value="OLDEST">Más antigua</option>
               </Dropdown>
             </div>
-            <div className="view-mode-toggle">
-              <button
-                type="button"
-                className={`toggle-btn ${viewMode === 'GRID' ? 'active' : ''}`}
-                onClick={() => setViewMode('GRID')}
-              >
-                <MdGridView aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className={`toggle-btn ${viewMode === 'LIST' ? 'active' : ''}`}
-                onClick={() => setViewMode('LIST')}
-              >
-                <MdFormatListBulleted aria-hidden="true" />
-              </button>
-            </div>
           </div>
         </section>
 
@@ -461,32 +416,6 @@ export function CatalogPage() {
         variant="danger"
       />
 
-      {detailItem && (
-        <div
-          className="catalog-details-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setDetailItem(null);
-          }}
-        >
-          <section className="catalog-details-modal" role="dialog" aria-modal="true" aria-labelledby="catalog-details-title">
-            <header className="catalog-details-header">
-              <h2 id="catalog-details-title">DETALLE DE {config.singularLabel.toUpperCase()}</h2>
-              <button type="button" aria-label="Cerrar detalles" onClick={() => setDetailItem(null)}>
-                <MdClose aria-hidden="true" />
-              </button>
-            </header>
-
-            <dl className="catalog-details-data">
-              <div><dt>{config.singularLabel.toUpperCase()}</dt><dd>{detailItem[config.titleKey] || 'Sin título'}</dd></div>
-              {config.descriptionKey && <div><dt>DESCRIPCIÓN</dt><dd>{detailItem[config.descriptionKey] || 'Sin descripción.'}</dd></div>}
-              <div><dt>CREADOR</dt><dd>{detailItem.creatorName || '—'}</dd></div>
-              <div><dt>{config.detailLabel.toUpperCase()}</dt><dd>{detailValue}</dd></div>
-              <div><dt>CREADO</dt><dd>{detailCreatedAt.date}{detailCreatedAt.time ? `, ${detailCreatedAt.time}` : ''}</dd></div>
-              <div><dt>ÚLTIMA EDICIÓN</dt><dd>{detailUpdatedAt.date}{detailUpdatedAt.time ? `, ${detailUpdatedAt.time}` : ''}</dd></div>
-            </dl>
-          </section>
-        </div>
-      )}
     </main>
   );
 }

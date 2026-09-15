@@ -23,7 +23,12 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
                 block.name,
                 block.description,
                 creator.name,
-                count(item.id),
+                coalesce(sum(
+                    case
+                        when item.itemType = com.formquid.content.entity.ContentItemType.QUESTION then 1
+                        else 0
+                    end
+                ), 0),
                 block.createdAt,
                 block.updatedAt
             )
@@ -65,6 +70,7 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
         value = """
             select block
             from Block block
+            left join fetch block.createdBy
             where block.scope = :scope
             """,
         countQuery = """

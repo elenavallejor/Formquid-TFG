@@ -34,6 +34,7 @@ import java.math.BigDecimal;
     and (min_selections is null or max_selections is null or min_selections <= max_selections)
     and (true_evaluation_factor is null or true_evaluation_factor between 0 and 1)
     and (false_evaluation_factor is null or false_evaluation_factor between 0 and 1)
+    and (font_size is null or font_size > 0)
     and (text_color is null or text_color ~ '^#[0-9A-Fa-f]{6}$')
     and (button_shape is null or button_shape in ('RECTANGULAR', 'ROUNDED', 'PILL'))
     and (scale_display_type is null or scale_display_type in ('NUMERIC', 'STARS', 'FACES'))

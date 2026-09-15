@@ -14,6 +14,8 @@ public record TemplateResponseDto(
     String description,
     String imageKey,
     List<ContentItemResponseDto> contentItems,
+    Long creatorId,
+    String creatorName,
     Instant createdAt,
     Instant updatedAt
 ) {

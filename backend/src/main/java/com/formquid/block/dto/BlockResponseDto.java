@@ -3,6 +3,7 @@ package com.formquid.block.dto;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.content.dto.ContentItemResponseDto;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -14,6 +15,11 @@ public record BlockResponseDto(
     Long sourceBlockId,
     String name,
     String description,
-    List<ContentItemResponseDto> contentItems
+    List<ContentItemResponseDto> contentItems,
+    Long creatorId,
+    String creatorName,
+    Instant createdAt,
+    Instant updatedAt,
+    Long usageCount
 ) {
 }

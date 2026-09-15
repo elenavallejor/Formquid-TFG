@@ -85,7 +85,7 @@ public class TemplateService {
 
     @Transactional
     public TemplateResponseDto create(CreateTemplateRequestDto request, User creator) {
-        validateItems(request.items());
+        validateDraft(request);
         Template template = templateRepository.save(Template.builder()
             .title(request.title().trim())
             .description(trimToNull(request.description()))
@@ -108,7 +108,7 @@ public class TemplateService {
     public TemplateResponseDto update(Long id, CreateTemplateRequestDto request, User user) {
         Template template = getTemplate(id);
         requireManagementPermission(template.getCreatedBy(), user);
-        validateItems(request.items());
+        validateDraft(request);
         contentService.deleteTemplateContent(template);
         template.setTitle(request.title().trim());
         template.setDescription(trimToNull(request.description()));
@@ -171,27 +171,67 @@ public class TemplateService {
         }
     }
 
+    public void validateDraft(CreateTemplateRequestDto request) {
+        if (request == null || request.title() == null || request.title().isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla necesita un título");
+        }
+        if (request.title().trim().length() > 200) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El título de la plantilla no puede superar 200 caracteres");
+        }
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla debe contener al menos un elemento");
+        }
+        validateItems(request.items());
+        if (request.items().stream().noneMatch(item ->
+            item.itemType() == ContentItemType.QUESTION || item.itemType() == ContentItemType.BLOCK
+        )) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una plantilla debe contener preguntas o bloques");
+        }
+    }
+
     private void validateItems(List<CreateTemplateItemRequestDto> items) {
         Set<Integer> positions = new HashSet<>();
         for (CreateTemplateItemRequestDto item : items) {
+            if (item == null || item.itemType() == null || item.position() == null || item.position() < 1) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene un elemento inválido");
+            }
             if (!positions.add(item.position())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La plantilla contiene posiciones duplicadas");
             }
-            if (item.itemType() == ContentItemType.TEXT
-                && (item.textBody() == null || item.textBody().isBlank())) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Los elementos de texto no pueden estar vacíos");
+            if (item.itemType() == ContentItemType.TEXT) {
+                if (item.textBody() == null || item.textBody().isBlank()) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Los elementos de texto no pueden estar vacíos");
+                }
+                if (item.required() != null || item.question() != null || item.fixedQuestionId() != null
+                    || item.blockId() != null || item.block() != null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Un texto no puede incluir configuración de pregunta o bloque");
+                }
             }
             if (item.itemType() == ContentItemType.QUESTION) {
                 if (item.required() == null || (item.question() == null) == (item.fixedQuestionId() == null)) {
                     throw new ApiException(HttpStatus.BAD_REQUEST, "Cada pregunta debe tener un único origen");
+                }
+                if (item.textBody() != null || item.blockId() != null || item.block() != null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Una pregunta no puede incluir configuración de texto o bloque");
+                }
+                if (item.question() != null) {
+                    questionService.validateQuestionDraft(item.question());
                 }
             }
             if (item.itemType() == ContentItemType.BLOCK) {
                 if ((item.block() == null) == (item.blockId() == null)) {
                     throw new ApiException(HttpStatus.BAD_REQUEST, "Cada bloque debe tener un único origen");
                 }
+                if (item.required() != null || item.question() != null || item.fixedQuestionId() != null
+                    || item.textBody() != null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Un bloque no puede incluir configuración de texto o pregunta");
+                }
                 if (item.block() != null) {
                     blockService.validateItems(item.block().items());
+                    item.block().items().stream()
+                        .filter(blockItem -> blockItem.itemType() == ContentItemType.QUESTION
+                            && blockItem.fixedQuestionId() == null)
+                        .forEach(blockItem -> questionService.validateQuestionDraft(blockItem.question()));
                 }
             }
         }
@@ -235,12 +275,15 @@ public class TemplateService {
         List<ContentItemResponseDto> items = contentService.findTemplateContent(template).stream()
             .sorted(Comparator.comparing(ContentItemResponseDto::position))
             .toList();
+        User creator = template.getCreatedBy();
         return new TemplateResponseDto(
             template.getId(),
             template.getTitle(),
             template.getDescription(),
             template.getImageKey(),
             items,
+            creator == null ? null : creator.getId(),
+            creator == null ? null : creator.getName(),
             template.getCreatedAt(),
             template.getUpdatedAt()
         );

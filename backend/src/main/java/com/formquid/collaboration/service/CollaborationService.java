@@ -17,8 +17,8 @@ import com.formquid.content.service.ContentService;
 import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.survey.entity.Survey;
-import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.repository.SurveyRepository;
+import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
 import com.formquid.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +40,7 @@ public class CollaborationService {
     private final ContentItemRepository contentItemRepository;
     private final ContentService contentService;
     private final NotificationService notificationService;
+    private final SurveyService surveyService;
 
     /**
      * Devuelve los colaboradores de una encuesta.
@@ -220,7 +221,7 @@ public class CollaborationService {
             throw new ApiException(HttpStatus.CONFLICT, "La encuesta debe contener al menos una pregunta");
         }
 
-        request.getSurvey().setLifecycleStatus(SurveyLifecycle.OPEN);
+        surveyService.openAfterPublicationApproval(request.getSurvey());
 
         notificationService.deletePublicationRequestNotifications(request.getId());
 

@@ -4,7 +4,6 @@ import com.formquid.content.dto.BlockContentItemRowDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -42,7 +41,4 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long> 
 
     boolean existsByParentBlockIdAndItemType(Long blockId, ContentItemType itemType);
 
-    @Modifying(flushAutomatically = true)
-    @Query("update ContentItem item set item.position = :position where item.id = :itemId")
-    void updatePosition(@Param("itemId") Long itemId, @Param("position") Integer position);
 }

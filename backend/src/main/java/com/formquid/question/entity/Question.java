@@ -49,8 +49,8 @@ import java.util.List;
     and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
     and (
         (scope = 'CATALOG_FIXED' and parent_item_id is null and source_fixed_question_id is null)
-        or (scope = 'LOCAL' and parent_item_id is not null)
-        or (scope = 'FIXED_SNAPSHOT' and parent_item_id is not null)
+        or (scope = 'LOCAL' and parent_item_id is not null and source_fixed_question_id is null)
+        or (scope = 'FIXED_SNAPSHOT' and parent_item_id is not null and source_fixed_question_id is not null)
     )
     and (
         (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)

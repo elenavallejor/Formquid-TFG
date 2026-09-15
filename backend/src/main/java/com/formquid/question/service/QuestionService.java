@@ -84,7 +84,7 @@ public class QuestionService {
         if (question.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
-        return toResponse(question);
+        return toResponse(question, questionRepository.countBySourceFixedQuestionId(questionId));
     }
 
     @Transactional
@@ -256,6 +256,8 @@ public class QuestionService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta debe tener enunciado, tipo y dirección de evaluación");
         }
         validatePositions(dto);
+        validateCommonSettings(dto.settings());
+        validateEvaluationFactors(dto);
         if (dto.evaluationDirection() == EvaluationDirection.NEUTRAL && dto.evaluationWeight() != null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas neutrales no deben tener peso estadístico");
         }
@@ -293,6 +295,18 @@ public class QuestionService {
     }
 
     private void validatePositions(QuestionDraftDto dto) {
+        if (dto.options() != null && dto.options().size() > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una pregunta no puede contener más de 50 opciones");
+        }
+        if (dto.matrixRows() != null && dto.matrixRows().size() > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una matriz no puede contener más de 50 filas");
+        }
+        if (dto.options() != null && dto.options().stream().anyMatch(Objects::isNull)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta contiene una opción nula");
+        }
+        if (dto.matrixRows() != null && dto.matrixRows().stream().anyMatch(Objects::isNull)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta contiene una fila de matriz nula");
+        }
         Set<Integer> optionPositions = new HashSet<>();
         for (QuestionOptionDto option : safeOptions(dto.options())) {
             if (option.label() == null || option.label().isBlank() || option.position() == null || option.position() < 1) {
@@ -300,6 +314,11 @@ public class QuestionService {
             }
             if (!optionPositions.add(option.position())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Las opciones no pueden repetir posición");
+            }
+        }
+        for (int position = 1; position <= optionPositions.size(); position++) {
+            if (!optionPositions.contains(position)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Las posiciones de las opciones deben ser consecutivas");
             }
         }
         Set<Integer> rowPositions = new HashSet<>();
@@ -310,6 +329,58 @@ public class QuestionService {
             if (!rowPositions.add(row.position())) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Las filas de matriz no pueden repetir posición");
             }
+        }
+        for (int position = 1; position <= rowPositions.size(); position++) {
+            if (!rowPositions.contains(position)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Las posiciones de las filas deben ser consecutivas");
+            }
+        }
+    }
+
+    private void validateCommonSettings(QuestionSettingsDto settings) {
+        if (settings == null) {
+            return;
+        }
+        if (settings.maxLength() != null && settings.maxLength() <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La longitud máxima debe ser mayor que cero");
+        }
+        if (settings.step() != null && settings.step().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El step debe ser mayor que cero");
+        }
+        if ((settings.minSelections() != null && settings.minSelections() <= 0)
+            || (settings.maxSelections() != null && settings.maxSelections() <= 0)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Los límites de selección deben ser mayores que cero");
+        }
+        if (settings.minSelections() != null && settings.maxSelections() != null
+            && settings.minSelections() > settings.maxSelections()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El mínimo de selección no puede superar el máximo");
+        }
+        validateFactor(settings.trueEvaluationFactor(), "El factor de evaluación verdadero");
+        validateFactor(settings.falseEvaluationFactor(), "El factor de evaluación falso");
+        if (settings.fontFamily() != null && settings.fontFamily().length() > 80) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La familia tipográfica no puede superar 80 caracteres");
+        }
+        if (settings.fontSize() != null && settings.fontSize() <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de fuente debe ser mayor que cero");
+        }
+        if (settings.textColor() != null && !settings.textColor().matches("^#[0-9A-Fa-f]{6}$")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "El color de texto debe tener formato hexadecimal #RRGGBB");
+        }
+        if ((settings.trueLabel() != null && settings.trueLabel().length() > 100)
+            || (settings.falseLabel() != null && settings.falseLabel().length() > 100)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Las etiquetas booleanas no pueden superar 100 caracteres");
+        }
+    }
+
+    private void validateEvaluationFactors(QuestionDraftDto dto) {
+        for (QuestionOptionDto option : safeOptions(dto.options())) {
+            validateFactor(option.evaluationFactor(), "El factor de evaluación de una opción");
+        }
+    }
+
+    private void validateFactor(BigDecimal factor, String fieldName) {
+        if (factor != null && (factor.compareTo(BigDecimal.ZERO) < 0 || factor.compareTo(BigDecimal.ONE) > 0)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, fieldName + " debe estar entre 0 y 1");
         }
     }
 
@@ -367,8 +438,12 @@ public class QuestionService {
     }
 
     private void validateChoiceQuestion(QuestionDraftDto dto) {
-        if (safeOptions(dto.options()).size() < 2) {
+        List<QuestionOptionDto> options = safeOptions(dto.options());
+        if (options.size() < 2) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas de selección necesitan al menos dos opciones");
+        }
+        if (options.stream().filter(QuestionOptionDto::other).count() > 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Solo puede existir una opción OTHER");
         }
         QuestionSettingsDto settings = dto.settings();
         if (settings != null
@@ -390,8 +465,13 @@ public class QuestionService {
             && settings.minSelections() > settings.maxSelections()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El mínimo de selección no puede superar el máximo");
         }
+        if (settings != null
+            && ((settings.minSelections() != null && settings.minSelections() > options.size())
+            || (settings.maxSelections() != null && settings.maxSelections() > options.size()))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Los límites de selección no pueden superar el número de opciones");
+        }
         if (dto.evaluationDirection() != EvaluationDirection.NEUTRAL
-            && safeOptions(dto.options()).stream().anyMatch(option -> option.evaluationFactor() == null)) {
+            && options.stream().anyMatch(option -> option.evaluationFactor() == null)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las opciones evaluables necesitan evaluationFactor");
         }
     }
@@ -555,7 +635,12 @@ public class QuestionService {
     }
 
     public QuestionResponseDto toResponse(Question question) {
+        return toResponse(question, null);
+    }
+
+    private QuestionResponseDto toResponse(Question question, Long usageCount) {
         QuestionSettings settings = question.getSettings();
+        User creator = question.getCreatedBy();
         return new QuestionResponseDto(
             question.getId(),
             question.getScope(),
@@ -597,7 +682,12 @@ public class QuestionService {
                 .sorted(Comparator.comparing(MatrixRow::getPosition))
                 .map(row -> new MatrixRowDto(row.getId(), row.getLabel(), row.getPosition()))
                 .toList(),
-            question.getSourceFixedQuestion() == null ? null : question.getSourceFixedQuestion().getId()
+            question.getSourceFixedQuestion() == null ? null : question.getSourceFixedQuestion().getId(),
+            creator == null ? null : creator.getId(),
+            creator == null ? null : creator.getName(),
+            question.getCreatedAt(),
+            question.getUpdatedAt(),
+            usageCount
         );
     }
 

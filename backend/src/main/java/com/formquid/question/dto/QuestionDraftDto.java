@@ -17,7 +17,7 @@ public record QuestionDraftDto(
     @NotNull EvaluationDirection evaluationDirection,
     BigDecimal evaluationWeight,
     @Valid QuestionSettingsDto settings,
-    @Size(max = 50) List<@Valid QuestionOptionDto> options,
-    @Size(max = 50) List<@Valid MatrixRowDto> matrixRows
+    @Size(max = 50) List<@NotNull @Valid QuestionOptionDto> options,
+    @Size(max = 50) List<@NotNull @Valid MatrixRowDto> matrixRows
 ) {
 }

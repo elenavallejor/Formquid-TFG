@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -23,7 +24,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "matrix_answer_values")
+@Table(
+    name = "matrix_answer_values",
+    indexes = @Index(name = "idx_matrix_answer_values_row", columnList = "matrix_row_id")
+)
 public class MatrixAnswerValue {
 
     @EmbeddedId

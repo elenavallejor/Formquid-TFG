@@ -5,6 +5,7 @@ import com.formquid.question.entity.QuestionScope;
 import com.formquid.question.entity.QuestionType;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -21,6 +22,11 @@ public record QuestionResponseDto(
     QuestionSettingsDto settings,
     List<QuestionOptionDto> options,
     List<MatrixRowDto> matrixRows,
-    Long sourceFixedQuestionId
+    Long sourceFixedQuestionId,
+    Long creatorId,
+    String creatorName,
+    Instant createdAt,
+    Instant updatedAt,
+    Long usageCount
 ) {
 }

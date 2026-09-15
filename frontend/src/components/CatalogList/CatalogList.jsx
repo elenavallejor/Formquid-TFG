@@ -22,7 +22,6 @@ export function CatalogList({
   config,
   isLoading,
   errorMessage,
-  viewMode,
   canManageCatalog,
   itemsPerPage,
   onView,
@@ -48,7 +47,7 @@ export function CatalogList({
   if (isLoading && items.length === 0) {
     return (
       <Skeleton
-        variant={viewMode === 'GRID' ? 'grid' : 'list'}
+        variant="list"
         count={Math.min(itemsPerPage, 5)}
         hasActions={hasActions}
       />
@@ -148,64 +147,6 @@ export function CatalogList({
           </div>
         )}
       </div>
-    );
-  }
-
-  if (viewMode === 'GRID') {
-    return (
-      <section className="catalog-list-section">
-        <div className="catalog-grid-body">
-          {items.map((item) => {
-            const title = item[config.titleKey] || 'Sin título';
-            const description = config.descriptionKey
-              ? item[config.descriptionKey] || 'Sin descripción.'
-              : '';
-            const creator = item.creatorName || '';
-            const createdAt = formatDate(item.createdAt, { includeTime: true });
-            const updatedAt = formatDate(item.updatedAt, { includeTime: true });
-
-            const isQuestion = config.detailKey === 'questionType';
-            const detailValue = isQuestion
-              ? QUESTION_TYPE_LABELS[item.questionType] ?? item.questionType ?? '—'
-              : item[config.detailKey] ?? 0;
-            const detailPrefix = isQuestion ? 'Tipo: ' : 'Preguntas: ';
-
-            return (
-              <article key={item.id} className="catalog-grid-card">
-                <div className="card-top">
-                  <div className="catalog-item-icon">
-                    <ItemIcon aria-hidden="true" />
-                  </div>
-                  {renderActions(item)}
-                </div>
-                <div className="card-body">
-                  <h3>{title}</h3>
-                  {description && <p>{description}</p>}
-                </div>
-                <div className="card-footer">
-                  <div className="user-creator-cell grid-creator-cell">
-                    <span className="user-creator-name">{creator || '—'}</span>
-                  </div>
-                  <div className="card-metrics font-numeric">
-                    <span>
-                      <strong>{detailPrefix}</strong>
-                      {detailValue}
-                    </span>
-                    <span>
-                      <strong>Creado: </strong>
-                      {createdAt.date}
-                    </span>
-                    <span>
-                      <strong>Actualizado: </strong>
-                      {updatedAt.date}
-                    </span>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
     );
   }
 

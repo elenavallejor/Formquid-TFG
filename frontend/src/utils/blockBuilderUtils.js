@@ -44,7 +44,9 @@ export function buildCreateCatalogBlockPayload(data) {
             itemType: 'QUESTION',
             position: index + 1,
             required: Boolean(item.isRequired),
-            question: buildQuestionDraftPayload(item),
+            ...(item.fixedQuestionId
+              ? { fixedQuestionId: item.fixedQuestionId }
+              : { question: buildQuestionDraftPayload(item) }),
           },
     ),
   };
@@ -57,6 +59,9 @@ export function buildBlockQuestionFromCatalog(question) {
   return {
     ...INITIAL_QUESTION_STATE,
     itemType: 'QUESTION',
+    fixedQuestionId: question.scope === 'CATALOG_FIXED'
+      ? question.id
+      : question.sourceFixedQuestionId || undefined,
     statement: question.statement || '',
     annotation: question.annotation || '',
     questionType: question.questionType,

@@ -176,6 +176,14 @@ public class SurveyService {
         return toResponse(survey);
     }
 
+    /**
+     * Aplica la misma transición a OPEN para una solicitud de publicación ya autorizada.
+     */
+    @Transactional
+    public void openAfterPublicationApproval(Survey survey) {
+        prepareLifecycleChange(survey, SurveyLifecycle.OPEN);
+    }
+
     @Transactional
     public void delete(Long surveyId, User actor) {
         Survey survey = getSurvey(surveyId);

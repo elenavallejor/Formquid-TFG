@@ -99,10 +99,6 @@ public class UserService {
         if (user.getRole() == UserRole.SUPERADMIN && newRole != UserRole.SUPERADMIN) {
             ensureAnotherSuperadmin(user.getId());
         }
-        if (newRole == UserRole.SUPERADMIN && userRepository.countByRole(UserRole.SUPERADMIN) >= 1 && user.getRole() != UserRole.SUPERADMIN) {
-            throw new ApiException(HttpStatus.CONFLICT, "Solo puede existir un superadministrador");
-        }
-
         user.setRole(newRole);
         return toResponse(user);
     }

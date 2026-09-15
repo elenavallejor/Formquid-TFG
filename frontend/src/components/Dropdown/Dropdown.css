@@ -35,8 +35,7 @@
 }
 
 .custom-dropdown-trigger:hover:not(:disabled) {
-  background-color: var(--color-surface-muted);
-  border-color: var(--color-border-strong);
+  filter: brightness(0.96);
 }
 
 .custom-dropdown-trigger svg {

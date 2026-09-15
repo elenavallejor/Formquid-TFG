@@ -125,13 +125,17 @@ public class ParticipationService {
                     .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "La encuesta contiene una pregunta incompleta"));
                 questions.put(question.getId(), item.getRequired());
             } else if (item.getItemType() == ContentItemType.BLOCK) {
-                blockRepository.findByParentItemId(item.getId()).ifPresent(block ->
-                    contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId()).forEach(blockItem -> {
+                var block = blockRepository.findByParentItemId(item.getId())
+                    .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "La encuesta contiene un bloque incompleto"));
+                contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId()).forEach(blockItem -> {
+                    if (blockItem.getItemType() == ContentItemType.QUESTION) {
                         Question question = questionRepository.findByParentItemId(blockItem.getId())
                             .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "El bloque contiene una pregunta incompleta"));
                         questions.put(question.getId(), blockItem.getRequired());
-                    })
-                );
+                    } else if (blockItem.getItemType() != ContentItemType.TEXT) {
+                        throw new ApiException(HttpStatus.CONFLICT, "El bloque contiene un tipo de elemento no permitido");
+                    }
+                });
             }
         }
         return questions;
