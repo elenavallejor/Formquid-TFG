@@ -11,6 +11,7 @@ import {
   getCatalogTemplates,
 } from '../../../api/catalogApi.js';
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -304,11 +305,13 @@ export function CatalogPage() {
   return (
     <main className="catalog-page">
       <div className="catalog-container">
-        <nav className="breadcrumb-nav" aria-label="Migas de pan">
-          <Link to="/panel">PANEL</Link>
-          <MdKeyboardArrowRight aria-hidden="true" />
-          <span aria-current="page">CATÁLOGO</span>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'CATÁLOGO' },
+          ]}
+          separator={MdKeyboardArrowRight}
+        />
 
         <header className="catalog-page-header">
           <h1>CATÁLOGO</h1>

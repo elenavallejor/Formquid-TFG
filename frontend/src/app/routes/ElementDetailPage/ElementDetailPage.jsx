@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  MdChevronRight,
   MdDeleteOutline,
   MdEdit,
+  MdLayers,
   MdOutlineDescription,
   MdOutlineHelpOutline,
   MdOutlineWidgets,
@@ -18,6 +18,7 @@ import {
   getCatalogTemplateById,
 } from '../../../api/catalogApi.js';
 import { Block } from '../../../components/Block/Block.jsx';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Question } from '../../../components/Question/Question.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
@@ -26,8 +27,10 @@ import { useAuth } from '../../../context/AuthContext.jsx';
 import { buildBlockQuestionFromCatalog, getBlockItems } from '../../../utils/blockBuilderUtils.js';
 import { formatDate } from '../../../utils/formatDate.js';
 import { QUESTION_TYPES } from '../../../utils/questionBuilderUtils.js';
+import { getTemplateItemNumbering } from '../../../utils/templateBuilderUtils.js';
 
-import './CatalogDetailPage.css';
+import '../../../components/BlockBuilder/BlockBuilder.css';
+import './ElementDetailPage.css';
 
 const ELEMENT_CONFIG = {
   bloque: {
@@ -70,9 +73,95 @@ const ELEMENT_CONFIG = {
   },
 };
 
+const EVALUATION_DIRECTION_LABELS = {
+  POSITIVE: 'Positiva',
+  NEUTRAL: 'Neutral',
+  NEGATIVE: 'Negativa',
+};
+
+const SCALE_DISPLAY_LABELS = {
+  NUMERIC: 'Numérica',
+  STARS: 'Estrellas',
+  FACES: 'Caras',
+};
+
 function formatDateTime(value) {
   const formatted = formatDate(value, { includeTime: true });
   return formatted.time ? `${formatted.date}, ${formatted.time}` : formatted.date;
+}
+
+function getQuestionSettingRows(question) {
+  const settings = question.settings || {};
+  const questionType = QUESTION_TYPES.find((type) => type.id === question.questionType);
+  const rows = [
+    { label: 'Tipo de pregunta', value: questionType?.title || question.questionType },
+    {
+      label: 'Dirección de evaluación',
+      value: EVALUATION_DIRECTION_LABELS[question.evaluationDirection] || question.evaluationDirection,
+    },
+    {
+      label: 'Peso',
+      value: question.evaluationDirection === 'NEUTRAL'
+        ? 'No aplica'
+        : question.evaluationWeight,
+    },
+  ];
+
+  function add(label, value) {
+    if (value !== null && value !== undefined && value !== '') {
+      rows.push({ label, value });
+    }
+  }
+
+  if (question.questionType === 'TEXT') {
+    add('Longitud máxima', settings.maxLength);
+  }
+
+  if (['NUMBER', 'SCALE', 'MATRIX_SCALE'].includes(question.questionType)) {
+    add('Valor mínimo', settings.minValue);
+    add('Valor máximo', settings.maxValue);
+    add('Paso', settings.step);
+  }
+
+  if (['SCALE', 'MATRIX_SCALE'].includes(question.questionType)) {
+    add('Etiqueta inicial', settings.leftLabel);
+    add('Etiqueta final', settings.rightLabel);
+    add('Tipo visual', SCALE_DISPLAY_LABELS[settings.scaleDisplayType] || settings.scaleDisplayType);
+  }
+
+  if (question.questionType === 'MULTIPLE_CHOICE') {
+    add('Selecciones mínimas', settings.minSelections);
+    add('Selecciones máximas', settings.maxSelections);
+  }
+
+  if (question.questionType === 'BOOLEAN') {
+    add('Respuesta afirmativa', settings.trueLabel);
+    add('Respuesta negativa', settings.falseLabel);
+    add('Factor afirmativo', settings.trueEvaluationFactor);
+    add('Factor negativo', settings.falseEvaluationFactor);
+  }
+
+  return rows;
+}
+
+function QuestionSettings({ question }) {
+  const rows = getQuestionSettingRows(question);
+
+  return (
+    <section className="catalog-detail-settings" aria-labelledby="catalog-detail-settings-title">
+      <header className="catalog-detail-settings-header">
+        <h3 id="catalog-detail-settings-title">CONFIGURACIÓN DE LA PREGUNTA</h3>
+      </header>
+      <dl className="catalog-detail-settings-grid">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <dt>{row.label}</dt>
+            <dd>{row.value ?? '—'}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 
 function CatalogBlockContent({ element }) {
@@ -82,7 +171,7 @@ function CatalogBlockContent({ element }) {
   let questionNumber = 0;
 
   return (
-    <div className="catalog-detail-block-items">
+    <div className="block-questions-list catalog-detail-block-items">
       {items.map((item, index) => {
         const isText = item.itemType === 'TEXT';
         const questionData = isText
@@ -99,13 +188,13 @@ function CatalogBlockContent({ element }) {
         if (!isText) questionNumber += 1;
 
         return (
-          <div key={item.id || index} className="catalog-detail-block-item">
-            <div className="catalog-detail-block-item-icon">
+          <div key={item.id || index} className="block-question-item catalog-detail-builder-item">
+            <div className="question-item-left">
               {isText ? (
                 <TextContentIcon />
               ) : TypeIcon ? (
                 <span
-                  className="catalog-detail-question-type-badge"
+                  className="question-type-badge"
                   style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
                   title={typeConfig.title}
                 >
@@ -114,7 +203,7 @@ function CatalogBlockContent({ element }) {
               ) : null}
             </div>
 
-            <div className="catalog-detail-block-item-preview">
+            <div className="question-item-preview">
               {isText ? (
                 <TextContent data={item} />
               ) : (
@@ -150,38 +239,62 @@ function CatalogElementContent({ elementType, element }) {
     return <CatalogBlockContent element={element} />;
   }
 
-  let questionNumber = 0;
+  const items = element.contentItems || [];
+  const itemNumbering = getTemplateItemNumbering(items);
 
   return (
-    <div className="catalog-detail-template-items">
-      {(element.contentItems || []).map((item, index) => {
-        if (item.itemType === 'TEXT') {
-          return (
-            <div key={item.id || index} className="catalog-detail-content-item">
-              <TextContent data={item} />
-            </div>
-          );
-        }
+    <div className="block-questions-list catalog-detail-template-items">
+      {items.map((item, index) => {
+        const isText = item.itemType === 'TEXT';
+        const isBlock = item.itemType === 'BLOCK';
+        const typeConfig = !isText && !isBlock
+          ? QUESTION_TYPES.find((type) => type.id === item.question?.questionType)
+          : null;
+        const TypeIcon = typeConfig?.icon;
 
-        if (item.itemType === 'BLOCK') {
-          return (
-            <div key={item.id || index} className="catalog-detail-content-item">
-              <Block data={item.block} />
-            </div>
-          );
-        }
-
-        questionNumber += 1;
         return (
-          <div key={item.id || index} className="catalog-detail-content-item catalog-detail-question">
-            <Question
-              questionNumber={`${questionNumber}`}
-              data={{
-                ...buildBlockQuestionFromCatalog(item.question),
-                isRequired: Boolean(item.required),
-              }}
-              interactive={false}
-            />
+          <div
+            key={item.id || index}
+            className={`block-question-item catalog-detail-builder-item ${isBlock ? 'template-block-item' : ''}`}
+          >
+            <div className="question-item-left">
+              {isText ? (
+                <TextContentIcon />
+              ) : isBlock ? (
+                <span className="question-type-badge template-block-badge" title="Bloque de preguntas">
+                  <MdLayers aria-hidden="true" />
+                </span>
+              ) : TypeIcon ? (
+                <span
+                  className="question-type-badge"
+                  style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
+                  title={typeConfig.title}
+                >
+                  <TypeIcon aria-hidden="true" />
+                </span>
+              ) : null}
+            </div>
+
+            <div className="question-item-preview">
+              {isText ? (
+                <TextContent data={item} />
+              ) : isBlock ? (
+                <Block
+                  data={item.block}
+                  blockLabel={itemNumbering[index].blockLabel}
+                  questionNumberStart={itemNumbering[index].questionNumberStart}
+                />
+              ) : (
+                <Question
+                  questionNumber={`${itemNumbering[index].questionNumber}`}
+                  data={{
+                    ...buildBlockQuestionFromCatalog(item.question),
+                    isRequired: Boolean(item.required),
+                  }}
+                  interactive={false}
+                />
+              )}
+            </div>
           </div>
         );
       })}
@@ -189,7 +302,8 @@ function CatalogElementContent({ elementType, element }) {
   );
 }
 
-export function CatalogDetailPage() {
+export function ElementDetailPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { elementType, elementId } = useParams();
   const { user } = useAuth();
@@ -205,6 +319,18 @@ export function CatalogDetailPage() {
   useEffect(() => {
     if (!config) return undefined;
 
+    const navigationState = location.state;
+    const canReuseElement = navigationState?.element
+      && navigationState.elementType === elementType
+      && String(navigationState.elementId) === String(elementId);
+
+    if (canReuseElement) {
+      setElement(navigationState.element);
+      setIsLoading(false);
+      setLoadError('');
+      return undefined;
+    }
+
     let isMounted = true;
     setElement(null);
     setIsLoading(true);
@@ -212,7 +338,17 @@ export function CatalogDetailPage() {
 
     config.load(elementId)
       .then((response) => {
-        if (isMounted) setElement(response);
+        if (!isMounted) return;
+        setElement(response);
+        navigate(location.pathname, {
+          replace: true,
+          state: {
+            ...navigationState,
+            element: response,
+            elementId,
+            elementType,
+          },
+        });
       })
       .catch((error) => {
         if (isMounted) {
@@ -226,7 +362,7 @@ export function CatalogDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [config, elementId]);
+  }, [config, elementId, elementType, location.pathname, location.state, navigate]);
 
   if (!config) return <Navigate to="/catalogo" replace />;
 
@@ -235,7 +371,8 @@ export function CatalogDetailPage() {
     && (user?.role === 'SUPERADMIN' || String(user?.id) === String(element.creatorId)),
   );
   const ElementIcon = config.icon;
-  const title = element?.[config.titleKey] || `Sin ${config.label}`;
+  const rawTitle = element?.[config.titleKey] || `Sin ${config.label}`;
+  const title = elementType === 'bloque' ? rawTitle.toUpperCase() : rawTitle;
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -253,13 +390,14 @@ export function CatalogDetailPage() {
   return (
     <main className="catalog-detail-page">
       <div className="catalog-detail-container">
-        <nav className="catalog-detail-breadcrumb" aria-label="Migas de pan">
-          <Link to="/panel">PANEL</Link>
-          <MdChevronRight aria-hidden="true" />
-          <Link to={config.catalogPath}>CATÁLOGO</Link>
-          <MdChevronRight aria-hidden="true" />
-          <span aria-current="page">VER DETALLES</span>
-        </nav>
+        <Breadcrumbs
+          className="catalog-detail-breadcrumb"
+          items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'CATÁLOGO', to: config.catalogPath },
+            { label: 'VER DETALLES' },
+          ]}
+        />
 
         <header className="catalog-detail-page-header">
           <h1>VER DETALLES:</h1>
@@ -317,6 +455,8 @@ export function CatalogDetailPage() {
                 </p>
               )}
 
+              {elementType === 'pregunta' && <QuestionSettings question={element} />}
+
               <section
                 className={`catalog-detail-structure ${elementType === 'bloque' ? 'catalog-detail-structure--block' : ''}`}
                 aria-labelledby="catalog-detail-structure-title"
@@ -330,7 +470,14 @@ export function CatalogDetailPage() {
                       <button
                         type="button"
                         aria-label={`Editar ${config.label}`}
-                        onClick={() => navigate(`${config.editPathPrefix}/${elementId}`)}
+                        onClick={() => navigate(`${config.editPathPrefix}/${elementId}`, {
+                          state: {
+                            element,
+                            elementId,
+                            elementType,
+                            fromDetails: true,
+                          },
+                        })}
                       >
                         <MdEdit aria-hidden="true" />
                       </button>

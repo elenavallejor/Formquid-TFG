@@ -1,6 +1,7 @@
 package com.formquid.content.repository;
 
 import com.formquid.content.dto.BlockContentItemRowDto;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,20 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long> 
     List<ContentItem> findByTemplateIdOrderByPositionAsc(Long templateId);
 
     List<ContentItem> findByParentBlockIdOrderByPositionAsc(Long blockId);
+
+    @Query("""
+        select new com.formquid.content.dto.ContentItemRowDto(
+            item.id,
+            item.itemType,
+            item.position,
+            item.required,
+            item.textBody
+        )
+        from ContentItem item
+        where item.template.id = :templateId
+        order by item.position
+        """)
+    List<ContentItemRowDto> findTemplateContentRows(@Param("templateId") Long templateId);
 
     @Query("""
         select new com.formquid.content.dto.BlockContentItemRowDto(

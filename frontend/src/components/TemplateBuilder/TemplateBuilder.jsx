@@ -20,6 +20,7 @@ import {
   INITIAL_TEMPLATE_STATE,
   addCatalogQuestionToTemplateBlock,
   buildEditableTemplateBlock,
+  getTemplateItemNumbering,
 } from '../../utils/templateBuilderUtils.js';
 import { Block } from '../Block/Block.jsx';
 import { BlockBuilder } from '../BlockBuilder/BlockBuilder.jsx';
@@ -59,7 +60,7 @@ export function TemplateBuilder({
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const [modalMode, setModalMode] = useState(null);
   const [selectedItemIndex, setSelectedItemIndex] = useState(null);
-  const [selectedBlockQuestion, setSelectedBlockQuestion] = useState(null);
+  const [selectedBlockItem, setSelectedBlockItem] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(INITIAL_QUESTION_STATE);
   const [editingText, setEditingText] = useState('');
   const [editingBlock, setEditingBlock] = useState(INITIAL_BLOCK_STATE);
@@ -69,10 +70,7 @@ export function TemplateBuilder({
 
   const items = data.items || [];
   const selectedItem = selectedItemIndex === null ? null : items[selectedItemIndex];
-  let questionCount = 0;
-  const questionNumberByIndex = items.map((item) =>
-    item.itemType === 'QUESTION' ? ++questionCount : null,
-  );
+  const itemNumbering = getTemplateItemNumbering(items);
 
   function updateData(changes) {
     onChange({ ...data, ...changes });
@@ -108,7 +106,7 @@ export function TemplateBuilder({
     } else if (dragData?.type === 'INTERNAL_SORT') {
       moveItem(dragData.index, targetIndex);
     } else if (dragData?.type === 'BLOCK_INTERNAL_SORT') {
-      handleMoveQuestionOutOfBlock(
+      handleMoveItemOutOfBlock(
         dragData.blockIndex,
         dragData.index,
         targetIndex,
@@ -170,6 +168,18 @@ export function TemplateBuilder({
     return localQuestion;
   }
 
+  function buildLocalContentItem(item) {
+    if (item.itemType === 'TEXT') {
+      return {
+        ...item,
+        itemType: 'TEXT',
+        localId: item.localId || createLocalId('text'),
+      };
+    }
+
+    return buildLocalQuestion(item);
+  }
+
   function updateBlockContent(blockIndex, transformItems) {
     const updated = [...items];
     const nextBlock = buildLocalBlockItem(updated[blockIndex], transformItems);
@@ -215,10 +225,10 @@ export function TemplateBuilder({
     updateItems(updated);
   }
 
-  function handleMoveQuestionOutOfBlock(blockIndex, itemIndex, targetIndex) {
+  function handleMoveItemOutOfBlock(blockIndex, itemIndex, targetIndex) {
     const block = buildEditableTemplateBlock(items[blockIndex]?.block || items[blockIndex]);
-    const question = block.items[itemIndex];
-    if (!question || question.itemType === 'TEXT') return;
+    const blockItem = block.items[itemIndex];
+    if (!blockItem) return;
 
     const updated = [...items];
     updated[blockIndex] = buildLocalBlockItem(
@@ -226,11 +236,11 @@ export function TemplateBuilder({
       (blockItems) => blockItems.filter((_, index) => index !== itemIndex),
     );
     const insertionIndex = Math.max(0, Math.min(targetIndex, updated.length));
-    updated.splice(insertionIndex, 0, buildLocalQuestion(question));
+    updated.splice(insertionIndex, 0, buildLocalContentItem(blockItem));
     updateItems(updated);
   }
 
-  function handleMoveQuestionBetweenBlocks(
+  function handleMoveItemBetweenBlocks(
     sourceBlockIndex,
     sourceItemIndex,
     targetBlockIndex,
@@ -244,8 +254,8 @@ export function TemplateBuilder({
     const sourceBlock = buildEditableTemplateBlock(
       items[sourceBlockIndex]?.block || items[sourceBlockIndex],
     );
-    const question = sourceBlock.items[sourceItemIndex];
-    if (!question || question.itemType === 'TEXT') return;
+    const blockItem = sourceBlock.items[sourceItemIndex];
+    if (!blockItem) return;
 
     const updated = [...items];
     updated[sourceBlockIndex] = buildLocalBlockItem(
@@ -257,29 +267,34 @@ export function TemplateBuilder({
       (blockItems) => {
         const nextItems = [...blockItems];
         const insertionIndex = Math.max(0, Math.min(targetIndex, nextItems.length));
-        nextItems.splice(insertionIndex, 0, buildLocalQuestion(question));
+        nextItems.splice(insertionIndex, 0, buildLocalContentItem(blockItem));
         return nextItems;
       },
     );
     updateItems(updated);
   }
 
-  function openBlockQuestionModal(blockIndex, itemIndex) {
+  function openBlockItemModal(blockIndex, itemIndex) {
     const block = buildEditableTemplateBlock(items[blockIndex]?.block || items[blockIndex]);
-    const question = block.items[itemIndex];
-    if (!question || question.itemType === 'TEXT') return;
+    const blockItem = block.items[itemIndex];
+    if (!blockItem) return;
 
-    setEditingQuestion({ ...question });
     setSelectedItemIndex(null);
-    setSelectedBlockQuestion({ blockIndex, itemIndex });
+    setSelectedBlockItem({ blockIndex, itemIndex });
     setModalError('');
-    setModalMode('EDIT_BLOCK_QUESTION');
+    if (blockItem.itemType === 'TEXT') {
+      setEditingText(blockItem.textBody || '');
+      setModalMode('EDIT_BLOCK_TEXT');
+    } else {
+      setEditingQuestion({ ...blockItem });
+      setModalMode('EDIT_BLOCK_QUESTION');
+    }
   }
 
   function openCreateQuestionModal() {
     setEditingQuestion({ ...INITIAL_QUESTION_STATE, itemType: 'QUESTION', isRequired: false });
     setSelectedItemIndex(null);
-    setSelectedBlockQuestion(null);
+    setSelectedBlockItem(null);
     setModalError('');
     setModalMode('CREATE_QUESTION');
   }
@@ -287,7 +302,7 @@ export function TemplateBuilder({
   function openCreateTextModal() {
     setEditingText('');
     setSelectedItemIndex(null);
-    setSelectedBlockQuestion(null);
+    setSelectedBlockItem(null);
     setModalError('');
     setModalMode('CREATE_TEXT');
   }
@@ -295,7 +310,7 @@ export function TemplateBuilder({
   function openCreateBlockModal() {
     setEditingBlock({ ...INITIAL_BLOCK_STATE, items: [] });
     setSelectedItemIndex(null);
-    setSelectedBlockQuestion(null);
+    setSelectedBlockItem(null);
     setModalError('');
     setModalMode('CREATE_BLOCK');
   }
@@ -309,7 +324,7 @@ export function TemplateBuilder({
   function openItemModal(mode, index) {
     const item = items[index];
     setSelectedItemIndex(index);
-    setSelectedBlockQuestion(null);
+    setSelectedBlockItem(null);
     setActiveMenuIndex(null);
     setModalError('');
     if (mode === 'EDIT_QUESTION') setEditingQuestion({ ...item });
@@ -321,7 +336,7 @@ export function TemplateBuilder({
   function closeModal() {
     setModalMode(null);
     setSelectedItemIndex(null);
-    setSelectedBlockQuestion(null);
+    setSelectedBlockItem(null);
     setEditingQuestion(INITIAL_QUESTION_STATE);
     setEditingText('');
     setEditingBlock(INITIAL_BLOCK_STATE);
@@ -332,10 +347,10 @@ export function TemplateBuilder({
     const question = { ...editingQuestion, itemType: 'QUESTION' };
     delete question.fixedQuestionId;
 
-    if (modalMode === 'EDIT_BLOCK_QUESTION' && selectedBlockQuestion) {
-      updateBlockContent(selectedBlockQuestion.blockIndex, (blockItems) => {
+    if (modalMode === 'EDIT_BLOCK_QUESTION' && selectedBlockItem) {
+      updateBlockContent(selectedBlockItem.blockIndex, (blockItems) => {
         const updated = [...blockItems];
-        updated[selectedBlockQuestion.itemIndex] = buildLocalQuestion(question);
+        updated[selectedBlockItem.itemIndex] = buildLocalQuestion(question);
         return updated;
       });
     } else if (modalMode === 'CREATE_QUESTION') {
@@ -355,7 +370,16 @@ export function TemplateBuilder({
       return;
     }
 
-    if (modalMode === 'CREATE_TEXT') {
+    if (modalMode === 'EDIT_BLOCK_TEXT' && selectedBlockItem) {
+      updateBlockContent(selectedBlockItem.blockIndex, (blockItems) => {
+        const updated = [...blockItems];
+        updated[selectedBlockItem.itemIndex] = {
+          ...updated[selectedBlockItem.itemIndex],
+          textBody: normalizedText,
+        };
+        return updated;
+      });
+    } else if (modalMode === 'CREATE_TEXT') {
       updateItems([...items, buildBlockTextItem(normalizedText)]);
     } else if (selectedItemIndex !== null) {
       const updated = [...items];
@@ -443,6 +467,8 @@ export function TemplateBuilder({
                   {isText ? <TextContent data={item} /> : isBlock ? (
                     <Block
                       data={block}
+                      blockLabel={itemNumbering[index].blockLabel}
+                      questionNumberStart={itemNumbering[index].questionNumberStart}
                       onDropQuestion={(question, targetIndex) =>
                         handleDropQuestionIntoBlock(index, question, targetIndex)}
                       onMoveItem={(fromIndex, targetIndex) =>
@@ -452,19 +478,19 @@ export function TemplateBuilder({
                       blockIndex={index}
                       onDropTemplateQuestion={(sourceIndex, targetIndex) =>
                         handleMoveTopLevelQuestionIntoBlock(sourceIndex, index, targetIndex)}
-                      onDropBlockQuestion={(sourceBlockIndex, sourceItemIndex, targetIndex) =>
-                        handleMoveQuestionBetweenBlocks(
+                      onDropBlockItem={(sourceBlockIndex, sourceItemIndex, targetIndex) =>
+                        handleMoveItemBetweenBlocks(
                           sourceBlockIndex,
                           sourceItemIndex,
                           index,
                           targetIndex,
                         )}
-                      onEditItem={(itemIndex) => openBlockQuestionModal(index, itemIndex)}
+                      onEditItem={(itemIndex) => openBlockItemModal(index, itemIndex)}
                       onRequiredChange={(itemIndex, isRequired) =>
                         handleRequiredChangeInsideBlock(index, itemIndex, isRequired)}
                       onDragInside={() => setDropIndex(null)}
                     />
-                  ) : <Question questionNumber={`${questionNumberByIndex[index]}`} data={item} interactive={false} />}
+                  ) : <Question questionNumber={`${itemNumbering[index].questionNumber}`} data={item} interactive={false} />}
                 </div>
 
                 <div className="question-item-actions">
@@ -498,7 +524,7 @@ export function TemplateBuilder({
 
       {(modalMode === 'CREATE_QUESTION' || modalMode === 'EDIT_QUESTION' || modalMode === 'EDIT_BLOCK_QUESTION') && <QuestionBuilder data={editingQuestion} onChange={setEditingQuestion} isCatalog={false} isModal modalTitle={modalMode === 'CREATE_QUESTION' ? 'Crear pregunta propia' : 'Editar pregunta'} onClose={closeModal} onSave={handleSaveQuestion} />}
 
-      {(modalMode === 'CREATE_TEXT' || modalMode === 'EDIT_TEXT') && (
+      {(modalMode === 'CREATE_TEXT' || modalMode === 'EDIT_TEXT' || modalMode === 'EDIT_BLOCK_TEXT') && (
         <div className="block-modal-overlay" onClick={closeModal}>
           <section className="block-modal-container text-editor-modal" role="dialog" aria-modal="true" aria-labelledby="template-text-title" onClick={(event) => event.stopPropagation()}>
             <header className="block-modal-header"><h2 id="template-text-title">{modalMode === 'CREATE_TEXT' ? 'AÑADIR TEXTO' : 'EDITAR TEXTO'}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header>

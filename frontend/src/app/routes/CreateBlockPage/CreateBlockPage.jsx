@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MdChevronRight, MdClose, MdSave } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
+import { MdClose, MdSave } from 'react-icons/md';
 
 import { createCatalogBlock } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -81,11 +82,11 @@ export function CreateBlockPage() {
 
       <main className="create-block-main">
         <div className="create-block-container">
-          <nav className="breadcrumb-nav" aria-label="Migas de pan">
-            <Link to="/panel">PANEL</Link>
-            <MdChevronRight aria-hidden="true" />
-            <span aria-current="page">CREAR BLOQUE</span>
-          </nav>
+          <Breadcrumbs items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'CATÁLOGO', to: '/catalogo/bloques' },
+            { label: 'CREAR BLOQUE' },
+          ]} />
 
           <header className="page-main-header">
             <div>

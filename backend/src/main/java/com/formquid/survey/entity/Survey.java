@@ -47,6 +47,7 @@ import java.util.List;
     lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
     and access_mode in ('PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED')
     and visibility in ('LISTED', 'UNLISTED')
+    and font_family in ('OPEN_DYSLEXIC', 'TIMES_NEW_ROMAN', 'LEXEND', 'ARIAL')
     and (
         (access_mode = 'PASSWORD_PROTECTED' and access_password_hash is not null)
         or (access_mode <> 'PASSWORD_PROTECTED' and access_password_hash is null)
@@ -83,6 +84,10 @@ public class Survey {
 
     @Column(name = "image_key", columnDefinition = "text")
     private String imageKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "font_family", nullable = false, length = 30)
+    private SurveyFontFamily fontFamily;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "lifecycle_status", nullable = false, length = 30)
@@ -139,6 +144,9 @@ public class Survey {
         }
         if (visibility == null) {
             visibility = SurveyVisibility.LISTED;
+        }
+        if (fontFamily == null) {
+            fontFamily = SurveyFontFamily.TIMES_NEW_ROMAN;
         }
         if (accessMode != SurveyAccessMode.PASSWORD_PROTECTED) {
             accessPasswordHash = null;

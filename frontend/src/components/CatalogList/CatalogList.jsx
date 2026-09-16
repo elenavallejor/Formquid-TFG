@@ -176,7 +176,8 @@ export function CatalogList({
           tabIndex={isScrollable ? 0 : undefined}
         >
           {items.map((item) => {
-            const title = item[config.titleKey] || 'Sin título';
+            const rawTitle = item[config.titleKey] || 'Sin título';
+            const title = config.titleKey === 'name' ? rawTitle.toUpperCase() : rawTitle;
             const description = config.descriptionKey
               ? item[config.descriptionKey] || 'Sin descripción.'
               : '';

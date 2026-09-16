@@ -18,6 +18,7 @@ import com.formquid.survey.dto.SurveySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
+import com.formquid.survey.entity.SurveyFontFamily;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.repository.SurveyRepository;
@@ -156,6 +157,7 @@ public class SurveyService {
         survey.setTitle(request.title().trim());
         survey.setDescription(trimToNull(request.description()));
         survey.setImageKey(trimToNull(request.imageKey()));
+        survey.setFontFamily(fontFamilyOrDefault(request.fontFamily()));
         survey.setAccessMode(requestedMode);
         survey.setVisibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
         survey.setAccessPasswordHash(updatedPasswordHash(previousMode, requestedMode, survey.getAccessPasswordHash(), request.accessPassword()));
@@ -252,6 +254,7 @@ public class SurveyService {
             survey.getTitle(),
             survey.getDescription(),
             survey.getImageKey(),
+            survey.getFontFamily(),
             survey.getLifecycleStatus(),
             survey.getAccessMode(),
             survey.getVisibility(),
@@ -268,6 +271,7 @@ public class SurveyService {
             .title(request.title().trim())
             .description(trimToNull(request.description()))
             .imageKey(trimToNull(request.imageKey()))
+            .fontFamily(fontFamilyOrDefault(request.fontFamily()))
             .lifecycleStatus(SurveyLifecycle.DRAFT)
             .accessMode(request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode())
             .visibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility())
@@ -311,6 +315,10 @@ public class SurveyService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada");
         }
         return publicCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private SurveyFontFamily fontFamilyOrDefault(SurveyFontFamily fontFamily) {
+        return fontFamily == null ? SurveyFontFamily.TIMES_NEW_ROMAN : fontFamily;
     }
 
     private boolean canViewPublicSurvey(Survey survey) {

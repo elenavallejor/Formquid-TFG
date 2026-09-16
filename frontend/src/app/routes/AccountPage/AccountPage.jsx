@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MdChevronRight, MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
+import { MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
 import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
@@ -227,11 +228,10 @@ export function AccountPage() {
   return (
     <main className="account-page">
       <div className="account-container">
-        <nav className="breadcrumb-nav" aria-label="Migas de pan">
-          <Link to="/panel">PANEL</Link>
-          <MdChevronRight aria-hidden="true" />
-          <span aria-current="page">CONFIGURACIÓN DE CUENTA</span>
-        </nav>
+        <Breadcrumbs items={[
+          { label: 'PANEL', to: '/panel' },
+          { label: 'CONFIGURACIÓN DE CUENTA' },
+        ]} />
 
         <header className="account-page-header">
           <div>

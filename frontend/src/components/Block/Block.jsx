@@ -6,7 +6,7 @@ import { getDragData, getDropIndex } from '../../utils/builderDragUtils.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import { Question } from '../Question/Question.jsx';
 import { RequiredToggle } from '../RequiredToggle/RequiredToggle.jsx';
-import { TextContent } from '../TextContent/TextContent.jsx';
+import { TextContent, TextContentIcon } from '../TextContent/TextContent.jsx';
 
 import './Block.css';
 
@@ -31,9 +31,11 @@ function getQuestionData(item) {
 export function Block({
   data = {},
   blockIndex,
+  blockLabel,
+  questionNumberStart = 0,
   onDropQuestion,
   onDropTemplateQuestion,
-  onDropBlockQuestion,
+  onDropBlockItem,
   onMoveItem,
   onEditItem,
   onDeleteItem,
@@ -83,7 +85,7 @@ export function Block({
     if (dragData.blockIndex === blockIndex) {
       onMoveItem?.(dragData.index, targetIndex);
     } else {
-      onDropBlockQuestion?.(dragData.blockIndex, dragData.index, targetIndex);
+      onDropBlockItem?.(dragData.blockIndex, dragData.index, targetIndex);
     }
   }
 
@@ -95,14 +97,17 @@ export function Block({
       }}
     >
       <header className="block-content-header">
-        <h3>{data.name || 'Bloque sin nombre'}</h3>
+        <h3>
+          {blockLabel && <span className="block-prefix">{blockLabel}.</span>}{' '}
+          {data.name || 'Bloque sin nombre'}
+        </h3>
         {data.description && <p>{data.description}</p>}
       </header>
 
       <div className="block-content-items">
         {items.map((item, index) => {
           const isText = item.itemType === 'TEXT';
-          const currentQuestionNumber = isText ? null : ++questionNumber;
+          const currentQuestionNumber = isText ? null : questionNumberStart + ++questionNumber;
           const questionData = isText ? null : getQuestionData(item);
           const typeConfig = isText
             ? null
@@ -113,12 +118,12 @@ export function Block({
           return (
             <div
               key={item.localId || item.id || index}
-              className={`block-content-item ${isText ? '' : 'block-content-question-item'} ${dropIndex === index ? 'drop-before' : ''}`}
+              className={`block-content-item block-content-card-item ${dropIndex === index ? 'drop-before' : ''}`}
               onDragOver={(event) => handleDragOver(event, index)}
               onDrop={(event) => handleDrop(event, getDropIndex(event, index))}
             >
               <div className="block-content-item-row">
-                {!isText && onMoveItem && (
+                {onMoveItem && (
                   <button
                     type="button"
                     className="block-content-item-action block-content-drag-handle"
@@ -147,7 +152,10 @@ export function Block({
 
                 <div className="block-content-item-body">
                   {isText ? (
-                    <TextContent data={item} />
+                    <div className="block-content-text">
+                      <TextContentIcon />
+                      <TextContent data={item} />
+                    </div>
                   ) : (
                     <div className="block-content-question">
                       {TypeIcon && (
@@ -168,9 +176,9 @@ export function Block({
                   )}
                 </div>
 
-                {!isText && (onRequiredChange || onEditItem || onDeleteItem) && (
+                {((!isText && onRequiredChange) || onEditItem || onDeleteItem) && (
                   <div className="block-content-item-actions">
-                    {onRequiredChange && (
+                    {!isText && onRequiredChange && (
                       <RequiredToggle
                         checked={questionData.isRequired}
                         onChange={(isRequired) => onRequiredChange(index, isRequired)}
@@ -180,7 +188,9 @@ export function Block({
                       <button
                         type="button"
                         className="action-dots-btn"
-                        aria-label={`Opciones de la pregunta ${currentQuestionNumber} del bloque`}
+                        aria-label={isText
+                          ? 'Opciones del texto informativo del bloque'
+                          : `Opciones de la pregunta ${currentQuestionNumber} del bloque`}
                         onClick={() => setActiveMenuIndex(isMenuOpen ? null : index)}
                       >
                         <MdMoreVert aria-hidden="true" />
@@ -192,7 +202,7 @@ export function Block({
                         {onEditItem && (
                           <button type="button" onClick={() => { setActiveMenuIndex(null); onEditItem(index); }}>
                             <MdEdit aria-hidden="true" />
-                            Editar pregunta
+                            Editar {isText ? 'texto' : 'pregunta'}
                           </button>
                         )}
                         {onDeleteItem && (

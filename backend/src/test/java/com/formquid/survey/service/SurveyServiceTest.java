@@ -8,6 +8,7 @@ import com.formquid.content.service.ContentService;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.survey.entity.Survey;
+import com.formquid.survey.entity.SurveyFontFamily;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.template.service.TemplateService;
@@ -45,6 +46,15 @@ class SurveyServiceTest {
 
     @InjectMocks
     private SurveyService surveyService;
+
+    @Test
+    void surveyUsesTimesNewRomanByDefault() {
+        Survey survey = Survey.builder().build();
+
+        survey.normalize();
+
+        assertThat(survey.getFontFamily()).isEqualTo(SurveyFontFamily.TIMES_NEW_ROMAN);
+    }
 
     @Test
     void openAfterPublicationApprovalGeneratesPublicCode() {

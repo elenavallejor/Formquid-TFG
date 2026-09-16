@@ -357,15 +357,6 @@ public class QuestionService {
         }
         validateFactor(settings.trueEvaluationFactor(), "El factor de evaluación verdadero");
         validateFactor(settings.falseEvaluationFactor(), "El factor de evaluación falso");
-        if (settings.fontFamily() != null && settings.fontFamily().length() > 80) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La familia tipográfica no puede superar 80 caracteres");
-        }
-        if (settings.fontSize() != null && settings.fontSize() <= 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de fuente debe ser mayor que cero");
-        }
-        if (settings.textColor() != null && !settings.textColor().matches("^#[0-9A-Fa-f]{6}$")) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "El color de texto debe tener formato hexadecimal #RRGGBB");
-        }
         if ((settings.trueLabel() != null && settings.trueLabel().length() > 100)
             || (settings.falseLabel() != null && settings.falseLabel().length() > 100)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las etiquetas booleanas no pueden superar 100 caracteres");
@@ -548,10 +539,6 @@ public class QuestionService {
             .falseLabel(trimToNull(dto.falseLabel()))
             .trueEvaluationFactor(dto.trueEvaluationFactor())
             .falseEvaluationFactor(dto.falseEvaluationFactor())
-            .fontFamily(trimToNull(dto.fontFamily()))
-            .fontSize(dto.fontSize())
-            .textColor(trimToNull(dto.textColor()))
-            .buttonShape(dto.buttonShape())
             .scaleDisplayType(dto.scaleDisplayType())
             .build();
     }
@@ -570,10 +557,6 @@ public class QuestionService {
         settings.setFalseLabel(source.getFalseLabel());
         settings.setTrueEvaluationFactor(source.getTrueEvaluationFactor());
         settings.setFalseEvaluationFactor(source.getFalseEvaluationFactor());
-        settings.setFontFamily(source.getFontFamily());
-        settings.setFontSize(source.getFontSize());
-        settings.setTextColor(source.getTextColor());
-        settings.setButtonShape(source.getButtonShape());
         settings.setScaleDisplayType(source.getScaleDisplayType());
     }
 
@@ -594,10 +577,6 @@ public class QuestionService {
             .falseLabel(settings.getFalseLabel())
             .trueEvaluationFactor(settings.getTrueEvaluationFactor())
             .falseEvaluationFactor(settings.getFalseEvaluationFactor())
-            .fontFamily(settings.getFontFamily())
-            .fontSize(settings.getFontSize())
-            .textColor(settings.getTextColor())
-            .buttonShape(settings.getButtonShape())
             .scaleDisplayType(settings.getScaleDisplayType())
             .build();
     }
@@ -662,10 +641,6 @@ public class QuestionService {
                 settings.getFalseLabel(),
                 settings.getTrueEvaluationFactor(),
                 settings.getFalseEvaluationFactor(),
-                settings.getFontFamily(),
-                settings.getFontSize(),
-                settings.getTextColor(),
-                settings.getButtonShape(),
                 settings.getScaleDisplayType()
             ),
             question.getOptions().stream()

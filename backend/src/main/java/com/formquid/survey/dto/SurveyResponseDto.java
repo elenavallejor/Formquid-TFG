@@ -2,6 +2,7 @@ package com.formquid.survey.dto;
 
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.survey.entity.SurveyAccessMode;
+import com.formquid.survey.entity.SurveyFontFamily;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 
@@ -18,6 +19,7 @@ public record SurveyResponseDto(
     String title,
     String description,
     String imageKey,
+    SurveyFontFamily fontFamily,
     SurveyLifecycle lifecycleStatus,
     SurveyAccessMode accessMode,
     SurveyVisibility visibility,

@@ -3,6 +3,7 @@ package com.formquid.content.service;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
 import com.formquid.content.dto.ReorderContentItemRequestDto;
@@ -13,6 +14,7 @@ import com.formquid.content.repository.ContentItemRepository;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.question.service.QuestionService;
 import com.formquid.survey.entity.Survey;
+import com.formquid.template.entity.Template;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +26,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,6 +101,21 @@ class ContentServiceTest {
 
         assertThatThrownBy(() -> contentService.reorderSurveyContent(survey, request))
             .hasMessage("Las posiciones deben ser consecutivas desde 1");
+    }
+
+    @Test
+    void templateContentUsesProjectionInsteadOfLoadingContentItemEntities() {
+        Template template = Template.builder().id(3L).build();
+        when(contentItemRepository.findTemplateContentRows(3L)).thenReturn(List.of(
+            new ContentItemRowDto(10L, ContentItemType.TEXT, 1, null, "Texto")
+        ));
+
+        List<ContentItemResponseDto> content = contentService.findTemplateContent(template);
+
+        assertThat(content).hasSize(1);
+        assertThat(content.getFirst().textBody()).isEqualTo("Texto");
+        verify(contentItemRepository).findTemplateContentRows(3L);
+        verify(contentItemRepository, never()).findByTemplateIdOrderByPositionAsc(any());
     }
 
     private ContentItem surveyItem(Long id, Survey survey, int position) {

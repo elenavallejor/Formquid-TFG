@@ -51,18 +51,18 @@
     padding: 4px 44px 12px 84px;
   }
 
-  .template-block-item .block-content-question-item .block-content-item-row {
+  .template-block-item .block-content-card-item .block-content-item-row {
     display: grid;
     grid-template-columns: 28px minmax(0, 1fr);
     row-gap: 8px;
   }
 
-  .template-block-item .block-content-question-item .block-content-item-body {
+  .template-block-item .block-content-card-item .block-content-item-body {
     grid-column: 1 / -1;
     grid-row: 2;
   }
 
-  .template-block-item .block-content-question-item .block-content-item-actions {
+  .template-block-item .block-content-card-item .block-content-item-actions {
     grid-column: 2;
     grid-row: 1;
     justify-content: flex-end;

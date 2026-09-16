@@ -34,9 +34,6 @@ import java.math.BigDecimal;
     and (min_selections is null or max_selections is null or min_selections <= max_selections)
     and (true_evaluation_factor is null or true_evaluation_factor between 0 and 1)
     and (false_evaluation_factor is null or false_evaluation_factor between 0 and 1)
-    and (font_size is null or font_size > 0)
-    and (text_color is null or text_color ~ '^#[0-9A-Fa-f]{6}$')
-    and (button_shape is null or button_shape in ('RECTANGULAR', 'ROUNDED', 'PILL'))
     and (scale_display_type is null or scale_display_type in ('NUMERIC', 'STARS', 'FACES'))
 """)
 @Table(name = "question_settings")
@@ -85,19 +82,6 @@ public class QuestionSettings {
 
     @Column(name = "false_evaluation_factor")
     private BigDecimal falseEvaluationFactor;
-
-    @Column(name = "font_family", length = 80)
-    private String fontFamily;
-
-    @Column(name = "font_size")
-    private Short fontSize;
-
-    @Column(name = "text_color", length = 7)
-    private String textColor;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "button_shape", length = 30)
-    private ButtonShape buttonShape;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "scale_display_type", length = 30)

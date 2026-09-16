@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { MdChevronLeft, MdChevronRight, MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPersonOutline, MdSearch } from 'react-icons/md';
 
 import { deleteUser, getUsers, updateUserRole } from '../../../api/usersApi.js';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
@@ -132,11 +132,13 @@ export function UsersManagementPage() {
   return (
     <main className="users-page">
       <div className="users-container">
-        <nav className="breadcrumb-nav" aria-label="Migas de pan">
-          <Link to="/panel">PANEL</Link>
-          <MdKeyboardArrowRight aria-hidden="true" />
-          <span aria-current="page">GESTIÓN DE USUARIOS Y PERMISOS</span>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'GESTIÓN DE USUARIOS Y PERMISOS' },
+          ]}
+          separator={MdKeyboardArrowRight}
+        />
 
         <header className="users-page-header">
           <h1>GESTIÓN DE USUARIOS Y PERMISOS</h1>

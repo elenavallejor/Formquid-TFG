@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MdChevronRight, MdClose, MdSave } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
+import { MdClose, MdSave } from 'react-icons/md';
 
 import { createCatalogQuestion } from '../../../api/catalogApi.js';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { buildCreateFixedQuestionPayload, getQuestionBuilderValidationError, INITIAL_QUESTION_STATE } from '../../../utils/questionBuilderUtils.js';
@@ -52,11 +53,11 @@ export function CreateQuestionPage() {
   return (
     <main className="create-question-page">
       <div className="create-question-container">
-        <nav className="breadcrumb-nav" aria-label="Migas de pan">
-          <Link to="/panel">PANEL</Link>
-          <MdChevronRight aria-hidden="true" />
-          <span aria-current="page">CREAR PREGUNTA FIJA</span>
-        </nav>
+        <Breadcrumbs items={[
+          { label: 'PANEL', to: '/panel' },
+          { label: 'CATÁLOGO', to: '/catalogo/preguntas' },
+          { label: 'CREAR PREGUNTA FIJA' },
+        ]} />
 
         <header className="page-main-header">
           <div>

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,6 +86,16 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
     );
 
     Optional<Block> findByParentItemId(Long parentItemId);
+
+    @Query("""
+        select block
+        from Block block
+        left join fetch block.createdBy
+        where block.parentItem.id in :parentItemIds
+        """)
+    List<Block> findByParentItemIdsWithDetails(
+        @Param("parentItemIds") Collection<Long> parentItemIds
+    );
 
     long countBySourceBlockId(Long sourceBlockId);
 }

@@ -65,8 +65,8 @@ export function Header() {
 
     try {
       setIsLoggingOut(true);
-      await logout();
       navigate('/', { replace: true });
+      await logout();
     } catch (error) {
       console.error('No se ha podido cerrar la sesión.', error);
     } finally {

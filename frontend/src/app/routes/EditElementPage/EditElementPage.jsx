@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useBlocker, useNavigate, useParams } from 'react-router-dom';
-import { MdChevronRight, MdSave } from 'react-icons/md';
+import { Navigate, useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { MdSave } from 'react-icons/md';
 
 import {
   getCatalogBlockById,
@@ -11,6 +11,7 @@ import {
   updateCatalogTemplate,
 } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
@@ -87,6 +88,7 @@ const ELEMENT_CONFIG = {
 };
 
 export function EditElementPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { elementType, elementId } = useParams();
   const { isInitializing } = useAuth();
@@ -110,6 +112,17 @@ export function EditElementPage() {
     setErrorMsg('');
     setSuccessMsg('');
 
+    const navigationState = location.state;
+    const canReuseElement = navigationState?.element
+      && navigationState.elementType === elementType
+      && String(navigationState.elementId) === String(elementId);
+
+    if (canReuseElement) {
+      setFormData(config.toState(navigationState.element));
+      setIsLoading(false);
+      return () => { isMounted = false; };
+    }
+
     config.load(elementId)
       .then((element) => {
         if (!isMounted) return;
@@ -123,7 +136,7 @@ export function EditElementPage() {
       });
 
     return () => { isMounted = false; };
-  }, [config, elementId]);
+  }, [config, elementId, elementType, location.state]);
 
   useEffect(() => {
     function handleBeforeUnload(event) {
@@ -222,11 +235,22 @@ export function EditElementPage() {
 
   const content = (
     <>
-      <nav className="breadcrumb-nav" aria-label="Migas de pan">
-        <Link to="/panel">PANEL</Link>
-        <MdChevronRight aria-hidden="true" />
-        <span aria-current="page">EDITAR {config.label}</span>
-      </nav>
+      <Breadcrumbs items={[
+        { label: 'PANEL', to: '/panel' },
+        { label: 'CATÁLOGO', to: config.catalogPath },
+        ...(location.state?.fromDetails
+          ? [{
+              label: 'VER DETALLES',
+              to: `/catalogo/detalles/${elementType}/${elementId}`,
+              state: {
+                element: location.state.element,
+                elementId,
+                elementType,
+              },
+            }]
+          : []),
+        { label: `EDITAR ${config.label}` },
+      ]} />
 
       <header className="page-main-header">
         <div>

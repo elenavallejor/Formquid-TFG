@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MdChevronRight, MdSave } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
+import { MdSave } from 'react-icons/md';
 
 import { createCatalogTemplate } from '../../../api/catalogApi.js';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
@@ -72,7 +73,11 @@ export function CreateTemplatePage() {
       {!isInitializing && <CatalogSidebar showQuestions showBlocks defaultOpen={false} onAddQuestion={addQuestion} onAddBlock={addBlock} />}
       <main className="create-block-main">
         <div className="create-block-container">
-          <nav className="breadcrumb-nav" aria-label="Migas de pan"><Link to="/panel">PANEL</Link><MdChevronRight aria-hidden="true" /><span aria-current="page">CREAR PLANTILLA</span></nav>
+          <Breadcrumbs items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'CATÁLOGO', to: '/catalogo/plantillas' },
+            { label: 'CREAR PLANTILLA' },
+          ]} />
           <header className="page-main-header">
             <div><h1>CREA TU PLANTILLA</h1><p className="page-main-subtitle">Crea y organiza los bloques y preguntas de tu nueva plantilla.</p></div>
             <button type="button" className="btn-create-submit" disabled={isSaving || isInitializing} onClick={handleSaveTemplate}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : 'Guardar plantilla'}</span></button>

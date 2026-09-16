@@ -96,10 +96,6 @@ export const INITIAL_QUESTION_STATE = {
   falseLabel: 'No',
   trueFactor: 1,
   falseFactor: 0,
-  fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: 16,
-  textColor: '#1e293b',
-  buttonShape: 'ROUNDED',
 };
 
 export function getQuestionBuilderValidationError(data) {
@@ -295,40 +291,15 @@ export function getScaleValues(data) {
   );
 }
 
-export function getFontSize(value) {
-  if (!value) {
-    return '16px';
-  }
-
-  if (typeof value === 'number') {
-    return `${value}px`;
-  }
-
-  const fontSize = String(value).trim();
-
-  return /^\d+(\.\d+)?$/.test(fontSize)
-    ? `${fontSize}px`
-    : fontSize;
-}
-
 function buildQuestionSettings(data) {
-  const commonSettings = {
-    fontFamily: trimToNull(data.fontFamily),
-    fontSize: toIntegerOrNull(data.fontSize),
-    textColor: trimToNull(data.textColor ?? data.fontColor),
-    buttonShape: data.buttonShape || null,
-  };
-
   if (data.questionType === 'TEXT') {
     return cleanObject({
-      ...commonSettings,
       maxLength: toIntegerOrNull(data.maxLength),
     });
   }
 
   if (data.questionType === 'NUMBER') {
     return cleanObject({
-      ...commonSettings,
       minValue: toNumberOrNull(data.minValue),
       maxValue: toNumberOrNull(data.maxValue),
       step: toNumberOrNull(data.step),
@@ -340,7 +311,6 @@ function buildQuestionSettings(data) {
     || data.questionType === 'MATRIX_SCALE'
   ) {
     return cleanObject({
-      ...commonSettings,
       minValue: toNumberOrNull(data.minValue),
       maxValue: toNumberOrNull(data.maxValue),
       step: toNumberOrNull(data.step),
@@ -352,7 +322,6 @@ function buildQuestionSettings(data) {
 
   if (data.questionType === 'MULTIPLE_CHOICE') {
     return cleanObject({
-      ...commonSettings,
       minSelections: toIntegerOrNull(data.minSelections),
       maxSelections: toIntegerOrNull(data.maxSelections),
     });
@@ -360,7 +329,6 @@ function buildQuestionSettings(data) {
 
   if (data.questionType === 'BOOLEAN') {
     return cleanObject({
-      ...commonSettings,
       trueLabel: trimToNull(data.trueLabel),
       falseLabel: trimToNull(data.falseLabel),
       trueEvaluationFactor:
@@ -374,7 +342,7 @@ function buildQuestionSettings(data) {
     });
   }
 
-  return cleanObject(commonSettings);
+  return {};
 }
 
 function buildQuestionOptions(data) {

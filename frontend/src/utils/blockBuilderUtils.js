@@ -80,10 +80,6 @@ export function buildBlockQuestionFromCatalog(question) {
     falseLabel: settings.falseLabel ?? INITIAL_QUESTION_STATE.falseLabel,
     trueFactor: settings.trueEvaluationFactor ?? INITIAL_QUESTION_STATE.trueFactor,
     falseFactor: settings.falseEvaluationFactor ?? INITIAL_QUESTION_STATE.falseFactor,
-    fontFamily: settings.fontFamily ?? INITIAL_QUESTION_STATE.fontFamily,
-    fontSize: settings.fontSize ?? INITIAL_QUESTION_STATE.fontSize,
-    textColor: settings.textColor ?? INITIAL_QUESTION_STATE.textColor,
-    buttonShape: settings.buttonShape ?? INITIAL_QUESTION_STATE.buttonShape,
     options: options
       .filter((option) => !option.other)
       .map((option) => ({

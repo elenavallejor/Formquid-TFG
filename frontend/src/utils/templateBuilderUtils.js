@@ -178,5 +178,47 @@ export function buildCreateCatalogTemplatePayload(data) {
 }
 
 export function getTemplateBlockQuestionCount(block) {
-  return buildEditableTemplateBlock(block).items.filter((item) => item.itemType === 'QUESTION').length;
+  const items = Array.isArray(block?.contentItems)
+    ? block.contentItems
+    : getBlockItems(block);
+
+  return items.filter((item) => item.itemType === 'QUESTION').length;
+}
+
+export function getTemplateItemNumbering(items = []) {
+  let questionNumber = 0;
+  let blockNumber = 0;
+
+  return items.map((item) => {
+    if (item.itemType === 'QUESTION') {
+      questionNumber += 1;
+      return { questionNumber };
+    }
+
+    if (item.itemType === 'BLOCK') {
+      blockNumber += 1;
+      const questionNumberStart = questionNumber;
+      questionNumber += getTemplateBlockQuestionCount(item.block || item);
+
+      return {
+        blockLabel: getAlphabeticLabel(blockNumber),
+        questionNumberStart,
+      };
+    }
+
+    return {};
+  });
+}
+
+function getAlphabeticLabel(position) {
+  let value = position;
+  let label = '';
+
+  while (value > 0) {
+    value -= 1;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  }
+
+  return label;
 }

@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-  MdChevronRight,
   MdOutlineDescription,
   MdOutlineHelpOutline,
   MdOutlineSend,
@@ -10,6 +9,7 @@ import {
 
 import { createElementRequest } from '../../../api/elementRequestsApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
@@ -184,11 +184,10 @@ export function SuggestElementPage() {
 
       <main className="create-block-main">
         <div className="create-block-container">
-          <nav className="breadcrumb-nav" aria-label="Migas de pan">
-            <Link to="/panel">PANEL</Link>
-            <MdChevronRight aria-hidden="true" />
-            <span aria-current="page">SUGERIR ELEMENTO</span>
-          </nav>
+          <Breadcrumbs items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'SUGERIR ELEMENTO' },
+          ]} />
 
           <header className="page-main-header">
             <div>

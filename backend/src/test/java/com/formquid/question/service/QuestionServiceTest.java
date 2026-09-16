@@ -28,7 +28,7 @@ class QuestionServiceTest {
 
     @Test
     void rejectsSelectionLimitGreaterThanAvailableOptions() {
-        QuestionSettingsDto settings = settings(null, 3, null, null, null);
+        QuestionSettingsDto settings = settings(null, 3, null, null);
 
         assertThatThrownBy(() -> questionService.validateQuestionDraft(choiceQuestion(settings, validOptions())))
             .hasMessage("Los límites de selección no pueden superar el número de opciones");
@@ -41,7 +41,7 @@ class QuestionServiceTest {
             new QuestionOptionDto(null, "Dos", 2, false, BigDecimal.ZERO)
         );
 
-        assertThatThrownBy(() -> questionService.validateQuestionDraft(choiceQuestion(settings(null, null, null, null, null), options)))
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(choiceQuestion(settings(null, null, null, null), options)))
             .hasMessage("El factor de evaluación de una opción debe estar entre 0 y 1");
     }
 
@@ -52,7 +52,7 @@ class QuestionServiceTest {
             new QuestionOptionDto(null, "Dos", 3, false, null)
         );
 
-        assertThatThrownBy(() -> questionService.validateQuestionDraft(choiceQuestion(settings(null, null, null, null, null), options)))
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(choiceQuestion(settings(null, null, null, null), options)))
             .hasMessage("Las posiciones de las opciones deben ser consecutivas");
     }
 
@@ -80,8 +80,7 @@ class QuestionServiceTest {
         Integer minSelections,
         Integer maxSelections,
         BigDecimal trueFactor,
-        BigDecimal falseFactor,
-        Short fontSize
+        BigDecimal falseFactor
     ) {
         return new QuestionSettingsDto(
             null,
@@ -96,10 +95,6 @@ class QuestionServiceTest {
             null,
             trueFactor,
             falseFactor,
-            null,
-            fontSize,
-            null,
-            null,
             null
         );
     }

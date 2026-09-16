@@ -21,6 +21,13 @@
   font-size: 16px;
   font-weight: 800;
   line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.block-prefix {
+  margin-right: 2px;
+  color: var(--color-info);
+  font-weight: 700;
 }
 
 .block-content-header p {
@@ -43,7 +50,7 @@
   position: relative;
 }
 
-.block-content-question-item {
+.block-content-card-item {
   padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -126,7 +133,8 @@
   margin-top: 2px;
 }
 
-.block-content-question {
+.block-content-question,
+.block-content-text {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -146,6 +154,11 @@
 }
 
 .block-content-question .academic-question-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.block-content-text .text-content-card {
   flex: 1;
   min-width: 0;
 }

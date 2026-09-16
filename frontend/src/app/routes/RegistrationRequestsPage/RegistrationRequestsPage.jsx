@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { MdSearch, MdKeyboardArrowRight } from 'react-icons/md';
 
 import { TarjetaSolicitud } from '../../../components/TarjetaSolicitud/TarjetaSolicitud';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { getPendingRegistrationRequests, approveRegistrationRequest, rejectRegistrationRequest } from '../../../api/registrationRequestsApi';
@@ -124,11 +124,13 @@ export function RegistrationRequestsPage() {
   return (
     <main className="admin-requests-page">
       <div className="admin-requests-container">
-        <nav className="breadcrumb-nav" aria-label="Migas de pan">
-          <Link to="/panel">PANEL</Link>
-          <MdKeyboardArrowRight aria-hidden="true" />
-          <span aria-current="page">SOLICITUDES DE REGISTRO</span>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: 'PANEL', to: '/panel' },
+            { label: 'SOLICITUDES DE REGISTRO' },
+          ]}
+          separator={MdKeyboardArrowRight}
+        />
 
         <header className="page-header">
           <h1>SOLICITUDES DE REGISTRO</h1>

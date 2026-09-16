@@ -10,6 +10,7 @@ import com.formquid.common.exception.ApiException;
 import com.formquid.content.dto.AddBlockItemRequestDto;
 import com.formquid.content.dto.AddFixedQuestionItemRequestDto;
 import com.formquid.content.dto.BlockContentItemRowDto;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateQuestionItemRequestDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
@@ -57,10 +58,47 @@ public class ContentService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ContentItemResponseDto> findTemplateContent(Template template) {
-        return contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId())
-            .stream()
-            .map(item -> toResponse(item, true))
+        List<ContentItemRowDto> items = contentItemRepository.findTemplateContentRows(template.getId());
+        List<Long> blockItemIds = items.stream()
+            .filter(item -> item.itemType() == ContentItemType.BLOCK)
+            .map(ContentItemRowDto::id)
+            .toList();
+        Map<Long, Block> blocksByItem = new LinkedHashMap<>();
+        if (!blockItemIds.isEmpty()) {
+            blockRepository.findByParentItemIdsWithDetails(blockItemIds)
+                .forEach(block -> blocksByItem.put(block.getParentItem().getId(), block));
+        }
+
+        List<BlockContentItemRowDto> blockItems = blocksByItem.isEmpty()
+            ? List.of()
+            : contentItemRepository.findBlockContentRows(
+                blocksByItem.values().stream().map(Block::getId).toList()
+            );
+        List<Long> questionItemIds = new ArrayList<>();
+        items.stream()
+            .filter(item -> item.itemType() == ContentItemType.QUESTION)
+            .map(ContentItemRowDto::id)
+            .forEach(questionItemIds::add);
+        blockItems.stream()
+            .filter(item -> item.itemType() == ContentItemType.QUESTION)
+            .map(BlockContentItemRowDto::id)
+            .forEach(questionItemIds::add);
+
+        Map<Long, Question> questionsByItem = findQuestionsByItem(questionItemIds);
+        Map<Long, List<ContentItemResponseDto>> contentByBlock = new LinkedHashMap<>();
+        blocksByItem.values().forEach(block -> contentByBlock.put(block.getId(), new ArrayList<>()));
+        blockItems.forEach(item -> contentByBlock.get(item.parentBlockId())
+            .add(toResponse(item, questionsByItem.get(item.id()))));
+
+        return items.stream()
+            .map(item -> toResponse(
+                item,
+                questionsByItem.get(item.id()),
+                blocksByItem.get(item.id()),
+                contentByBlock
+            ))
             .toList();
     }
 
@@ -85,26 +123,34 @@ public class ContentService {
             .map(BlockContentItemRowDto::id)
             .toList();
 
-        Map<Long, Question> questionsByItem = new LinkedHashMap<>();
-        if (!questionItemIds.isEmpty()) {
-            questionRepository.findByParentItemIdsWithDetails(questionItemIds)
-                .forEach(question -> questionsByItem.put(question.getParentItem().getId(), question));
-        }
+        Map<Long, Question> questionsByItem = findQuestionsByItem(questionItemIds);
 
         for (BlockContentItemRowDto item : items) {
-            Question question = questionsByItem.get(item.id());
-            contentByBlock.get(item.parentBlockId()).add(new ContentItemResponseDto(
-                item.id(),
-                item.itemType(),
-                item.position(),
-                item.required(),
-                item.textBody(),
-                question == null ? null : questionService.toResponse(question),
-                null,
-                null
-            ));
+            contentByBlock.get(item.parentBlockId()).add(toResponse(item, questionsByItem.get(item.id())));
         }
         return contentByBlock;
+    }
+
+    private Map<Long, Question> findQuestionsByItem(List<Long> itemIds) {
+        Map<Long, Question> questionsByItem = new LinkedHashMap<>();
+        if (!itemIds.isEmpty()) {
+            questionRepository.findByParentItemIdsWithDetails(itemIds)
+                .forEach(question -> questionsByItem.put(question.getParentItem().getId(), question));
+        }
+        return questionsByItem;
+    }
+
+    private ContentItemResponseDto toResponse(BlockContentItemRowDto item, Question question) {
+        return new ContentItemResponseDto(
+            item.id(),
+            item.itemType(),
+            item.position(),
+            item.required(),
+            item.textBody(),
+            question == null ? null : questionService.toResponse(question),
+            null,
+            null
+        );
     }
 
     /**
@@ -538,19 +584,33 @@ public class ContentService {
     }
 
     public ContentItemResponseDto toResponse(ContentItem item) {
-        return toResponse(item, false);
-    }
-
-    private ContentItemResponseDto toResponse(ContentItem item, boolean includeBlockContent) {
         Question question = questionRepository.findByParentItemId(item.getId()).orElse(null);
         Block block = blockRepository.findByParentItemId(item.getId()).orElse(null);
-        BlockResponseDto blockResponse = block == null || !includeBlockContent ? null : new BlockResponseDto(
+        return new ContentItemResponseDto(
+            item.getId(),
+            item.getItemType(),
+            item.getPosition(),
+            item.getRequired(),
+            item.getTextBody(),
+            question == null ? null : questionService.toResponse(question),
+            block == null ? null : block.getId(),
+            null
+        );
+    }
+
+    private ContentItemResponseDto toResponse(
+        ContentItemRowDto item,
+        Question question,
+        Block block,
+        Map<Long, List<ContentItemResponseDto>> contentByBlock
+    ) {
+        BlockResponseDto blockResponse = block == null || contentByBlock == null ? null : new BlockResponseDto(
             block.getId(),
             block.getScope(),
             block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
-            findBlockContent(block),
+            contentByBlock.getOrDefault(block.getId(), List.of()),
             block.getCreatedBy() == null ? null : block.getCreatedBy().getId(),
             block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
             block.getCreatedAt(),
@@ -558,11 +618,11 @@ public class ContentService {
             null
         );
         return new ContentItemResponseDto(
-            item.getId(),
-            item.getItemType(),
-            item.getPosition(),
-            item.getRequired(),
-            item.getTextBody(),
+            item.id(),
+            item.itemType(),
+            item.position(),
+            item.required(),
+            item.textBody(),
             question == null ? null : questionService.toResponse(question),
             block == null ? null : block.getId(),
             blockResponse
