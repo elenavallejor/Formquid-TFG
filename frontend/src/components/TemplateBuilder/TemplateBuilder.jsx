@@ -429,7 +429,7 @@ export function TemplateBuilder({
             const block = item.block || item;
 
             return (
-              <div key={item.localId || item.fixedQuestionId || item.blockId || index} className={`block-question-item ${dropIndex === index ? 'drop-before' : ''} ${index === items.length - 1 && dropIndex === items.length ? 'drop-after' : ''}`} onDragOver={(event) => handleItemDragOver(event, index)} onDrop={(event) => handleDropAt(event, getDropIndex(event, index))}>
+              <div key={item.localId || item.fixedQuestionId || item.blockId || index} className={`block-question-item ${isBlock ? 'template-block-item' : ''} ${dropIndex === index ? 'drop-before' : ''} ${index === items.length - 1 && dropIndex === items.length ? 'drop-after' : ''}`} onDragOver={(event) => handleItemDragOver(event, index)} onDrop={(event) => handleDropAt(event, getDropIndex(event, index))}>
                 <div className="question-item-left">
                   <button type="button" className="drag-handle" draggable aria-label={`Reordenar elemento ${index + 1}. Usa las flechas o arrastra.`} onDragStart={(event) => { if (!isText && !isBlock) event.dataTransfer.setData('application/x-formquid-template-question', '1'); event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'INTERNAL_SORT', index })); event.dataTransfer.effectAllowed = 'move'; }} onDragEnd={() => setDropIndex(null)} onKeyDown={(event) => handleReorderKeyDown(event, index)}><MdDragIndicator aria-hidden="true" /></button>
                   {isText ? <TextContentIcon /> : isBlock ? (

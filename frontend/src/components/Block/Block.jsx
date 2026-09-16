@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MdAdd, MdDeleteOutline, MdDragIndicator, MdEdit } from 'react-icons/md';
+import { MdAdd, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert } from 'react-icons/md';
 
 import { buildBlockQuestionFromCatalog, getBlockItems } from '../../utils/blockBuilderUtils.js';
 import { getDragData, getDropIndex } from '../../utils/builderDragUtils.js';
@@ -41,6 +41,7 @@ export function Block({
   onDragInside,
 }) {
   const [dropIndex, setDropIndex] = useState(null);
+  const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const items = getDisplayItems(data);
   let questionNumber = 0;
 
@@ -107,6 +108,7 @@ export function Block({
             ? null
             : QUESTION_TYPES.find((type) => type.id === questionData.questionType);
           const TypeIcon = typeConfig?.icon;
+          const isMenuOpen = activeMenuIndex === index;
 
           return (
             <div
@@ -174,25 +176,32 @@ export function Block({
                         onChange={(isRequired) => onRequiredChange(index, isRequired)}
                       />
                     )}
-                    {onEditItem && (
+                    {(onEditItem || onDeleteItem) && (
                       <button
                         type="button"
-                        className="block-content-item-action"
-                        aria-label={`Editar pregunta ${currentQuestionNumber} del bloque`}
-                        onClick={() => onEditItem(index)}
+                        className="action-dots-btn"
+                        aria-label={`Opciones de la pregunta ${currentQuestionNumber} del bloque`}
+                        onClick={() => setActiveMenuIndex(isMenuOpen ? null : index)}
                       >
-                        <MdEdit aria-hidden="true" />
+                        <MdMoreVert aria-hidden="true" />
                       </button>
                     )}
-                    {onDeleteItem && (
-                      <button
-                        type="button"
-                        className="block-content-item-action block-content-delete"
-                        aria-label={`Eliminar pregunta ${currentQuestionNumber} del bloque`}
-                        onClick={() => onDeleteItem(index)}
-                      >
-                        <MdDeleteOutline aria-hidden="true" />
-                      </button>
+
+                    {isMenuOpen && (
+                      <div className="actions-floating-menu">
+                        {onEditItem && (
+                          <button type="button" onClick={() => { setActiveMenuIndex(null); onEditItem(index); }}>
+                            <MdEdit aria-hidden="true" />
+                            Editar pregunta
+                          </button>
+                        )}
+                        {onDeleteItem && (
+                          <button type="button" className="delete-opt" onClick={() => { setActiveMenuIndex(null); onDeleteItem(index); }}>
+                            <MdDeleteOutline aria-hidden="true" />
+                            Eliminar del bloque
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
