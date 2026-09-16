@@ -7,7 +7,6 @@ import {
   MdEdit,
   MdLayers,
   MdMoreVert,
-  MdOutlineVisibility,
 } from 'react-icons/md';
 
 import {
@@ -478,7 +477,6 @@ export function TemplateBuilder({
                   <button type="button" className="action-dots-btn" aria-label={`Opciones de ${getItemLabel(item)}`} onClick={() => setActiveMenuIndex(isMenuOpen ? null : index)}><MdMoreVert aria-hidden="true" /></button>
                   {isMenuOpen && (
                     <div className="actions-floating-menu">
-                      {!isText && !isBlock && <button type="button" onClick={() => openItemModal('VIEW_QUESTION', index)}><MdOutlineVisibility aria-hidden="true" /> Ver detalles</button>}
                       {!isBlock && <button type="button" onClick={() => openItemModal(isText ? 'EDIT_TEXT' : 'EDIT_QUESTION', index)}><MdEdit aria-hidden="true" /> Editar {getItemLabel(item)}</button>}
                       {isBlock && <button type="button" onClick={() => openItemModal('EDIT_BLOCK', index)}><MdEdit aria-hidden="true" /> Editar bloque</button>}
                       <button type="button" className="delete-opt" onClick={() => openItemModal('DELETE', index)}><MdDeleteOutline aria-hidden="true" /> Eliminar de la plantilla</button>
@@ -524,10 +522,6 @@ export function TemplateBuilder({
           onClose={closeModal}
           onSave={handleSaveBlock}
         />
-      )}
-
-      {modalMode === 'VIEW_QUESTION' && selectedItem && (
-        <div className="block-modal-overlay" onClick={closeModal}><section className="block-modal-container question-view-modal" role="dialog" aria-modal="true" aria-labelledby="template-question-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-question-title">DETALLE DE LA PREGUNTA</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><Question questionNumber={`${questionNumberByIndex[selectedItemIndex]}`} data={selectedItem} interactive={false} /></div></section></div>
       )}
 
       {modalMode === 'DELETE' && selectedItem && (

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, MdOutlineVisibility, MdSearch } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 
 import { createPortal } from 'react-dom';
 
@@ -19,11 +20,11 @@ export function CatalogSidebar({
   allowedQuestionTypes,
   onAddQuestion,
   onAddBlock,
-  onPreviewBlock,
   defaultOpen,
   headerSelector = '#main-header',
   embedded = false,
 }) {
+  const navigate = useNavigate();
   const sidebarId = `catalog-sidebar-${useId().replaceAll(':', '')}`;
   const questionsTitleId = `${sidebarId}-questions-title`;
   const blocksTitleId = `${sidebarId}-blocks-title`;
@@ -338,12 +339,10 @@ export function CatalogSidebar({
             <article key={block.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'BLOCK', block)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
               <span className="catalog-icon catalog-block-icon" aria-hidden="true"><MdLayers /></span>
               <div className="catalog-info"><h4>{blockName}</h4><span>{questionCount} {questionCount === 1 ? 'pregunta' : 'preguntas'}</span></div>
-              {(onAddBlock || onPreviewBlock) && (
-                <div className="catalog-actions">
-                  {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
-                  {onPreviewBlock && <button type="button" className="catalog-action" aria-label={`Ver detalles del bloque: ${blockName}`} onClick={() => onPreviewBlock(block)}><MdOutlineVisibility aria-hidden="true" /></button>}
-                </div>
-              )}
+              <div className="catalog-actions">
+                <button type="button" className="catalog-action" aria-label={`Ver detalles del bloque: ${blockName}`} onClick={() => navigate(`/catalogo/detalles/bloque/${block.id}`)}><MdOutlineVisibility aria-hidden="true" /></button>
+                {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
+              </div>
             </article>
           );
         })}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert, MdOutlineVisibility } from "react-icons/md";
+import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert } from "react-icons/md";
 import { buildBlockQuestionFromCatalog, buildBlockTextItem, getBlockItems, INITIAL_BLOCK_STATE } from "../../utils/blockBuilderUtils.js";
 import { getDragData, getDropIndex, reorderItems } from "../../utils/builderDragUtils.js";
 import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from "../../utils/questionBuilderUtils.js";
@@ -335,12 +335,6 @@ export function BlockBuilder({
 
                   {isMenuOpen && (
                     <div className="actions-floating-menu">
-                      {!isText && (
-                        <button type="button" onClick={() => openItemModal("VIEW_QUESTION", index)}>
-                          <MdOutlineVisibility aria-hidden="true" />
-                          Ver detalles
-                        </button>
-                      )}
                       <button type="button" onClick={() => openItemModal(isText ? "EDIT_TEXT" : "EDIT_QUESTION", index)}>
                         <MdEdit aria-hidden="true" />
                         Editar {isText ? "texto" : "pregunta"}
@@ -440,32 +434,6 @@ export function BlockBuilder({
                 Guardar texto
               </button>
             </footer>
-          </section>
-        </div>
-      )}
-
-      {modalMode === "VIEW_QUESTION" && selectedItem && (
-        <div className="block-modal-overlay" onClick={closeModal}>
-          <section
-            className="block-modal-container question-view-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="question-details-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="block-modal-header">
-              <h2 id="question-details-title">DETALLE DE LA PREGUNTA</h2>
-              <button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}>
-                <MdClose aria-hidden="true" />
-              </button>
-            </header>
-            <div className="block-modal-body">
-              <Question
-                questionNumber={`${questionNumberByIndex[selectedItemIndex]}`}
-                data={selectedItem}
-                interactive={false}
-              />
-            </div>
           </section>
         </div>
       )}
