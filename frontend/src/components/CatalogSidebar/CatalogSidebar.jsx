@@ -340,7 +340,20 @@ export function CatalogSidebar({
               <span className="catalog-icon catalog-block-icon" aria-hidden="true"><MdLayers /></span>
               <div className="catalog-info"><h4>{blockName.toUpperCase()}</h4><span>{questionCount} {questionCount === 1 ? 'pregunta' : 'preguntas'}</span></div>
               <div className="catalog-actions">
-                <button type="button" className="catalog-action" aria-label={`Ver detalles del bloque: ${blockName}`} onClick={() => navigate(`/catalogo/detalles/bloque/${block.id}`)}><MdOutlineVisibility aria-hidden="true" /></button>
+                <button
+                  type="button"
+                  className="catalog-action"
+                  aria-label={`Ver detalles del bloque: ${blockName}`}
+                  onClick={() => navigate(`/catalogo/detalles/bloque/${block.id}`, {
+                    state: {
+                      element: block,
+                      elementId: block.id,
+                      elementType: 'bloque',
+                    },
+                  })}
+                >
+                  <MdOutlineVisibility aria-hidden="true" />
+                </button>
                 {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
               </div>
             </article>

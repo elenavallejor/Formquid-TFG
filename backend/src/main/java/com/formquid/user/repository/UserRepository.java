@@ -22,7 +22,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
-    long countByRole(UserRole role);
+    @Query(value = "select exists (select 1 from users)", nativeQuery = true)
+    boolean existsAny();
+
+    boolean existsByRole(UserRole role);
 
     long countByRoleAndIdNot(UserRole role, Long id);
 

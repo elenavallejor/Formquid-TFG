@@ -18,6 +18,11 @@ public interface ElementRequestRepository
         select new com.formquid.elementrequest.dto.ElementRequestResponseDto(
             request.id,
             request.requestedBy.id,
+            request.requestedBy.name,
+            request.requestedBy.email,
+            request.requestedBy.institution,
+            request.requestedBy.gender,
+            request.requestedBy.role,
             request.elementType,
             request.message,
             request.requestPayload,

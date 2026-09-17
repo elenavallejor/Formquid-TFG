@@ -25,6 +25,8 @@ public record SurveyResponseDto(
     SurveyVisibility visibility,
     List<String> tags,
     List<ContentItemResponseDto> contentItems,
+    boolean canEdit,
+    boolean canPreview,
     Instant createdAt,
     Instant updatedAt
 ) {

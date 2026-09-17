@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FaRegClipboard } from 'react-icons/fa';
 import { MdAdd, MdChevronLeft, MdChevronRight, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlinePoll, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
@@ -76,14 +77,14 @@ const LIFECYCLE_LABELS = {
 };
 
 const ACCESS_MODE_LABELS = {
-  PUBLIC: 'Pública',
+  PUBLIC: 'Público',
   PASSWORD_PROTECTED: 'Con contraseña',
   AUTHENTICATED: 'Usuarios autenticados',
 };
 
 const VISIBILITY_LABELS = {
   LISTED: 'Listada',
-  UNLISTED: 'No listada',
+  UNLISTED: 'Oculta',
 };
 
 const TABLE_HEADERS = [
@@ -385,7 +386,7 @@ export function PanelPage() {
               <div className="surveys-header-row">
                 <div>
                   <h2 className="surveys-section-title">
-                    Mis encuestas
+                    MIS ENCUESTAS
                   </h2>
 
                   <p className="surveys-section-subtitle">
@@ -464,9 +465,10 @@ export function PanelPage() {
               {isLoading ? (
                 <Skeleton variant="grid" count={4} />
               ) : !dataError && editorSurveys.length === 0 ? (
-                <p className="panel-status">
-                  No se han encontrado encuestas.
-                </p>
+                <div className="editor-surveys-empty" role="status">
+                  <FaRegClipboard aria-hidden="true" />
+                  <p>No se han encontrado encuestas.</p>
+                </div>
               ) : !dataError ? (
                 <>
                   <div className="surveys-cards-grid">

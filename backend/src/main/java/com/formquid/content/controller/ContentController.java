@@ -9,6 +9,7 @@ import com.formquid.content.dto.CreateTextItemRequestDto;
 import com.formquid.content.dto.ReorderContentRequestDto;
 import com.formquid.content.dto.UpdateQuestionItemRequestDto;
 import com.formquid.content.dto.UpdateRequiredRequestDto;
+import com.formquid.content.dto.UpdateSurveyContentRequestDto;
 import com.formquid.content.dto.UpdateTextItemRequestDto;
 import com.formquid.content.service.ContentService;
 import com.formquid.survey.entity.Survey;
@@ -37,6 +38,16 @@ public class ContentController {
 
     private final SurveyService surveyService;
     private final ContentService contentService;
+
+    @PutMapping
+    public List<ContentItemResponseDto> replaceContent(
+        @PathVariable Long surveyId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody UpdateSurveyContentRequestDto request
+    ) {
+        Survey survey = editableSurvey(surveyId, user);
+        return contentService.replaceSurveyContent(survey, request, user);
+    }
 
     @PostMapping("/texts")
     @ResponseStatus(HttpStatus.CREATED)

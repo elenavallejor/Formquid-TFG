@@ -4,6 +4,8 @@ import com.formquid.survey.entity.Survey;
 import com.formquid.user.entity.User;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -39,6 +41,11 @@ public class SurveyCollaborator {
     @MapsId("userId")
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Enumerated(EnumType.STRING)
+    @jakarta.persistence.Column(nullable = false, length = 20)
+    @Builder.Default
+    private CollaborationPermission permission = CollaborationPermission.EDIT;
 
     @jakarta.persistence.Column(name = "joined_at", nullable = false)
     private Instant joinedAt;

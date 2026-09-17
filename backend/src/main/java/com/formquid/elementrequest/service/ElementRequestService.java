@@ -165,6 +165,11 @@ public class ElementRequestService {
         return new ElementRequestResponseDto(
             request.getId(),
             request.getRequestedBy().getId(),
+            request.getRequestedBy().getName(),
+            request.getRequestedBy().getEmail(),
+            request.getRequestedBy().getInstitution(),
+            request.getRequestedBy().getGender(),
+            request.getRequestedBy().getRole(),
             request.getElementType(),
             request.getMessage(),
             request.getRequestPayload(),

@@ -3,6 +3,7 @@ package com.formquid.collaboration.controller;
 import com.formquid.collaboration.dto.CollaborationRequestResponseDto;
 import com.formquid.collaboration.dto.CreateCollaborationRequestDto;
 import com.formquid.collaboration.dto.CreatePublicationRequestDto;
+import com.formquid.collaboration.dto.PublicationRequestResponseDto;
 import com.formquid.collaboration.dto.SurveyCollaboratorResponseDto;
 import com.formquid.collaboration.service.CollaborationService;
 import com.formquid.survey.entity.Survey;
@@ -94,6 +95,15 @@ public class CollaborationController {
         @Valid @RequestBody CreatePublicationRequestDto request
     ) {
         return collaborationService.requestPublication(surveyId, user.getId(), request.message());
+    }
+
+    @GetMapping("/publication-requests")
+    public List<PublicationRequestResponseDto> findPublicationRequests(
+        @PathVariable Long surveyId,
+        @AuthenticationPrincipal User user
+    ) {
+        ensureCollaborationAccess(surveyId, user);
+        return collaborationService.findPublicationRequests(surveyId);
     }
 
     @PostMapping("/publication-requests/{requestId}/accept")

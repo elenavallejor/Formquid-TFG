@@ -17,6 +17,8 @@ import com.formquid.content.dto.CreateTextItemRequestDto;
 import com.formquid.content.dto.ReorderContentRequestDto;
 import com.formquid.content.dto.UpdateQuestionItemRequestDto;
 import com.formquid.content.dto.UpdateRequiredRequestDto;
+import com.formquid.content.dto.SurveyContentItemRequestDto;
+import com.formquid.content.dto.UpdateSurveyContentRequestDto;
 import com.formquid.content.dto.UpdateTextItemRequestDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
@@ -51,11 +53,40 @@ public class ContentService {
     private final BlockRepository blockRepository;
     private final QuestionService questionService;
 
+    @Transactional(readOnly = true)
     public List<ContentItemResponseDto> findSurveyContent(Long surveyId) {
         return contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)
             .stream()
-            .map(this::toResponse)
+            .map(this::toSurveyResponse)
             .toList();
+    }
+
+    private ContentItemResponseDto toSurveyResponse(ContentItem item) {
+        Question question = questionRepository.findByParentItemId(item.getId()).orElse(null);
+        Block block = blockRepository.findByParentItemId(item.getId()).orElse(null);
+        BlockResponseDto blockResponse = block == null ? null : new BlockResponseDto(
+            block.getId(),
+            block.getScope(),
+            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
+            block.getName(),
+            block.getDescription(),
+            findBlockContent(block),
+            block.getCreatedBy() == null ? null : block.getCreatedBy().getId(),
+            block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
+            block.getCreatedAt(),
+            block.getUpdatedAt(),
+            null
+        );
+        return new ContentItemResponseDto(
+            item.getId(),
+            item.getItemType(),
+            item.getPosition(),
+            item.getRequired(),
+            item.getTextBody(),
+            question == null ? null : questionService.toResponse(question),
+            block == null ? null : block.getId(),
+            blockResponse
+        );
     }
 
     @Transactional(readOnly = true)
@@ -201,6 +232,133 @@ public class ContentService {
         Block catalogBlock = getCatalogBlock(dto.blockId());
         copyExistingBlock(catalogBlock, savedItem, creator);
         return toResponse(savedItem);
+    }
+
+    @Transactional
+    public ContentItemResponseDto addLocalBlockToSurvey(
+        Survey survey,
+        Integer position,
+        CreateBlockRequestDto dto,
+        User creator
+    ) {
+        makeRoomForSurveyItem(survey, position);
+        ContentItem parentItem = contentItemRepository.save(
+            baseSurveyItem(survey, ContentItemType.BLOCK, position)
+        );
+        Block block = blockRepository.save(Block.builder()
+            .parentItem(parentItem)
+            .scope(BlockScope.SNAPSHOT)
+            .name(dto.name().trim())
+            .description(dto.description() == null || dto.description().isBlank() ? null : dto.description().trim())
+            .createdBy(creator)
+            .build());
+
+        dto.items().stream()
+            .sorted(Comparator.comparing(CreateBlockItemRequestDto::position))
+            .forEach(item -> {
+                if (item.itemType() == ContentItemType.TEXT) {
+                    contentItemRepository.save(ContentItem.builder()
+                        .parentBlock(block)
+                        .itemType(ContentItemType.TEXT)
+                        .position(item.position())
+                        .textBody(item.textBody().trim())
+                        .build());
+                    return;
+                }
+
+                ContentItem questionItem = contentItemRepository.save(ContentItem.builder()
+                    .parentBlock(block)
+                    .itemType(ContentItemType.QUESTION)
+                    .position(item.position())
+                    .required(item.required())
+                    .build());
+                if (item.fixedQuestionId() != null) {
+                    questionService.createFixedSnapshot(
+                        getCatalogFixedQuestion(item.fixedQuestionId()),
+                        questionItem,
+                        creator
+                    );
+                } else {
+                    questionService.createLocalQuestion(item.question(), questionItem, creator);
+                }
+            });
+        return toSurveyResponse(parentItem);
+    }
+
+    @Transactional
+    public List<ContentItemResponseDto> replaceSurveyContent(
+        Survey survey,
+        UpdateSurveyContentRequestDto request,
+        User creator
+    ) {
+        validateSurveyContent(request);
+        deleteSurveyContent(survey);
+
+        request.items().stream()
+            .sorted(Comparator.comparing(SurveyContentItemRequestDto::position))
+            .forEach(item -> addSurveyItem(survey, item, creator));
+
+        return findSurveyContent(survey.getId());
+    }
+
+    private void addSurveyItem(Survey survey, SurveyContentItemRequestDto item, User creator) {
+        if (item.itemType() == ContentItemType.TEXT) {
+            addTextToSurvey(survey, new CreateTextItemRequestDto(item.position(), item.textBody()));
+            return;
+        }
+        if (item.itemType() == ContentItemType.QUESTION) {
+            if (item.fixedQuestionId() != null) {
+                addFixedQuestionToSurvey(
+                    survey,
+                    new AddFixedQuestionItemRequestDto(item.position(), item.required(), item.fixedQuestionId()),
+                    creator
+                );
+            } else {
+                addLocalQuestionToSurvey(
+                    survey,
+                    new CreateQuestionItemRequestDto(item.position(), item.required(), item.question()),
+                    creator
+                );
+            }
+            return;
+        }
+        if (item.blockId() != null) {
+            addBlockToSurvey(survey, new AddBlockItemRequestDto(item.position(), item.blockId()), creator);
+        } else {
+            addLocalBlockToSurvey(survey, item.position(), item.block(), creator);
+        }
+    }
+
+    private void validateSurveyContent(UpdateSurveyContentRequestDto request) {
+        if (request == null || request.items() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La estructura de la encuesta es obligatoria");
+        }
+        Set<Integer> positions = new HashSet<>();
+        for (SurveyContentItemRequestDto item : request.items()) {
+            if (item == null || item.itemType() == null || item.position() == null || item.position() < 1) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La encuesta contiene un elemento inválido");
+            }
+            if (!positions.add(item.position())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La encuesta contiene posiciones duplicadas");
+            }
+            if (item.itemType() == ContentItemType.TEXT
+                && (item.textBody() == null || item.textBody().isBlank())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Los elementos de texto no pueden estar vacíos");
+            }
+            if (item.itemType() == ContentItemType.QUESTION
+                && (item.required() == null || (item.question() == null) == (item.fixedQuestionId() == null))) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Cada pregunta debe tener un único origen");
+            }
+            if (item.itemType() == ContentItemType.BLOCK
+                && ((item.block() == null) == (item.blockId() == null))) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Cada bloque debe tener un único origen");
+            }
+        }
+        for (int position = 1; position <= request.items().size(); position++) {
+            if (!positions.contains(position)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Las posiciones de la encuesta deben ser consecutivas");
+            }
+        }
     }
 
     @Transactional
@@ -480,6 +638,25 @@ public class ContentService {
     @Transactional
     public void deleteTemplateContent(Template template) {
         List<ContentItem> items = contentItemRepository.findByTemplateIdOrderByPositionAsc(template.getId());
+        for (ContentItem item : items) {
+            if (item.getItemType() == ContentItemType.QUESTION) {
+                questionRepository.findByParentItemId(item.getId()).ifPresent(questionRepository::delete);
+            } else if (item.getItemType() == ContentItemType.BLOCK) {
+                blockRepository.findByParentItemId(item.getId()).ifPresent(block -> {
+                    deleteBlockContent(block);
+                    blockRepository.delete(block);
+                    blockRepository.flush();
+                });
+            }
+        }
+        questionRepository.flush();
+        contentItemRepository.deleteAll(items);
+        contentItemRepository.flush();
+    }
+
+    @Transactional
+    public void deleteSurveyContent(Survey survey) {
+        List<ContentItem> items = contentItemRepository.findBySurveyIdOrderByPositionAsc(survey.getId());
         for (ContentItem item : items) {
             if (item.getItemType() == ContentItemType.QUESTION) {
                 questionRepository.findByParentItemId(item.getId()).ifPresent(questionRepository::delete);

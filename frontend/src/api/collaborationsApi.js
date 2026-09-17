@@ -40,9 +40,16 @@ export function removeCollaborator(surveyId, collaboratorId) {
   });
 }
 
-export function requestPublication(surveyId) {
+export function requestPublication(surveyId, message = '') {
   return apiClient(`/surveys/${surveyId}/publication-requests`, {
     method: 'POST',
+    body: { message: message.trim() || null },
+  });
+}
+
+export function getPublicationRequests(surveyId) {
+  return apiClient(`/surveys/${surveyId}/publication-requests`, {
+    method: 'GET',
   });
 }
 

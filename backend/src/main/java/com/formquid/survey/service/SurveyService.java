@@ -1,6 +1,7 @@
 package com.formquid.survey.service;
 
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.collaboration.entity.CollaborationPermission;
 import com.formquid.common.exception.ApiException;
 import com.formquid.common.service.TagNormalizer;
 import com.formquid.content.dto.ContentItemResponseDto;
@@ -116,7 +117,7 @@ public class SurveyService {
     public SurveyResponseDto getSurveyForUser(Long surveyId, User user) {
         Survey survey = getSurvey(surveyId);
         ensureCanViewSurvey(survey, user);
-        return toResponse(survey);
+        return toResponse(survey, user);
     }
 
     @Transactional(readOnly = true)
@@ -137,7 +138,7 @@ public class SurveyService {
     @Transactional
     public SurveyResponseDto create(CreateSurveyRequestDto request, User owner) {
         Survey saved = createDraft(request, owner);
-        return toResponse(saved);
+        return toResponse(saved, owner);
     }
 
     @Transactional
@@ -145,37 +146,39 @@ public class SurveyService {
         Template template = templateService.getTemplate(templateId);
         Survey saved = createDraft(request, owner);
         templateService.copyTemplateIntoSurvey(template, saved, owner);
-        return toResponse(saved);
+        return toResponse(saved, owner);
     }
 
     @Transactional
     public SurveyResponseDto update(Long surveyId, UpdateSurveyRequestDto request, User actor) {
         Survey survey = getSurvey(surveyId);
         ensureCanEdit(survey, actor);
-        SurveyAccessMode previousMode = survey.getAccessMode();
-        SurveyAccessMode requestedMode = request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode();
         survey.setTitle(request.title().trim());
         survey.setDescription(trimToNull(request.description()));
         survey.setImageKey(trimToNull(request.imageKey()));
         survey.setFontFamily(fontFamilyOrDefault(request.fontFamily()));
-        survey.setAccessMode(requestedMode);
-        survey.setVisibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
-        survey.setAccessPasswordHash(updatedPasswordHash(previousMode, requestedMode, survey.getAccessPasswordHash(), request.accessPassword()));
         saveTags(survey, request.tags());
-        return toResponse(survey);
+        if (isOwner(survey, actor)) {
+            SurveyAccessMode previousMode = survey.getAccessMode();
+            SurveyAccessMode requestedMode = request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode();
+            survey.setAccessMode(requestedMode);
+            survey.setVisibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
+            survey.setAccessPasswordHash(updatedPasswordHash(previousMode, requestedMode, survey.getAccessPasswordHash(), request.accessPassword()));
+        }
+        return toResponse(survey, actor);
     }
 
     @Transactional
     public SurveyResponseDto changeLifecycle(Long surveyId, SurveyLifecycle lifecycle, User actor) {
         Survey survey = getSurvey(surveyId);
-        ensureOwnerOrSuperadmin(survey, actor);
+        ensureOwner(survey, actor);
         prepareLifecycleChange(survey, lifecycle);
         notifySurveyStatusChanged(
             survey,
             "Estado de encuesta actualizado",
             "La encuesta " + survey.getTitle() + " ha pasado a estado " + lifecycle.name()
         );
-        return toResponse(survey);
+        return toResponse(survey, actor);
     }
 
     /**
@@ -206,7 +209,25 @@ public class SurveyService {
             "Intervención administrativa sobre encuesta",
             "Administración ha cambiado la encuesta " + survey.getTitle() + " a estado " + lifecycle.name()
         );
-        return toResponse(survey);
+        return toResponse(survey, admin);
+    }
+
+    @Transactional
+    public SurveyResponseDto adminChangeVisibility(Long surveyId, SurveyVisibility visibility, User admin) {
+        if (!isAdmin(admin)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo administración puede intervenir encuestas");
+        }
+        if (visibility != SurveyVisibility.UNLISTED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Administración solo puede ocultar encuestas");
+        }
+        Survey survey = getSurvey(surveyId);
+        survey.setVisibility(SurveyVisibility.UNLISTED);
+        notifySurveyStatusChanged(
+            survey,
+            "Encuesta ocultada por administración",
+            "Administración ha ocultado la encuesta " + survey.getTitle() + " de los listados públicos"
+        );
+        return toResponse(survey, admin);
     }
 
     @Transactional
@@ -234,7 +255,11 @@ public class SurveyService {
     }
 
     public boolean canEditSurvey(Survey survey, User user) {
-        return isOwner(survey, user) || isCollaborator(survey, user) || isSuperadmin(user);
+        return isOwner(survey, user) || isEditingCollaborator(survey, user);
+    }
+
+    public boolean canPreviewSurvey(Survey survey, User user) {
+        return isOwner(survey, user) || isCollaborator(survey, user);
     }
 
     public void ensureStructureEditable(Survey survey) {
@@ -244,6 +269,10 @@ public class SurveyService {
     }
 
     public SurveyResponseDto toResponse(Survey survey) {
+        return toResponse(survey, null);
+    }
+
+    private SurveyResponseDto toResponse(Survey survey, User actor) {
         List<ContentItemResponseDto> content = contentService.findSurveyContent(survey.getId()).stream()
             .sorted(Comparator.comparing(ContentItemResponseDto::position))
             .toList();
@@ -260,6 +289,8 @@ public class SurveyService {
             survey.getVisibility(),
             tagsFrom(survey),
             content,
+            canEditSurvey(survey, actor),
+            canPreviewSurvey(survey, actor),
             survey.getCreatedAt(),
             survey.getUpdatedAt()
         );
@@ -411,12 +442,6 @@ public class SurveyService {
         }
     }
 
-    private void ensureOwnerOrSuperadmin(Survey survey, User user) {
-        if (!isOwner(survey, user) && !isSuperadmin(user)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Solo el propietario puede realizar esta operación");
-        }
-    }
-
     private void ensureClosedForDelete(Survey survey) {
         if (survey.getLifecycleStatus() != SurveyLifecycle.CLOSED) {
             throw new ApiException(HttpStatus.CONFLICT, "La encuesta debe estar cerrada antes de eliminarse");
@@ -431,12 +456,16 @@ public class SurveyService {
         return user != null && collaboratorRepository.existsByIdSurveyIdAndIdUserId(survey.getId(), user.getId());
     }
 
-    private boolean isAdmin(User user) {
-        return user != null && (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPERADMIN);
+    private boolean isEditingCollaborator(Survey survey, User user) {
+        return user != null && collaboratorRepository.existsByIdSurveyIdAndIdUserIdAndPermission(
+            survey.getId(),
+            user.getId(),
+            CollaborationPermission.EDIT
+        );
     }
 
-    private boolean isSuperadmin(User user) {
-        return user != null && user.getRole() == UserRole.SUPERADMIN;
+    private boolean isAdmin(User user) {
+        return user != null && (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPERADMIN);
     }
 
     private void notifySurveyStatusChanged(Survey survey, String title, String message) {

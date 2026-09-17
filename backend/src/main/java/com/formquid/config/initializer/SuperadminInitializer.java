@@ -40,7 +40,7 @@ public class SuperadminInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.count() == 0) {
+        if (!userRepository.existsAny()) {
             userRepository.save(User.builder()
                 .role(UserRole.SUPERADMIN)
                 .email(EmailNormalizer.normalize(email))
@@ -52,7 +52,7 @@ public class SuperadminInitializer implements CommandLineRunner {
             return;
         }
 
-        if (userRepository.countByRole(UserRole.SUPERADMIN) < 1) {
+        if (!userRepository.existsByRole(UserRole.SUPERADMIN)) {
             throw new IllegalStateException(
                 "La base debe contener al menos un superadministrador"
             );

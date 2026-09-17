@@ -56,6 +56,11 @@ export function TemplateBuilder({
   onChange = () => {},
   onDropQuestionFromSidebar,
   onDropBlockFromSidebar,
+  showGeneralInfo = true,
+  structureTitle = 'ESTRUCTURA DE LA PLANTILLA',
+  structureDescription = 'Combina preguntas, textos y bloques, y ordénalos como aparecerán.',
+  containerLabel = 'plantilla',
+  readOnly = false,
 }) {
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const [modalMode, setModalMode] = useState(null);
@@ -419,27 +424,29 @@ export function TemplateBuilder({
 
   return (
     <div className="block-builder-stack template-builder-stack">
-      <section className="builder-card" onDragOverCapture={preventDrop} onDropCapture={preventDrop}>
-        <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
-        <div className="builder-field">
-          <label htmlFor="template-title">Título de la plantilla <span>*</span></label>
-          <input id="template-title" type="text" placeholder="Introduce un título para la plantilla..." maxLength={200} value={data.title || ''} onChange={(event) => updateData({ title: event.target.value })} />
-          <span className="field-counter">{(data.title || '').length}/200</span>
-        </div>
-        <div className="builder-field">
-          <label htmlFor="template-description">Descripción</label>
-          <textarea id="template-description" rows={4} placeholder="Añade detalles o contexto sobre el propósito de esta plantilla..." maxLength={500} value={data.description || ''} onChange={(event) => updateData({ description: event.target.value })} />
-          <span className="field-counter">{(data.description || '').length}/500</span>
-        </div>
-      </section>
+      {showGeneralInfo && (
+        <section className="builder-card" onDragOverCapture={preventDrop} onDropCapture={preventDrop}>
+          <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
+          <div className="builder-field">
+            <label htmlFor="template-title">Título de la plantilla <span>*</span></label>
+            <input id="template-title" type="text" placeholder="Introduce un título para la plantilla..." maxLength={200} value={data.title || ''} onChange={(event) => updateData({ title: event.target.value })} />
+            <span className="field-counter">{(data.title || '').length}/200</span>
+          </div>
+          <div className="builder-field">
+            <label htmlFor="template-description">Descripción</label>
+            <textarea id="template-description" rows={4} placeholder="Añade detalles o contexto sobre el propósito de esta plantilla..." maxLength={500} value={data.description || ''} onChange={(event) => updateData({ description: event.target.value })} />
+            <span className="field-counter">{(data.description || '').length}/500</span>
+          </div>
+        </section>
+      )}
 
-      <section className="builder-card block-structure-card" onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDropAt(event, items.length)} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDropIndex(null); }}>
+      <section className="builder-card block-structure-card" onDragOver={readOnly ? undefined : (event) => event.preventDefault()} onDrop={readOnly ? undefined : (event) => handleDropAt(event, items.length)} onDragLeave={readOnly ? undefined : (event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDropIndex(null); }}>
         <div className="structure-header">
           <div>
-            <h2 className="builder-section-title">ESTRUCTURA DE LA PLANTILLA</h2>
-            <p className="builder-section-desc">Combina preguntas, textos y bloques, y ordénalos como aparecerán.</p>
+            <h2 className="builder-section-title">{structureTitle}</h2>
+            <p className="builder-section-desc">{structureDescription}</p>
           </div>
-          <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.TEMPLATE} onSelect={handleCreateElement} />
+          {!readOnly && <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.TEMPLATE} onSelect={handleCreateElement} />}
         </div>
 
         <div className="block-questions-list">
@@ -455,7 +462,7 @@ export function TemplateBuilder({
             return (
               <div key={item.localId || item.fixedQuestionId || item.blockId || index} className={`block-question-item ${isBlock ? 'template-block-item' : ''} ${dropIndex === index ? 'drop-before' : ''} ${index === items.length - 1 && dropIndex === items.length ? 'drop-after' : ''}`} onDragOver={(event) => handleItemDragOver(event, index)} onDrop={(event) => handleDropAt(event, getDropIndex(event, index))}>
                 <div className="question-item-left">
-                  <button type="button" className="drag-handle" draggable aria-label={`Reordenar elemento ${index + 1}. Usa las flechas o arrastra.`} onDragStart={(event) => { if (!isText && !isBlock) event.dataTransfer.setData('application/x-formquid-template-question', '1'); event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'INTERNAL_SORT', index })); event.dataTransfer.effectAllowed = 'move'; }} onDragEnd={() => setDropIndex(null)} onKeyDown={(event) => handleReorderKeyDown(event, index)}><MdDragIndicator aria-hidden="true" /></button>
+                  {!readOnly && <button type="button" className="drag-handle" draggable aria-label={`Reordenar elemento ${index + 1}. Usa las flechas o arrastra.`} onDragStart={(event) => { if (!isText && !isBlock) event.dataTransfer.setData('application/x-formquid-template-question', '1'); event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'INTERNAL_SORT', index })); event.dataTransfer.effectAllowed = 'move'; }} onDragEnd={() => setDropIndex(null)} onKeyDown={(event) => handleReorderKeyDown(event, index)}><MdDragIndicator aria-hidden="true" /></button>}
                   {isText ? <TextContentIcon /> : isBlock ? (
                     <span className="question-type-badge template-block-badge" title="Bloque de preguntas"><MdLayers aria-hidden="true" /></span>
                   ) : TypeIcon ? (
@@ -469,31 +476,31 @@ export function TemplateBuilder({
                       data={block}
                       blockLabel={itemNumbering[index].blockLabel}
                       questionNumberStart={itemNumbering[index].questionNumberStart}
-                      onDropQuestion={(question, targetIndex) =>
+                      onDropQuestion={readOnly ? undefined : (question, targetIndex) =>
                         handleDropQuestionIntoBlock(index, question, targetIndex)}
-                      onMoveItem={(fromIndex, targetIndex) =>
+                      onMoveItem={readOnly ? undefined : (fromIndex, targetIndex) =>
                         handleMoveItemInsideBlock(index, fromIndex, targetIndex)}
-                      onDeleteItem={(itemIndex) =>
+                      onDeleteItem={readOnly ? undefined : (itemIndex) =>
                         handleDeleteItemInsideBlock(index, itemIndex)}
                       blockIndex={index}
-                      onDropTemplateQuestion={(sourceIndex, targetIndex) =>
+                      onDropTemplateQuestion={readOnly ? undefined : (sourceIndex, targetIndex) =>
                         handleMoveTopLevelQuestionIntoBlock(sourceIndex, index, targetIndex)}
-                      onDropBlockItem={(sourceBlockIndex, sourceItemIndex, targetIndex) =>
+                      onDropBlockItem={readOnly ? undefined : (sourceBlockIndex, sourceItemIndex, targetIndex) =>
                         handleMoveItemBetweenBlocks(
                           sourceBlockIndex,
                           sourceItemIndex,
                           index,
                           targetIndex,
                         )}
-                      onEditItem={(itemIndex) => openBlockItemModal(index, itemIndex)}
-                      onRequiredChange={(itemIndex, isRequired) =>
+                      onEditItem={readOnly ? undefined : (itemIndex) => openBlockItemModal(index, itemIndex)}
+                      onRequiredChange={readOnly ? undefined : (itemIndex, isRequired) =>
                         handleRequiredChangeInsideBlock(index, itemIndex, isRequired)}
                       onDragInside={() => setDropIndex(null)}
                     />
                   ) : <Question questionNumber={`${itemNumbering[index].questionNumber}`} data={item} interactive={false} />}
                 </div>
 
-                <div className="question-item-actions">
+                {!readOnly && <div className="question-item-actions">
                   {!isText && !isBlock && (
                     <RequiredToggle
                       checked={item.isRequired}
@@ -505,21 +512,21 @@ export function TemplateBuilder({
                     <div className="actions-floating-menu">
                       {!isBlock && <button type="button" onClick={() => openItemModal(isText ? 'EDIT_TEXT' : 'EDIT_QUESTION', index)}><MdEdit aria-hidden="true" /> Editar {getItemLabel(item)}</button>}
                       {isBlock && <button type="button" onClick={() => openItemModal('EDIT_BLOCK', index)}><MdEdit aria-hidden="true" /> Editar bloque</button>}
-                      <button type="button" className="delete-opt" onClick={() => openItemModal('DELETE', index)}><MdDeleteOutline aria-hidden="true" /> Eliminar de la plantilla</button>
+                      <button type="button" className="delete-opt" onClick={() => openItemModal('DELETE', index)}><MdDeleteOutline aria-hidden="true" /> Eliminar de la {containerLabel}</button>
                     </div>
                   )}
-                </div>
+                </div>}
               </div>
             );
           })}
         </div>
 
-        <div className={`block-empty-dropzone ${dropIndex === items.length ? 'drop-active' : ''}`} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy'; setDropIndex(items.length); }} onDrop={(event) => handleDropAt(event, items.length)}>
+        {!readOnly && <div className={`block-empty-dropzone ${dropIndex === items.length ? 'drop-active' : ''}`} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy'; setDropIndex(items.length); }} onDrop={(event) => handleDropAt(event, items.length)}>
           <div className="dropzone-text-group">
             <span className="dropzone-title"><MdAdd aria-hidden="true" /> Agrega contenido</span>
             <p className="dropzone-sub">Arrastra elementos desde el catálogo o créalos con el botón superior.</p>
           </div>
-        </div>
+        </div>}
       </section>
 
       {(modalMode === 'CREATE_QUESTION' || modalMode === 'EDIT_QUESTION' || modalMode === 'EDIT_BLOCK_QUESTION') && <QuestionBuilder data={editingQuestion} onChange={setEditingQuestion} isCatalog={false} isModal modalTitle={modalMode === 'CREATE_QUESTION' ? 'Crear pregunta propia' : 'Editar pregunta'} onClose={closeModal} onSave={handleSaveQuestion} />}
@@ -551,7 +558,7 @@ export function TemplateBuilder({
       )}
 
       {modalMode === 'DELETE' && selectedItem && (
-        <div className="block-modal-overlay" onClick={closeModal}><section className="block-modal-container delete-modal-box" role="dialog" aria-modal="true" aria-labelledby="template-delete-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-delete-title">ELIMINAR {getItemLabel(selectedItem).toUpperCase()}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><p>¿Estás seguro de que deseas retirar este elemento de la plantilla?</p></div><footer className="block-modal-footer"><button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>Eliminar</button></footer></section></div>
+        <div className="block-modal-overlay" onClick={closeModal}><section className="block-modal-container delete-modal-box" role="dialog" aria-modal="true" aria-labelledby="template-delete-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-delete-title">ELIMINAR {getItemLabel(selectedItem).toUpperCase()}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><p>¿Estás seguro de que deseas retirar este elemento de la {containerLabel}?</p></div><footer className="block-modal-footer"><button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>Eliminar</button></footer></section></div>
       )}
     </div>
   );

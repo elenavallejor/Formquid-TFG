@@ -75,6 +75,11 @@ public class CollaborationRequest {
     )
     private CollaborationRequestType requestType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private CollaborationPermission permission = CollaborationPermission.EDIT;
+
     @Column(columnDefinition = "text")
     private String message;
 

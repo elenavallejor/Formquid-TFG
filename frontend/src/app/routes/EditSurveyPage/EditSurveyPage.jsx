@@ -1,0 +1,609 @@
+import { useEffect, useRef, useState } from 'react';
+import { useBlocker, useParams } from 'react-router-dom';
+import '@fontsource/lexend/400.css';
+import '@fontsource/opendyslexic/400.css';
+import { FaRegClipboard } from 'react-icons/fa';
+import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdGroups, MdImage, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdVisibilityOff } from 'react-icons/md';
+
+import { acceptCollaborationRequest, acceptPublicationRequest, createCollaborationRequest, getCollaborationRequests, getCollaborators, getPublicationRequests, rejectCollaborationRequest, rejectPublicationRequest, removeCollaborator, requestPublication } from '../../../api/collaborationsApi.js';
+import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
+import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle } from '../../../api/surveysApi.js';
+import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
+import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
+import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
+import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
+import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
+import { SurveyBuilder } from '../../../components/SurveyBuilder/SurveyBuilder.jsx';
+import { SurveyPreviewModal } from '../../../components/SurveyPreviewModal/SurveyPreviewModal.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
+import { buildTemplateBlockFromCatalog, buildTemplateQuestionFromCatalog } from '../../../utils/templateBuilderUtils.js';
+import { INITIAL_SURVEY_STRUCTURE, buildSurveyStructurePayload, buildSurveyStructureState, getSurveyPublicationValidationError, getSurveyStructureValidationError } from '../../../utils/surveyBuilderUtils.js';
+import { formatDate } from '../../../utils/formatDate.js';
+
+import '../CreateBlockPage/CreateBlockPage.css';
+import '../CreateSurveyPage/CreateSurveyPage.css';
+import './EditSurveyPage.css';
+
+const TABS = [
+  { id: 'SURVEY', label: 'Encuesta', icon: FaRegClipboard },
+  { id: 'COLLABORATIONS', label: 'Colaboraciones', icon: MdGroups },
+  { id: 'SETTINGS', label: 'Configuración', icon: MdOutlineSettings },
+];
+
+const FONT_OPTIONS = [
+  { value: 'TIMES_NEW_ROMAN', label: 'Times New Roman', fontFamily: '"Computer Modern", "Latin Modern Roman", Georgia, "Times New Roman", serif' },
+  { value: 'OPEN_DYSLEXIC', label: 'OpenDyslexic', fontFamily: 'OpenDyslexic, sans-serif' },
+  { value: 'LEXEND', label: 'Lexend', fontFamily: 'Lexend, sans-serif' },
+  { value: 'ARIAL', label: 'Arial', fontFamily: 'Arial, sans-serif' },
+];
+
+const LIFECYCLE_LABELS = { DRAFT: 'Borrador', OPEN: 'Abierta', CLOSED: 'Cerrada' };
+
+function normalizeTag(value) {
+  let normalized = value.trim().toLocaleLowerCase('es');
+  if (normalized.startsWith('#')) normalized = normalized.slice(1);
+  return normalized.normalize('NFKC').replace(/\s+/g, '-');
+}
+
+function settingsFromSurvey(survey) {
+  return {
+    title: survey?.title || '',
+    description: survey?.description || '',
+    imageKey: survey?.imageKey || '',
+    fontFamily: survey?.fontFamily || 'TIMES_NEW_ROMAN',
+    accessMode: survey?.accessMode || 'PUBLIC',
+    visibility: survey?.visibility || 'LISTED',
+    accessPassword: '',
+    tags: survey?.tags || [],
+  };
+}
+
+function SurveyGeneralInfo({ title, description }) {
+  return (
+    <section className="edit-survey-panel-card edit-survey-general-card" aria-labelledby="edit-survey-summary-title">
+      <div className="edit-survey-card-heading">
+        <div>
+          <h2 id="edit-survey-summary-title">INFORMACIÓN GENERAL</h2>
+          <p>Puedes editar esta información en la configuración de la encuesta.</p>
+        </div>
+      </div>
+      <div className="create-survey-field">
+        <label htmlFor="edit-survey-summary-name">Título de la encuesta</label>
+        <input id="edit-survey-summary-name" type="text" value={title} readOnly aria-readonly="true" />
+      </div>
+      <div className="create-survey-field">
+        <span id="edit-survey-summary-description-label" className="edit-survey-readonly-label">Descripción</span>
+        <div className={`edit-survey-readonly-description ${description ? '' : 'is-empty'}`} role="textbox" aria-readonly="true" aria-labelledby="edit-survey-summary-description-label">
+          {description || 'Esta encuesta no tiene descripción.'}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SurveyTagsEditor({ tags, readOnly, onChange }) {
+  const [tagInput, setTagInput] = useState('');
+  const [tagError, setTagError] = useState('');
+
+  function addTag() {
+    const tag = normalizeTag(tagInput);
+    setTagError('');
+    if (!tag) return;
+    if (!/^[\p{L}\p{N}-]+$/u.test(tag)) return setTagError('La etiqueta solo admite letras, números y guiones.');
+    if (tag.length > 50) return setTagError('La etiqueta no puede superar 50 caracteres.');
+    if (tags.includes(tag)) return setTagError('Esta etiqueta ya está añadida.');
+    if (tags.length >= 4) return setTagError('Puedes añadir un máximo de cuatro etiquetas.');
+    onChange([...tags, tag]);
+    setTagInput('');
+  }
+
+  return (
+    <section className="edit-survey-panel-card edit-survey-tags-card" aria-labelledby="edit-survey-tags-title">
+      <div className="edit-survey-card-heading">
+        <div>
+          <h2 id="edit-survey-tags-title">ETIQUETAS</h2>
+          <p>Clasifica la encuesta con hasta cuatro etiquetas.</p>
+        </div>
+        <span className="edit-survey-tags-count">{tags.length}/4</span>
+      </div>
+      {!readOnly && <div className="create-survey-field edit-survey-tags-field">
+        <div className="create-survey-tag-input">
+          <input id="edit-survey-tag" type="text" maxLength={50} value={tagInput} disabled={tags.length >= 4} placeholder="Ej.: uso-cotidiano, colegio..." aria-label="Nueva etiqueta" onChange={(event) => { setTagInput(event.target.value); setTagError(''); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ',') { event.preventDefault(); addTag(); } }} />
+          <button type="button" disabled={!tagInput.trim() || tags.length >= 4} onClick={addTag}>Añadir</button>
+        </div>
+      </div>}
+      {tagError && <p className="create-survey-inline-error" role="alert">{tagError}</p>}
+      {tags.length > 0
+        ? <ul className="create-survey-tags">{tags.map((tag) => <li key={tag}><span>#{tag}</span>{!readOnly && <button type="button" aria-label={`Eliminar etiqueta ${tag}`} onClick={() => onChange(tags.filter((item) => item !== tag))}><MdClose aria-hidden="true" /></button>}</li>)}</ul>
+        : <p className="edit-survey-tags-empty">Esta encuesta todavía no tiene etiquetas.</p>}
+    </section>
+  );
+}
+
+function SurveySettings({ data, imageHasError, onImageError, onChange, showPolicySettings }) {
+  const selectedFont = FONT_OPTIONS.find((font) => font.value === data.fontFamily) || FONT_OPTIONS[0];
+
+  return (
+    <div className="edit-survey-settings-stack">
+      <section className="create-survey-card" aria-labelledby="edit-survey-general-title">
+        <h2 id="edit-survey-general-title">INFORMACIÓN GENERAL</h2>
+        <div className="create-survey-field">
+          <label htmlFor="edit-survey-title">Título de la encuesta <span>*</span></label>
+          <input id="edit-survey-title" type="text" maxLength={200} value={data.title} onChange={(event) => onChange({ title: event.target.value })} />
+          <small>{data.title.length}/200</small>
+        </div>
+        <div className="create-survey-field">
+          <label htmlFor="edit-survey-description">Descripción</label>
+          <textarea id="edit-survey-description" rows={5} maxLength={1000} value={data.description} onChange={(event) => onChange({ description: event.target.value })} />
+          <small>{data.description.length}/1000</small>
+        </div>
+      </section>
+
+      <section className="create-survey-card" aria-labelledby="edit-survey-image-title">
+        <h2 id="edit-survey-image-title">IMAGEN</h2>
+        <div className="create-survey-image-layout">
+          <div className="create-survey-image-preview">
+            {data.imageKey && !imageHasError ? <img src={data.imageKey} alt="Vista previa de la encuesta" onError={onImageError} /> : <MdImage aria-hidden="true" />}
+          </div>
+          <div className="create-survey-field">
+            <label htmlFor="edit-survey-image">URL de la imagen</label>
+            <input id="edit-survey-image" type="url" value={data.imageKey} placeholder="https://ejemplo.com/imagen.jpg" onChange={(event) => onChange({ imageKey: event.target.value }, true)} />
+            <p>Se utilizará como portada de la encuesta.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="create-survey-card" aria-labelledby="edit-survey-appearance-title">
+        <h2 id="edit-survey-appearance-title">APARIENCIA</h2>
+        <div className="create-survey-grid edit-survey-appearance-layout">
+          <div className="create-survey-field">
+            <label htmlFor="edit-survey-font">Tipografía</label>
+            <Dropdown id="edit-survey-font" value={data.fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value })}>
+              {FONT_OPTIONS.map((font) => <option key={font.value} value={font.value} style={{ fontFamily: font.fontFamily, fontSize: font.value === 'OPEN_DYSLEXIC' ? '13px' : undefined }}>{font.label}</option>)}
+            </Dropdown>
+          </div>
+          <div className={`edit-survey-font-preview ${data.fontFamily === 'OPEN_DYSLEXIC' ? 'is-open-dyslexic' : ''}`} style={{ fontFamily: selectedFont.fontFamily }} aria-live="polite">
+            <span>Vista previa</span>
+            <label htmlFor="edit-survey-preview-answer">¿Cómo utilizas la tecnología en tu día a día? <strong>*</strong></label>
+            <input id="edit-survey-preview-answer" type="text" placeholder="Escribe tu respuesta" disabled />
+          </div>
+        </div>
+      </section>
+
+      {showPolicySettings && <section className="create-survey-card" aria-labelledby="edit-survey-access-title">
+        <h2 id="edit-survey-access-title">ACCESO Y VISIBILIDAD</h2>
+        <fieldset className="create-survey-choice-group">
+          <legend>Modo de acceso</legend>
+          <label><input type="radio" name="edit-access-mode" value="PUBLIC" checked={data.accessMode === 'PUBLIC'} onChange={(event) => onChange({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>Público</strong><small>Cualquier persona con acceso puede responder.</small></span></label>
+          <label><input type="radio" name="edit-access-mode" value="PASSWORD_PROTECTED" checked={data.accessMode === 'PASSWORD_PROTECTED'} onChange={(event) => onChange({ accessMode: event.target.value })} /><span><strong>Protegido con contraseña</strong><small>Se solicitará una contraseña antes de responder.</small></span></label>
+          <label><input type="radio" name="edit-access-mode" value="AUTHENTICATED" checked={data.accessMode === 'AUTHENTICATED'} onChange={(event) => onChange({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>Restringido a usuarios autenticados</strong><small>Solo podrán responder usuarios con una cuenta.</small></span></label>
+        </fieldset>
+        {data.accessMode === 'PASSWORD_PROTECTED' && <div className="create-survey-field create-survey-password"><label htmlFor="edit-survey-password">Nueva contraseña de acceso</label><input id="edit-survey-password" type="password" value={data.accessPassword} autoComplete="new-password" placeholder="Déjala vacía para conservar la actual" onChange={(event) => onChange({ accessPassword: event.target.value })} /></div>}
+        <fieldset className="create-survey-choice-group">
+          <legend>Visibilidad</legend>
+          <label><input type="radio" name="edit-visibility" value="LISTED" checked={data.visibility === 'LISTED'} onChange={(event) => onChange({ visibility: event.target.value })} /><span><strong>Listada</strong><small>Aparecerá en los listados cuando se publique.</small></span></label>
+          <label><input type="radio" name="edit-visibility" value="UNLISTED" checked={data.visibility === 'UNLISTED'} onChange={(event) => onChange({ visibility: event.target.value })} /><span><strong>Oculta</strong><small>No aparecerá en listados, pero podrá abrirse mediante su enlace directo.</small></span></label>
+        </fieldset>
+        {data.visibility === 'UNLISTED' && <p className="create-survey-security-note">Una encuesta oculta no es privada. Utiliza contraseña o acceso autenticado si necesitas confidencialidad.</p>}
+      </section>}
+    </div>
+  );
+}
+
+function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requests, publicationRequests, onReload, onSurveyReload, onError, onSuccess }) {
+  const [email, setEmail] = useState('');
+  const [permission, setPermission] = useState('EDIT');
+  const [message, setMessage] = useState('');
+  const [publicationMessage, setPublicationMessage] = useState('');
+  const [pendingAction, setPendingAction] = useState('');
+
+  async function runAction(key, action, successMessage) {
+    if (pendingAction) return false;
+    setPendingAction(key);
+    onError('');
+    try {
+      await action();
+      await onReload();
+      await onSurveyReload();
+      onSuccess(successMessage);
+      return true;
+    } catch (error) {
+      onError(error.message || 'No se ha podido completar la operación.');
+      return false;
+    } finally {
+      setPendingAction('');
+    }
+  }
+
+  async function invite(event) {
+    event.preventDefault();
+    const normalizedEmail = email.trim().toLocaleLowerCase('es');
+    if (!normalizedEmail) return onError('Introduce el correo electrónico del usuario que quieres invitar.');
+    const succeeded = await runAction('invite', () => createCollaborationRequest(surveyId, { email: normalizedEmail, permission, requestType: 'INVITATION', message: message.trim() || null }), 'Invitación interna enviada.');
+    if (succeeded) { setEmail(''); setPermission('EDIT'); setMessage(''); }
+  }
+
+  return (
+    <div className="edit-survey-collaboration-grid">
+      {isOwner ? (
+        <section className="edit-survey-panel-card edit-survey-invite-card">
+          <h2>INVITAR A UN COLABORADOR</h2><p>Elige si el usuario podrá modificar la encuesta o acceder únicamente en modo lectura.</p>
+          <form onSubmit={invite}>
+            <div className="create-survey-field"><label htmlFor="collaborator-email">Correo electrónico <span>*</span></label><input id="collaborator-email" type="email" maxLength={254} autoComplete="email" placeholder="usuario@ejemplo.com" value={email} onChange={(event) => setEmail(event.target.value)} /></div>
+            <fieldset className="edit-survey-permission-options">
+              <legend>Permiso del colaborador</legend>
+              <label><input type="radio" name="collaboration-permission" value="EDIT" checked={permission === 'EDIT'} onChange={(event) => setPermission(event.target.value)} /><span><strong>Puede editar</strong><small>Podrá modificar la encuesta y solicitar su publicación.</small></span></label>
+              <label><input type="radio" name="collaboration-permission" value="VIEW" checked={permission === 'VIEW'} onChange={(event) => setPermission(event.target.value)} /><span><strong>Solo lectura</strong><small>Podrá consultar la encuesta, pero no modificarla.</small></span></label>
+            </fieldset>
+            <div className="create-survey-field"><label htmlFor="collaboration-message">Mensaje opcional</label><textarea id="collaboration-message" rows={3} maxLength={1000} value={message} onChange={(event) => setMessage(event.target.value)} /></div>
+            <button type="submit" className="edit-survey-primary-action" disabled={pendingAction === 'invite'}><MdAdd aria-hidden="true" />{pendingAction === 'invite' ? 'Enviando...' : 'Enviar invitación'}</button>
+          </form>
+        </section>
+      ) : (
+        <section className="edit-survey-panel-card edit-survey-invite-card">
+          <h2>SOLICITAR PUBLICACIÓN</h2><p>La solicitud llegará al propietario, que podrá aceptarla o rechazarla.</p>
+          <div className="create-survey-field"><label htmlFor="publication-message">Mensaje opcional</label><textarea id="publication-message" rows={3} maxLength={1000} value={publicationMessage} onChange={(event) => setPublicationMessage(event.target.value)} /></div>
+          <button type="button" className="edit-survey-primary-action" disabled={pendingAction === 'publication'} onClick={() => runAction('publication', () => requestPublication(surveyId, publicationMessage), 'Solicitud de publicación enviada.')}><MdPublish aria-hidden="true" />{pendingAction === 'publication' ? 'Enviando...' : 'Solicitar publicación'}</button>
+        </section>
+      )}
+
+      <section className="edit-survey-panel-card">
+        <div className="edit-survey-card-heading"><div><h2>COLABORADORES</h2>{!isLoading && <p>{collaborators.length} en total</p>}</div></div>
+        {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={2} hasActions={false} /></div> : collaborators.length === 0 ? <p className="edit-survey-empty-state">Esta encuesta todavía no tiene colaboradores.</p> : <ul className="edit-survey-people-list">{collaborators.map((collaborator) => <li key={collaborator.userId}><span className="edit-survey-avatar">{(collaborator.name || collaborator.email || '?').slice(0, 1).toUpperCase()}</span><span className="edit-survey-person-data"><strong>{collaborator.name || 'Usuario'}</strong><small>{collaborator.email}</small><span className={`edit-survey-permission-badge permission-${(collaborator.permission || 'EDIT').toLocaleLowerCase()}`}>{collaborator.permission === 'VIEW' ? 'Solo lectura' : 'Puede editar'}</span><small>Desde el {formatDate(collaborator.joinedAt)}</small></span>{isOwner && <button type="button" className="edit-survey-icon-danger" aria-label={`Eliminar a ${collaborator.name || collaborator.email}`} disabled={pendingAction === `remove-${collaborator.userId}`} onClick={() => runAction(`remove-${collaborator.userId}`, () => removeCollaborator(surveyId, collaborator.userId), 'Colaborador eliminado.')}><MdDeleteOutline aria-hidden="true" /></button>}</li>)}</ul>}
+      </section>
+
+      <section className="edit-survey-panel-card edit-survey-requests-card">
+        <div className="edit-survey-card-heading"><div><h2>SOLICITUDES PENDIENTES</h2>{!isLoading && <p>{requests.length} pendientes</p>}</div></div>
+        {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={2} hasActions={false} /></div> : requests.length === 0 ? <p className="edit-survey-empty-state">No hay solicitudes de colaboración pendientes.</p> : <ul className="edit-survey-people-list">{requests.map((request) => {
+          const canResolve = isOwner && request.requestType === 'ACCESS_REQUEST';
+          return <li key={request.id}><span className="edit-survey-avatar"><MdGroups aria-hidden="true" /></span><span className="edit-survey-person-data"><strong>Usuario #{request.userId}</strong><small>{request.requestType === 'INVITATION' ? 'Invitación enviada' : 'Solicitud de acceso'}</small><span className={`edit-survey-permission-badge permission-${(request.permission || 'EDIT').toLocaleLowerCase()}`}>{request.permission === 'VIEW' ? 'Solo lectura' : 'Puede editar'}</span>{request.message && <small>“{request.message}”</small>}<small>{formatDate(request.createdAt)}</small></span>{canResolve && <span className="edit-survey-request-actions"><button type="button" className="edit-survey-icon-accept" aria-label="Aceptar solicitud" onClick={() => runAction(`accept-${request.id}`, () => acceptCollaborationRequest(surveyId, request.id), 'Solicitud aceptada.')}><MdCheck aria-hidden="true" /></button><button type="button" className="edit-survey-icon-danger" aria-label="Rechazar solicitud" onClick={() => runAction(`reject-${request.id}`, () => rejectCollaborationRequest(surveyId, request.id), 'Solicitud rechazada.')}><MdClose aria-hidden="true" /></button></span>}</li>;
+        })}</ul>}
+      </section>
+
+      {isOwner && <section className="edit-survey-panel-card edit-survey-requests-card">
+        <div className="edit-survey-card-heading"><div><h2>SOLICITUDES DE PUBLICACIÓN</h2>{!isLoading && <p>{publicationRequests.length} pendientes</p>}</div></div>
+        {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={1} hasActions={false} /></div> : publicationRequests.length === 0 ? <p className="edit-survey-empty-state">No hay solicitudes de publicación pendientes.</p> : <ul className="edit-survey-people-list">{publicationRequests.map((request) => <li key={request.id}><span className="edit-survey-avatar"><MdPublish aria-hidden="true" /></span><span className="edit-survey-person-data"><strong>{request.requestedByName || `Usuario #${request.requestedByUserId}`}</strong><small>{request.requestedByEmail}</small>{request.message && <small>“{request.message}”</small>}<small>{formatDate(request.createdAt)}</small></span><span className="edit-survey-request-actions"><button type="button" className="edit-survey-icon-accept" aria-label="Aceptar publicación" onClick={() => runAction(`publish-${request.id}`, () => acceptPublicationRequest(surveyId, request.id), 'Publicación aprobada.')}><MdCheck aria-hidden="true" /></button><button type="button" className="edit-survey-icon-danger" aria-label="Rechazar publicación" onClick={() => runAction(`reject-publication-${request.id}`, () => rejectPublicationRequest(surveyId, request.id), 'Solicitud de publicación rechazada.')}><MdClose aria-hidden="true" /></button></span></li>)}</ul>}
+      </section>}
+    </div>
+  );
+}
+
+export function EditSurveyPage() {
+  const { surveyId } = useParams();
+  const { user, isInitializing } = useAuth();
+  const saveLockRef = useRef(false);
+  const [activeTab, setActiveTab] = useState('SURVEY');
+  const [survey, setSurvey] = useState(null);
+  const [structure, setStructure] = useState(INITIAL_SURVEY_STRUCTURE);
+  const [settings, setSettings] = useState(settingsFromSurvey(null));
+  const [collaborators, setCollaborators] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [publicationRequests, setPublicationRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingCollaborations, setIsLoadingCollaborations] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasStructureChanges, setHasStructureChanges] = useState(false);
+  const [hasTagChanges, setHasTagChanges] = useState(false);
+  const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
+  const [lifecycleConfirmation, setLifecycleConfirmation] = useState(null);
+  const [visibilityConfirmation, setVisibilityConfirmation] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [imageHasError, setImageHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const isOwner = Boolean(user && survey && Number(user.id) === Number(survey.ownerId));
+  const isAdministrator = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+  const isSupervising = isAdministrator && !isOwner;
+  const canEditSurvey = !isSupervising && (isOwner || Boolean(survey?.canEdit));
+  const canPreviewSurvey = !isSupervising && (isOwner || Boolean(survey?.canPreview));
+  const visibleTabs = isSupervising
+    ? TABS.filter((tab) => tab.id !== 'COLLABORATIONS')
+    : survey && !canEditSurvey ? TABS.filter((tab) => tab.id === 'SURVEY') : TABS;
+  const hasUnsavedChanges = hasStructureChanges || hasTagChanges || hasSettingsChanges;
+  const navigationBlocker = useBlocker(hasUnsavedChanges);
+
+  async function loadCollaborations() {
+    const [nextCollaborators, nextRequests, nextPublicationRequests] = await Promise.all([getCollaborators(surveyId), getCollaborationRequests(surveyId), getPublicationRequests(surveyId)]);
+    setCollaborators(nextCollaborators || []);
+    setRequests(nextRequests || []);
+    setPublicationRequests(nextPublicationRequests || []);
+  }
+
+  async function reloadSurvey() {
+    const response = await getSurveyById(surveyId);
+    setSurvey(response);
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+    async function load() {
+      setIsLoading(true); setErrorMessage('');
+      setHasStructureChanges(false); setHasTagChanges(false); setHasSettingsChanges(false);
+      try {
+        const response = await getSurveyById(surveyId);
+        if (!isMounted) return;
+        setSurvey(response); setStructure(buildSurveyStructureState(response)); setSettings(settingsFromSurvey(response));
+      } catch (error) {
+        if (isMounted) setErrorMessage(error.message || 'No se ha podido cargar la encuesta.');
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    if (!isInitializing) void load();
+    return () => { isMounted = false; };
+  }, [isInitializing, surveyId]);
+
+  useEffect(() => {
+    function handleBeforeUnload(event) {
+      if (!hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = '';
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (!survey || activeTab !== 'COLLABORATIONS') return;
+    let isMounted = true;
+    Promise.all([getCollaborators(surveyId), getCollaborationRequests(surveyId), getPublicationRequests(surveyId)])
+      .then(([nextCollaborators, nextRequests, nextPublicationRequests]) => {
+        if (!isMounted) return;
+        setCollaborators(nextCollaborators || []);
+        setRequests(nextRequests || []);
+        setPublicationRequests(nextPublicationRequests || []);
+      })
+      .catch((error) => {
+        if (isMounted) setErrorMessage(error.message || 'No se han podido cargar las colaboraciones.');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingCollaborations(false);
+      });
+    return () => { isMounted = false; };
+  }, [activeTab, survey, surveyId]);
+
+  function clearMessages() { setErrorMessage(''); setSuccessMessage(''); }
+  function addStructureItem(item, targetIndex) {
+    clearMessages();
+    setHasStructureChanges(true);
+    setStructure((current) => {
+      const items = [...current.items];
+      const insertionIndex = Number.isInteger(targetIndex) ? Math.max(0, Math.min(targetIndex, items.length)) : items.length;
+      items.splice(insertionIndex, 0, item);
+      return { items };
+    });
+  }
+
+  async function saveStructure() {
+    const validationError = getSurveyStructureValidationError(structure);
+    if (validationError) return setErrorMessage(validationError);
+    if (saveLockRef.current) return;
+    saveLockRef.current = true; setIsSaving(true); clearMessages();
+    try {
+      await replaceSurveyContent(surveyId, buildSurveyStructurePayload(structure));
+      await updateSurvey(surveyId, {
+        title: survey.title,
+        description: survey.description || null,
+        imageKey: survey.imageKey || null,
+        fontFamily: survey.fontFamily,
+        accessMode: survey.accessMode,
+        visibility: survey.visibility,
+        accessPassword: null,
+        tags: settings.tags,
+      });
+      const refreshedSurvey = await getSurveyById(surveyId);
+      setSurvey(refreshedSurvey); setStructure(buildSurveyStructureState(refreshedSurvey)); setSettings((current) => ({ ...current, tags: refreshedSurvey.tags || [] })); setHasStructureChanges(false); setHasTagChanges(false); setSuccessMessage('Cambios guardados correctamente.');
+    } catch (error) {
+      setErrorMessage(error.message || 'No se ha podido guardar la estructura.');
+    } finally {
+      saveLockRef.current = false; setIsSaving(false);
+    }
+  }
+
+  async function saveSettings() {
+    if (!settings.title.trim()) return setErrorMessage('Introduce un título para la encuesta.');
+    if (saveLockRef.current) return;
+    saveLockRef.current = true; setIsSaving(true); clearMessages();
+    try {
+      const response = await updateSurvey(surveyId, { title: settings.title.trim(), description: settings.description.trim() || null, imageKey: settings.imageKey.trim() || null, fontFamily: settings.fontFamily, accessMode: settings.accessMode, visibility: settings.visibility, accessPassword: settings.accessMode === 'PASSWORD_PROTECTED' ? settings.accessPassword || null : null, tags: settings.tags });
+      setSurvey(response); setSettings(settingsFromSurvey(response)); setHasTagChanges(false); setHasSettingsChanges(false); setSuccessMessage('Configuración guardada correctamente.');
+    } catch (error) {
+      setErrorMessage(error.message || 'No se ha podido guardar la configuración.');
+    } finally {
+      saveLockRef.current = false; setIsSaving(false);
+    }
+  }
+
+  async function changeLifecycle(lifecycleStatus) {
+    if (saveLockRef.current || lifecycleStatus === survey.lifecycleStatus) return false;
+    saveLockRef.current = true; setIsSaving(true); clearMessages();
+    try {
+      const response = isSupervising
+        ? await updateAdminSurveyLifecycle(surveyId, lifecycleStatus)
+        : await updateSurveyLifecycle(surveyId, lifecycleStatus);
+      setSurvey(response); setSuccessMessage(`La encuesta ahora está ${LIFECYCLE_LABELS[lifecycleStatus].toLocaleLowerCase('es')}.`);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message || 'No se ha podido cambiar el estado de la encuesta.');
+      return false;
+    } finally {
+      saveLockRef.current = false; setIsSaving(false);
+    }
+  }
+
+  async function confirmLifecycleChange() {
+    if (!lifecycleConfirmation) return;
+    const changed = await changeLifecycle(lifecycleConfirmation);
+    if (changed) setLifecycleConfirmation(null);
+  }
+
+  function requestLifecycleChange(lifecycleStatus) {
+    clearMessages();
+    if (lifecycleStatus === 'OPEN') {
+      if (hasUnsavedChanges) {
+        setErrorMessage('Guarda todos los cambios antes de publicar la encuesta.');
+        return;
+      }
+      const publicationError = getSurveyPublicationValidationError(structure);
+      if (publicationError) {
+        setErrorMessage(publicationError);
+        setActiveTab('SURVEY');
+        return;
+      }
+    }
+    setLifecycleConfirmation(lifecycleStatus);
+  }
+
+  async function hideSurveyFromListings() {
+    if (saveLockRef.current || !isSupervising) return;
+    saveLockRef.current = true; setIsSaving(true); clearMessages();
+    try {
+      const response = await updateAdminSurveyVisibility(surveyId, 'UNLISTED');
+      setSurvey(response); setSettings((current) => ({ ...current, visibility: response.visibility })); setVisibilityConfirmation(false); setSuccessMessage('La encuesta se ha ocultado de los listados públicos.');
+    } catch (error) {
+      setErrorMessage(error.message || 'No se ha podido ocultar la encuesta.');
+    } finally {
+      saveLockRef.current = false; setIsSaving(false);
+    }
+  }
+
+  const primaryActionLabel = activeTab === 'SURVEY'
+    ? canEditSurvey ? 'Guardar cambios' : ''
+    : activeTab === 'SETTINGS' && canEditSurvey ? 'Actualizar configuración' : '';
+
+  function handlePrimaryAction() {
+    if (activeTab === 'SURVEY') void saveStructure();
+    if (activeTab === 'SETTINGS') void saveSettings();
+  }
+
+  function selectTab(tabId) {
+    setActiveTab(tabId);
+    if (tabId === 'COLLABORATIONS' && survey) setIsLoadingCollaborations(true);
+    clearMessages();
+  }
+
+  const addQuestion = (question, index) => addStructureItem(buildTemplateQuestionFromCatalog(question), index);
+  const addBlock = (block, index) => addStructureItem(buildTemplateBlockFromCatalog(block), index);
+  const isPageLoading = isLoading || isInitializing;
+
+  return (
+    <div className={`create-block-layout edit-survey-layout ${activeTab !== 'SURVEY' ? 'without-catalog' : ''}`}>
+      {activeTab === 'SURVEY' && canEditSurvey && <CatalogSidebar showQuestions showBlocks defaultOpen={false} onAddQuestion={addQuestion} onAddBlock={addBlock} />}
+      <main className="create-block-main edit-survey-main">
+        <div className="create-block-container edit-survey-container">
+          <Breadcrumbs items={[{ label: 'PANEL', to: '/panel' }, { label: 'EDITAR ENCUESTA' }]} />
+          <header className="edit-survey-header">
+            <div>
+              <h1>{survey?.title || 'EDITAR ENCUESTA'}</h1>
+              <p>{survey ? (isOwner ? 'Eres propietario de esta encuesta.' : isSupervising ? 'Supervisa el estado y la visibilidad de esta encuesta.' : canEditSurvey ? 'Puedes editar esta encuesta como colaborador.' : 'Puedes consultar esta encuesta en modo de solo lectura.') : 'Gestiona su estructura, colaboradores y configuración.'}</p>
+            </div>
+            {(survey || primaryActionLabel) && <div className="edit-survey-header-actions">
+              {(canPreviewSurvey || primaryActionLabel) && <div className="edit-survey-header-buttons">
+                {canPreviewSurvey && <button type="button" className="edit-survey-preview-button" disabled={isPageLoading || !survey} onClick={() => setIsPreviewOpen(true)}><MdOutlineVisibility aria-hidden="true" />Previsualizar</button>}
+                {primaryActionLabel && <button type="button" className="btn-create-submit" disabled={isSaving || isPageLoading || !survey} onClick={handlePrimaryAction}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : primaryActionLabel}</span></button>}
+              </div>}
+              {survey && <span className={`edit-survey-status status-${survey.lifecycleStatus.toLocaleLowerCase()}`}>{LIFECYCLE_LABELS[survey.lifecycleStatus]}</span>}
+            </div>}
+          </header>
+
+          <nav className="edit-survey-tabs" role="tablist" aria-label="Secciones de edición">
+            {visibleTabs.map((tab) => { const Icon = tab.icon; return <button key={tab.id} id={`survey-tab-${tab.id.toLocaleLowerCase()}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`survey-panel-${tab.id.toLocaleLowerCase()}`} className={activeTab === tab.id ? 'active' : ''} onClick={() => selectTab(tab.id)}><Icon aria-hidden="true" />{tab.label}</button>; })}
+          </nav>
+
+          {errorMessage && <div className="edit-survey-message"><ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} /></div>}
+          {successMessage && <div className="edit-survey-success" role="status"><MdCheck aria-hidden="true" /><span>{successMessage}</span></div>}
+
+          {activeTab === 'SURVEY' && <section id="survey-panel-survey" role="tabpanel" aria-labelledby="survey-tab-survey">
+            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <>{!canEditSurvey && <p className="edit-survey-structure-note">Tienes acceso de solo lectura. Puedes consultar la estructura, pero no modificarla.</p>}{canEditSurvey && survey.lifecycleStatus !== 'DRAFT' && <p className="edit-survey-structure-note">La estructura solo podrá guardarse si la encuesta todavía no tiene respuestas.</p>}<SurveyGeneralInfo title={survey.title} description={survey.description || ''} /><SurveyTagsEditor tags={settings.tags} readOnly={!canEditSurvey} onChange={(tags) => { setSettings((current) => ({ ...current, tags })); setHasTagChanges(true); clearMessages(); }} /><SurveyBuilder data={structure} onChange={(nextStructure) => { setStructure(nextStructure); setHasStructureChanges(true); clearMessages(); }} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} readOnly={!canEditSurvey} /></>}
+          </section>}
+          {activeTab === 'COLLABORATIONS' && <section id="survey-panel-collaborations" role="tabpanel" aria-labelledby="survey-tab-collaborations">
+            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <CollaborationsPanel surveyId={surveyId} isOwner={isOwner} isLoading={isLoadingCollaborations} collaborators={collaborators} requests={requests} publicationRequests={publicationRequests} onReload={loadCollaborations} onSurveyReload={reloadSurvey} onError={setErrorMessage} onSuccess={setSuccessMessage} />}
+          </section>}
+          {activeTab === 'SETTINGS' && <section id="survey-panel-settings" role="tabpanel" aria-labelledby="survey-tab-settings">
+            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={4} hasActions={false} /></div> : survey && <>
+              {!isSupervising && <SurveySettings data={settings} imageHasError={imageHasError} onImageError={() => setImageHasError(true)} onChange={(changes, resetImageError = false) => { if (resetImageError) setImageHasError(false); setSettings((current) => ({ ...current, ...changes })); setHasSettingsChanges(true); clearMessages(); }} showPolicySettings={isOwner} />}
+              {isOwner && <section className="edit-survey-panel-card edit-survey-lifecycle-card">
+                <div className="edit-survey-lifecycle-copy">
+                  <h2>CICLO DE VIDA</h2>
+                  {survey.lifecycleStatus === 'OPEN' ? <>
+                    <p>La encuesta está abierta y admite nuevas participaciones.</p>
+                    <p className="edit-survey-publication-warning edit-survey-closing-warning">Una vez cerrada, la encuesta dejará de recibir respuestas. Podrás volver a publicarla más adelante.</p>
+                  </> : <>
+                    <p>Publica la encuesta para empezar a recibir participaciones.</p>
+                    <p className="edit-survey-publication-warning">Una vez abierta, solo podrás editar completamente su estructura mientras no haya recibido ninguna respuesta.</p>
+                  </>}
+                </div>
+                {survey.lifecycleStatus === 'OPEN'
+                  ? <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving} onClick={() => requestLifecycleChange('CLOSED')}><MdClose aria-hidden="true" />Cerrar encuesta</button>
+                  : <button type="button" className="edit-survey-publish-button" disabled={isSaving} onClick={() => requestLifecycleChange('OPEN')}><MdPublish aria-hidden="true" />Publicar encuesta</button>}
+              </section>}
+              {isSupervising && <div className="edit-survey-supervision-stack">
+                <section className="edit-survey-panel-card edit-survey-lifecycle-card">
+                  <div className="edit-survey-lifecycle-copy">
+                    <h2>CICLO DE VIDA</h2>
+                    <p>Estado actual: <strong>{LIFECYCLE_LABELS[survey.lifecycleStatus]}</strong>.</p>
+                    {survey.lifecycleStatus === 'CLOSED'
+                      ? <p className="edit-survey-publication-warning">La encuesta ya está cerrada y no admite nuevas respuestas. Su propietario podrá volver a publicarla.</p>
+                      : <p className="edit-survey-publication-warning edit-survey-closing-warning">Como medida de supervisión puedes cerrarla. Dejará de recibir respuestas hasta que su propietario vuelva a publicarla.</p>}
+                  </div>
+                  {survey.lifecycleStatus !== 'CLOSED' && <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving} onClick={() => requestLifecycleChange('CLOSED')}><MdClose aria-hidden="true" />Cerrar encuesta</button>}
+                </section>
+                <section className="edit-survey-panel-card edit-survey-lifecycle-card">
+                  <div className="edit-survey-lifecycle-copy">
+                    <h2>VISIBILIDAD</h2>
+                    <p>Visibilidad actual: <strong>{survey.visibility === 'UNLISTED' ? 'Oculta' : 'Listada'}</strong>.</p>
+                    {survey.visibility === 'UNLISTED'
+                      ? <p className="edit-survey-publication-warning">La encuesta no aparece en los listados públicos. Su propietario podrá volver a marcarla como listada.</p>
+                      : <p className="edit-survey-publication-warning edit-survey-closing-warning">Puedes ocultarla de los listados públicos por motivos de supervisión. Su enlace directo seguirá funcionando si el acceso y el estado lo permiten.</p>}
+                  </div>
+                  {survey.visibility !== 'UNLISTED' && <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving} onClick={() => { clearMessages(); setVisibilityConfirmation(true); }}><MdVisibilityOff aria-hidden="true" />Ocultar encuesta</button>}
+                </section>
+              </div>}
+            </>}
+          </section>}
+        </div>
+      </main>
+      <ConfirmModal
+        isOpen={navigationBlocker.state === 'blocked'}
+        onClose={() => navigationBlocker.reset()}
+        onConfirm={() => navigationBlocker.proceed()}
+        title="Salir sin guardar"
+        message="Hay cambios sin guardar en la encuesta. ¿Confirmas que deseas salir de esta página?"
+        confirmLabel="Salir sin guardar"
+        variant="danger"
+      />
+      <SurveyPreviewModal
+        isOpen={isPreviewOpen}
+        survey={{ ...survey, ...settings }}
+        structure={structure}
+        onClose={() => setIsPreviewOpen(false)}
+      />
+      <ConfirmModal
+        isOpen={Boolean(lifecycleConfirmation)}
+        onClose={() => setLifecycleConfirmation(null)}
+        onConfirm={confirmLifecycleChange}
+        title={lifecycleConfirmation === 'CLOSED' ? 'Cerrar encuesta' : 'Publicar encuesta'}
+        message={lifecycleConfirmation === 'CLOSED'
+          ? '¿Confirmas que deseas cerrar la encuesta? Una vez cerrada, dejará de recibir respuestas. Podrás volver a publicarla más adelante.'
+          : '¿Confirmas que deseas publicar la encuesta? Una vez abierta, solo podrás editar completamente su estructura mientras no haya recibido ninguna respuesta.'}
+        confirmLabel={lifecycleConfirmation === 'CLOSED' ? 'Cerrar encuesta' : 'Publicar encuesta'}
+        variant={lifecycleConfirmation === 'CLOSED' ? 'danger' : 'primary'}
+        isProcessing={isSaving}
+        errorMessage={errorMessage}
+      />
+      <ConfirmModal
+        isOpen={visibilityConfirmation}
+        onClose={() => setVisibilityConfirmation(false)}
+        onConfirm={hideSurveyFromListings}
+        title="Ocultar encuesta"
+        message="¿Confirmas que deseas ocultar la encuesta? Dejará de aparecer en los listados públicos, aunque su enlace directo seguirá funcionando si el modo de acceso y el estado lo permiten."
+        confirmLabel="Ocultar encuesta"
+        variant="danger"
+        isProcessing={isSaving}
+        errorMessage={errorMessage}
+      />
+    </div>
+  );
+}

@@ -2,8 +2,10 @@ package com.formquid.collaboration.service;
 
 import com.formquid.collaboration.dto.CollaborationRequestResponseDto;
 import com.formquid.collaboration.dto.CreateCollaborationRequestDto;
+import com.formquid.collaboration.dto.PublicationRequestResponseDto;
 import com.formquid.collaboration.dto.SurveyCollaboratorResponseDto;
 import com.formquid.collaboration.entity.CollaborationRequest;
+import com.formquid.collaboration.entity.CollaborationPermission;
 import com.formquid.collaboration.entity.CollaborationRequestType;
 import com.formquid.collaboration.entity.PublicationRequest;
 import com.formquid.collaboration.entity.SurveyCollaborator;
@@ -12,6 +14,7 @@ import com.formquid.collaboration.repository.CollaborationRequestRepository;
 import com.formquid.collaboration.repository.PublicationRequestRepository;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.common.exception.ApiException;
+import com.formquid.common.service.EmailNormalizer;
 import com.formquid.content.repository.ContentItemRepository;
 import com.formquid.content.service.ContentService;
 import com.formquid.notification.entity.NotificationType;
@@ -64,13 +67,29 @@ public class CollaborationService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PublicationRequestResponseDto> findPublicationRequests(Long surveyId) {
+        return publicationRequestRepository.findBySurveyIdOrderByCreatedAtDesc(surveyId)
+            .stream()
+            .map(request -> new PublicationRequestResponseDto(
+                request.getId(),
+                request.getSurvey().getId(),
+                request.getRequestedBy().getId(),
+                request.getRequestedBy().getName(),
+                request.getRequestedBy().getEmail(),
+                request.getMessage(),
+                request.getCreatedAt()
+            ))
+            .toList();
+    }
+
     /**
      * Crea una solicitud de colaboración.
      */
     @Transactional
     public CollaborationRequestResponseDto request(Long surveyId, Long actorId, CreateCollaborationRequestDto dto) {
         Survey survey = getSurvey(surveyId);
-        User targetUser = getUser(dto.userId());
+        User targetUser = resolveCollaborationTarget(dto);
 
         validateCollaborationRequest(survey, actorId, targetUser.getId(), dto.requestType());
 
@@ -78,6 +97,7 @@ public class CollaborationService {
             .survey(survey)
             .user(targetUser)
             .requestType(dto.requestType())
+            .permission(dto.permission() == null ? CollaborationPermission.EDIT : dto.permission())
             .message(dto.message() == null ? null : dto.message().trim())
             .build();
 
@@ -114,6 +134,7 @@ public class CollaborationService {
             .id(new SurveyCollaboratorId(request.getSurvey().getId(), request.getUser().getId()))
             .survey(request.getSurvey())
             .user(request.getUser())
+            .permission(request.getPermission())
             .build();
 
         SurveyCollaborator saved = collaboratorRepository.save(collaborator);
@@ -178,8 +199,12 @@ public class CollaborationService {
             throw new ApiException(HttpStatus.CONFLICT, "El propietario puede publicar directamente");
         }
 
-        if (!collaboratorRepository.existsByIdSurveyIdAndIdUserId(surveyId, requesterId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Solo un colaborador puede solicitar publicación");
+        if (!collaboratorRepository.existsByIdSurveyIdAndIdUserIdAndPermission(
+            surveyId,
+            requesterId,
+            CollaborationPermission.EDIT
+        )) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo un colaborador con permiso de edición puede solicitar publicación");
         }
 
         if (!surveyHasQuestions(surveyId)) {
@@ -353,6 +378,21 @@ public class CollaborationService {
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }
 
+    private User resolveCollaborationTarget(CreateCollaborationRequestDto dto) {
+        if (dto.requestType() == CollaborationRequestType.INVITATION) {
+            if (dto.email() == null || dto.email().isBlank()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Indica el correo electrónico del usuario invitado");
+            }
+            String normalizedEmail = EmailNormalizer.normalize(dto.email());
+            return userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No existe ningún usuario con ese correo electrónico"));
+        }
+        if (dto.userId() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La solicitud de acceso necesita un usuario");
+        }
+        return getUser(dto.userId());
+    }
+
     /**
      * Convierte una solicitud a DTO.
      */
@@ -362,6 +402,7 @@ public class CollaborationService {
             request.getSurvey().getId(),
             request.getUser().getId(),
             request.getRequestType(),
+            request.getPermission(),
             request.getMessage(),
             request.getCreatedAt()
         );
@@ -376,6 +417,7 @@ public class CollaborationService {
             collaborator.getUser().getId(),
             collaborator.getUser().getEmail(),
             collaborator.getUser().getName(),
+            collaborator.getPermission(),
             collaborator.getJoinedAt()
         );
     }

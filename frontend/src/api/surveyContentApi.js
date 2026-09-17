@@ -3,6 +3,13 @@ import { apiClient } from './apiClient.js';
 /**
  * Gestiona la creación, edición, reordenación y eliminación del contenido interno de una encuesta.
  */
+export function replaceSurveyContent(surveyId, contentData) {
+  return apiClient(`/surveys/${surveyId}/content`, {
+    method: 'PUT',
+    body: contentData,
+  });
+}
+
 export function addTextToSurvey(surveyId, textData) {
   return apiClient(`/surveys/${surveyId}/content/texts`, {
     method: 'POST',

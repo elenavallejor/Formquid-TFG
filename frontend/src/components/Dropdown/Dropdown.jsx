@@ -30,6 +30,7 @@ export function Dropdown({
         .map((option) => ({
           disabled: Boolean(option.props.disabled),
           label: option.props.children,
+          style: option.props.style,
           value: String(option.props.value ?? ''),
         })),
     [children],
@@ -147,7 +148,7 @@ export function Dropdown({
         onClick={() => (isOpen ? setIsOpen(false) : openMenu())}
         onKeyDown={handleKeyDown}
       >
-        <span>{selectedOption?.label}</span>
+        <span style={selectedOption?.style}>{selectedOption?.label}</span>
         <MdKeyboardArrowDown aria-hidden="true" />
       </button>
 
@@ -165,6 +166,7 @@ export function Dropdown({
               type="button"
               role="option"
               className={`custom-dropdown-option ${index === activeIndex ? 'active' : ''}`.trim()}
+              style={option.style}
               aria-selected={option.value === String(value ?? '')}
               disabled={option.disabled}
               tabIndex={-1}

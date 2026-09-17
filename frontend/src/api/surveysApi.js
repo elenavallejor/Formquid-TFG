@@ -54,6 +54,13 @@ export function createSurvey(data) {
   });
 }
 
+export function createSurveyFromTemplate(templateId, data) {
+  return apiClient(`/surveys/from-template/${templateId}`, {
+    method: 'POST',
+    body: data,
+  });
+}
+
 export function getSurveyById(surveyId) {
   return apiClient(`/surveys/${surveyId}`, { method: 'GET' });
 }
@@ -84,6 +91,13 @@ export function updateAdminSurveyLifecycle(surveyId, lifecycleStatus) {
   return apiClient(`/admin/surveys/${surveyId}/lifecycle`, {
     method: 'PATCH',
     body: { lifecycleStatus },
+  });
+}
+
+export function updateAdminSurveyVisibility(surveyId, visibility) {
+  return apiClient(`/admin/surveys/${surveyId}/visibility`, {
+    method: 'PATCH',
+    body: { visibility },
   });
 }
 

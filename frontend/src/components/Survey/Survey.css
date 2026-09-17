@@ -1,0 +1,51 @@
+.survey-component {
+  width: min(1300px, 100%);
+  margin: 0 auto;
+  color: var(--color-text);
+}
+
+.survey-component.font-open-dyslexic { font-size: 0.9em; }
+.survey-component .academic-question-card { padding: 20px 0; font-family: inherit; }
+.survey-component.font-open-dyslexic .academic-statement { font-size: 14px; }
+
+.survey-preview-notice {
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  border-left: 3px solid var(--color-info);
+  background: var(--color-accent-surface);
+  color: var(--color-text);
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.survey-response-cover {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  margin-bottom: 24px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.survey-response-header { padding-bottom: 24px; border-bottom: 1px solid var(--color-border); }
+.survey-response-header h1 { margin: 0 0 10px; color: var(--color-header); font: inherit; font-size: 30px; font-weight: 800; overflow-wrap: anywhere; }
+.survey-response-header > p { margin: 0; color: var(--color-text-muted); font: inherit; font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; white-space: pre-wrap; }
+.survey-response-header ul { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 0; padding: 0; list-style: none; }
+.survey-response-header li { padding: 4px 9px; border-radius: 999px; background: var(--color-accent-surface); color: var(--color-primary); font-family: Arial, sans-serif; font-size: 11px; font-weight: 800; }
+.survey-response-content { display: flex; flex-direction: column; gap: 12px; padding: 22px 0; }
+.survey-content-text { padding: 14px 0; color: var(--color-text); font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.survey-response-block { margin: 8px 0; padding: 22px; border: 1px solid var(--color-border); border-radius: 10px; }
+.survey-response-block > header { margin-bottom: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--color-border); }
+.survey-response-block h2 { margin: 0 0 5px; color: var(--color-primary); font: inherit; font-size: 17px; font-weight: 800; }
+.survey-response-block header p { margin: 0; color: var(--color-text-muted); font-size: 13px; line-height: 1.5; }
+.survey-response-empty { margin: 0; padding: 34px 20px; border: 1px dashed var(--color-border); color: var(--color-text-muted); text-align: center; }
+.survey-response-validation { margin: 0 0 18px; color: var(--color-error); font-family: Arial, sans-serif; font-size: 13px; font-weight: 700; }
+.survey-response-actions { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--color-border); }
+.survey-response-actions button { padding: 12px 18px; border: 1px solid var(--color-primary); border-radius: 8px; background: var(--color-primary); color: var(--color-text-on-dark); font-family: Arial, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; }
+
+@media only screen and (max-width: 640px) {
+  .survey-response-header h1 { font-size: 24px; }
+  .survey-response-block { padding: 17px; }
+}

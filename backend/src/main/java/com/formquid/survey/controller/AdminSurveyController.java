@@ -2,6 +2,7 @@ package com.formquid.survey.controller;
 
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
+import com.formquid.survey.dto.ChangeSurveyVisibilityRequestDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
@@ -40,6 +41,11 @@ public class AdminSurveyController {
     @PatchMapping("/{surveyId}/lifecycle")
     public SurveyResponseDto changeLifecycle(@PathVariable Long surveyId, @AuthenticationPrincipal User user, @Valid @RequestBody ChangeSurveyLifecycleRequestDto request) {
         return surveyService.adminChangeLifecycle(surveyId, request.lifecycleStatus(), user);
+    }
+
+    @PatchMapping("/{surveyId}/visibility")
+    public SurveyResponseDto changeVisibility(@PathVariable Long surveyId, @AuthenticationPrincipal User user, @Valid @RequestBody ChangeSurveyVisibilityRequestDto request) {
+        return surveyService.adminChangeVisibility(surveyId, request.visibility(), user);
     }
 
     @DeleteMapping("/{surveyId}")

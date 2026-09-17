@@ -40,14 +40,11 @@ export function Question({
   const minVal = scaleValues[0];
   const maxVal = scaleValues[scaleValues.length - 1];
 
-  function renderVisualItem(val, index, isSelected, onClick) {
+  function renderVisualItem(val, index, isSelected) {
     if (displayType === 'STARS') {
       const isHalf = Number(val) % 1 !== 0;
       return (
-        <span
-          className={`scale-star-item ${isSelected ? 'selected' : 'unselected'}`}
-          onClick={onClick}
-        >
+        <span className={`scale-star-item ${isSelected ? 'selected' : 'unselected'}`}>
           {isSelected ? (isHalf ? <BsStarHalf /> : <BsStarFill />) : <BsStar />}
         </span>
       );
@@ -61,7 +58,6 @@ export function Question({
         <span
           className={`scale-face-item ${isSelected ? 'selected' : 'unselected'}`}
           style={{ color: isSelected ? faceCfg.color : '#cbd5e1' }}
-          onClick={onClick}
         >
           <FaceIcon />
         </span>
@@ -69,12 +65,7 @@ export function Question({
     }
 
     // Por defecto: Círculo (radio)
-    return (
-      <span
-        className={`academic-matrix-circle ${isSelected ? 'selected' : ''}`}
-        onClick={onClick}
-      />
-    );
+    return <span className={`academic-matrix-circle ${isSelected ? 'selected' : ''}`} />;
   }
 
   return (
@@ -224,12 +215,20 @@ export function Question({
               {scaleValues.map((val, idx) => {
                 const isSelected = value === val;
                 return (
-                  <div key={val} className="scale-column-unit">
+                  <button
+                    key={val}
+                    type="button"
+                    className={`scale-column-unit scale-choice-button ${isSelected ? 'selected' : ''}`}
+                    disabled={!interactive}
+                    aria-pressed={isSelected}
+                    aria-label={`Seleccionar ${val}`}
+                    onClick={() => onChange(val)}
+                  >
                     {displayType === 'NUMERIC' && (
                       <span className="scale-unit-number">{val}</span>
                     )}
-                    {renderVisualItem(val, idx, isSelected, () => interactive && onChange(val))}
-                  </div>
+                    {renderVisualItem(val, idx, isSelected)}
+                  </button>
                 );
               })}
             </div>
@@ -271,11 +270,16 @@ export function Question({
                         const isSelected = selectedVal === val;
                         return (
                           <td key={val} className="matrix-cell-radio">
-                            {renderVisualItem(val, idx, isSelected, () => {
-                              if (interactive) {
-                                onChange({ ...value, [rIdx]: val });
-                              }
-                            })}
+                            <button
+                              type="button"
+                              className="matrix-scale-choice-button"
+                              disabled={!interactive}
+                              aria-pressed={isSelected}
+                              aria-label={`Seleccionar ${val} para ${rowLabel || `Fila ${rIdx + 1}`}`}
+                              onClick={() => onChange({ ...(value || {}), [rIdx]: val })}
+                            >
+                              {renderVisualItem(val, idx, isSelected)}
+                            </button>
                           </td>
                         );
                       })}

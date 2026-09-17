@@ -4,10 +4,13 @@ import { RequireAuth } from './guards/RequireAuth.jsx';
 import { RequireRole } from './guards/RequireRole.jsx';
 import { App } from './app';
 import { ElementDetailPage } from './routes/ElementDetailPage/ElementDetailPage.jsx';
+import { ElementRequestsPage } from './routes/ElementRequestsPage/ElementRequestsPage.jsx';
 import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
 import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPage.jsx';
 import { CreateBlockPage } from './routes/CreateBlockPage/CreateBlockPage.jsx';
 import { CreateTemplatePage } from './routes/CreateTemplatePage/CreateTemplatePage.jsx';
+import { CreateSurveyPage } from './routes/CreateSurveyPage/CreateSurveyPage.jsx';
+import { EditSurveyPage } from './routes/EditSurveyPage/EditSurveyPage.jsx';
 import { EditElementPage } from './routes/EditElementPage/EditElementPage.jsx';
 import { ErrorPage } from './routes/ErrorPage/ErrorPage';
 import { LoginPage } from './routes/LoginPage/LoginPage';
@@ -17,6 +20,7 @@ import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
 import { SuggestElementPage } from './routes/SuggestElementPage/SuggestElementPage.jsx';
 import { AccountPage } from './routes/AccountPage/AccountPage.jsx';
+import { AdminSurveysPage } from './routes/AdminSurveysPage/AdminSurveysPage.jsx';
 import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagementPage.jsx';
 
 /**
@@ -24,6 +28,7 @@ import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagemen
  */
 const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
 const EDITOR_ROLE = ['EDITOR'];
+const SURVEY_MANAGEMENT_ROLES = ['EDITOR', 'ADMIN', 'SUPERADMIN'];
 const SUPERADMIN_ROLE = ['SUPERADMIN'];
 
 export const router = createBrowserRouter([
@@ -66,6 +71,26 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={EDITOR_ROLE}>
               <SuggestElementPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'encuestas/crear',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={EDITOR_ROLE}>
+              <CreateSurveyPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'encuestas/:surveyId/editar',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={SURVEY_MANAGEMENT_ROLES}>
+              <EditSurveyPage />
             </RequireRole>
           </RequireAuth>
         ),
@@ -135,11 +160,31 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'admin/encuestas',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={ADMIN_ROLES}>
+              <AdminSurveysPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'admin/solicitudes-registro',
         element: (
           <RequireAuth>
             <RequireRole allowedRoles={ADMIN_ROLES}>
               <RegistrationRequestsPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'admin/solicitudes-catalogo',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={ADMIN_ROLES}>
+              <ElementRequestsPage />
             </RequireRole>
           </RequireAuth>
         ),

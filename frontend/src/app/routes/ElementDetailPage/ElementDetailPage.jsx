@@ -308,9 +308,14 @@ export function ElementDetailPage() {
   const { elementType, elementId } = useParams();
   const { user } = useAuth();
   const config = ELEMENT_CONFIG[elementType];
+  const initialElement = location.state?.element
+    && location.state.elementType === elementType
+    && String(location.state.elementId) === String(elementId)
+    ? location.state.element
+    : null;
 
-  const [element, setElement] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [element, setElement] = useState(initialElement);
+  const [isLoading, setIsLoading] = useState(!initialElement);
   const [loadError, setLoadError] = useState('');
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

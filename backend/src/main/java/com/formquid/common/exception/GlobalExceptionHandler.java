@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -104,6 +105,14 @@ public class GlobalExceptionHandler {
     ) {
         String message = "El parámetro '" + exception.getName() + "' contiene un valor no válido";
         return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodNotSupportedException(
+        HttpRequestMethodNotSupportedException exception,
+        HttpServletRequest request
+    ) {
+        return build(HttpStatus.METHOD_NOT_ALLOWED, exception.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)
