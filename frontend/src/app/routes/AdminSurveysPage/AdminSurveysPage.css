@@ -5,7 +5,7 @@
 }
 
 .admin-surveys-container {
-  width: min(1400px, 100%);
+  width: min(1500px, 100%);
   margin: 0 auto;
 }
 
@@ -41,9 +41,16 @@
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text-muted);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-surveys-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-shadow);
 }
 
 .admin-surveys-search input {
+  min-width: 0;
   width: 100%;
   padding: 12px 0;
   border: 0;
@@ -54,45 +61,115 @@
   font-size: 14px;
 }
 
+.admin-surveys-search input:focus,
+.admin-surveys-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .admin-surveys-results {
-  overflow-x: auto;
+  min-height: 180px;
 }
 
-.admin-surveys-results .table-badge {
-  display: inline-flex;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: var(--color-surface-muted);
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
+.admin-surveys-grid,
+.admin-surveys-results .skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
 }
 
-.admin-surveys-results .table-badge-open,
-.admin-surveys-results .table-badge-listed {
-  background: #e3f7ee;
-  color: #08734f;
-}
-
-.admin-surveys-results .table-badge-closed,
-.admin-surveys-results .table-badge-unlisted {
-  background: #fde9e9;
-  color: var(--color-error);
-}
-
-.admin-surveys-action {
-  display: inline-flex;
+.admin-surveys-empty {
+  display: flex;
+  min-height: 220px;
   align-items: center;
-  gap: 6px;
-  padding: 8px 11px;
-  border-radius: 7px;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 40px;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.admin-surveys-empty svg {
+  color: var(--color-primary);
+  font-size: 36px;
+}
+
+.admin-surveys-empty p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-surveys-pagination {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.admin-surveys-pagination-count {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-surveys-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-surveys-pagination-pages button {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-surveys-pagination-pages button.active {
+  border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--color-text-on-dark);
-  font-size: 12px;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
+}
+
+.admin-surveys-pagination-pages button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.admin-surveys-page-size {
+  justify-self: end;
+}
+
+@media only screen and (max-width: 1100px) {
+  .admin-surveys-pagination {
+    grid-template-columns: 1fr auto;
+  }
+
+  .admin-surveys-pagination-count {
+    grid-column: 1 / -1;
+  }
+}
+
+@media only screen and (max-width: 960px) {
+  .admin-surveys-grid,
+  .admin-surveys-results .skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media only screen and (max-width: 760px) {
@@ -102,5 +179,27 @@
 
   .admin-surveys-filters {
     grid-template-columns: 1fr;
+  }
+
+  .admin-surveys-grid,
+  .admin-surveys-results .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-surveys-pagination {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-surveys-pagination-count {
+    grid-column: auto;
+  }
+
+  .admin-surveys-pagination-pages {
+    justify-content: center;
+  }
+
+  .admin-surveys-page-size {
+    width: 100%;
+    justify-self: stretch;
   }
 }

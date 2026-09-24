@@ -1,9 +1,11 @@
 package com.formquid.survey.controller;
 
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyPageResponseDto;
+import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyLifecycle;
@@ -57,6 +59,20 @@ public class SurveyController {
             lifecycleStatus,
             pageable
         );
+    }
+
+    @GetMapping("/directory")
+    public PageResponseDto<SurveyDirectorySummaryDto> findDirectory(
+        @AuthenticationPrincipal User user,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @PageableDefault(
+            size = 9,
+            sort = "updatedAt",
+            direction = Sort.Direction.DESC
+        ) Pageable pageable
+    ) {
+        return surveyService.findDirectory(user, search, lifecycleStatus, pageable);
     }
 
     @GetMapping("/registered")

@@ -1,7 +1,9 @@
 package com.formquid.survey.service;
 
 import com.formquid.collaboration.entity.CollaborationPermission;
+import com.formquid.collaboration.repository.CollaborationRequestRepository;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
@@ -9,6 +11,8 @@ import com.formquid.content.service.ContentService;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.survey.entity.Survey;
+import com.formquid.survey.dto.AdminSurveySummaryDto;
+import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyFontFamily;
@@ -23,12 +27,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +47,8 @@ class SurveyServiceTest {
     private SurveyRepository surveyRepository;
     @Mock
     private SurveyCollaboratorRepository collaboratorRepository;
+    @Mock
+    private CollaborationRequestRepository collaborationRequestRepository;
     @Mock
     private ContentItemRepository contentItemRepository;
     @Mock
@@ -55,12 +66,92 @@ class SurveyServiceTest {
     private SurveyService surveyService;
 
     @Test
+    void administrationLoadsOnlyRequestedSummaryPage() {
+        AdminSurveySummaryDto summary = new AdminSurveySummaryDto(
+            21L,
+            "Encuesta climática",
+            "https://example.com/cover.jpg",
+            "Editora",
+            SurveyLifecycle.OPEN,
+            SurveyAccessMode.PUBLIC,
+            SurveyVisibility.LISTED,
+            18L,
+            Instant.parse("2026-09-23T10:00:00Z")
+        );
+        PageRequest pageable = PageRequest.of(
+            1,
+            9,
+            Sort.by(Sort.Direction.DESC, "updatedAt")
+        );
+
+        when(surveyRepository.findAdminSummaries(
+            "clima",
+            SurveyLifecycle.OPEN,
+            SurveyVisibility.LISTED,
+            pageable
+        )).thenReturn(new PageImpl<>(List.of(summary), pageable, 20));
+
+        PageResponseDto<AdminSurveySummaryDto> response = surveyService.findAdminSummaries(
+            "  CLIMA  ",
+            SurveyLifecycle.OPEN,
+            SurveyVisibility.LISTED,
+            1,
+            9
+        );
+
+        assertThat(response.content()).containsExactly(summary);
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(9);
+        assertThat(response.totalElements()).isEqualTo(20);
+        assertThat(response.totalPages()).isEqualTo(3);
+    }
+
+    @Test
+    void directoryIncludesDraftsAndPendingCollaborationState() {
+        User owner = User.builder().id(10L).name("Editora propietaria").role(UserRole.EDITOR).build();
+        User editor = User.builder().id(20L).name("Editor solicitante").role(UserRole.EDITOR).build();
+        Survey draft = Survey.builder()
+            .id(30L)
+            .owner(owner)
+            .title("Encuesta en creación")
+            .lifecycleStatus(SurveyLifecycle.DRAFT)
+            .tags(new String[] { "educacion" })
+            .updatedAt(Instant.parse("2026-09-23T10:00:00Z"))
+            .build();
+        PageRequest pageable = PageRequest.of(0, 9, Sort.by(Sort.Direction.DESC, "updatedAt"));
+
+        when(surveyRepository.findDirectory("creación", SurveyLifecycle.DRAFT, pageable))
+            .thenReturn(new PageImpl<>(List.of(draft), pageable, 1));
+        when(collaboratorRepository.findSurveyIdsByUserIdAndSurveyIds(20L, List.of(30L)))
+            .thenReturn(List.of());
+        when(collaborationRequestRepository.findSurveyIdsByUserIdAndSurveyIds(20L, List.of(30L)))
+            .thenReturn(List.of(30L));
+
+        PageResponseDto<SurveyDirectorySummaryDto> response = surveyService.findDirectory(
+            editor,
+            "  CREACIÓN  ",
+            SurveyLifecycle.DRAFT,
+            pageable
+        );
+
+        assertThat(response.content()).singleElement().satisfies(summary -> {
+            assertThat(summary.lifecycleStatus()).isEqualTo(SurveyLifecycle.DRAFT);
+            assertThat(summary.editorName()).isEqualTo("Editora propietaria");
+            assertThat(summary.tags()).containsExactly("educacion");
+            assertThat(summary.ownedByCurrentUser()).isFalse();
+            assertThat(summary.collaborating()).isFalse();
+            assertThat(summary.collaborationRequestPending()).isTrue();
+        });
+    }
+
+    @Test
     void surveyUsesTimesNewRomanByDefault() {
         Survey survey = Survey.builder().build();
 
         survey.normalize();
 
         assertThat(survey.getFontFamily()).isEqualTo(SurveyFontFamily.TIMES_NEW_ROMAN);
+        assertThat(survey.getVisibility()).isEqualTo(SurveyVisibility.UNLISTED);
     }
 
     @Test
@@ -83,7 +174,27 @@ class SurveyServiceTest {
         surveyService.openAfterPublicationApproval(survey);
 
         assertThat(survey.getLifecycleStatus()).isEqualTo(SurveyLifecycle.OPEN);
+        assertThat(survey.getVisibility()).isEqualTo(SurveyVisibility.LISTED);
         assertThat(survey.getPublicCode()).matches("[ABCDEFGHJKLMNPQRSTUVWXYZ2-9]{12}");
+    }
+
+    @Test
+    void administrationCannotCloseDraftSurvey() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        User admin = User.builder().id(3L).role(UserRole.ADMIN).build();
+        Survey survey = Survey.builder()
+            .id(13L)
+            .owner(owner)
+            .title("Borrador")
+            .lifecycleStatus(SurveyLifecycle.DRAFT)
+            .visibility(SurveyVisibility.UNLISTED)
+            .build();
+
+        when(surveyRepository.findById(13L)).thenReturn(Optional.of(survey));
+
+        assertThatThrownBy(() -> surveyService.adminChangeLifecycle(13L, SurveyLifecycle.CLOSED, admin))
+            .hasMessage("Una encuesta en borrador debe publicarse antes de poder cerrarse");
+        assertThat(survey.getLifecycleStatus()).isEqualTo(SurveyLifecycle.DRAFT);
     }
 
     @Test
@@ -111,7 +222,7 @@ class SurveyServiceTest {
         );
 
         when(surveyRepository.findById(10L)).thenReturn(Optional.of(survey));
-        when(collaboratorRepository.existsByIdSurveyIdAndIdUserIdAndPermission(10L, 2L, CollaborationPermission.EDIT)).thenReturn(true);
+        when(collaboratorRepository.findPermission(10L, 2L)).thenReturn(Optional.of(CollaborationPermission.EDIT));
         when(contentService.findSurveyContent(10L)).thenReturn(List.of());
 
         surveyService.update(10L, request, collaborator);
@@ -152,8 +263,7 @@ class SurveyServiceTest {
         User collaborator = User.builder().id(4L).role(UserRole.EDITOR).build();
         Survey survey = Survey.builder().id(12L).owner(owner).build();
 
-        when(collaboratorRepository.existsByIdSurveyIdAndIdUserId(12L, 4L)).thenReturn(true);
-        when(collaboratorRepository.existsByIdSurveyIdAndIdUserIdAndPermission(12L, 4L, CollaborationPermission.EDIT)).thenReturn(false);
+        when(collaboratorRepository.findPermission(12L, 4L)).thenReturn(Optional.of(CollaborationPermission.VIEW));
 
         assertThat(surveyService.canPreviewSurvey(survey, collaborator)).isTrue();
         assertThat(surveyService.canEditSurvey(survey, collaborator)).isFalse();

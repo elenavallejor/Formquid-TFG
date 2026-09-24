@@ -47,6 +47,25 @@ export function getRegisteredSurveys() {
   return apiClient('/surveys/registered', { method: 'GET' });
 }
 
+export function getSurveyDirectory({
+  search = '',
+  lifecycleStatus = 'ALL',
+  sortOrder = 'RECENT',
+  page = 0,
+  size = 9,
+} = {}) {
+  const params = new URLSearchParams();
+  const normalizedSearch = search.trim();
+
+  if (normalizedSearch) params.set('search', normalizedSearch);
+  if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
+  params.set('sort', `updatedAt,${sortOrder === 'OLDEST' ? 'asc' : 'desc'}`);
+  params.set('page', String(page));
+  params.set('size', String(size));
+
+  return apiClient(`/surveys/directory?${params.toString()}`, { method: 'GET' });
+}
+
 export function createSurvey(data) {
   return apiClient('/surveys', {
     method: 'POST',
@@ -83,8 +102,27 @@ export function deleteSurvey(surveyId) {
   return apiClient(`/surveys/${surveyId}`, { method: 'DELETE' });
 }
 
-export function getAllAdminSurveys() {
-  return apiClient('/admin/surveys', { method: 'GET' });
+export function getAdminSurveys({
+  search = '',
+  lifecycleStatus = 'ALL',
+  visibility = 'ALL',
+  page = 0,
+  size = 9,
+  signal,
+} = {}) {
+  const params = new URLSearchParams();
+  const normalizedSearch = search.trim();
+
+  if (normalizedSearch) params.set('search', normalizedSearch);
+  if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
+  if (visibility !== 'ALL') params.set('visibility', visibility);
+  params.set('page', String(page));
+  params.set('size', String(size));
+
+  return apiClient(`/admin/surveys?${params.toString()}`, {
+    method: 'GET',
+    signal,
+  });
 }
 
 export function updateAdminSurveyLifecycle(surveyId, lifecycleStatus) {

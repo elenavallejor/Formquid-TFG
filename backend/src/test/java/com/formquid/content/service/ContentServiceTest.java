@@ -3,6 +3,7 @@ package com.formquid.content.service;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.content.dto.BlockContentItemRowDto;
 import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
@@ -11,6 +12,7 @@ import com.formquid.content.dto.ReorderContentRequestDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
+import com.formquid.question.entity.Question;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.question.service.QuestionService;
 import com.formquid.survey.entity.Survey;
@@ -116,6 +118,49 @@ class ContentServiceTest {
         assertThat(content.getFirst().textBody()).isEqualTo("Texto");
         verify(contentItemRepository).findTemplateContentRows(3L);
         verify(contentItemRepository, never()).findByTemplateIdOrderByPositionAsc(any());
+    }
+
+    @Test
+    void surveyContentLoadsQuestionsAndBlocksInBatches() {
+        ContentItem blockParent = ContentItem.builder().id(11L).build();
+        Block block = Block.builder()
+            .id(20L)
+            .scope(BlockScope.SNAPSHOT)
+            .parentItem(blockParent)
+            .name("Bloque")
+            .build();
+        Question surveyQuestion = Question.builder()
+            .id(30L)
+            .parentItem(ContentItem.builder().id(10L).build())
+            .build();
+        Question blockQuestion = Question.builder()
+            .id(31L)
+            .parentItem(ContentItem.builder().id(12L).build())
+            .build();
+
+        when(contentItemRepository.findSurveyContentRows(1L)).thenReturn(List.of(
+            new ContentItemRowDto(10L, ContentItemType.QUESTION, 1, true, null),
+            new ContentItemRowDto(11L, ContentItemType.BLOCK, 2, null, null)
+        ));
+        when(blockRepository.findByParentItemIdsWithDetails(List.of(11L))).thenReturn(List.of(block));
+        when(contentItemRepository.findBlockContentRows(List.of(20L))).thenReturn(List.of(
+            new BlockContentItemRowDto(20L, 12L, ContentItemType.QUESTION, 1, false, null)
+        ));
+        when(questionRepository.findByParentItemIdsWithDetails(List.of(10L, 12L)))
+            .thenReturn(List.of(surveyQuestion, blockQuestion));
+
+        List<ContentItemResponseDto> content = contentService.findSurveyContent(1L);
+
+        assertThat(content).hasSize(2);
+        assertThat(content.get(1).block()).isNotNull();
+        assertThat(content.get(1).block().contentItems()).hasSize(1);
+        verify(contentItemRepository).findSurveyContentRows(1L);
+        verify(blockRepository).findByParentItemIdsWithDetails(List.of(11L));
+        verify(contentItemRepository).findBlockContentRows(List.of(20L));
+        verify(questionRepository).findByParentItemIdsWithDetails(List.of(10L, 12L));
+        verify(contentItemRepository, never()).findBySurveyIdOrderByPositionAsc(any());
+        verify(questionRepository, never()).findByParentItemId(any());
+        verify(blockRepository, never()).findByParentItemId(any());
     }
 
     private ContentItem surveyItem(Long id, Survey survey, int position) {

@@ -29,55 +29,70 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
         SurveyVisibility visibility
     );
 
-    @Query("""
-        select new com.formquid.survey.dto.AdminSurveySummaryDto(
-            survey.id,
-            survey.title,
-            survey.owner.name,
-            survey.lifecycleStatus,
-            survey.accessMode,
-            survey.visibility,
-            count(participation.id),
-            survey.updatedAt
-        )
-        from Survey survey
-        left join Participation participation
-            on participation.survey = survey
-        group by survey.id,
-            survey.title,
-            survey.owner.name,
-            survey.lifecycleStatus,
-            survey.accessMode,
-            survey.visibility,
-            survey.updatedAt
-        order by survey.updatedAt desc
-    """)
-    List<AdminSurveySummaryDto> findAdminSummaries();
+    @Query(
+        value = """
+            select new com.formquid.survey.dto.AdminSurveySummaryDto(
+                survey.id,
+                survey.title,
+                survey.imageKey,
+                survey.owner.name,
+                survey.lifecycleStatus,
+                survey.accessMode,
+                survey.visibility,
+                (
+                    select count(participation.id)
+                    from Participation participation
+                    where participation.survey = survey
+                ),
+                survey.updatedAt
+            )
+            from Survey survey
+            where (
+                :search = ''
+                or lower(survey.title) like concat('%', :search, '%')
+                or lower(survey.owner.name) like concat('%', :search, '%')
+            )
+                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and (:visibility is null or survey.visibility = :visibility)
+            """,
+        countQuery = """
+            select count(survey.id)
+            from Survey survey
+            where (
+                :search = ''
+                or lower(survey.title) like concat('%', :search, '%')
+                or lower(survey.owner.name) like concat('%', :search, '%')
+            )
+                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and (:visibility is null or survey.visibility = :visibility)
+            """
+    )
+    Page<AdminSurveySummaryDto> findAdminSummaries(
+        @Param("search") String search,
+        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        @Param("visibility") SurveyVisibility visibility,
+        Pageable pageable
+    );
 
     @Query("""
         select new com.formquid.survey.dto.AdminSurveySummaryDto(
             survey.id,
             survey.title,
+            survey.imageKey,
             survey.owner.name,
             survey.lifecycleStatus,
             survey.accessMode,
             survey.visibility,
-            count(participation.id),
+            (
+                select count(participation.id)
+                from Participation participation
+                where participation.survey = survey
+            ),
             survey.updatedAt
         )
         from Survey survey
-        left join Participation participation
-            on participation.survey = survey
-        group by survey.id,
-            survey.title,
-            survey.owner.name,
-            survey.lifecycleStatus,
-            survey.accessMode,
-            survey.visibility,
-            survey.updatedAt
-        order by survey.updatedAt desc
     """)
-    List<AdminSurveySummaryDto> findAdminSummaries(Pageable pageable);
+    List<AdminSurveySummaryDto> findRecentAdminSummaries(Pageable pageable);
 
     @Query(
         value = """
@@ -113,6 +128,36 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     )
     Page<Survey> findEditableByUser(
         @Param("userId") Long userId,
+        @Param("search") String search,
+        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        Pageable pageable
+    );
+
+    @Query(
+        value = """
+            select survey
+            from Survey survey
+            join fetch survey.owner owner
+            where (
+                :search = ''
+                or lower(survey.title) like concat('%', :search, '%')
+                or lower(owner.name) like concat('%', :search, '%')
+            )
+                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+            """,
+        countQuery = """
+            select count(survey.id)
+            from Survey survey
+            join survey.owner owner
+            where (
+                :search = ''
+                or lower(survey.title) like concat('%', :search, '%')
+                or lower(owner.name) like concat('%', :search, '%')
+            )
+                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+            """
+    )
+    Page<Survey> findDirectory(
         @Param("search") String search,
         @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
         Pageable pageable

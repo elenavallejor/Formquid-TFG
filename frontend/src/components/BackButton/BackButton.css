@@ -1,0 +1,38 @@
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+  transform: none;
+  transition: none;
+}
+
+.back-button:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-accent-surface);
+  color: var(--color-primary-hover);
+  transform: none;
+}
+
+.back-button:hover svg {
+  transform: none;
+}
+
+.back-button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}

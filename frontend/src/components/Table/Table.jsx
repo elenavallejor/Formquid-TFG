@@ -28,7 +28,12 @@ export function Table({
             data.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex}>{cell}</td>
+                  <td
+                    key={cellIndex}
+                    data-label={typeof headers[cellIndex] === 'string' ? headers[cellIndex] : undefined}
+                  >
+                    {cell}
+                  </td>
                 ))}
               </tr>
             ))

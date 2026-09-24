@@ -12,6 +12,7 @@ import java.time.Instant;
 public record AdminSurveySummaryDto(
     Long id,
     String title,
+    String imageKey,
     String editorName,
     SurveyLifecycle lifecycleStatus,
     SurveyAccessMode accessMode,

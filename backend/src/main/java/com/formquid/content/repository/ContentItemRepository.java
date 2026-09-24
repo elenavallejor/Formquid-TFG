@@ -28,6 +28,20 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long> 
             item.textBody
         )
         from ContentItem item
+        where item.survey.id = :surveyId
+        order by item.position
+        """)
+    List<ContentItemRowDto> findSurveyContentRows(@Param("surveyId") Long surveyId);
+
+    @Query("""
+        select new com.formquid.content.dto.ContentItemRowDto(
+            item.id,
+            item.itemType,
+            item.position,
+            item.required,
+            item.textBody
+        )
+        from ContentItem item
         where item.template.id = :templateId
         order by item.position
         """)

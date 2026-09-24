@@ -47,6 +47,7 @@ import java.util.List;
     lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
     and access_mode in ('PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED')
     and visibility in ('LISTED', 'UNLISTED')
+    and (lifecycle_status <> 'DRAFT' or visibility = 'UNLISTED')
     and font_family in ('OPEN_DYSLEXIC', 'TIMES_NEW_ROMAN', 'LEXEND', 'ARIAL')
     and (
         (access_mode = 'PASSWORD_PROTECTED' and access_password_hash is not null)
@@ -142,7 +143,9 @@ public class Survey {
         if (accessMode == null) {
             accessMode = SurveyAccessMode.PUBLIC;
         }
-        if (visibility == null) {
+        if (lifecycleStatus == SurveyLifecycle.DRAFT) {
+            visibility = SurveyVisibility.UNLISTED;
+        } else if (visibility == null) {
             visibility = SurveyVisibility.LISTED;
         }
         if (fontFamily == null) {

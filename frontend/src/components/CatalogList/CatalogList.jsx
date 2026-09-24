@@ -80,7 +80,7 @@ export function CatalogList({
     if (!canManageCatalog) {
       if (!onView) return null;
       return (
-        <div className="catalog-actions-cell">
+        <div className="catalog-actions-cell catalog-actions-cell--view">
           <button
             type="button"
             className="btn-item-view"
@@ -88,6 +88,7 @@ export function CatalogList({
             onClick={() => onView(item)}
           >
             <MdOutlineVisibility aria-hidden="true" />
+            <span>Ver detalles</span>
           </button>
         </div>
       );
@@ -112,7 +113,7 @@ export function CatalogList({
             {onView && (
               <button
                 type="button"
-                className="menu-option"
+                className="menu-option menu-option-details"
                 onClick={() => {
                   setOpenRowMenuId(null);
                   onView(item);
@@ -153,7 +154,7 @@ export function CatalogList({
   return (
     <section className="catalog-list-section">
       <div className="catalog-blocks-wrapper">
-        <div className={`catalog-list-columns-header ${!hasActions ? 'no-actions' : ''}`}>
+        <div className={`catalog-list-columns-header ${!hasActions ? 'no-actions' : ''} ${!canManageCatalog && onView ? 'view-action' : ''}`}>
           <span className="col-main-header">{config.singularLabel.toUpperCase()}</span>
           <span className="col-creator-header">CREADOR</span>
           <span className="col-count-header">{config.detailLabel.toUpperCase()}</span>
@@ -192,7 +193,7 @@ export function CatalogList({
             return (
               <article
                 key={item.id}
-                className={`catalog-block-card ${!hasActions ? 'no-actions' : ''}`}
+                className={`catalog-block-card ${!hasActions ? 'no-actions' : ''} ${!canManageCatalog && onView ? 'view-action' : ''}`}
               >
                 <div className="col-main catalog-item-main">
                   <div className="catalog-item-icon">

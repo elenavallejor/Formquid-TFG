@@ -9,14 +9,32 @@
 .survey-component.font-open-dyslexic .academic-statement { font-size: 14px; }
 
 .survey-preview-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin-bottom: 20px;
   padding: 12px 15px;
-  border-left: 3px solid var(--color-info);
+  border-radius: 9px;
   background: var(--color-accent-surface);
   color: var(--color-text);
   font-family: Arial, sans-serif;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.survey-preview-notice::before {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-info);
+  color: var(--color-text-on-dark);
+  content: '!';
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .survey-response-cover {

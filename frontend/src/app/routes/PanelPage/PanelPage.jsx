@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlinePoll, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
 import { getMySurveys } from '../../../api/surveysApi.js';
@@ -18,7 +18,7 @@ import './PanelPage.css';
 /**
  * Muestra el panel correspondiente al rol y carga los datos necesarios para su gestión.
  */
-const EDITOR_SURVEYS_PAGE_SIZE = 8;
+const EDITOR_SURVEYS_PAGE_SIZE = 9;
 const SEARCH_DEBOUNCE_MS = 300;
 
 const ROLE_CONTENT = {
@@ -71,20 +71,20 @@ const EDITOR_ACTIONS = [
 ];
 
 const LIFECYCLE_LABELS = {
-  DRAFT: 'Borrador',
-  OPEN: 'Abierta',
-  CLOSED: 'Cerrada',
+  DRAFT: 'BORRADOR',
+  OPEN: 'ABIERTA',
+  CLOSED: 'CERRADA',
 };
 
 const ACCESS_MODE_LABELS = {
-  PUBLIC: 'Público',
-  PASSWORD_PROTECTED: 'Con contraseña',
-  AUTHENTICATED: 'Usuarios autenticados',
+  PUBLIC: 'PÚBLICO',
+  PASSWORD_PROTECTED: 'CON CONTRASEÑA',
+  AUTHENTICATED: 'USUARIOS AUTENTICADOS',
 };
 
 const VISIBILITY_LABELS = {
-  LISTED: 'Listada',
-  UNLISTED: 'Oculta',
+  LISTED: 'LISTADA',
+  UNLISTED: 'OCULTA',
 };
 
 const TABLE_HEADERS = [
@@ -95,6 +95,7 @@ const TABLE_HEADERS = [
   'Visibilidad',
   'Respuestas',
   'Actualización',
+  'Acciones',
 ];
 
 export function PanelPage() {
@@ -274,6 +275,16 @@ export function PanelPage() {
       </span>,
       survey.responses ?? 0,
       formattedDate,
+      <button
+        key={`details-${id}`}
+        type="button"
+        className="table-details-button"
+        aria-label={`Ver detalles de ${survey.title || 'la encuesta'}`}
+        onClick={() => navigate(`/encuestas/${id}/editar?vista=detalles`)}
+      >
+        <MdOutlineRemoveRedEye aria-hidden="true" />
+        <span>Ver detalles</span>
+      </button>,
     ];
   });
 
@@ -434,13 +445,13 @@ export function PanelPage() {
                       Todos los estados
                     </option>
                     <option value="OPEN">
-                      Abiertas
+                      ABIERTAS
                     </option>
                     <option value="DRAFT">
-                      Borradores
+                      BORRADORES
                     </option>
                     <option value="CLOSED">
-                      Cerradas
+                      CERRADAS
                     </option>
                   </Dropdown>
 
@@ -463,7 +474,7 @@ export function PanelPage() {
               </div>
 
               {isLoading ? (
-                <Skeleton variant="grid" count={4} />
+                <Skeleton variant="grid" count={3} />
               ) : !dataError && editorSurveys.length === 0 ? (
                 <div className="editor-surveys-empty" role="status">
                   <FaRegClipboard aria-hidden="true" />
@@ -584,7 +595,7 @@ export function PanelPage() {
                   description="Gestiona y supervisa todas las encuestas registradas en la plataforma."
                   elementName="encuestas"
                   count={surveyCount}
-                  icon={MdOutlinePoll}
+                  icon={FaRegClipboard}
                   to="/admin/encuestas"
                   theme="teal"
                   counterLabel="creadas"
@@ -664,13 +675,6 @@ export function PanelPage() {
                 <h2 className="admin-section-title">
                   RESUMEN DE ENCUESTAS
                 </h2>
-
-                <Link
-                  to="/admin/encuestas"
-                  className="btn-admin-action-link"
-                >
-                  Ver encuestas &rarr;
-                </Link>
               </div>
 
               {isLoading ? (

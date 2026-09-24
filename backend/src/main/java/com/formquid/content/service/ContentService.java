@@ -55,43 +55,15 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public List<ContentItemResponseDto> findSurveyContent(Long surveyId) {
-        return contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)
-            .stream()
-            .map(this::toSurveyResponse)
-            .toList();
-    }
-
-    private ContentItemResponseDto toSurveyResponse(ContentItem item) {
-        Question question = questionRepository.findByParentItemId(item.getId()).orElse(null);
-        Block block = blockRepository.findByParentItemId(item.getId()).orElse(null);
-        BlockResponseDto blockResponse = block == null ? null : new BlockResponseDto(
-            block.getId(),
-            block.getScope(),
-            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
-            block.getName(),
-            block.getDescription(),
-            findBlockContent(block),
-            block.getCreatedBy() == null ? null : block.getCreatedBy().getId(),
-            block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
-            block.getCreatedAt(),
-            block.getUpdatedAt(),
-            null
-        );
-        return new ContentItemResponseDto(
-            item.getId(),
-            item.getItemType(),
-            item.getPosition(),
-            item.getRequired(),
-            item.getTextBody(),
-            question == null ? null : questionService.toResponse(question),
-            block == null ? null : block.getId(),
-            blockResponse
-        );
+        return findStructuredContent(contentItemRepository.findSurveyContentRows(surveyId));
     }
 
     @Transactional(readOnly = true)
     public List<ContentItemResponseDto> findTemplateContent(Template template) {
-        List<ContentItemRowDto> items = contentItemRepository.findTemplateContentRows(template.getId());
+        return findStructuredContent(contentItemRepository.findTemplateContentRows(template.getId()));
+    }
+
+    private List<ContentItemResponseDto> findStructuredContent(List<ContentItemRowDto> items) {
         List<Long> blockItemIds = items.stream()
             .filter(item -> item.itemType() == ContentItemType.BLOCK)
             .map(ContentItemRowDto::id)
@@ -131,6 +103,38 @@ public class ContentService {
                 contentByBlock
             ))
             .toList();
+    }
+
+    /**
+     * Construye la respuesta completa de un único elemento recién añadido a una encuesta.
+     * La lectura completa de encuestas utiliza findStructuredContent para evitar consultas N+1.
+     */
+    private ContentItemResponseDto toSurveyResponse(ContentItem item) {
+        Question question = questionRepository.findByParentItemId(item.getId()).orElse(null);
+        Block block = blockRepository.findByParentItemId(item.getId()).orElse(null);
+        BlockResponseDto blockResponse = block == null ? null : new BlockResponseDto(
+            block.getId(),
+            block.getScope(),
+            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
+            block.getName(),
+            block.getDescription(),
+            findBlockContent(block),
+            block.getCreatedBy() == null ? null : block.getCreatedBy().getId(),
+            block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
+            block.getCreatedAt(),
+            block.getUpdatedAt(),
+            null
+        );
+        return new ContentItemResponseDto(
+            item.getId(),
+            item.getItemType(),
+            item.getPosition(),
+            item.getRequired(),
+            item.getTextBody(),
+            question == null ? null : questionService.toResponse(question),
+            block == null ? null : block.getId(),
+            blockResponse
+        );
     }
 
     public List<ContentItemResponseDto> findBlockContent(Block block) {

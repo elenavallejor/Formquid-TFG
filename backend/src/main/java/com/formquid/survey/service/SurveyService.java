@@ -1,7 +1,9 @@
 package com.formquid.survey.service;
 
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.collaboration.repository.CollaborationRequestRepository;
 import com.formquid.collaboration.entity.CollaborationPermission;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.common.service.TagNormalizer;
 import com.formquid.content.dto.ContentItemResponseDto;
@@ -14,6 +16,7 @@ import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyPageResponseDto;
+import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.SurveySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
@@ -40,8 +43,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Gestiona la creación, consulta, permisos y ciclo de vida de las encuestas.
@@ -54,9 +59,12 @@ public class SurveyService {
     private static final int PUBLIC_CODE_LENGTH = 12;
     private static final int PUBLIC_CODE_ATTEMPTS = 10;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final SurveyAccess NO_ACCESS = new SurveyAccess(false, false);
+    private static final SurveyAccess OWNER_ACCESS = new SurveyAccess(true, true);
 
     private final SurveyRepository surveyRepository;
     private final SurveyCollaboratorRepository collaboratorRepository;
+    private final CollaborationRequestRepository collaborationRequestRepository;
     private final ContentItemRepository contentItemRepository;
     private final ParticipationRepository participationRepository;
     private final ContentService contentService;
@@ -89,8 +97,93 @@ public class SurveyService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminSurveySummaryDto> findAdminSummaries() {
-        return surveyRepository.findAdminSummaries();
+    public PageResponseDto<SurveyDirectorySummaryDto> findDirectory(
+        User user,
+        String search,
+        SurveyLifecycle lifecycleStatus,
+        Pageable pageable
+    ) {
+        if (user == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
+        }
+        if (user.getRole() != UserRole.EDITOR) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo los editores pueden consultar las encuestas disponibles");
+        }
+        if (pageable.getPageNumber() < 0 || pageable.getPageSize() < 1 || pageable.getPageSize() > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
+        }
+
+        Sort.Order updatedAtOrder = pageable.getSort().getOrderFor("updatedAt");
+        if (updatedAtOrder == null || pageable.getSort().stream().count() != 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ordenación de encuestas no válida");
+        }
+
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        PageRequest safePageable = PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(updatedAtOrder.getDirection(), "updatedAt")
+        );
+        Page<Survey> surveys = surveyRepository.findDirectory(normalizedSearch, lifecycleStatus, safePageable);
+        List<Long> surveyIds = surveys.getContent().stream().map(Survey::getId).toList();
+        Set<Long> collaboratingIds = surveyIds.isEmpty()
+            ? Set.of()
+            : new HashSet<>(collaboratorRepository.findSurveyIdsByUserIdAndSurveyIds(user.getId(), surveyIds));
+        Set<Long> pendingRequestIds = surveyIds.isEmpty()
+            ? Set.of()
+            : new HashSet<>(collaborationRequestRepository.findSurveyIdsByUserIdAndSurveyIds(user.getId(), surveyIds));
+
+        List<SurveyDirectorySummaryDto> content = surveys.getContent().stream()
+            .map(survey -> new SurveyDirectorySummaryDto(
+                survey.getId(),
+                survey.getTitle(),
+                survey.getImageKey(),
+                survey.getOwner().getName(),
+                survey.getLifecycleStatus(),
+                tagsFrom(survey),
+                survey.getUpdatedAt(),
+                survey.getOwner().getId().equals(user.getId()),
+                collaboratingIds.contains(survey.getId()),
+                pendingRequestIds.contains(survey.getId())
+            ))
+            .toList();
+
+        return new PageResponseDto<>(
+            content,
+            surveys.getNumber(),
+            surveys.getSize(),
+            surveys.getTotalElements(),
+            surveys.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDto<AdminSurveySummaryDto> findAdminSummaries(
+        String search,
+        SurveyLifecycle lifecycleStatus,
+        SurveyVisibility visibility,
+        int page,
+        int size
+    ) {
+        if (page < 0 || size < 1 || size > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
+        }
+
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        Page<AdminSurveySummaryDto> surveys = surveyRepository.findAdminSummaries(
+            normalizedSearch,
+            lifecycleStatus,
+            visibility,
+            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"))
+        );
+
+        return new PageResponseDto<>(
+            surveys.getContent(),
+            surveys.getNumber(),
+            surveys.getSize(),
+            surveys.getTotalElements(),
+            surveys.getTotalPages()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -116,8 +209,9 @@ public class SurveyService {
     @Transactional(readOnly = true)
     public SurveyResponseDto getSurveyForUser(Long surveyId, User user) {
         Survey survey = getSurvey(surveyId);
-        ensureCanViewSurvey(survey, user);
-        return toResponse(survey, user);
+        SurveyAccess access = resolveAccess(survey, user);
+        ensureCanViewSurvey(survey, user, access);
+        return toResponse(survey, access);
     }
 
     @Transactional(readOnly = true)
@@ -152,7 +246,8 @@ public class SurveyService {
     @Transactional
     public SurveyResponseDto update(Long surveyId, UpdateSurveyRequestDto request, User actor) {
         Survey survey = getSurvey(surveyId);
-        ensureCanEdit(survey, actor);
+        SurveyAccess access = resolveAccess(survey, actor);
+        ensureCanEdit(access);
         survey.setTitle(request.title().trim());
         survey.setDescription(trimToNull(request.description()));
         survey.setImageKey(trimToNull(request.imageKey()));
@@ -162,10 +257,12 @@ public class SurveyService {
             SurveyAccessMode previousMode = survey.getAccessMode();
             SurveyAccessMode requestedMode = request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode();
             survey.setAccessMode(requestedMode);
-            survey.setVisibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
+            survey.setVisibility(survey.getLifecycleStatus() == SurveyLifecycle.DRAFT
+                ? SurveyVisibility.UNLISTED
+                : request.visibility() == null ? SurveyVisibility.LISTED : request.visibility());
             survey.setAccessPasswordHash(updatedPasswordHash(previousMode, requestedMode, survey.getAccessPasswordHash(), request.accessPassword()));
         }
-        return toResponse(survey, actor);
+        return toResponse(survey, access);
     }
 
     @Transactional
@@ -241,25 +338,29 @@ public class SurveyService {
     }
 
     public void ensureCanViewSurvey(Survey survey, User user) {
-        if (isOwner(survey, user) || isCollaborator(survey, user) || isAdmin(user) || canViewOpenSurvey(survey, user)) {
+        ensureCanViewSurvey(survey, user, resolveAccess(survey, user));
+    }
+
+    private void ensureCanViewSurvey(Survey survey, User user, SurveyAccess access) {
+        if (access.canPreview() || isAdmin(user) || canViewOpenSurvey(survey, user)) {
             return;
         }
         throw new ApiException(HttpStatus.FORBIDDEN, "No puedes consultar esta encuesta");
     }
 
     public void ensureCanViewResults(Survey survey, User user) {
-        if (isOwner(survey, user) || isCollaborator(survey, user) || isAdmin(user)) {
+        if (resolveAccess(survey, user).canPreview() || isAdmin(user)) {
             return;
         }
         throw new ApiException(HttpStatus.FORBIDDEN, "No puedes consultar las estadísticas de esta encuesta");
     }
 
     public boolean canEditSurvey(Survey survey, User user) {
-        return isOwner(survey, user) || isEditingCollaborator(survey, user);
+        return resolveAccess(survey, user).canEdit();
     }
 
     public boolean canPreviewSurvey(Survey survey, User user) {
-        return isOwner(survey, user) || isCollaborator(survey, user);
+        return resolveAccess(survey, user).canPreview();
     }
 
     public void ensureStructureEditable(Survey survey) {
@@ -269,10 +370,14 @@ public class SurveyService {
     }
 
     public SurveyResponseDto toResponse(Survey survey) {
-        return toResponse(survey, null);
+        return toResponse(survey, NO_ACCESS);
     }
 
     private SurveyResponseDto toResponse(Survey survey, User actor) {
+        return toResponse(survey, resolveAccess(survey, actor));
+    }
+
+    private SurveyResponseDto toResponse(Survey survey, SurveyAccess access) {
         List<ContentItemResponseDto> content = contentService.findSurveyContent(survey.getId()).stream()
             .sorted(Comparator.comparing(ContentItemResponseDto::position))
             .toList();
@@ -289,8 +394,8 @@ public class SurveyService {
             survey.getVisibility(),
             tagsFrom(survey),
             content,
-            canEditSurvey(survey, actor),
-            canPreviewSurvey(survey, actor),
+            access.canEdit(),
+            access.canPreview(),
             survey.getCreatedAt(),
             survey.getUpdatedAt()
         );
@@ -305,7 +410,7 @@ public class SurveyService {
             .fontFamily(fontFamilyOrDefault(request.fontFamily()))
             .lifecycleStatus(SurveyLifecycle.DRAFT)
             .accessMode(request.accessMode() == null ? SurveyAccessMode.PUBLIC : request.accessMode())
-            .visibility(request.visibility() == null ? SurveyVisibility.LISTED : request.visibility())
+            .visibility(SurveyVisibility.UNLISTED)
             .accessPasswordHash(passwordHash(request.accessMode(), request.accessPassword()))
             .build();
         saveTags(survey, request.tags());
@@ -316,12 +421,22 @@ public class SurveyService {
         if (lifecycle == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El estado de la encuesta es obligatorio");
         }
+        SurveyLifecycle currentLifecycle = survey.getLifecycleStatus();
+        if (currentLifecycle == SurveyLifecycle.DRAFT && lifecycle == SurveyLifecycle.CLOSED) {
+            throw new ApiException(HttpStatus.CONFLICT, "Una encuesta en borrador debe publicarse antes de poder cerrarse");
+        }
+        if (currentLifecycle != SurveyLifecycle.DRAFT && lifecycle == SurveyLifecycle.DRAFT) {
+            throw new ApiException(HttpStatus.CONFLICT, "Una encuesta publicada no puede volver al estado de borrador");
+        }
         if (lifecycle == SurveyLifecycle.OPEN) {
             if (!contentService.hasQuestion(contentItemRepository.findBySurveyIdOrderByPositionAsc(survey.getId()))) {
                 throw new ApiException(HttpStatus.CONFLICT, "La encuesta no puede abrirse sin preguntas");
             }
             if (survey.getPublicCode() == null) {
                 survey.setPublicCode(generatePublicCode());
+            }
+            if (currentLifecycle == SurveyLifecycle.DRAFT) {
+                survey.setVisibility(SurveyVisibility.LISTED);
             }
         }
         survey.setLifecycleStatus(lifecycle);
@@ -430,8 +545,8 @@ public class SurveyService {
         throw new ApiException(HttpStatus.BAD_REQUEST, "Las encuestas con contraseña necesitan contraseña de acceso");
     }
 
-    private void ensureCanEdit(Survey survey, User user) {
-        if (!canEditSurvey(survey, user)) {
+    private void ensureCanEdit(SurveyAccess access) {
+        if (!access.canEdit()) {
             throw new ApiException(HttpStatus.FORBIDDEN, "No puedes editar esta encuesta");
         }
     }
@@ -452,16 +567,16 @@ public class SurveyService {
         return user != null && survey.getOwner().getId().equals(user.getId());
     }
 
-    private boolean isCollaborator(Survey survey, User user) {
-        return user != null && collaboratorRepository.existsByIdSurveyIdAndIdUserId(survey.getId(), user.getId());
-    }
-
-    private boolean isEditingCollaborator(Survey survey, User user) {
-        return user != null && collaboratorRepository.existsByIdSurveyIdAndIdUserIdAndPermission(
-            survey.getId(),
-            user.getId(),
-            CollaborationPermission.EDIT
-        );
+    private SurveyAccess resolveAccess(Survey survey, User user) {
+        if (user == null) {
+            return NO_ACCESS;
+        }
+        if (isOwner(survey, user)) {
+            return OWNER_ACCESS;
+        }
+        return collaboratorRepository.findPermission(survey.getId(), user.getId())
+            .map(permission -> new SurveyAccess(permission == CollaborationPermission.EDIT, true))
+            .orElse(NO_ACCESS);
     }
 
     private boolean isAdmin(User user) {
@@ -492,5 +607,8 @@ public class SurveyService {
             return null;
         }
         return value.trim();
+    }
+
+    private record SurveyAccess(boolean canEdit, boolean canPreview) {
     }
 }

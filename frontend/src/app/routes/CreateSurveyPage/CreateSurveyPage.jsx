@@ -27,7 +27,7 @@ const INITIAL_FORM = {
   imageKey: '',
   fontFamily: 'TIMES_NEW_ROMAN',
   accessMode: 'PUBLIC',
-  visibility: 'LISTED',
+  visibility: 'UNLISTED',
   accessPassword: '',
   tags: [],
 };
@@ -430,9 +430,9 @@ export function CreateSurveyPage() {
           <h2 id="survey-access-title">ACCESO Y VISIBILIDAD</h2>
           <fieldset className="create-survey-choice-group">
             <legend>Modo de acceso</legend>
-            <label><input type="radio" name="access-mode" value="PUBLIC" checked={formData.accessMode === 'PUBLIC'} onChange={(event) => updateForm({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>Pública</strong><small>Cualquier persona con acceso puede responder.</small></span></label>
-            <label><input type="radio" name="access-mode" value="PASSWORD_PROTECTED" checked={formData.accessMode === 'PASSWORD_PROTECTED'} onChange={(event) => updateForm({ accessMode: event.target.value })} /><span><strong>Protegida con contraseña</strong><small>Se solicitará una contraseña antes de responder.</small></span></label>
-            <label><input type="radio" name="access-mode" value="AUTHENTICATED" checked={formData.accessMode === 'AUTHENTICATED'} onChange={(event) => updateForm({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>Usuarios registrados</strong><small>Solo podrán responder usuarios con una cuenta.</small></span></label>
+            <label><input type="radio" name="access-mode" value="PUBLIC" checked={formData.accessMode === 'PUBLIC'} onChange={(event) => updateForm({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>PÚBLICA</strong><small>Cualquier persona con acceso puede responder.</small></span></label>
+            <label><input type="radio" name="access-mode" value="PASSWORD_PROTECTED" checked={formData.accessMode === 'PASSWORD_PROTECTED'} onChange={(event) => updateForm({ accessMode: event.target.value })} /><span><strong>PROTEGIDA CON CONTRASEÑA</strong><small>Se solicitará una contraseña antes de responder.</small></span></label>
+            <label><input type="radio" name="access-mode" value="AUTHENTICATED" checked={formData.accessMode === 'AUTHENTICATED'} onChange={(event) => updateForm({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>USUARIOS REGISTRADOS</strong><small>Solo podrán responder usuarios con una cuenta.</small></span></label>
           </fieldset>
 
           {formData.accessMode === 'PASSWORD_PROTECTED' && (
@@ -442,17 +442,14 @@ export function CreateSurveyPage() {
             </div>
           )}
 
-          <fieldset className="create-survey-choice-group">
+          <fieldset className="create-survey-choice-group" disabled>
             <legend>Visibilidad</legend>
-            <label><input type="radio" name="visibility" value="LISTED" checked={formData.visibility === 'LISTED'} onChange={(event) => updateForm({ visibility: event.target.value })} /><span><strong>Listada</strong><small>Aparecerá en los listados cuando se publique.</small></span></label>
-            <label><input type="radio" name="visibility" value="UNLISTED" checked={formData.visibility === 'UNLISTED'} onChange={(event) => updateForm({ visibility: event.target.value })} /><span><strong>No listada</strong><small>Solo se encontrará mediante un enlace directo.</small></span></label>
+            <label><input type="radio" name="visibility" value="UNLISTED" checked readOnly /><span><strong>NO LISTADA</strong><small>Mientras sea un borrador no aparecerá en los listados públicos.</small></span></label>
           </fieldset>
 
-          {formData.visibility === 'UNLISTED' && (
-            <p className="create-survey-security-note">
-              Una encuesta no listada no es privada. Utiliza contraseña o acceso autenticado si necesitas confidencialidad.
-            </p>
-          )}
+          <p className="create-survey-security-note">
+            Al publicar el borrador la encuesta pasará a estar listada. Después podrás cambiar su visibilidad desde la configuración.
+          </p>
         </section>
       </div>
 

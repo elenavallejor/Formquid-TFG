@@ -21,6 +21,7 @@ import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/Regi
 import { SuggestElementPage } from './routes/SuggestElementPage/SuggestElementPage.jsx';
 import { AccountPage } from './routes/AccountPage/AccountPage.jsx';
 import { AdminSurveysPage } from './routes/AdminSurveysPage/AdminSurveysPage.jsx';
+import { SurveyListPage } from './routes/SurveyListPage/SurveyListPage.jsx';
 import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagementPage.jsx';
 
 /**
@@ -71,6 +72,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={EDITOR_ROLE}>
               <SuggestElementPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'encuestas',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={EDITOR_ROLE}>
+              <SurveyListPage />
             </RequireRole>
           </RequireAuth>
         ),

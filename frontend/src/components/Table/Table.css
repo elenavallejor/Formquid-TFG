@@ -1,47 +1,193 @@
 .table-container {
   width: 100%;
-  overflow-x: auto;
+  overflow: hidden;
   border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
 }
 
 .custom-table {
   width: 100%;
-  min-width: 760px;
   border-collapse: collapse;
+  table-layout: fixed;
   text-align: left;
 }
 
-.custom-table thead tr {
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-surface-muted);
+.custom-table thead {
+  background: var(--color-header);
+  color: var(--color-text-on-dark);
 }
 
 .custom-table th {
-  padding: 14px 20px;
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  padding: 15px 20px;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
 }
 
 .custom-table td {
-  padding: 16px 20px;
+  padding: 17px 20px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
   font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
 }
 
-.custom-table tbody tr:last-child td {
-  border-bottom: none;
+.custom-table tbody tr {
+  background: var(--color-surface);
+  transition: background-color 0.18s ease;
+}
+
+.custom-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-background));
 }
 
 .custom-table tbody tr:hover {
-  background-color: var(--color-surface-muted);
+  background: var(--color-accent-surface);
+}
+
+.custom-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.custom-table td:first-child {
+  color: var(--color-header);
+  font-weight: 750;
+}
+
+.custom-table th:nth-child(6),
+.custom-table td:nth-child(6) {
+  text-align: center;
+}
+
+.table-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.table-badge-draft,
+.table-badge-unlisted {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.table-badge-open {
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+}
+
+.table-badge-closed,
+.table-badge-authenticated {
+  background: var(--color-header);
+  color: var(--color-text-on-dark);
+}
+
+.table-badge-public,
+.table-badge-listed {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  background: var(--color-accent-surface);
+  color: var(--color-primary-hover);
+}
+
+.table-badge-password_protected {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-surface);
+  color: var(--color-warning);
 }
 
 .custom-table-empty {
-  padding: 28px 20px;
-  color: var(--color-text-muted);
-  text-align: center;
+  height: 112px;
+  padding: 32px 20px;
+  color: var(--color-text-muted) !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  text-align: center !important;
+}
+
+@media only screen and (max-width: 1024px) {
+  .table-container {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .custom-table,
+  .custom-table tbody,
+  .custom-table tr,
+  .custom-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .custom-table thead {
+    display: none;
+  }
+
+  .custom-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .custom-table tbody tr,
+  .custom-table tbody tr:nth-child(even) {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    box-shadow: var(--card-shadow);
+  }
+
+  .custom-table td {
+    display: grid;
+    grid-template-columns: minmax(105px, 0.75fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    text-align: left !important;
+  }
+
+  .custom-table td::before {
+    color: var(--color-text-muted);
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .custom-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .custom-table .custom-table-empty {
+    display: block;
+    height: auto;
+    min-height: 112px;
+    padding: 40px 20px;
+  }
+
+  .custom-table .custom-table-empty::before {
+    content: none;
+  }
 }

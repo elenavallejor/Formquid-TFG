@@ -16,13 +16,7 @@ import {
 } from '../../utils/questionBuilderUtils.js';
 import './Question.css';
 
-const FACE_CONFIG = [
-  { icon: BsEmojiAngryFill, color: '#ef4444' },
-  { icon: BsEmojiFrownFill, color: '#f97316' },
-  { icon: BsEmojiNeutralFill, color: '#eab308' },
-  { icon: BsEmojiSmileFill, color: '#84cc16' },
-  { icon: BsEmojiLaughingFill, color: '#22c55e' },
-];
+const FACE_ICONS = [BsEmojiAngryFill, BsEmojiFrownFill, BsEmojiNeutralFill, BsEmojiSmileFill, BsEmojiLaughingFill];
 
 export function Question({
   questionNumber = 'Q',
@@ -51,14 +45,9 @@ export function Question({
     }
 
     if (displayType === 'FACES') {
-      const faceCfg = FACE_CONFIG[index] || FACE_CONFIG[2];
-      const FaceIcon = faceCfg.icon;
-
+      const FaceIcon = FACE_ICONS[index] || FACE_ICONS[2];
       return (
-        <span
-          className={`scale-face-item ${isSelected ? 'selected' : 'unselected'}`}
-          style={{ color: isSelected ? faceCfg.color : '#cbd5e1' }}
-        >
+        <span className={`scale-face-item ${isSelected ? 'selected' : 'unselected'}`}>
           <FaceIcon />
         </span>
       );
@@ -214,6 +203,14 @@ export function Question({
             <div className="scale-columns-row">
               {scaleValues.map((val, idx) => {
                 const isSelected = value === val;
+                if (displayType === 'NUMERIC') {
+                  return (
+                    <label key={val} className="scale-column-unit">
+                      <span className="scale-unit-number">{val}</span>
+                      <input type="radio" name={`scale_${questionNumber}`} checked={isSelected} disabled={!interactive} onChange={() => onChange(val)} />
+                    </label>
+                  );
+                }
                 return (
                   <button
                     key={val}
@@ -224,9 +221,6 @@ export function Question({
                     aria-label={`Seleccionar ${val}`}
                     onClick={() => onChange(val)}
                   >
-                    {displayType === 'NUMERIC' && (
-                      <span className="scale-unit-number">{val}</span>
-                    )}
                     {renderVisualItem(val, idx, isSelected)}
                   </button>
                 );
@@ -270,16 +264,13 @@ export function Question({
                         const isSelected = selectedVal === val;
                         return (
                           <td key={val} className="matrix-cell-radio">
-                            <button
-                              type="button"
-                              className="matrix-scale-choice-button"
-                              disabled={!interactive}
-                              aria-pressed={isSelected}
-                              aria-label={`Seleccionar ${val} para ${rowLabel || `Fila ${rIdx + 1}`}`}
-                              onClick={() => onChange({ ...(value || {}), [rIdx]: val })}
-                            >
-                              {renderVisualItem(val, idx, isSelected)}
-                            </button>
+                            {displayType === 'NUMERIC' ? (
+                              <input type="radio" name={`matrix_${questionNumber}_${rIdx}`} checked={isSelected} disabled={!interactive} aria-label={`Seleccionar ${val} para ${rowLabel || `Fila ${rIdx + 1}`}`} onChange={() => onChange({ ...(value || {}), [rIdx]: val })} />
+                            ) : (
+                              <button type="button" className="matrix-scale-choice-button" disabled={!interactive} aria-pressed={isSelected} aria-label={`Seleccionar ${val} para ${rowLabel || `Fila ${rIdx + 1}`}`} onClick={() => onChange({ ...(value || {}), [rIdx]: val })}>
+                                {renderVisualItem(val, idx, isSelected)}
+                              </button>
+                            )}
                           </td>
                         );
                       })}
@@ -297,18 +288,15 @@ export function Question({
             {[
               { key: 'true', label: data.trueLabel || 'Sí' },
               { key: 'false', label: data.falseLabel || 'No' },
-            ].map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`boolean-choice-pill ${interactive && value === item.key ? 'selected' : ''}`}
-                disabled={!interactive}
-                onClick={() => interactive && onChange(item.key)}
-              >
-                <span className="academic-checkbox-square" />
-                <span className="boolean-pill-text">{item.label}</span>
-              </button>
-            ))}
+            ].map((item) => {
+              const isSelected = value === item.key;
+              return (
+                <label key={item.key} className="boolean-choice-pill">
+                  <input type="checkbox" checked={isSelected} disabled={!interactive} onChange={() => onChange(item.key)} />
+                  <span className="boolean-pill-text">{item.label}</span>
+                </label>
+              );
+            })}
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ import com.formquid.dashboard.repository.AdminDashboardRepository;
 import com.formquid.survey.repository.SurveyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +31,12 @@ public class AdminDashboardService {
             counts.pendingElementRequests(),
             counts.surveyCount(),
             counts.pendingRegistrationRequests(),
-            surveyRepository.findAdminSummaries(
-                PageRequest.of(0, RECENT_SURVEYS_LIMIT)
+            surveyRepository.findRecentAdminSummaries(
+                PageRequest.of(
+                    0,
+                    RECENT_SURVEYS_LIMIT,
+                    Sort.by(Sort.Direction.DESC, "updatedAt")
+                )
             )
         );
     }

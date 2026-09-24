@@ -17,6 +17,7 @@ import {
   getCatalogQuestionById,
   getCatalogTemplateById,
 } from '../../../api/catalogApi.js';
+import { BackButton } from '../../../components/BackButton/BackButton.jsx';
 import { Block } from '../../../components/Block/Block.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
@@ -395,6 +396,8 @@ export function ElementDetailPage() {
   return (
     <main className="catalog-detail-page">
       <div className="catalog-detail-container">
+        <BackButton fallbackTo={config.catalogPath} className="catalog-detail-back" />
+
         <Breadcrumbs
           className="catalog-detail-breadcrumb"
           items={[
@@ -440,15 +443,15 @@ export function ElementDetailPage() {
 
               <dl className="catalog-detail-metadata">
                 <div>
-                  <dt>CREADOR:</dt>
+                  <dt>CREADOR</dt>
                   <dd>{element.creatorName || '—'}</dd>
                 </div>
                 <div>
-                  <dt>CREADO:</dt>
+                  <dt>CREADO</dt>
                   <dd>{formatDateTime(element.createdAt)}</dd>
                 </div>
                 <div>
-                  <dt>ÚLTIMA ACTUALIZACIÓN:</dt>
+                  <dt>ÚLTIMA ACTUALIZACIÓN</dt>
                   <dd>{formatDateTime(element.updatedAt)}</dd>
                 </div>
               </dl>

@@ -1,9 +1,12 @@
 package com.formquid.survey.controller;
 
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
 import com.formquid.survey.dto.ChangeSurveyVisibilityRequestDto;
 import com.formquid.survey.dto.SurveyResponseDto;
+import com.formquid.survey.entity.SurveyLifecycle;
+import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
@@ -17,10 +20,9 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * Expone las operaciones administrativas de supervisión sobre las encuestas de la plataforma.
@@ -34,8 +36,20 @@ public class AdminSurveyController {
     private final SurveyService surveyService;
 
     @GetMapping
-    public List<AdminSurveySummaryDto> findAll() {
-        return surveyService.findAdminSummaries();
+    public PageResponseDto<AdminSurveySummaryDto> findAll(
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @RequestParam(required = false) SurveyVisibility visibility,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "9") int size
+    ) {
+        return surveyService.findAdminSummaries(
+            search,
+            lifecycleStatus,
+            visibility,
+            page,
+            size
+        );
     }
 
     @PatchMapping("/{surveyId}/lifecycle")
