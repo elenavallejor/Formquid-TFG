@@ -17,7 +17,7 @@
   gap: 6px;
   margin-bottom: 12px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
@@ -34,14 +34,14 @@
 .element-requests-page-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 26px;
+  font-size: 33.8px;
   font-weight: 800;
 }
 
 .element-requests-page-header p {
   margin: 6px 0 28px;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .element-requests-filters {
@@ -62,7 +62,7 @@
   top: 50%;
   left: 14px;
   color: var(--color-text-muted);
-  font-size: 20px;
+  font-size: 26px;
   transform: translateY(-50%);
 }
 
@@ -88,7 +88,7 @@
   align-items: center;
   gap: 10px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 700;
 }
 
@@ -124,13 +124,13 @@
   border-radius: 50%;
   background: var(--color-surface);
   color: var(--color-primary);
-  font-size: 21px;
+  font-size: 27.3px;
 }
 
 .element-request-card-header h2,
 .element-request-card-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 22.1px;
   font-weight: 800;
 }
 
@@ -148,14 +148,14 @@
 .element-request-card-content > h3 {
   margin: 0 0 16px;
   color: var(--color-header);
-  font-size: 16px;
+  font-size: 20.8px;
   text-transform: uppercase;
 }
 
 .element-request-section-label {
   margin: 0 0 9px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -174,12 +174,12 @@
   align-items: center;
   gap: 7px;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .element-request-user-data svg {
   flex-shrink: 0;
-  font-size: 17px;
+  font-size: 22.1px;
 }
 
 .element-request-message {
@@ -211,7 +211,7 @@
 .element-request-structure-header h4 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 800;
 }
 
@@ -224,7 +224,7 @@
   background: transparent;
   color: var(--color-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -279,7 +279,7 @@
 
 .element-request-reference svg {
   color: var(--color-primary);
-  font-size: 21px;
+  font-size: 27.3px;
 }
 
 .element-request-actions {
@@ -298,7 +298,7 @@
   padding: 12px 18px;
   border-radius: 10px;
   font: inherit;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;

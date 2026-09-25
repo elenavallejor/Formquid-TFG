@@ -16,7 +16,7 @@
   gap: 6px;
   margin-bottom: 14px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
@@ -41,19 +41,19 @@
 .create-survey-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 28px;
+  font-size: 36.4px;
   font-weight: 800;
 }
 
 .create-survey-header p {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .create-survey-header .create-survey-edit-note {
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 700;
 }
 
@@ -74,7 +74,7 @@
 .create-survey-section-header h2 {
   margin: 0 0 22px;
   color: var(--color-primary);
-  font-size: 15px;
+  font-size: 19.5px;
   font-weight: 800;
 }
 
@@ -92,7 +92,7 @@
 .create-survey-section-header p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .create-survey-secondary-button,
@@ -103,7 +103,7 @@
   background: var(--color-surface);
   color: var(--color-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -130,7 +130,7 @@
 .create-survey-field label,
 .create-survey-choice-group legend {
   color: var(--color-header);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
 }
 
@@ -147,7 +147,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  font-size: 14px;
+  font-size: 18.2px;
   box-sizing: border-box;
   resize: vertical;
 }
@@ -162,13 +162,13 @@
 .create-survey-field > small {
   align-self: flex-end;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
 }
 
 .create-survey-field > p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
 }
 
 .create-survey-grid {
@@ -194,7 +194,7 @@
   border-radius: 10px;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
-  font-size: 40px;
+  font-size: 52px;
 }
 
 .create-survey-image-preview img {
@@ -215,7 +215,7 @@
   background: var(--color-primary);
   color: var(--color-text-on-dark);
   font: inherit;
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -246,7 +246,7 @@
   border-radius: 999px;
   background: var(--color-accent-surface);
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 700;
 }
 
@@ -256,7 +256,7 @@
   border: 0;
   background: transparent;
   color: inherit;
-  font-size: 15px;
+  font-size: 19.5px;
   cursor: pointer;
 }
 
@@ -311,12 +311,12 @@
 
 .create-survey-choice-group strong {
   color: var(--color-header);
-  font-size: 13px;
+  font-size: 16.9px;
 }
 
 .create-survey-choice-group small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 400;
   line-height: 1.4;
 }
@@ -334,7 +334,7 @@
   border-radius: 9px;
   background: var(--color-accent-surface);
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 16.9px;
   line-height: 1.5;
 }
 
@@ -348,7 +348,7 @@
   background: var(--color-info);
   color: var(--color-text-on-dark);
   content: '!';
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 900;
   line-height: 1;
 }
@@ -391,13 +391,13 @@
 .survey-origin-modal h2 {
   margin: 0;
   color: var(--color-header);
-  font-size: 24px;
+  font-size: 31.2px;
 }
 
 .survey-origin-modal header p {
   margin: 8px 0 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .survey-origin-close {
@@ -407,7 +407,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 23px;
+  font-size: 29.9px;
   cursor: pointer;
 }
 
@@ -453,7 +453,7 @@
   border-radius: 50%;
   background: var(--color-primary);
   color: var(--color-text-on-dark);
-  font-size: 40px;
+  font-size: 52px;
   box-shadow: 0 8px 18px rgb(0 131 122 / 22%);
 }
 
@@ -476,11 +476,11 @@
 }
 
 .survey-origin-options strong {
-  font-size: 18px;
+  font-size: 23.4px;
 }
 
 .survey-template-option strong {
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .survey-origin-options small,
@@ -495,11 +495,11 @@
 }
 
 .survey-origin-options small {
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .survey-template-option small {
-  font-size: 12px;
+  font-size: 15.6px;
 }
 
 .survey-origin-option-action {
@@ -507,12 +507,12 @@
   align-items: center;
   gap: 5px;
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 800;
 }
 
 .survey-origin-option-action svg {
-  font-size: 19px;
+  font-size: 24.7px;
   transition: transform 0.2s ease;
 }
 
@@ -581,7 +581,7 @@
   border-radius: 6px;
   background: var(--color-surface-muted);
   color: var(--color-primary);
-  font-size: 24px;
+  font-size: 31.2px;
 }
 
 .survey-template-image img {

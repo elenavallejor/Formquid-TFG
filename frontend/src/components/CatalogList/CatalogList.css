@@ -19,7 +19,7 @@
   grid-template-columns: 3.2fr 1.4fr 0.8fr 1.1fr 1.1fr 60px;
   align-items: center;
   padding: 0 24px 8px;
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 800;
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
@@ -43,7 +43,7 @@
 .catalog-scroll-help {
   margin: -4px 0 0;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
 }
 
 .catalog-blocks-list.catalog-items-scroll {
@@ -96,20 +96,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 33.8px;
   flex-shrink: 0;
 }
 
 .catalog-item-info h3 {
   margin: 0 0 4px;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
   color: var(--color-text);
 }
 
 .catalog-item-info p {
   margin: 0;
-  font-size: 13px;
+  font-size: 16.9px;
   color: var(--color-text-muted);
   line-height: 1.4;
   display: -webkit-box;
@@ -130,7 +130,7 @@
   border-radius: 50%;
   background-color: var(--color-text-muted);
   color: var(--color-text-on-dark);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -138,7 +138,7 @@
 }
 
 .user-creator-name {
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
   color: var(--color-text);
   white-space: nowrap;
@@ -147,17 +147,17 @@
 }
 
 .font-numeric {
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
   color: var(--color-text);
 }
 
 .font-date {
-  font-size: 13px;
+  font-size: 16.9px;
 }
 
 .time-subtext {
-  font-size: 11px;
+  font-size: 14.3px;
   color: var(--color-text-muted);
 }
 
@@ -170,7 +170,7 @@
 .btn-item-more {
   background: transparent;
   border: none;
-  font-size: 22px;
+  font-size: 28.6px;
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 6px;
@@ -192,14 +192,14 @@
   border-radius: 9px;
   background: var(--color-surface);
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .btn-item-view svg {
   flex-shrink: 0;
-  font-size: 18px;
+  font-size: 23.4px;
 }
 
 .btn-item-view:hover {
@@ -228,7 +228,7 @@
   padding: 10px 16px;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
@@ -236,7 +236,7 @@
 }
 
 .menu-option svg {
-  font-size: 18px;
+  font-size: 23.4px;
 }
 
 .menu-option:hover {
@@ -282,7 +282,7 @@
   min-height: 320px;
   text-align: center;
   padding: 40px;
-  font-size: 15px;
+  font-size: 19.5px;
   font-weight: 600;
   color: var(--color-text-muted);
 }

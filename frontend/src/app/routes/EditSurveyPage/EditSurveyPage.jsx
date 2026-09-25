@@ -251,7 +251,7 @@ function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, on
           <div className="create-survey-field">
             <label htmlFor="edit-survey-font">Tipografía</label>
             <Dropdown id="edit-survey-font" value={data.fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value })}>
-              {FONT_OPTIONS.map((font) => <option key={font.value} value={font.value} style={{ fontFamily: font.fontFamily, fontSize: font.value === 'OPEN_DYSLEXIC' ? '13px' : undefined }}>{font.label}</option>)}
+              {FONT_OPTIONS.map((font) => <option key={font.value} value={font.value} style={{ fontFamily: font.fontFamily, fontSize: font.value === 'OPEN_DYSLEXIC' ? '16.9px' : undefined }}>{font.label}</option>)}
             </Dropdown>
           </div>
           <div className={`edit-survey-font-preview ${data.fontFamily === 'OPEN_DYSLEXIC' ? 'is-open-dyslexic' : ''}`} style={{ fontFamily: selectedFont.fontFamily }} aria-live="polite">

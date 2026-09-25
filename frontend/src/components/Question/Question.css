@@ -7,7 +7,7 @@
 }
 
 .academic-statement {
-  font-size: 16px;
+  font-size: 20.8px;
   font-weight: 700;
   line-height: 1.45;
   margin: 0 0 14px 0;
@@ -29,7 +29,7 @@
   background-color: var(--color-surface-muted);
   padding: 8px 14px;
   border-radius: 0;
-  font-size: 13.5px;
+  font-size: 17.55px;
   font-style: italic;
   color: var(--color-text-muted);
   margin: 0 0 18px 0;
@@ -58,7 +58,7 @@
   background-color: var(--color-surface-muted);
   color: var(--color-text);
   font-family: inherit;
-  font-size: 14.5px;
+  font-size: 18.85px;
   line-height: 1.5;
   resize: vertical;
   box-sizing: border-box;
@@ -89,7 +89,7 @@
   background-color: var(--color-surface-muted);
   color: var(--color-text);
   font-family: inherit;
-  font-size: 15px;
+  font-size: 19.5px;
   box-sizing: border-box;
 }
 
@@ -104,7 +104,7 @@
 }
 
 .academic-number-hint {
-  font-size: 13.5px;
+  font-size: 17.55px;
   color: var(--color-text-muted);
   font-style: italic;
 }
@@ -122,7 +122,7 @@
 .academic-option-row {
   display: flex;
   align-items: center;
-  font-size: 14.5px;
+  font-size: 18.85px;
   line-height: 1.2;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .scale-bound-label {
-  font-size: 13.5px;
+  font-size: 17.55px;
   font-style: italic;
   color: var(--color-text-muted);
 }
@@ -235,7 +235,7 @@
 }
 
 .scale-unit-number {
-  font-size: 14px;
+  font-size: 18.2px;
   color: var(--color-text);
 }
 
@@ -245,7 +245,7 @@
 
 /* Estrellas */
 .scale-star-item {
-  font-size: 24px;
+  font-size: 31.2px;
   width: 24px;
   height: 24px;
   display: flex;
@@ -269,7 +269,7 @@
 
 /* Caras */
 .scale-face-item {
-  font-size: 32px;
+  font-size: 41.6px;
   display: flex;
   align-items: center;
   color: var(--color-text);
@@ -298,7 +298,7 @@
 
 .academic-matrix-table th {
   padding: 10px 14px;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
   color: var(--color-text);
   border-bottom: 2px solid var(--color-border);
@@ -318,7 +318,7 @@
 .matrix-header-visual {
   display: flex;
   justify-content: center;
-  font-size: 22px;
+  font-size: 28.6px;
 }
 
 .matrix-data-row {
@@ -331,7 +331,7 @@
 
 .matrix-row-title {
   text-align: left;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -374,7 +374,7 @@
 }
 
 .boolean-pill-text {
-  font-size: 15px;
+  font-size: 19.5px;
   font-weight: 600;
   color: var(--color-text);
 }

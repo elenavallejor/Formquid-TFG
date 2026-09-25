@@ -10,7 +10,7 @@
   background: var(--color-primary);
   color: #ffffff;
   font: inherit;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -35,7 +35,7 @@
 }
 
 .create-element-trigger svg {
-  font-size: 19px;
+  font-size: 24.7px;
 }
 
 .create-element-overlay {
@@ -72,7 +72,7 @@
 .create-element-header h2 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 17px;
+  font-size: 22.1px;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -80,7 +80,7 @@
 .create-element-header p {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .create-element-close {
@@ -94,7 +94,7 @@
   border-radius: 7px;
   background: transparent;
   color: #64748b;
-  font-size: 22px;
+  font-size: 28.6px;
   cursor: pointer;
 }
 
@@ -146,7 +146,7 @@
   border-radius: 8px;
   background: #e8f7f5;
   color: var(--color-primary);
-  font-size: 21px;
+  font-size: 27.3px;
 }
 
 .create-element-option-content {
@@ -157,12 +157,12 @@
 
 .create-element-option-content strong {
   color: var(--color-header);
-  font-size: 15px;
+  font-size: 19.5px;
 }
 
 .create-element-option-content > span {
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 16.9px;
   line-height: 1.45;
 }
 

@@ -14,7 +14,7 @@
 .suggest-element-card h2 {
   margin: 0 0 18px;
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -51,7 +51,7 @@
 
 .suggest-element-type > svg {
   flex-shrink: 0;
-  font-size: 26px;
+  font-size: 33.8px;
 }
 
 .suggest-element-type span {
@@ -61,13 +61,13 @@
 }
 
 .suggest-element-type strong {
-  font-size: 15px;
+  font-size: 19.5px;
 }
 
 .suggest-element-type small {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
   line-height: 1.35;
 }
 
@@ -75,7 +75,7 @@
   display: block;
   margin-bottom: 8px;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
 }
 
@@ -87,7 +87,7 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 18.2px;
   line-height: 1.5;
 }
 

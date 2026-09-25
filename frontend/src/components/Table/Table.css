@@ -22,7 +22,7 @@
 .custom-table th {
   padding: 15px 20px;
   color: inherit;
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 800;
   letter-spacing: 0.055em;
   line-height: 1.3;
@@ -34,7 +34,7 @@
   padding: 17px 20px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 18.2px;
   line-height: 1.45;
   overflow-wrap: anywhere;
   vertical-align: middle;
@@ -75,7 +75,7 @@
   padding: 4px 9px;
   border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 14.3px;
   font-weight: 800;
   letter-spacing: 0.035em;
   line-height: 1.2;
@@ -119,7 +119,7 @@
   height: 112px;
   padding: 32px 20px;
   color: var(--color-text-muted) !important;
-  font-size: 14px !important;
+  font-size: 18.2px !important;
   font-weight: 650 !important;
   text-align: center !important;
 }
@@ -170,7 +170,7 @@
   .custom-table td::before {
     color: var(--color-text-muted);
     content: attr(data-label);
-    font-size: 11px;
+    font-size: 14.3px;
     font-weight: 800;
     letter-spacing: 0.045em;
     text-transform: uppercase;

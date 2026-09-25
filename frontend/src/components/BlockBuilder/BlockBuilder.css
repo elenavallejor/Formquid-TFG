@@ -88,7 +88,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 20px;
+  font-size: 26px;
   cursor: grab;
   user-select: none;
 }
@@ -112,7 +112,7 @@
   border: 1px solid;
   border-radius: 6px;
   background: var(--color-surface);
-  font-size: 16px;
+  font-size: 20.8px;
 }
 
 .question-item-preview {
@@ -139,7 +139,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 20px;
+  font-size: 26px;
   cursor: pointer;
 }
 
@@ -172,7 +172,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -184,7 +184,7 @@
 }
 
 .actions-floating-menu button svg {
-  font-size: 16px;
+  font-size: 20.8px;
 }
 
 .actions-floating-menu .delete-opt {
@@ -224,14 +224,14 @@
   align-items: center;
   gap: 6px;
   color: var(--color-primary);
-  font-size: 14.5px;
+  font-size: 18.85px;
   font-weight: 800;
 }
 
 .dropzone-sub {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: 16.25px;
 }
 
 .block-modal-overlay {
@@ -290,7 +290,7 @@
 .block-modal-header h2 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 16px;
+  font-size: 20.8px;
   font-weight: 800;
 }
 
@@ -302,7 +302,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 22px;
+  font-size: 28.6px;
   cursor: pointer;
 }
 
@@ -338,7 +338,7 @@
 .block-modal-error {
   margin: 12px 0 0;
   color: var(--color-error);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
 }
 
@@ -357,7 +357,7 @@
 .btn-danger-confirm {
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
   cursor: pointer;
 }

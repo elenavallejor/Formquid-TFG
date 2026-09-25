@@ -16,13 +16,13 @@
 .survey-list-header h1 {
   margin: 0 0 6px;
   color: var(--color-header);
-  font-size: 28px;
+  font-size: 36.4px;
 }
 
 .survey-list-header p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .survey-list-filters {
@@ -58,7 +58,7 @@
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .survey-list-search input:focus,
@@ -74,7 +74,7 @@
   border-radius: 9px;
   background: #effbf6;
   color: #08734f;
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 700;
 }
 
@@ -106,7 +106,7 @@
 
 .survey-list-empty svg {
   color: var(--color-primary);
-  font-size: 36px;
+  font-size: 46.8px;
 }
 
 .survey-list-empty p {
@@ -114,7 +114,7 @@
 }
 
 .survey-list-empty p {
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
 }
 
@@ -128,7 +128,7 @@
 
 .survey-list-pagination-count {
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
 }
 
@@ -150,7 +150,7 @@
   background-color: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
   transition: all 0.2s ease;
 }

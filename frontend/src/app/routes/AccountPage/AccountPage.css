@@ -16,7 +16,7 @@
   gap: 6px;
   margin-bottom: 12px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 15.6px;
   font-weight: 700;
 }
 
@@ -39,14 +39,14 @@
 .account-page-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 26px;
+  font-size: 33.8px;
   font-weight: 800;
 }
 
 .account-subtitle {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 500;
 }
 
@@ -59,7 +59,7 @@
   color: var(--color-text-on-dark);
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 800;
   cursor: pointer;
   transition: background-color 0.2s ease, opacity 0.2s ease;
@@ -75,7 +75,7 @@
 }
 
 .btn-save-icon {
-  font-size: 20px;
+  font-size: 26px;
 }
 
 .account-error-banner {
@@ -88,7 +88,7 @@
   border: 1px solid var(--color-error-border);
   border-radius: 8px;
   color: var(--color-error);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
 }
 
@@ -98,7 +98,7 @@
 
 .error-banner-icon {
   flex-shrink: 0;
-  font-size: 22px;
+  font-size: 28.6px;
 }
 
 .account-success-banner {
@@ -108,7 +108,7 @@
   border: 1px solid var(--color-success-border);
   border-radius: 8px;
   color: var(--color-success);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 600;
 }
 
@@ -129,7 +129,7 @@
 .account-section-title {
   margin: 0 0 20px;
   color: var(--color-primary);
-  font-size: 15px;
+  font-size: 19.5px;
   font-weight: 800;
 }
 
@@ -159,7 +159,7 @@
 
 .input-field-group label {
   color: var(--color-header);
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 700;
 }
 
@@ -170,7 +170,7 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 18.2px;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -206,7 +206,7 @@
   background: transparent;
   border: none;
   color: var(--color-text-muted);
-  font-size: 20px;
+  font-size: 26px;
   cursor: pointer;
 }
 
@@ -221,7 +221,7 @@
 .password-requirements p {
   margin: 0 0 10px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 600;
 }
 
@@ -230,7 +230,7 @@
   align-items: center;
   gap: 8px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 16.9px;
   font-weight: 600;
 }
 
@@ -249,7 +249,7 @@
 .delete-account-subtext {
   margin: 0 0 20px;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18.2px;
 }
 
 .delete-account-row {
@@ -273,20 +273,20 @@
 .warning-box-icon {
   flex-shrink: 0;
   color: var(--color-warning);
-  font-size: 28px;
+  font-size: 36.4px;
 }
 
 .warning-box-content h3 {
   margin: 0 0 4px;
   color: var(--color-warning);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
 }
 
 .warning-box-content p {
   margin: 0;
   color: var(--color-warning);
-  font-size: 13px;
+  font-size: 16.9px;
 }
 
 .btn-delete-account {
@@ -298,7 +298,7 @@
   border: 1px solid var(--color-error-border);
   border-radius: 8px;
   color: var(--color-error);
-  font-size: 14px;
+  font-size: 18.2px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -316,7 +316,7 @@
 }
 
 .btn-delete-icon {
-  font-size: 18px;
+  font-size: 23.4px;
 }
 
 .breadcrumb-nav a:focus-visible,

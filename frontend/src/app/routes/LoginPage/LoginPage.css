@@ -65,14 +65,14 @@
 .login-title {
   margin: 0 0 12px;
   color: #102a3a;
-  font-size: 32px;
+  font-size: 41.6px;
   line-height: 1.2;
   font-weight: 800;
 }
 
 .login-subtitle {
   color: var(--color-text-muted, #5d6d77);
-  font-size: 15px;
+  font-size: 19.5px;
   font-weight: 500;
 }
 
@@ -110,12 +110,12 @@
   }
 
   .login-title {
-    font-size: 22px;
+    font-size: 28.6px;
     font-weight: 700;
   }
 
   .login-subtitle {
-    font-size: 14px;
+    font-size: 18.2px;
   }
 
   .login-form {
@@ -129,7 +129,7 @@
   .login-input-wrapper input {
     min-height: 46px;
     border-radius: 6px;
-    font-size: 15px;
+    font-size: 19.5px;
     
   }
 
@@ -138,10 +138,10 @@
     margin: 20px 0 16px;
     border-radius: 6px;
     box-shadow: none;
-    font-size: 15px;
+    font-size: 19.5px;
   }
 
   .request-account-text {
-    font-size: 13px;
+    font-size: 16.9px;
   }
 }
