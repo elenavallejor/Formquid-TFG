@@ -167,6 +167,7 @@ export function SurveyListPage() {
                 <SurveyCard
                   key={survey.id}
                   survey={survey}
+                  headingLevel={2}
                   variant="directory"
                   isRequesting={requestingSurveyId === survey.id}
                   onRequestCollaboration={requestCollaboration}

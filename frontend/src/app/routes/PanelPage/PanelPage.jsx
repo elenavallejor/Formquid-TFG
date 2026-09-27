@@ -684,6 +684,7 @@ export function PanelPage() {
                   headers={TABLE_HEADERS}
                   data={tableData}
                   emptyMessage="Todavía no hay encuestas registradas."
+                  caption="Resumen de encuestas registradas"
                 />
               ) : null}
             </section>

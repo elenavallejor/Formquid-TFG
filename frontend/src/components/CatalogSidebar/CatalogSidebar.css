@@ -84,11 +84,11 @@
 
 .catalog-toggle svg {
   flex-shrink: 0;
-  font-size: 23.4px;
+  font-size: 22.5px;
 }
 
 .catalog-toggle span {
-  font-size: 15.6px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -108,7 +108,7 @@
 .catalog-header h2 {
   margin: 0;
   color: var(--color-text-on-dark);
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -125,7 +125,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-on-dark);
-  font-size: 31.2px;
+  font-size: 30px;
   cursor: pointer;
 }
 
@@ -162,7 +162,7 @@
 .catalog-title {
   margin: 0 0 14px;
   color: var(--color-primary);
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -196,7 +196,7 @@
   position: absolute;
   top: 50%;
   color: var(--color-text-muted);
-  font-size: 20.8px;
+  font-size: 20px;
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -214,7 +214,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  font-size: 16.9px;
+  font-size: 16.25px;
 }
 
 .catalog-search input {
@@ -303,7 +303,7 @@
   border: 1px solid currentColor;
   border-radius: 6px;
   background: var(--color-surface);
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .catalog-block-icon {
@@ -324,7 +324,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 16.25px;
+  font-size: 15.625px;
   font-weight: 700;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -334,7 +334,7 @@
 
 .catalog-info span {
   color: var(--color-text-muted);
-  font-size: 14.3px;
+  font-size: 13.75px;
   font-weight: 500;
 }
 
@@ -356,7 +356,7 @@
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: 23.4px;
+  font-size: 22.5px;
   cursor: pointer;
   transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
@@ -391,7 +391,7 @@
   border-radius: 6px;
   background: var(--color-primary);
   color: var(--color-text-on-dark);
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -412,7 +412,7 @@
 }
 
 .catalog-more svg {
-  font-size: 23.4px;
+  font-size: 22.5px;
 }
 
 .catalog-empty {
@@ -422,7 +422,7 @@
   border-radius: 8px;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.5;
   text-align: center;
 }
@@ -433,7 +433,7 @@
   border-radius: 8px;
   background: var(--color-error-surface);
   color: var(--color-error);
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.5;
   text-align: center;
 }
@@ -459,7 +459,7 @@
   border-radius: 6px;
   background: var(--color-error-surface);
   color: var(--color-error);
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.4;
 }
 

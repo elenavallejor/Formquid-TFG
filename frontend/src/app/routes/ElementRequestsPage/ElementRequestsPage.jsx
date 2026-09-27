@@ -107,7 +107,7 @@ function normalizeBlock(block = {}) {
   };
 }
 
-function QuestionPreview({ question, number, required = false }) {
+function QuestionPreview({ question, number, required = false, headingLevel = 5 }) {
   const data = getQuestionData(question, required);
   const typeConfig = QUESTION_TYPES.find((type) => type.id === data.questionType);
   const TypeIcon = typeConfig?.icon;
@@ -124,7 +124,12 @@ function QuestionPreview({ question, number, required = false }) {
         </span>
       )}
       <div className="element-request-preview-body">
-        <Question questionNumber={`${number}`} data={data} interactive={false} />
+        <Question
+          questionNumber={`${number}`}
+          headingLevel={headingLevel}
+          data={data}
+          interactive={false}
+        />
       </div>
     </div>
   );
@@ -161,6 +166,7 @@ function TemplatePreview({ payload }) {
               key={`${item.itemType}-${index}`}
               data={normalizeBlock(item.block)}
               blockLabel={numbering[index].blockLabel}
+              headingLevel={5}
               questionNumberStart={numbering[index].questionNumberStart}
             />
           );
@@ -186,7 +192,7 @@ function ElementStructure({ request }) {
     return <QuestionPreview question={payload.question} number="" />;
   }
   if (request.elementType === 'BLOCK') {
-    return <Block data={normalizeBlock(payload)} />;
+    return <Block data={normalizeBlock(payload)} headingLevel={5} />;
   }
   return <TemplatePreview payload={payload} />;
 }

@@ -8,7 +8,13 @@ import java.time.Instant;
 public record CollaborationRequestResponseDto(
     Long id,
     Long surveyId,
+    String surveyTitle,
     Long userId,
+    String userName,
+    String userEmail,
+    Long ownerId,
+    String ownerName,
+    String ownerEmail,
     CollaborationRequestType requestType,
     CollaborationPermission permission,
     String message,

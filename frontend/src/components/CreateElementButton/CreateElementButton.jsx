@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { MdAdd, MdClose, MdHelpOutline, MdViewModule } from "react-icons/md";
 import { IoMdText } from "react-icons/io";
 
+import { useModalFocus } from "../../hooks/useModalFocus.js";
 import "./CreateElementButton.css";
 
 /**
@@ -56,36 +57,13 @@ export function CreateElementButton({
     context === ELEMENT_CREATOR_CONTEXT.SURVEY;
   const options = allowsBlocks ? [...BASE_OPTIONS, BLOCK_OPTION] : BASE_OPTIONS;
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    firstOptionRef.current?.focus();
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-        triggerRef.current?.focus();
-        return;
-      }
-      if (event.key === "Tab") {
-        const focusableElements = modalRef.current?.querySelectorAll(
-          "button:not(:disabled)",
-        );
-        if (!focusableElements?.length) return;
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-        if (event.shiftKey && document.activeElement === firstElement) {
-          event.preventDefault();
-          lastElement.focus();
-        } else if (!event.shiftKey && document.activeElement === lastElement) {
-          event.preventDefault();
-          firstElement.focus();
-        }
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  const { preventFocusRestore } = useModalFocus({
+    isOpen,
+    onClose: closeModal,
+    dialogRef: modalRef,
+    initialFocusRef: firstOptionRef,
+    returnFocusRef: triggerRef,
+  });
 
   function closeModal() {
     setIsOpen(false);
@@ -93,6 +71,7 @@ export function CreateElementButton({
   }
 
   function handleSelect(type) {
+    preventFocusRestore();
     setIsOpen(false);
     onSelect?.(type);
   }
@@ -121,6 +100,7 @@ export function CreateElementButton({
         >
           <section
             ref={modalRef}
+            tabIndex={-1}
             className="create-element-modal"
             role="dialog"
             aria-modal="true"

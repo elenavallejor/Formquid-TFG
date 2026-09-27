@@ -4,7 +4,22 @@
   flex-direction: column;
 }
 
-.app-layout > main {
+.app-main-content {
   flex: 1;
+  min-width: 0;
 }
 
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 10000;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  font-weight: 700;
+  transform: translateY(calc(-100% - 16px));
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}

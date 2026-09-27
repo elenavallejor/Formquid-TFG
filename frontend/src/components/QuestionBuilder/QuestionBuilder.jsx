@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { MdClose, MdAdd, MdDeleteOutline, MdOutlineThumbDown, MdOutlineThumbUp } from 'react-icons/md';
+import { useModalFocus } from '../../hooks/useModalFocus.js';
 import { CHOICE_QUESTION_TYPES, QUESTION_TYPES, RANGE_QUESTION_TYPES, SCALE_DISPLAY_OPTIONS, getMatrixRowText, getOptionFactor, getOptionText, getQuestionBuilderValidationError, getScaleDisplayValue, parseIntegerValue, parseNumberValue } from '../../utils/questionBuilderUtils.js';
 import { Dropdown } from '../Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
@@ -16,10 +17,19 @@ export function QuestionBuilder({
   modalTitle = 'Configurar pregunta',
 }) {
   const [modalError, setModalError] = useState('');
+  const modalRef = useRef(null);
+  const modalTitleRef = useRef(null);
   const isTextQuestion = data.questionType === 'TEXT';
   const scaleDisplayType = getScaleDisplayValue(data);
   const isFixedVisualScale = scaleDisplayType === 'STARS' || scaleDisplayType === 'FACES';
   const totalAvailable = (data.options || []).length + (data.hasOtherOption ? 1 : 0);
+
+  useModalFocus({
+    isOpen: isModal,
+    onClose,
+    dialogRef: modalRef,
+    initialFocusRef: modalTitleRef,
+  });
 
   function updateData(nextData) {
     if (modalError) setModalError('');
@@ -349,7 +359,11 @@ export function QuestionBuilder({
                 <div className="config-grid-row">
                   <div className="config-label-cell">Tipo visual:</div>
                   <div className="config-interactive-cell">
-                    <Dropdown value={getScaleDisplayValue(data)} onChange={(event) => handleScaleDisplayType(event.target.value)}>
+                    <Dropdown
+                      aria-label="Tipo visual de la escala"
+                      value={getScaleDisplayValue(data)}
+                      onChange={(event) => handleScaleDisplayType(event.target.value)}
+                    >
                       {SCALE_DISPLAY_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
@@ -538,6 +552,8 @@ export function QuestionBuilder({
   return (
     <div className="builder-modal-overlay" onClick={onClose}>
       <div
+        ref={modalRef}
+        tabIndex={-1}
         className="builder-modal-container"
         role="dialog"
         aria-modal="true"
@@ -545,7 +561,7 @@ export function QuestionBuilder({
         onClick={(e) => e.stopPropagation()}
       >
         <header className="builder-modal-header">
-          <h2 id="question-builder-modal-title" className="builder-modal-title">{modalTitle}</h2>
+          <h2 ref={modalTitleRef} id="question-builder-modal-title" className="builder-modal-title" tabIndex={-1}>{modalTitle}</h2>
           {onClose && (
             <button
               type="button"

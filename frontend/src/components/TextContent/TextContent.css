@@ -17,14 +17,14 @@
   border: 1px solid var(--color-accent);
   border-radius: 6px;
   color: var(--color-primary);
-  font-size: 22.1px;
+  font-size: 21.25px;
 }
 
 .text-content-label {
   display: block;
   margin-bottom: 6px;
   color: var(--color-header);
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 800;
   font-family: "Computer Modern", "Latin Modern Roman", Georgia, "Times New Roman", serif;
 }
@@ -33,7 +33,7 @@
   margin: 0;
   color: var(--color-header);
   font-family: "Computer Modern", "Latin Modern Roman", Georgia, "Times New Roman", serif;
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.45;
   white-space: pre-wrap;

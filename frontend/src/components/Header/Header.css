@@ -9,7 +9,7 @@
 #main-header .header-content {
   width: 100%;
   max-width: 1580px;
-  min-height: 70px;
+  min-height: 75px;
   margin: 0 auto;
   padding: 0 30px;
   box-sizing: border-box;
@@ -40,7 +40,7 @@
 
 #main-header .brand-name {
   color: var(--color-text-on-dark);
-  font-size: 39px;
+  font-size: 37.5px;
   line-height: 1.1;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -67,7 +67,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 19.5px;
+  font-size: 18.75px;
   line-height: 1;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  font-size: 19.5px;
+  font-size: 18.75px;
   line-height: 1;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -136,14 +136,14 @@
 
 #main-header .notification-label {
   color: var(--color-text-on-dark, #ffffff);
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 600;
   letter-spacing: 0.05em;
   opacity: 0.95;
 }
 
 #main-header .notification-icon {
-  font-size: 28.6px;
+  font-size: 27.5px;
 }
 
 #main-header .notification-badge {
@@ -186,7 +186,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -200,7 +200,7 @@
 
 #main-header .user-header-name {
   color: var(--color-text-on-dark, #ffffff);
-  font-size: 18.2px;
+  font-size: 17.5px;
   line-height: 1.2;
   font-weight: 600;
 }
@@ -208,12 +208,12 @@
 #main-header .user-header-role {
   margin-top: 1px;
   color: rgba(255, 255, 255, 0.65);
-  font-size: 14.3px;
+  font-size: 13.75px;
 }
 
 #main-header .user-menu-arrow {
   color: var(--color-text-on-dark, #ffffff);
-  font-size: 26px;
+  font-size: 25px;
   transition: transform 0.2s ease;
 }
 
@@ -255,7 +255,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -268,7 +268,7 @@
 
 #main-header .user-menu-option svg {
   color: #666666;
-  font-size: 23.4px;
+  font-size: 22.5px;
 }
 
 #main-header .user-menu-option.logout-option {
@@ -293,8 +293,8 @@
 #main-header .notification-button:focus-visible,
 #main-header .user-menu-summary:focus-visible,
 #main-header .user-menu-option:focus-visible {
-  outline: 3px solid rgba(0, 152, 138, 0.55);
-  outline-offset: 3px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 @media only screen and (max-width: 650px) {
@@ -314,7 +314,7 @@
   }
 
   #main-header .brand-name {
-    font-size: 23.4px;
+    font-size: 22.5px;
   }
 
   #main-header .header-navigation {
@@ -333,7 +333,7 @@
   #main-header .login-link {
     min-height: 36px;
     padding: 0 12px;
-    font-size: 16.9px;
+    font-size: 16.25px;
     white-space: nowrap;
   }
 

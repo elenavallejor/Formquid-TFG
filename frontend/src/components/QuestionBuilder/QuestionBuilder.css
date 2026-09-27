@@ -15,14 +15,14 @@
 
 .builder-section-title {
   margin: 0 0 25px 0;
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 800;
   color: var(--color-primary);
 }
 
 .builder-section-desc {
   margin: 0 0 20px 0;
-  font-size: 17.55px;
+  font-size: 16.875px;
   color: var(--color-text-muted);
 }
 
@@ -35,7 +35,7 @@
 }
 
 .builder-field label {
-  font-size: 17.55px;
+  font-size: 16.875px;
   font-weight: 700;
   color: var(--color-header);
 }
@@ -51,7 +51,7 @@
   border-radius: 8px;
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
-  font-size: 18.2px;
+  font-size: 17.5px;
   color: var(--color-text);
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -65,7 +65,7 @@
 
 .field-counter {
   align-self: flex-end;
-  font-size: 14.95px;
+  font-size: 14.375px;
   color: var(--color-text-muted);
   margin-top: 4px;
 }
@@ -125,20 +125,20 @@
   background-color: var(--color-surface);
   border: 1.5px solid currentColor;
   border-radius: 8px;
-  font-size: 31.2px;
+  font-size: 30px;
   margin-bottom: 16px;
   flex-shrink: 0;
 }
 
 .tile-title {
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--color-text);
   margin-bottom: 16px;
 }
 
 .tile-desc {
-  font-size: 16.9px;
+  font-size: 16.25px;
   color: var(--color-text-muted);
   line-height: 1.35;
   font-weight: 500;
@@ -163,14 +163,14 @@
 }
 
 .config-label-cell {
-  font-size: 17.55px;
+  font-size: 16.875px;
   font-weight: 700;
   color: var(--color-header);
   padding-top: 10px;
 }
 
 .config-help-cell {
-  font-size: 16.25px;
+  font-size: 15.625px;
   color: var(--color-text-muted);
   line-height: 1.4;
   padding-top: 10px;
@@ -182,7 +182,7 @@
   border-radius: 6px;
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
-  font-size: 17.55px;
+  font-size: 16.875px;
   color: var(--color-text);
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -213,7 +213,7 @@
   padding: 8px 12px;
   background-color: var(--color-surface);
   border: none;
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 700;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -238,7 +238,7 @@
 }
 
 .direction-btn-group button svg {
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .range-inputs {
@@ -274,7 +274,7 @@
 }
 
 .mini-top-label {
-  font-size: 15.6px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--color-header);
 }
@@ -309,7 +309,7 @@
   color: var(--color-error);
   border-radius: 6px;
   cursor: pointer;
-  font-size: 20.8px;
+  font-size: 20px;
   transition: background-color 0.15s ease;
 }
 
@@ -331,7 +331,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  font-size: 16.25px;
+  font-size: 15.625px;
   font-weight: 700;
   border: 1px dashed var(--color-primary);
   color: var(--color-primary);
@@ -349,7 +349,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 17.55px;
+  font-size: 16.875px;
   color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
@@ -357,8 +357,8 @@
 }
 
 .checkbox-sublabel input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   margin: 0;
   cursor: pointer;
   accent-color: var(--color-primary);
@@ -411,7 +411,7 @@
 
 .builder-modal-title {
   margin: 0;
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: 0.03em;
@@ -421,7 +421,7 @@
 .builder-modal-close-btn {
   background: transparent;
   border: none;
-  font-size: 28.6px;
+  font-size: 27.5px;
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
@@ -459,7 +459,7 @@
   background-color: var(--color-primary);
   color: var(--color-text-on-dark);
   border-radius: 8px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.15s ease;

@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { useRef } from 'react';
+
+import { useModalFocus } from '../../hooks/useModalFocus.js';
 
 import './ConfirmModal.css';
 
@@ -17,16 +19,16 @@ export function ConfirmModal({
   isProcessing = false,
   errorMessage = '',
 }) {
-  useEffect(() => {
-    if (!isOpen) return;
+  const dialogRef = useRef(null);
+  const cancelRef = useRef(null);
 
-    function handleKeyDown(event) {
-      if (event.key === 'Escape' && !isProcessing) onClose();
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isProcessing, onClose]);
+  useModalFocus({
+    isOpen,
+    onClose,
+    dialogRef,
+    initialFocusRef: cancelRef,
+    closeOnEscape: !isProcessing,
+  });
 
   if (!isOpen) return null;
 
@@ -37,6 +39,8 @@ export function ConfirmModal({
   return (
     <div className="confirm-modal-overlay" role="presentation" onMouseDown={handleOverlayClick}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className="confirm-modal"
         role="dialog"
         aria-modal="true"
@@ -53,7 +57,7 @@ export function ConfirmModal({
         )}
 
         <div className="confirm-modal-actions">
-          <button type="button" className="confirm-modal-cancel" onClick={onClose} disabled={isProcessing}>
+          <button ref={cancelRef} type="button" className="confirm-modal-cancel" onClick={onClose} disabled={isProcessing}>
             Cancelar
           </button>
 

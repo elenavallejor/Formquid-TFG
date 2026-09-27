@@ -7,10 +7,22 @@ export function Table({
   headers = [],
   data = [],
   emptyMessage = 'No hay datos disponibles.',
+  caption,
 }) {
+  const regionLabel = caption
+    ? `${caption}. Tabla con desplazamiento horizontal`
+    : 'Tabla con desplazamiento horizontal';
+
   return (
-    <div className="table-container">
+    <div
+      className="table-container"
+      role="region"
+      aria-label={regionLabel}
+      tabIndex={0}
+    >
       <table className="custom-table">
+        {caption && <caption className="sr-only">{caption}</caption>}
+
         {headers.length > 0 && (
           <thead>
             <tr>
@@ -28,10 +40,7 @@ export function Table({
             data.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {row.map((cell, cellIndex) => (
-                  <td
-                    key={cellIndex}
-                    data-label={typeof headers[cellIndex] === 'string' ? headers[cellIndex] : undefined}
-                  >
+                  <td key={cellIndex}>
                     {cell}
                   </td>
                 ))}

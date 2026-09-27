@@ -131,6 +131,7 @@ export function AdminSurveysPage() {
                 <SurveyCard
                   key={survey.id}
                   survey={survey}
+                  headingLevel={2}
                   variant="admin"
                   onView={(id) => navigate(`/encuestas/${id}/editar?vista=detalles`)}
                   onSupervise={(id) => navigate(`/encuestas/${id}/editar?seccion=configuracion`)}

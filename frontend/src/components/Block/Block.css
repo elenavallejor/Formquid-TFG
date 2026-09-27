@@ -14,11 +14,11 @@
   background: transparent;
 }
 
-.block-content-header h3 {
+.block-content-title {
   margin: 0;
   color: var(--color-header);
   font-family: inherit;
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1.45;
   text-transform: uppercase;
@@ -34,7 +34,7 @@
   margin: 6px 0 0;
   color: var(--color-text-muted);
   font-family: inherit;
-  font-size: 17.55px;
+  font-size: 16.875px;
   font-style: italic;
   line-height: 1.4;
 }
@@ -98,7 +98,7 @@
   border-radius: 5px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 22.1px;
+  font-size: 21.25px;
   cursor: pointer;
 }
 
@@ -150,7 +150,7 @@
   border: 1px solid;
   border-radius: 6px;
   background: var(--color-surface);
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .block-content-question .academic-question-card {
@@ -194,14 +194,14 @@
   align-items: center;
   gap: 6px;
   color: var(--color-primary);
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 700;
 }
 
 .block-content-dropzone-text p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14.95px;
+  font-size: 14.375px;
 }
 
 .block-content .academic-question-card,

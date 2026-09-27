@@ -159,7 +159,11 @@ export function UsersManagementPage() {
           <div className="catalog-filters-right">
             <div className="sort-select-wrapper">
               <span className="sort-label">Ordenar por:</span>
-              <Dropdown value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+              <Dropdown
+                aria-label="Ordenar usuarios"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+              >
                 {USER_SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -286,6 +290,7 @@ export function UsersManagementPage() {
 
             <div className="pagination-per-page">
               <Dropdown
+                aria-label="Usuarios por página"
                 value={itemsPerPage}
                 disabled={isLoading}
                 onChange={(e) => {

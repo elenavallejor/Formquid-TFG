@@ -14,6 +14,11 @@
   flex-direction: column;
 }
 
+.responsive-builder-structure-card {
+  container-name: responsive-builder-structure;
+  container-type: inline-size;
+}
+
 .structure-header {
   display: flex;
   align-items: center;
@@ -88,7 +93,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 26px;
+  font-size: 25px;
   cursor: grab;
   user-select: none;
 }
@@ -112,7 +117,7 @@
   border: 1px solid;
   border-radius: 6px;
   background: var(--color-surface);
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .question-item-preview {
@@ -139,7 +144,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 26px;
+  font-size: 25px;
   cursor: pointer;
 }
 
@@ -172,7 +177,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text);
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -184,7 +189,7 @@
 }
 
 .actions-floating-menu button svg {
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .actions-floating-menu .delete-opt {
@@ -224,14 +229,14 @@
   align-items: center;
   gap: 6px;
   color: var(--color-primary);
-  font-size: 18.85px;
+  font-size: 18.125px;
   font-weight: 800;
 }
 
 .dropzone-sub {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: 15.625px;
 }
 
 .block-modal-overlay {
@@ -290,7 +295,7 @@
 .block-modal-header h2 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 800;
 }
 
@@ -302,7 +307,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 28.6px;
+  font-size: 27.5px;
   cursor: pointer;
 }
 
@@ -338,7 +343,7 @@
 .block-modal-error {
   margin: 12px 0 0;
   color: var(--color-error);
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 600;
 }
 
@@ -357,7 +362,7 @@
 .btn-danger-confirm {
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -386,6 +391,34 @@
   border: none;
   background: var(--color-error);
   color: var(--color-text-on-dark);
+}
+
+@container responsive-builder-structure (max-width: 900px) {
+  .responsive-builder-structure-card .block-question-item {
+    display: grid;
+    grid-template-areas:
+      "controls actions"
+      "preview preview";
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .responsive-builder-structure-card .question-item-left {
+    grid-area: controls;
+    padding-top: 0;
+  }
+
+  .responsive-builder-structure-card .question-item-preview {
+    grid-area: preview;
+    width: 100%;
+  }
+
+  .responsive-builder-structure-card .question-item-actions {
+    grid-area: actions;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    justify-self: end;
+    padding-top: 0;
+  }
 }
 
 @media screen and (max-width: 700px) {

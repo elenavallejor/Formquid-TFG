@@ -67,6 +67,19 @@ public class CollaborationService {
             .toList();
     }
 
+    /**
+     * Devuelve las solicitudes e invitaciones pendientes que el usuario debe gestionar.
+     */
+    @Transactional(readOnly = true)
+    public List<CollaborationRequestResponseDto> findRequestsForUser(Long userId) {
+        return requestRepository.findRelatedToUser(userId)
+            .stream()
+            .filter(request -> request.getRequestType() == CollaborationRequestType.ACCESS_REQUEST
+                || request.getSurvey().getOwner().getId().equals(userId))
+            .map(this::toRequestResponse)
+            .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<PublicationRequestResponseDto> findPublicationRequests(Long surveyId) {
         return publicationRequestRepository.findBySurveyIdOrderByCreatedAtDesc(surveyId)
@@ -400,7 +413,13 @@ public class CollaborationService {
         return new CollaborationRequestResponseDto(
             request.getId(),
             request.getSurvey().getId(),
+            request.getSurvey().getTitle(),
             request.getUser().getId(),
+            request.getUser().getName(),
+            request.getUser().getEmail(),
+            request.getSurvey().getOwner().getId(),
+            request.getSurvey().getOwner().getName(),
+            request.getSurvey().getOwner().getEmail(),
             request.getRequestType(),
             request.getPermission(),
             request.getMessage(),

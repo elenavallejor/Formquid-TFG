@@ -210,6 +210,7 @@ function CatalogBlockContent({ element }) {
               ) : (
                 <Question
                   questionNumber={`${questionNumber}`}
+                  headingLevel={4}
                   data={questionData}
                   interactive={false}
                 />
@@ -228,6 +229,7 @@ function CatalogElementContent({ elementType, element }) {
       <div className="catalog-detail-question">
         <Question
           questionNumber=""
+          headingLevel={4}
           data={buildBlockQuestionFromCatalog(element)}
           isCatalog
           interactive={false}
@@ -283,11 +285,13 @@ function CatalogElementContent({ elementType, element }) {
                 <Block
                   data={item.block}
                   blockLabel={itemNumbering[index].blockLabel}
+                  headingLevel={4}
                   questionNumberStart={itemNumbering[index].questionNumberStart}
                 />
               ) : (
                 <Question
                   questionNumber={`${itemNumbering[index].questionNumber}`}
+                  headingLevel={4}
                   data={{
                     ...buildBlockQuestionFromCatalog(item.question),
                     isRequired: Boolean(item.required),

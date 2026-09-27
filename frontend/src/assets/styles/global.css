@@ -4,8 +4,8 @@
 
 :root {
   --color-header: #002536;
-  --color-accent: #00837a;
-  --color-primary: #00837a;
+  --color-accent: #00766f;
+  --color-primary: #00766f;
   --color-primary-hover: #006962;
   --color-background: #EFEFEF;
   --color-surface: #ffffff;
@@ -17,7 +17,7 @@
   --color-border: #cfd8dd;
   --color-border-strong: var(--color-text-muted);
 
-  --color-error: #e93124;
+  --color-error: #c9251b;
   --color-error-border: #feb2b2;
   --color-error-hover: #fed7d7;
   --color-error-surface: #fde8e8;
@@ -43,15 +43,17 @@
   --color-overlay: rgb(0 26 38 / 68%);
   --color-disabled: var(--color-text-muted);
   --color-accent-accessible: var(--color-primary);
+  --font-size-min: 12.5px;
+  --target-size-min: 24px;
 
-  --focus-outline: var(--color-accent, #009688);
-  --focus-outline-offset: 3px;
-  --focus-shadow: 0 0 0 3px rgba(0, 150, 136, 0.15);
+  --focus-outline: 0.7px solid var(--color-primary);
+  --focus-outline-offset: 2px;
+  --focus-shadow: 0 0 0 0.7px var(--color-primary);
 
   --card-shadow: 0 2px 6px rgb(5 47 69 / 18%);
   --font-logo: "Nunito", Inter, system-ui, sans-serif;
 
-  font-size: 13px;
+  font-size: var(--font-size-min);
   font-family:
     Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   
@@ -97,6 +99,19 @@ textarea {
   font: inherit;
 }
 
+:where(button, summary, [role="button"], [role="tab"], a[class]) {
+  min-width: var(--target-size-min);
+  min-height: var(--target-size-min);
+}
+
+:where(
+  input[type="checkbox"]:not(.visual-choice-input),
+  input[type="radio"]:not(.visual-choice-input)
+) {
+  min-width: var(--target-size-min);
+  min-height: var(--target-size-min);
+}
+
 button,
 select,
 summary {
@@ -134,12 +149,15 @@ summary:focus-visible,
 [tabindex]:not([tabindex="-1"]):focus-visible {
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
-  box-shadow: var(--focus-shadow);
 }
 
 
 a:hover {
   color: var(--color-primary-hover);
+}
+
+small {
+  font-size: max(var(--font-size-min), 0.8125em);
 }
 
 .brand-name {

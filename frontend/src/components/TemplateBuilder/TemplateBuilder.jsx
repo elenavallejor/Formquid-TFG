@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   MdAdd,
   MdClose,
   MdDeleteOutline,
   MdDragIndicator,
   MdEdit,
+  MdKeyboardArrowDown,
+  MdKeyboardArrowRight,
+  MdKeyboardArrowUp,
   MdLayers,
   MdMoreVert,
 } from 'react-icons/md';
@@ -22,6 +25,7 @@ import {
   buildEditableTemplateBlock,
   getTemplateItemNumbering,
 } from '../../utils/templateBuilderUtils.js';
+import { useModalFocus } from '../../hooks/useModalFocus.js';
 import { Block } from '../Block/Block.jsx';
 import { BlockBuilder } from '../BlockBuilder/BlockBuilder.jsx';
 import {
@@ -72,10 +76,32 @@ export function TemplateBuilder({
   const [modalError, setModalError] = useState('');
   const [dropIndex, setDropIndex] = useState(null);
   const [reorderMessage, setReorderMessage] = useState('');
+  const textModalRef = useRef(null);
+  const textInputRef = useRef(null);
+  const deleteModalRef = useRef(null);
+  const deleteCancelRef = useRef(null);
 
   const items = data.items || [];
   const selectedItem = selectedItemIndex === null ? null : items[selectedItemIndex];
   const itemNumbering = getTemplateItemNumbering(items);
+  const blockMoveTargets = items.flatMap((item, index) => {
+    if (item.itemType !== 'BLOCK') return [];
+    const block = item.block || item;
+    return [{ index, label: block.name || `Bloque ${index + 1}` }];
+  });
+
+  useModalFocus({
+    isOpen: modalMode === 'CREATE_TEXT' || modalMode === 'EDIT_TEXT' || modalMode === 'EDIT_BLOCK_TEXT',
+    onClose: closeModal,
+    dialogRef: textModalRef,
+    initialFocusRef: textInputRef,
+  });
+  useModalFocus({
+    isOpen: modalMode === 'DELETE' && Boolean(selectedItem),
+    onClose: closeModal,
+    dialogRef: deleteModalRef,
+    initialFocusRef: deleteCancelRef,
+  });
 
   function updateData(changes) {
     onChange({ ...data, ...changes });
@@ -198,6 +224,7 @@ export function TemplateBuilder({
       blockIndex,
       (blockItems) => reorderItems(blockItems, fromIndex, toIndex),
     );
+    setReorderMessage('Orden de los elementos del bloque actualizado.');
   }
 
   function handleDeleteItemInsideBlock(blockIndex, itemIndex) {
@@ -230,6 +257,13 @@ export function TemplateBuilder({
     updateItems(updated);
   }
 
+  function moveTopLevelQuestionToBlock(sourceIndex, blockIndex) {
+    const block = buildEditableTemplateBlock(items[blockIndex]?.block || items[blockIndex]);
+    handleMoveTopLevelQuestionIntoBlock(sourceIndex, blockIndex, block.items.length);
+    setActiveMenuIndex(null);
+    setReorderMessage('Pregunta movida al bloque seleccionado.');
+  }
+
   function handleMoveItemOutOfBlock(blockIndex, itemIndex, targetIndex) {
     const block = buildEditableTemplateBlock(items[blockIndex]?.block || items[blockIndex]);
     const blockItem = block.items[itemIndex];
@@ -243,6 +277,11 @@ export function TemplateBuilder({
     const insertionIndex = Math.max(0, Math.min(targetIndex, updated.length));
     updated.splice(insertionIndex, 0, buildLocalContentItem(blockItem));
     updateItems(updated);
+  }
+
+  function moveBlockItemToTopLevel(blockIndex, itemIndex) {
+    handleMoveItemOutOfBlock(blockIndex, itemIndex, blockIndex + 1);
+    setReorderMessage('Elemento movido fuera del bloque.');
   }
 
   function handleMoveItemBetweenBlocks(
@@ -277,6 +316,19 @@ export function TemplateBuilder({
       },
     );
     updateItems(updated);
+  }
+
+  function moveBlockItemToBlock(sourceBlockIndex, sourceItemIndex, targetBlockIndex) {
+    const targetBlock = buildEditableTemplateBlock(
+      items[targetBlockIndex]?.block || items[targetBlockIndex],
+    );
+    handleMoveItemBetweenBlocks(
+      sourceBlockIndex,
+      sourceItemIndex,
+      targetBlockIndex,
+      targetBlock.items.length,
+    );
+    setReorderMessage('Elemento movido al bloque seleccionado.');
   }
 
   function openBlockItemModal(blockIndex, itemIndex) {
@@ -440,7 +492,7 @@ export function TemplateBuilder({
         </section>
       )}
 
-      <section className="builder-card block-structure-card" onDragOver={readOnly ? undefined : (event) => event.preventDefault()} onDrop={readOnly ? undefined : (event) => handleDropAt(event, items.length)} onDragLeave={readOnly ? undefined : (event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDropIndex(null); }}>
+      <section className="builder-card block-structure-card responsive-builder-structure-card" onDragOver={readOnly ? undefined : (event) => event.preventDefault()} onDrop={readOnly ? undefined : (event) => handleDropAt(event, items.length)} onDragLeave={readOnly ? undefined : (event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDropIndex(null); }}>
         <div className="structure-header">
           <div>
             <h2 className="builder-section-title">{structureTitle}</h2>
@@ -495,12 +547,19 @@ export function TemplateBuilder({
                       onEditItem={readOnly ? undefined : (itemIndex) => openBlockItemModal(index, itemIndex)}
                       onRequiredChange={readOnly ? undefined : (itemIndex, isRequired) =>
                         handleRequiredChangeInsideBlock(index, itemIndex, isRequired)}
+                      moveTargets={blockMoveTargets.filter((target) => target.index !== index)}
+                      onMoveItemOut={readOnly ? undefined : (itemIndex) =>
+                        moveBlockItemToTopLevel(index, itemIndex)}
+                      onMoveItemToTarget={readOnly ? undefined : (itemIndex, targetBlockIndex) =>
+                        moveBlockItemToBlock(index, itemIndex, targetBlockIndex)}
                       onDragInside={() => setDropIndex(null)}
                     />
                   ) : <Question questionNumber={`${itemNumbering[index].questionNumber}`} data={item} interactive={false} />}
                 </div>
 
                 {!readOnly && <div className="question-item-actions">
+                  <button type="button" className="action-dots-btn" aria-label={`Mover ${getItemLabel(item)} ${index + 1} hacia arriba`} disabled={index === 0} onClick={() => moveItem(index, index - 1)}><MdKeyboardArrowUp aria-hidden="true" /></button>
+                  <button type="button" className="action-dots-btn" aria-label={`Mover ${getItemLabel(item)} ${index + 1} hacia abajo`} disabled={index === items.length - 1} onClick={() => moveItem(index, index + 2)}><MdKeyboardArrowDown aria-hidden="true" /></button>
                   {!isText && !isBlock && (
                     <RequiredToggle
                       checked={item.isRequired}
@@ -512,6 +571,11 @@ export function TemplateBuilder({
                     <div className="actions-floating-menu">
                       {!isBlock && <button type="button" onClick={() => openItemModal(isText ? 'EDIT_TEXT' : 'EDIT_QUESTION', index)}><MdEdit aria-hidden="true" /> Editar {getItemLabel(item)}</button>}
                       {isBlock && <button type="button" onClick={() => openItemModal('EDIT_BLOCK', index)}><MdEdit aria-hidden="true" /> Editar bloque</button>}
+                      {!isText && !isBlock && blockMoveTargets.map((target) => (
+                        <button key={target.index} type="button" onClick={() => moveTopLevelQuestionToBlock(index, target.index)}>
+                          <MdKeyboardArrowRight aria-hidden="true" /> Mover a {target.label}
+                        </button>
+                      ))}
                       <button type="button" className="delete-opt" onClick={() => openItemModal('DELETE', index)}><MdDeleteOutline aria-hidden="true" /> Eliminar de la {containerLabel}</button>
                     </div>
                   )}
@@ -533,10 +597,10 @@ export function TemplateBuilder({
 
       {(modalMode === 'CREATE_TEXT' || modalMode === 'EDIT_TEXT' || modalMode === 'EDIT_BLOCK_TEXT') && (
         <div className="block-modal-overlay" onClick={closeModal}>
-          <section className="block-modal-container text-editor-modal" role="dialog" aria-modal="true" aria-labelledby="template-text-title" onClick={(event) => event.stopPropagation()}>
+          <section ref={textModalRef} tabIndex={-1} className="block-modal-container text-editor-modal" role="dialog" aria-modal="true" aria-labelledby="template-text-title" onClick={(event) => event.stopPropagation()}>
             <header className="block-modal-header"><h2 id="template-text-title">{modalMode === 'CREATE_TEXT' ? 'AÑADIR TEXTO' : 'EDITAR TEXTO'}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header>
             <div className="block-modal-body">
-              <div className="builder-field"><label htmlFor="template-text-body">Contenido <span>*</span></label><textarea id="template-text-body" rows={8} maxLength={5000} value={editingText} onChange={(event) => { setEditingText(event.target.value); setModalError(''); }} autoFocus /><span className="field-counter">{editingText.length}/5000</span></div>
+              <div className="builder-field"><label htmlFor="template-text-body">Contenido <span>*</span></label><textarea ref={textInputRef} id="template-text-body" rows={8} maxLength={5000} value={editingText} onChange={(event) => { setEditingText(event.target.value); setModalError(''); }} /><span className="field-counter">{editingText.length}/5000</span></div>
               <ErrorMessage message={modalError} onClose={() => setModalError('')} />
             </div>
             <footer className="block-modal-footer"><button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-confirm" onClick={handleSaveText}>Guardar texto</button></footer>
@@ -558,7 +622,7 @@ export function TemplateBuilder({
       )}
 
       {modalMode === 'DELETE' && selectedItem && (
-        <div className="block-modal-overlay" onClick={closeModal}><section className="block-modal-container delete-modal-box" role="dialog" aria-modal="true" aria-labelledby="template-delete-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-delete-title">ELIMINAR {getItemLabel(selectedItem).toUpperCase()}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><p>¿Estás seguro de que deseas retirar este elemento de la {containerLabel}?</p></div><footer className="block-modal-footer"><button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>Eliminar</button></footer></section></div>
+        <div className="block-modal-overlay" onClick={closeModal}><section ref={deleteModalRef} tabIndex={-1} className="block-modal-container delete-modal-box" role="dialog" aria-modal="true" aria-labelledby="template-delete-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-delete-title">ELIMINAR {getItemLabel(selectedItem).toUpperCase()}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><p>¿Estás seguro de que deseas retirar este elemento de la {containerLabel}?</p></div><footer className="block-modal-footer"><button ref={deleteCancelRef} type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>Eliminar</button></footer></section></div>
       )}
     </div>
   );

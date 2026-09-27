@@ -16,13 +16,13 @@
 .admin-surveys-header h1 {
   margin: 0 0 6px;
   color: var(--color-header);
-  font-size: 36.4px;
+  font-size: 35px;
 }
 
 .admin-surveys-header p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 18.2px;
+  font-size: 17.5px;
 }
 
 .admin-surveys-filters {
@@ -58,7 +58,7 @@
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  font-size: 18.2px;
+  font-size: 17.5px;
 }
 
 .admin-surveys-search input:focus,
@@ -95,12 +95,12 @@
 
 .admin-surveys-empty svg {
   color: var(--color-primary);
-  font-size: 46.8px;
+  font-size: 45px;
 }
 
 .admin-surveys-empty p {
   margin: 0;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
 }
 
@@ -114,7 +114,7 @@
 
 .admin-surveys-pagination-count {
   color: var(--color-text-muted);
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 600;
 }
 
@@ -136,7 +136,7 @@
   color: var(--color-text);
   cursor: pointer;
   font: inherit;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
 }
 

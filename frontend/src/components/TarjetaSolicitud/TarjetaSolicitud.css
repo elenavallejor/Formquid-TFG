@@ -51,7 +51,7 @@
 
 .solicitud-applicant-name {
   margin: 0 0 12px 0;
-  font-size: 24.7px;
+  font-size: 23.75px;
   font-weight: 800;
   color: var(--color-header);
   text-transform: uppercase;
@@ -60,7 +60,7 @@
 
 .solicitud-section-label {
   margin: 0 0 10px 0;
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 700;
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
@@ -74,7 +74,7 @@
 }
 
 .solicitud-label-icon {
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .solicitud-data-list {
@@ -90,20 +90,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 19.5px;
+  font-size: 18.75px;
   color: var(--color-text);
   font-weight: 500;
 }
 
 .solicitud-icon {
-  font-size: 24.7px;
+  font-size: 23.75px;
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
 .solicitud-motivation-text {
   margin: 0;
-  font-size: 19.5px;
+  font-size: 18.75px;
   line-height: 1.55;
   color: var(--color-text);
   overflow-wrap: anywhere;
@@ -128,7 +128,7 @@
 }
 
 .solicitud-date-value {
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -139,7 +139,7 @@
   justify-content: space-between;
   padding: 12px 18px;
   border-radius: 10px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -169,7 +169,7 @@
 }
 
 .action-btn-icon {
-  font-size: 26px;
+  font-size: 25px;
 }
 
 @media only screen and (max-width: 1100px) {

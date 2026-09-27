@@ -17,6 +17,7 @@ import { createSurvey, createSurveyFromTemplate } from '../../../api/surveysApi.
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
+import { useModalFocus } from '../../../hooks/useModalFocus.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
 import './CreateSurveyPage.css';
@@ -61,19 +62,45 @@ function normalizeTag(value) {
   return normalized.normalize('NFKC').replace(/\s+/g, '-');
 }
 
-function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
+function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect, returnFocusRef }) {
   const [view, setView] = useState('CHOICE');
   const [templates, setTemplates] = useState([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const dialogRef = useRef(null);
+  const titleRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  useModalFocus({
+    isOpen,
+    onClose: handleClose,
+    dialogRef,
+    initialFocusRef: titleRef,
+    returnFocusRef,
+  });
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || view !== 'TEMPLATES') return undefined;
+    const focusFrame = window.requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(focusFrame);
+  }, [isOpen, view]);
+
+  function resetModal() {
     setView('CHOICE');
     setSearch('');
     setLoadError('');
-  }, [isOpen]);
+  }
+
+  function handleClose() {
+    resetModal();
+    onClose();
+  }
+
+  function handleSelect(origin) {
+    resetModal();
+    onSelect(origin);
+  }
 
   async function showTemplates() {
     setView('TEMPLATES');
@@ -100,8 +127,10 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
   if (!isOpen) return null;
 
   return (
-    <div className="survey-origin-overlay" role="presentation">
+    <div className="survey-origin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) handleClose(); }}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className={`survey-origin-modal survey-origin-modal-${view.toLocaleLowerCase()}`}
         role="dialog"
         aria-modal="true"
@@ -109,7 +138,7 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
       >
         <header>
           <div>
-            <h2 id="survey-origin-title">
+            <h2 ref={titleRef} id="survey-origin-title" tabIndex={-1}>
               {view === 'CHOICE' ? '¿CÓMO QUIERES EMPEZAR?' : 'SELECCIONA UNA PLANTILLA'}
             </h2>
             <p>
@@ -118,16 +147,14 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
                 : 'La plantilla se copiará y la encuesta será independiente.'}
             </p>
           </div>
-          {selectedOrigin && (
-            <button type="button" className="survey-origin-close" aria-label="Cerrar" onClick={onClose}>
-              <MdClose aria-hidden="true" />
-            </button>
-          )}
+          <button type="button" className="survey-origin-close" aria-label={selectedOrigin ? 'Cerrar selector de origen' : 'Cerrar y elegir más tarde'} onClick={handleClose}>
+            <MdClose aria-hidden="true" />
+          </button>
         </header>
 
         {view === 'CHOICE' ? (
           <div className="survey-origin-options">
-            <button type="button" onClick={() => onSelect({ type: 'BLANK' })}>
+            <button type="button" onClick={() => handleSelect({ type: 'BLANK' })}>
               <span className="survey-origin-option-icon"><MdOutlineInsertDriveFile aria-hidden="true" /></span>
               <span><strong>Empezar desde cero</strong><small>Crea un borrador sin contenido y añade después su estructura.</small></span>
               <span className="survey-origin-option-action">Seleccionar <MdKeyboardArrowRight aria-hidden="true" /></span>
@@ -144,6 +171,7 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
               <span className="sr-only">Buscar plantillas</span>
               <MdSearch aria-hidden="true" />
               <input
+                ref={searchInputRef}
                 type="search"
                 value={search}
                 placeholder="Buscar plantillas..."
@@ -163,7 +191,7 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
                   key={template.id}
                   type="button"
                   className="survey-template-option"
-                  onClick={() => onSelect({ type: 'TEMPLATE', template })}
+                  onClick={() => handleSelect({ type: 'TEMPLATE', template })}
                 >
                   <span className="survey-template-image">
                     {template.imageKey
@@ -192,6 +220,7 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect }) {
 export function CreateSurveyPage() {
   const navigate = useNavigate();
   const saveLockRef = useRef(false);
+  const originTriggerRef = useRef(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [origin, setOrigin] = useState(null);
   const [isOriginOpen, setIsOriginOpen] = useState(true);
@@ -319,7 +348,7 @@ export function CreateSurveyPage() {
               <h2 id="survey-origin-summary-title">PUNTO DE PARTIDA</h2>
               <p>{origin ? originLabel : 'Todavía no has seleccionado cómo empezar.'}</p>
             </div>
-            <button type="button" className="create-survey-secondary-button" onClick={() => setIsOriginOpen(true)}>
+            <button ref={originTriggerRef} type="button" className="create-survey-secondary-button" onClick={() => setIsOriginOpen(true)}>
               {origin ? 'Cambiar' : 'Seleccionar'}
             </button>
           </div>
@@ -458,6 +487,7 @@ export function CreateSurveyPage() {
         selectedOrigin={origin}
         onClose={() => setIsOriginOpen(false)}
         onSelect={selectOrigin}
+        returnFocusRef={originTriggerRef}
       />
     </main>
   );

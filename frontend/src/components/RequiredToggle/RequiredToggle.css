@@ -4,15 +4,15 @@
   gap: 5px;
   color: var(--color-text-muted);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14.95px;
+  font-size: 14.375px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .required-toggle input {
-  width: 15px;
-  height: 15px;
+  width: 24px;
+  height: 24px;
   margin: 0;
   accent-color: var(--color-primary);
   cursor: pointer;

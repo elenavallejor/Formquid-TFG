@@ -10,7 +10,7 @@
   background: var(--color-primary);
   color: #ffffff;
   font: inherit;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -25,8 +25,8 @@
 .create-element-trigger:focus-visible,
 .create-element-option:focus-visible,
 .create-element-close:focus-visible {
-  outline: 3px solid rgba(0, 152, 138, 0.28);
-  outline-offset: 2px;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .create-element-trigger:disabled {
@@ -35,7 +35,7 @@
 }
 
 .create-element-trigger svg {
-  font-size: 24.7px;
+  font-size: 23.75px;
 }
 
 .create-element-overlay {
@@ -72,7 +72,7 @@
 .create-element-header h2 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 22.1px;
+  font-size: 21.25px;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -80,7 +80,7 @@
 .create-element-header p {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 18.2px;
+  font-size: 17.5px;
 }
 
 .create-element-close {
@@ -94,7 +94,7 @@
   border-radius: 7px;
   background: transparent;
   color: #64748b;
-  font-size: 28.6px;
+  font-size: 27.5px;
   cursor: pointer;
 }
 
@@ -146,7 +146,7 @@
   border-radius: 8px;
   background: #e8f7f5;
   color: var(--color-primary);
-  font-size: 27.3px;
+  font-size: 26.25px;
 }
 
 .create-element-option-content {
@@ -157,12 +157,12 @@
 
 .create-element-option-content strong {
   color: var(--color-header);
-  font-size: 19.5px;
+  font-size: 18.75px;
 }
 
 .create-element-option-content > span {
   color: var(--color-text-muted);
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.45;
 }
 

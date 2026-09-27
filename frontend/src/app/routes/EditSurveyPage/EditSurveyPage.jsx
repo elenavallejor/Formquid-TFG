@@ -367,6 +367,7 @@ export function EditSurveyPage() {
   const { user, isInitializing } = useAuth();
   const saveLockRef = useRef(false);
   const [activeTab, setActiveTab] = useState(searchParams.get('seccion') === 'configuracion' ? 'SETTINGS' : 'SURVEY');
+  const tabRefs = useRef(new Map());
   const [survey, setSurvey] = useState(null);
   const [structure, setStructure] = useState(INITIAL_SURVEY_STRUCTURE);
   const [settings, setSettings] = useState(settingsFromSurvey(null));
@@ -595,6 +596,22 @@ export function EditSurveyPage() {
     clearMessages();
   }
 
+  function handleTabKeyDown(event, currentTabId) {
+    const currentIndex = visibleTabs.findIndex((tab) => tab.id === currentTabId);
+    let nextIndex;
+
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % visibleTabs.length;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + visibleTabs.length) % visibleTabs.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = visibleTabs.length - 1;
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    const nextTabId = visibleTabs[nextIndex].id;
+    selectTab(nextTabId);
+    tabRefs.current.get(nextTabId)?.focus();
+  }
+
   const addQuestion = (question, index) => addStructureItem(buildTemplateQuestionFromCatalog(question), index);
   const addBlock = (block, index) => addStructureItem(buildTemplateBlockFromCatalog(block), index);
   const isPageLoading = isLoading || isInitializing;
@@ -628,7 +645,30 @@ export function EditSurveyPage() {
           </header>
 
           <nav className="edit-survey-tabs" role="tablist" aria-label="Secciones de edición">
-            {visibleTabs.map((tab) => { const Icon = tab.icon; return <button key={tab.id} id={`survey-tab-${tab.id.toLocaleLowerCase()}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`survey-panel-${tab.id.toLocaleLowerCase()}`} className={activeTab === tab.id ? 'active' : ''} onClick={() => selectTab(tab.id)}><Icon aria-hidden="true" />{tab.label}</button>; })}
+            {visibleTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  ref={(node) => {
+                    if (node) tabRefs.current.set(tab.id, node);
+                    else tabRefs.current.delete(tab.id);
+                  }}
+                  id={`survey-tab-${tab.id.toLocaleLowerCase()}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`survey-panel-${tab.id.toLocaleLowerCase()}`}
+                  tabIndex={activeTab === tab.id ? 0 : -1}
+                  className={activeTab === tab.id ? 'active' : ''}
+                  onClick={() => selectTab(tab.id)}
+                  onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
+                >
+                  <Icon aria-hidden="true" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
 
           {errorMessage && <div className="edit-survey-message"><ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} /></div>}

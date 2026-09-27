@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MdAdd, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert } from 'react-icons/md';
+import { MdAdd, MdDeleteOutline, MdDragIndicator, MdEdit, MdKeyboardArrowDown, MdKeyboardArrowRight, MdKeyboardArrowUp, MdMoreVert } from 'react-icons/md';
 
 import { buildBlockQuestionFromCatalog, getBlockItems } from '../../utils/blockBuilderUtils.js';
 import { getDragData, getDropIndex } from '../../utils/builderDragUtils.js';
@@ -32,6 +32,7 @@ export function Block({
   data = {},
   blockIndex,
   blockLabel,
+  headingLevel = 3,
   questionNumberStart = 0,
   onDropQuestion,
   onDropTemplateQuestion,
@@ -40,8 +41,13 @@ export function Block({
   onEditItem,
   onDeleteItem,
   onRequiredChange,
+  moveTargets = [],
+  onMoveItemOut,
+  onMoveItemToTarget,
   onDragInside,
 }) {
+  const normalizedHeadingLevel = Math.min(6, Math.max(2, Number(headingLevel) || 3));
+  const Heading = `h${normalizedHeadingLevel}`;
   const [dropIndex, setDropIndex] = useState(null);
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const items = getDisplayItems(data);
@@ -97,10 +103,10 @@ export function Block({
       }}
     >
       <header className="block-content-header">
-        <h3>
+        <Heading className="block-content-title">
           {blockLabel && <span className="block-prefix">{blockLabel}.</span>}{' '}
           {data.name || 'Bloque sin nombre'}
-        </h3>
+        </Heading>
         {data.description && <p>{data.description}</p>}
       </header>
 
@@ -169,6 +175,7 @@ export function Block({
                       )}
                       <Question
                         questionNumber={`${currentQuestionNumber}`}
+                        headingLevel={Math.min(normalizedHeadingLevel + 1, 6)}
                         data={questionData}
                         interactive={false}
                       />
@@ -176,15 +183,37 @@ export function Block({
                   )}
                 </div>
 
-                {((!isText && onRequiredChange) || onEditItem || onDeleteItem) && (
+                {(onMoveItem || (!isText && onRequiredChange) || onEditItem || onDeleteItem || onMoveItemOut || onMoveItemToTarget) && (
                   <div className="block-content-item-actions">
+                    {onMoveItem && (
+                      <>
+                        <button
+                          type="button"
+                          className="block-content-item-action"
+                          aria-label={`Mover elemento ${index + 1} del bloque hacia arriba`}
+                          disabled={index === 0}
+                          onClick={() => onMoveItem(index, index - 1)}
+                        >
+                          <MdKeyboardArrowUp aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="block-content-item-action"
+                          aria-label={`Mover elemento ${index + 1} del bloque hacia abajo`}
+                          disabled={index === items.length - 1}
+                          onClick={() => onMoveItem(index, index + 2)}
+                        >
+                          <MdKeyboardArrowDown aria-hidden="true" />
+                        </button>
+                      </>
+                    )}
                     {!isText && onRequiredChange && (
                       <RequiredToggle
                         checked={questionData.isRequired}
                         onChange={(isRequired) => onRequiredChange(index, isRequired)}
                       />
                     )}
-                    {(onEditItem || onDeleteItem) && (
+                    {(onEditItem || onDeleteItem || onMoveItemOut || onMoveItemToTarget) && (
                       <button
                         type="button"
                         className="action-dots-btn"
@@ -205,6 +234,18 @@ export function Block({
                             Editar {isText ? 'texto' : 'pregunta'}
                           </button>
                         )}
+                        {onMoveItemOut && (
+                          <button type="button" onClick={() => { setActiveMenuIndex(null); onMoveItemOut(index); }}>
+                            <MdKeyboardArrowRight aria-hidden="true" />
+                            Sacar del bloque
+                          </button>
+                        )}
+                        {onMoveItemToTarget && moveTargets.map((target) => (
+                          <button key={target.index} type="button" onClick={() => { setActiveMenuIndex(null); onMoveItemToTarget(index, target.index); }}>
+                            <MdKeyboardArrowRight aria-hidden="true" />
+                            Mover a {target.label}
+                          </button>
+                        ))}
                         {onDeleteItem && (
                           <button type="button" className="delete-opt" onClick={() => { setActiveMenuIndex(null); onDeleteItem(index); }}>
                             <MdDeleteOutline aria-hidden="true" />

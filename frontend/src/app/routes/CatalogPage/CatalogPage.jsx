@@ -260,7 +260,11 @@ export function CatalogPage() {
         </div>
 
         <div className="pagination-per-page">
-          <Dropdown value={itemsPerPage} onChange={(event) => handlePageSizeChange(Number(event.target.value))}>
+          <Dropdown
+            aria-label="Elementos por página"
+            value={itemsPerPage}
+            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
+          >
             <option value={5}>5 por página</option>
             <option value={10}>10 por página</option>
             <option value={20}>20 por página</option>
@@ -376,6 +380,7 @@ export function CatalogPage() {
             <div className="sort-select-wrapper">
               <span className="sort-label">Ordenar por:</span>
               <Dropdown
+                aria-label="Ordenar catálogo"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
               >

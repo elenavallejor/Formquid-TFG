@@ -44,7 +44,9 @@ export function ErrorPage({ code, title, message }) {
     <main className="error-page">
       <div className="error-page-container">
         <div className="error-page-text">
-          <h1 className="error-page-logo">FormQuid</h1>
+          <h1 className="sr-only">{errorTitle}</h1>
+
+          <p className="error-page-logo" aria-hidden="true">FormQuid</p>
 
           <p className="error-page-status">
             <strong>{errorCode}.</strong> {errorTitle}

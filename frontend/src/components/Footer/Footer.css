@@ -19,7 +19,7 @@
 
 #main-footer .footer-copy {
   margin: 0;
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.4;
   font-weight: 500;
   color: var(--color-text-muted);
@@ -37,7 +37,7 @@
   color: var(--color-text-on-dark);
   display: inline-flex;
   align-items: center;
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.4;
   font-weight: 500;
   text-decoration: none;
@@ -81,11 +81,11 @@
 
   #main-footer .footer-link {
     min-height: 40px; 
-    font-size: 15.6px;
+    font-size: 15px;
   }
 
   #main-footer .footer-copy {
-    font-size: 15.6px;
+    font-size: 15px;
   }
 }
 
@@ -96,6 +96,6 @@
   }
 
   #main-footer .footer-link {
-    font-size: 14.3px;
+    font-size: 13.75px;
   }
 }

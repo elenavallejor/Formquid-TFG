@@ -33,8 +33,10 @@ function getCollaborationAction(survey, isRequesting) {
 
 export function SurveyCard({
   survey, onEdit, onView, onSupervise, onRequestCollaboration, onMoreOptions,
-  isRequesting = false, variant = 'editor',
+  headingLevel = 3, isRequesting = false, variant = 'editor',
 }) {
+  const normalizedHeadingLevel = Math.min(6, Math.max(2, Number(headingLevel) || 3));
+  const Heading = `h${normalizedHeadingLevel}`;
   const { id, title = 'Sin título', lifecycleStatus, tags, imageKey } = survey;
   const normalizedLifecycle = LIFECYCLE_LABELS[lifecycleStatus] ? lifecycleStatus : 'DRAFT';
   const surveyTags = Array.isArray(tags) ? tags : [];
@@ -56,7 +58,7 @@ export function SurveyCard({
       </div>
 
       <div className="survey-card-content">
-        <h3 className="survey-card-title">{title}</h3>
+        <Heading className="survey-card-title">{title}</Heading>
 
         <div className="survey-card-badges">
           <span className={`survey-status-badge status-${normalizedLifecycle.toLowerCase()}`}>

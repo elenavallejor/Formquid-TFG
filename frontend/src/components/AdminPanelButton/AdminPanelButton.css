@@ -54,14 +54,14 @@
 }
 
 .admin-panel-icon {
-  font-size: 52px;
+  font-size: 50px;
 }
 
 
 
 .admin-panel-title {
   margin: 0;
-  font-size: 20.41px;
+  font-size: 19.625px;
   font-weight: 700;
   color: var(--color-header);
   letter-spacing: 0.04em;
@@ -71,7 +71,7 @@
 
 .admin-panel-description {
   margin: -30px 0 0 0;
-  font-size: 16.9px;
+  font-size: 16.25px;
   color: var(--color-text-muted);
   line-height: 1.35;
 }
@@ -89,7 +89,7 @@
 }
 
 .admin-panel-count-number {
-  font-size: 36.4px;
+  font-size: 35px;
   font-weight: 800;
   line-height: 1;
 }
@@ -103,7 +103,7 @@
 }
 
 .admin-panel-count-label {
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 700;
   color: var(--color-header);
   margin-top: 2px;
@@ -115,7 +115,7 @@
   gap: 6px;
   padding: 8px 18px;
   border-radius: 50px;
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -142,7 +142,7 @@
 }
 
 .admin-panel-action-icon {
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 @media only screen and (max-width: 768px) {

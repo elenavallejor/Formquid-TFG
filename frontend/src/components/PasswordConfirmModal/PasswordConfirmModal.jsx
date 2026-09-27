@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { MdOutlineVisibility, MdOutlineVisibilityOff } from 'react-icons/md';
+import { useModalFocus } from '../../hooks/useModalFocus.js';
 import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
 import './PasswordConfirmModal.css';
 
@@ -7,64 +8,32 @@ import './PasswordConfirmModal.css';
  * Solicita la contraseña actual para confirmar una acción y muestra los errores recibidos.
  */
 export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing = false, errorMessage = '', onClearError }) {
+  if (!isOpen) return null;
+
+  return (
+    <PasswordConfirmDialog
+      onClose={onClose}
+      onConfirm={onConfirm}
+      isProcessing={isProcessing}
+      errorMessage={errorMessage}
+      onClearError={onClearError}
+    />
+  );
+}
+
+function PasswordConfirmDialog({ onClose, onConfirm, isProcessing, errorMessage, onClearError }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const modalRef = useRef(null);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const previousFocus = document.activeElement;
-    setPassword('');
-    setShowPassword(false);
-    inputRef.current?.focus();
-
-    return () => {
-      if (previousFocus?.isConnected) {
-        previousFocus.focus({ preventScroll: true });
-      }
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape' && !isProcessing) {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== 'Tab') return;
-
-      const focusableElements = modalRef.current.querySelectorAll('button:not(:disabled), input:not(:disabled)');
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement;
-      const focusOutside = !modalRef.current.contains(activeElement);
-
-      if (!focusableElements.length) {
-        event.preventDefault();
-        modalRef.current.focus();
-        return;
-      }
-
-      if (event.shiftKey && (activeElement === firstElement || activeElement === modalRef.current || focusOutside)) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && (activeElement === lastElement || activeElement === modalRef.current || focusOutside)) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isProcessing, onClose]);
-
-  if (!isOpen) return null;
+  useModalFocus({
+    isOpen: true,
+    onClose,
+    dialogRef: modalRef,
+    initialFocusRef: inputRef,
+    closeOnEscape: !isProcessing,
+  });
 
   function handleSubmit(event) {
     event.preventDefault();

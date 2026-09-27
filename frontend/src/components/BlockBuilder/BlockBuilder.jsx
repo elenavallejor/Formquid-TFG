@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdMoreVert } from "react-icons/md";
+import { useRef, useState } from "react";
+import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdKeyboardArrowDown, MdKeyboardArrowUp, MdMoreVert } from "react-icons/md";
+import { useModalFocus } from "../../hooks/useModalFocus.js";
 import { buildBlockQuestionFromCatalog, buildBlockTextItem, getBlockItems, INITIAL_BLOCK_STATE } from "../../utils/blockBuilderUtils.js";
 import { getDragData, getDropIndex, reorderItems } from "../../utils/builderDragUtils.js";
 import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from "../../utils/questionBuilderUtils.js";
@@ -35,6 +36,12 @@ export function BlockBuilder({
   const [modalError, setModalError] = useState("");
   const [dropIndex, setDropIndex] = useState(null);
   const [reorderMessage, setReorderMessage] = useState("");
+  const outerModalRef = useRef(null);
+  const outerModalTitleRef = useRef(null);
+  const textModalRef = useRef(null);
+  const textInputRef = useRef(null);
+  const deleteModalRef = useRef(null);
+  const deleteCancelRef = useRef(null);
 
   const items = getBlockItems(data);
   const selectedItem = selectedItemIndex === null ? null : items[selectedItemIndex];
@@ -42,6 +49,25 @@ export function BlockBuilder({
   const questionNumberByIndex = items.map((item) =>
     item.itemType !== "TEXT" ? ++questionCount : null,
   );
+
+  useModalFocus({
+    isOpen: isModal && isOpen,
+    onClose,
+    dialogRef: outerModalRef,
+    initialFocusRef: outerModalTitleRef,
+  });
+  useModalFocus({
+    isOpen: modalMode === "CREATE_TEXT" || modalMode === "EDIT_TEXT",
+    onClose: closeModal,
+    dialogRef: textModalRef,
+    initialFocusRef: textInputRef,
+  });
+  useModalFocus({
+    isOpen: modalMode === "DELETE" && Boolean(selectedItem),
+    onClose: closeModal,
+    dialogRef: deleteModalRef,
+    initialFocusRef: deleteCancelRef,
+  });
 
   function updateData(changes) {
     const currentData = { ...data };
@@ -247,7 +273,7 @@ export function BlockBuilder({
       </section>
 
       <section
-        className="builder-card block-structure-card"
+        className="builder-card block-structure-card responsive-builder-structure-card"
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleStructureDrop}
         onDragLeave={(event) => {
@@ -318,6 +344,24 @@ export function BlockBuilder({
                 </div>
 
                 <div className="question-item-actions">
+                  <button
+                    type="button"
+                    className="action-dots-btn"
+                    aria-label={`Mover ${isText ? "texto" : "pregunta"} ${index + 1} hacia arriba`}
+                    disabled={index === 0}
+                    onClick={() => moveItem(index, index - 1)}
+                  >
+                    <MdKeyboardArrowUp aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="action-dots-btn"
+                    aria-label={`Mover ${isText ? "texto" : "pregunta"} ${index + 1} hacia abajo`}
+                    disabled={index === items.length - 1}
+                    onClick={() => moveItem(index, index + 2)}
+                  >
+                    <MdKeyboardArrowDown aria-hidden="true" />
+                  </button>
                   {!isText && (
                     <RequiredToggle
                       checked={item.isRequired}
@@ -388,6 +432,8 @@ export function BlockBuilder({
       {(modalMode === "CREATE_TEXT" || modalMode === "EDIT_TEXT") && (
         <div className="block-modal-overlay" onClick={closeModal}>
           <section
+            ref={textModalRef}
+            tabIndex={-1}
             className="block-modal-container text-editor-modal"
             role="dialog"
             aria-modal="true"
@@ -409,6 +455,7 @@ export function BlockBuilder({
                   Contenido <span>*</span>
                 </label>
                 <textarea
+                  ref={textInputRef}
                   id="block-text-body"
                   rows={8}
                   maxLength={5000}
@@ -418,7 +465,6 @@ export function BlockBuilder({
                     setEditingText(event.target.value);
                     setModalError("");
                   }}
-                  autoFocus
                 />
                 <span className="field-counter">{editingText.length}/5000</span>
               </div>
@@ -441,6 +487,8 @@ export function BlockBuilder({
       {modalMode === "DELETE" && selectedItem && (
         <div className="block-modal-overlay" onClick={closeModal}>
           <section
+            ref={deleteModalRef}
+            tabIndex={-1}
             className="block-modal-container delete-modal-box"
             role="dialog"
             aria-modal="true"
@@ -459,7 +507,7 @@ export function BlockBuilder({
               <p>¿Estás seguro de que deseas retirar este elemento del bloque?</p>
             </div>
             <footer className="block-modal-footer">
-              <button type="button" className="btn-cancel" onClick={closeModal}>
+              <button ref={deleteCancelRef} type="button" className="btn-cancel" onClick={closeModal}>
                 Cancelar
               </button>
               <button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>
@@ -478,6 +526,8 @@ export function BlockBuilder({
   return (
     <div className="block-modal-overlay" onClick={onClose}>
       <section
+        ref={outerModalRef}
+        tabIndex={-1}
         className="block-modal-container block-builder-modal-wrapper"
         role="dialog"
         aria-modal="true"
@@ -485,7 +535,7 @@ export function BlockBuilder({
         onClick={(event) => event.stopPropagation()}
       >
         <header className="block-modal-header">
-          <h2 id="block-builder-title">{modalTitle}</h2>
+          <h2 ref={outerModalTitleRef} id="block-builder-title" tabIndex={-1}>{modalTitle}</h2>
           {onClose && (
             <button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={onClose}>
               <MdClose aria-hidden="true" />

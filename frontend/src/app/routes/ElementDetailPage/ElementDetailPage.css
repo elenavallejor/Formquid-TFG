@@ -15,7 +15,7 @@
   gap: 6px;
   margin-bottom: 12px;
   color: var(--color-text-muted);
-  font-size: 15.6px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
@@ -40,7 +40,7 @@
 .catalog-detail-page-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 33.8px;
+  font-size: 32.5px;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -48,7 +48,7 @@
 .catalog-detail-page-header p {
   margin: 4px 0 0;
   color: var(--color-text-muted);
-  font-size: 18.2px;
+  font-size: 17.5px;
 }
 
 .catalog-detail-card {
@@ -79,12 +79,12 @@
   border-radius: 50%;
   background: var(--color-surface);
   color: var(--color-primary);
-  font-size: 32.5px;
+  font-size: 31.25px;
 }
 
 .catalog-detail-title-bar h2 {
   margin: 0;
-  font-size: 28.6px;
+  font-size: 27.5px;
   font-weight: 800;
   overflow-wrap: anywhere;
 }
@@ -96,7 +96,7 @@
 .catalog-detail-description {
   margin: 0 0 20px;
   color: var(--color-text-muted);
-  font-size: 20.8px;
+  font-size: 20px;
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -131,14 +131,14 @@
 
 .catalog-detail-metadata dt {
   color: var(--color-text-muted);
-  font-size: 14.3px;
+  font-size: 13.75px;
   font-weight: 800;
   letter-spacing: 0.045em;
 }
 
 .catalog-detail-metadata dd {
   color: var(--color-header);
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
@@ -146,7 +146,7 @@
 .catalog-detail-usage {
   margin: 16px 0 0;
   color: var(--color-header);
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 700;
 }
 
@@ -167,7 +167,7 @@
 .catalog-detail-settings-header h3 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 800;
 }
 
@@ -192,14 +192,14 @@
 .catalog-detail-settings-grid dt {
   margin-bottom: 4px;
   color: var(--color-header);
-  font-size: 16.9px;
+  font-size: 16.25px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .catalog-detail-settings-grid dd {
   color: var(--color-text);
-  font-size: 19.5px;
+  font-size: 18.75px;
 }
 
 .catalog-detail-structure {
@@ -223,7 +223,7 @@
 .catalog-detail-structure-header h3 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 800;
 }
 
@@ -244,7 +244,7 @@
   border-radius: 6px;
   background: transparent;
   color: var(--color-primary);
-  font-size: 24.7px;
+  font-size: 23.75px;
 }
 
 .catalog-detail-actions button:hover {
@@ -275,7 +275,7 @@
 }
 
 .catalog-detail-structure--block .catalog-detail-structure-header h3 {
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .catalog-detail-structure--block .catalog-detail-structure-content {
@@ -343,7 +343,7 @@
   }
 
   .catalog-detail-title-bar h2 {
-    font-size: 23.4px;
+    font-size: 22.5px;
   }
 
   .catalog-detail-body {

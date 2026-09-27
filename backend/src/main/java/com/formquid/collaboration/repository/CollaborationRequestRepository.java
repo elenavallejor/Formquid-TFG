@@ -13,6 +13,17 @@ public interface CollaborationRequestRepository extends JpaRepository<Collaborat
     List<CollaborationRequest> findBySurveyIdOrderByCreatedAtDesc(Long surveyId);
 
     @Query("""
+        select request
+        from CollaborationRequest request
+        join fetch request.survey survey
+        join fetch survey.owner owner
+        join fetch request.user requestedUser
+        where owner.id = :userId or requestedUser.id = :userId
+        order by request.createdAt desc
+        """)
+    List<CollaborationRequest> findRelatedToUser(@Param("userId") Long userId);
+
+    @Query("""
         select request.survey.id
         from CollaborationRequest request
         where request.user.id = :userId

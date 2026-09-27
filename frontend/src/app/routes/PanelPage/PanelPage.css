@@ -45,7 +45,7 @@
 
 .panel-title {
   margin: 0;
-  font-size: 39px;
+  font-size: 37.5px;
   font-weight: 800;
   color: var(--color-header);
   letter-spacing: 0.02em;
@@ -54,12 +54,12 @@
 .panel-description {
   margin: 8px 0 0;
   color: var(--color-text-muted);
-  font-size: 20.8px;
+  font-size: 20px;
 }
 
 .panel-error-message {
   margin: 12px 0 0;
-  font-size: 20.8px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--color-error);
 }
@@ -79,7 +79,7 @@
 .admin-section-title {
   margin: 0;
   padding-bottom: 8px;
-  font-size: 22.1px;
+  font-size: 21.25px;
   font-weight: 700;
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
@@ -122,7 +122,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 16px;
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 600;
   color: var(--color-primary);
   text-decoration: none;
@@ -148,7 +148,7 @@
   background: var(--color-surface);
   color: var(--color-primary);
   font: inherit;
-  font-size: 15.6px;
+  font-size: 15px;
   font-weight: 800;
   white-space: nowrap;
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
@@ -160,7 +160,7 @@
 
 .table-details-button svg {
   flex-shrink: 0;
-  font-size: 22.1px;
+  font-size: 21.25px;
 }
 
 .editor-actions-grid {
@@ -191,10 +191,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 95px;
+  width: 99px;
   height: 95px;
   margin-bottom: 20px;
-  font-size: 52px;
+  font-size: 47px;
   color: var(--color-primary);
   background-color: var(--color-accent-surface);
   border-radius: 50%;
@@ -202,7 +202,7 @@
 
 .action-card-title {
   margin: 0 0 15px;
-  font-size: 23.4px;
+  font-size: 22.5px;
   font-weight: 800;
   color: var(--color-header);
 }
@@ -210,7 +210,7 @@
 .action-card-description {
   flex: 1;
   margin: 0 0 24px;
-  font-size: 16.9px;
+  font-size: 16.25px;
   line-height: 1.7;
   color: var(--color-text-muted);
 }
@@ -218,7 +218,7 @@
 .action-card-btn {
   width: 100%;
   padding: 16px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
   color: var(--color-primary);
   cursor: pointer;
@@ -261,20 +261,20 @@
 .surveys-section-title {
   margin: 0;
   color: var(--color-primary);
-  font-size: 22.1px;
+  font-size: 21.25px;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
 
 .surveys-section-subtitle {
   margin: 4px 0 0;
-  font-size: 18.2px;
+  font-size: 17.5px;
   color: var(--color-text-muted);
 }
 
 .btn-see-all {
   padding: 8px 18px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 700;
   color: var(--color-primary);
   text-decoration: none;
@@ -306,7 +306,7 @@
   position: absolute;
   top: 50%;
   left: 14px;
-  font-size: 26px;
+  font-size: 25px;
   color: var(--color-text-muted);
   transform: translateY(-50%);
 }
@@ -315,7 +315,7 @@
   box-sizing: border-box;
   width: 100%;
   padding: 10px 14px 10px 42px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   color: var(--color-text);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -358,12 +358,12 @@
 
 .editor-surveys-empty svg {
   color: var(--color-primary);
-  font-size: 44.2px;
+  font-size: 42.5px;
 }
 
 .editor-surveys-empty p {
   margin: 0;
-  font-size: 19.5px;
+  font-size: 18.75px;
   font-weight: 600;
 }
 
@@ -380,7 +380,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  font-size: 18.2px;
+  font-size: 17.5px;
   font-weight: 600;
   color: var(--color-primary);
   background-color: transparent;
@@ -403,7 +403,7 @@
 }
 
 .pagination-info {
-  font-size: 18.2px;
+  font-size: 17.5px;
   color: var(--color-text-muted);
 }
 
