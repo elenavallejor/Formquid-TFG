@@ -245,7 +245,7 @@ export function MainPage() {
                         headingLevel={3}
                         variant="public"
                         accessHref={!isAuthenticated
-                          ? `/encuestas/${encodeURIComponent(survey.publicCode)}/responder`
+                          ? `/${encodeURIComponent(survey.publicCode)}`
                           : undefined}
                       />
                     ))}
@@ -270,7 +270,7 @@ export function MainPage() {
                         headingLevel={3}
                         variant="public"
                         accessHref={!isAuthenticated
-                          ? `/encuestas/${encodeURIComponent(survey.publicCode)}/responder`
+                          ? `/${encodeURIComponent(survey.publicCode)}`
                           : undefined}
                       />
                     ))}

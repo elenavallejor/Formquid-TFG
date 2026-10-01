@@ -10,7 +10,6 @@ const PAGE_TITLES = [
   { pattern: /^\/colaboraciones\/?$/, title: 'Gestión de colaboraciones' },
   { pattern: /^\/sugerir-elemento\/?$/, title: 'Sugerir elemento' },
   { pattern: /^\/encuestas\/crear\/?$/, title: 'Crear encuesta' },
-  { pattern: /^\/encuestas\/[^/]+\/responder\/?$/, title: 'Responder encuesta' },
   { pattern: /^\/encuestas\/[^/]+\/editar\/?$/, title: 'Gestionar encuesta' },
   { pattern: /^\/encuestas\/?$/, title: 'Encuestas' },
   { pattern: /^\/catalogo\/crear\/pregunta\/?$/, title: 'Crear pregunta' },
@@ -23,6 +22,7 @@ const PAGE_TITLES = [
   { pattern: /^\/admin\/solicitudes-registro\/?$/, title: 'Solicitudes de registro' },
   { pattern: /^\/admin\/solicitudes-catalogo\/?$/, title: 'Solicitudes del catálogo' },
   { pattern: /^\/superadmin\/usuarios\/?$/, title: 'Gestión de usuarios' },
+  { pattern: /^\/[A-HJ-NP-Z2-9]{12}\/?$/i, title: 'Responder encuesta' },
 ];
 
 function getPageTitle(pathname) {

@@ -53,7 +53,7 @@ export const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: 'encuestas/:publicCode/responder',
+        path: ':publicCode',
         element: <PublicSurveyPage />,
       },
       {
