@@ -10,6 +10,7 @@ import {
 
 import {
   getMatrixRowText,
+  getOptionAnswerValue,
   getOptionText,
   getScaleDisplayValue,
   getScaleValues,
@@ -31,8 +32,18 @@ function joinIds(...ids) {
   return value || undefined;
 }
 
+function getNumberRangeHint(data) {
+  const hasMinimum = data.minValue != null && data.minValue !== '';
+  const hasMaximum = data.maxValue != null && data.maxValue !== '';
+
+  if (hasMinimum && hasMaximum) return `Entre ${data.minValue} y ${data.maxValue}`;
+  if (hasMinimum) return `Valor mínimo: ${data.minValue}`;
+  if (hasMaximum) return `Valor máximo: ${data.maxValue}`;
+  return '';
+}
+
 export function Question({
-  questionNumber = 'Q',
+  questionNumber = 'X',
   headingLevel = 3,
   data = {},
   isCatalog = false,
@@ -61,6 +72,7 @@ export function Question({
   const displayType = getScaleDisplayValue(data);
   const minVal = scaleValues[0];
   const maxVal = scaleValues[scaleValues.length - 1];
+  const numberRangeHint = getNumberRangeHint(data);
   const options = useMemo(() => {
     const definedOptions = Array.isArray(data.options) ? [...data.options] : [];
     if (data.hasOtherOption && !definedOptions.some(isOtherOption)) {
@@ -97,7 +109,7 @@ export function Question({
         tabIndex={errorMessage ? -1 : undefined}
       >
         <legend className="sr-only">
-          {questionNumber ? `${questionNumber}. ` : ''}{statement}{isRequired ? ' (obligatoria)' : ''}
+          {questionNumber ? `Pregunta ${questionNumber}. ` : ''}{statement}{isRequired ? ' (obligatoria)' : ''}
         </legend>
         {children}
       </fieldset>
@@ -123,9 +135,9 @@ export function Question({
       return { isOther: true, optionId: option.id ?? null, otherText };
     }
 
-    function updateSelection(option, optionText, other, checked) {
+    function updateSelection(option, optionValue, other, checked) {
       if (!multiple) {
-        if (checked) onChange(other ? buildOtherAnswer(option, otherAnswer?.otherText) : optionText);
+        if (checked) onChange(other ? buildOtherAnswer(option, otherAnswer?.otherText) : optionValue);
         return;
       }
 
@@ -138,8 +150,8 @@ export function Question({
       }
 
       onChange(checked
-        ? [...selectedValues, optionText]
-        : selectedValues.filter((entry) => entry !== optionText));
+        ? [...selectedValues, optionValue]
+        : selectedValues.filter((entry) => entry !== optionValue));
     }
 
     function updateOtherText(option, otherText) {
@@ -157,11 +169,12 @@ export function Question({
         <ul className="academic-options-list">
           {options.map((option, index) => {
             const optionText = getOptionText(option) || `Opción ${index + 1}`;
+            const optionValue = getOptionAnswerValue(option, index);
             const optionId = `${questionId}-option-${index}`;
             const other = isOtherOption(option);
             const checked = other
               ? Boolean(otherAnswer)
-              : multiple ? selectedValues.includes(optionText) : value === optionText;
+              : multiple ? selectedValues.includes(optionValue) : value === optionValue;
 
             return (
               <li key={option.id ?? `${optionText}-${index}`} className="academic-option-row">
@@ -172,12 +185,12 @@ export function Question({
                       id={optionId}
                       type={multiple ? 'checkbox' : 'radio'}
                       name={multiple ? undefined : `${questionId}-single`}
-                      value={other ? '__other__' : optionText}
+                      value={other ? '__other__' : optionValue}
                       checked={checked}
                       disabled={!interactive}
                       required={!multiple && interactive && isRequired}
                       aria-invalid={errorMessage ? 'true' : undefined}
-                      onChange={(event) => updateSelection(option, optionText, other, event.target.checked)}
+                      onChange={(event) => updateSelection(option, optionValue, other, event.target.checked)}
                     />
                     <span className="option-label">{optionText}</span>
                   </label>
@@ -193,9 +206,6 @@ export function Question({
                         aria-describedby={describedBy}
                         aria-invalid={errorMessage && checked ? 'true' : undefined}
                         value={otherAnswer?.otherText || ''}
-                        onFocus={() => {
-                          if (!checked) updateSelection(option, optionText, true, true);
-                        }}
                         onChange={(event) => updateOtherText(option, event.target.value)}
                       />
                     </label>
@@ -213,7 +223,7 @@ export function Question({
   return (
     <article className="academic-question-card" aria-labelledby={titleId}>
       <Heading id={titleId} className="academic-statement">
-        {questionNumber && <span className="question-prefix">{questionNumber}.</span>}{' '}
+        {questionNumber && <span className="question-prefix">Pregunta {questionNumber}.</span>}
         {statement}
         {isRequired && (
           <>
@@ -239,7 +249,7 @@ export function Question({
               className="academic-text-field"
               rows={3}
               maxLength={data.maxLength || undefined}
-              placeholder="Escriba aquí su respuesta..."
+              placeholder="Escribe aquí tu respuesta..."
               disabled={!interactive}
               required={interactive && isRequired}
               aria-describedby={describedBy}
@@ -261,17 +271,16 @@ export function Question({
               min={data.minValue ?? undefined}
               max={data.maxValue ?? undefined}
               step={data.step ?? 1}
-              placeholder="0"
               disabled={!interactive}
               required={interactive && isRequired}
-              aria-describedby={joinIds(describedBy, hintId)}
+              aria-describedby={joinIds(describedBy, numberRangeHint && hintId)}
               aria-invalid={errorMessage ? 'true' : undefined}
               value={value ?? ''}
               onChange={(e) => onChange(e.target.value)}
             />
-            {(data.minValue !== undefined || data.maxValue !== undefined) && (
+            {numberRangeHint && (
               <span id={hintId} className="academic-number-hint">
-                (Entre {data.minValue ?? 0} y {data.maxValue ?? 100})
+                ({numberRangeHint})
               </span>
             )}
           </div>

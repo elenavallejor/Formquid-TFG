@@ -1,0 +1,213 @@
+.public-survey-page {
+  width: 100%;
+  min-height: calc(100vh - 118px);
+  padding: 32px 40px 64px;
+  background-color: var(--color-background);
+  box-sizing: border-box;
+}
+
+.public-survey-container {
+  width: min(1500px, 100%);
+  margin: 0 auto;
+}
+
+.public-survey-back {
+  width: fit-content;
+  min-height: 44px;
+  margin-bottom: 24px;
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17.5px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.public-survey-back:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.public-survey-back svg {
+  flex: 0 0 auto;
+  font-size: 23px;
+}
+
+.public-survey-password {
+  width: min(620px, 100%);
+  margin: 40px auto;
+  padding: 28px;
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+}
+
+.public-survey-password h1 {
+  margin: 0 0 10px;
+  color: var(--color-header);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.public-survey-password h1 svg {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-size: 28px;
+}
+
+.public-survey-password label {
+  margin: 22px 0 8px;
+  display: block;
+  font-size: 17.5px;
+  font-weight: 800;
+}
+
+.public-survey-password input {
+  width: min(420px, 100%);
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 7px;
+  background-color: var(--color-surface);
+  font-size: 18.75px;
+}
+
+.public-survey-password input[aria-invalid="true"] {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 1px var(--color-error);
+}
+
+.public-survey-password > p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.public-survey-password button {
+  min-height: 48px;
+  margin-top: 22px;
+  padding: 11px 18px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-dark);
+  font-size: 17.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.public-survey-password button:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.public-survey-password button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.public-survey-content:focus {
+  outline: none;
+}
+
+.public-survey-content {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  box-sizing: border-box;
+}
+
+.public-survey-password .public-survey-field-error {
+  color: var(--color-error);
+  font-weight: 800;
+}
+
+.public-survey-submit-error {
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  border: 2px solid var(--color-error);
+  border-radius: 8px;
+  background-color: var(--color-error-surface);
+  color: var(--color-text);
+  font-size: 17.5px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.public-survey-message {
+  width: min(680px, 100%);
+  margin: 64px auto;
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  text-align: center;
+}
+
+.public-survey-message > svg {
+  color: var(--color-success);
+  font-size: 52px;
+}
+
+.public-survey-message h1 {
+  margin: 8px 0 10px;
+  color: var(--color-header);
+  font-size: 30px;
+}
+
+.public-survey-message p {
+  margin: 0 0 22px;
+  color: var(--color-text-muted);
+  font-size: 18.75px;
+  line-height: 1.5;
+}
+
+.public-survey-message a,
+.public-survey-message button {
+  min-height: 48px;
+  padding: 11px 18px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17.5px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.public-survey-message button {
+  cursor: pointer;
+}
+
+.public-survey-message a:hover,
+.public-survey-message button:hover {
+  background-color: var(--color-primary-hover);
+  color: var(--color-text-on-dark);
+}
+
+.public-survey-message--error {
+  border-color: var(--color-error-border);
+}
+
+@media only screen and (max-width: 700px) {
+  .public-survey-page {
+    padding: 20px 16px 48px;
+  }
+
+  .public-survey-message {
+    margin: 32px auto;
+    padding: 24px 18px;
+  }
+
+  .public-survey-content {
+    padding: 0;
+  }
+}

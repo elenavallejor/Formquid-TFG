@@ -6,6 +6,7 @@ import { App } from './app';
 import { ElementDetailPage } from './routes/ElementDetailPage/ElementDetailPage.jsx';
 import { ElementRequestsPage } from './routes/ElementRequestsPage/ElementRequestsPage.jsx';
 import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
+import { CollaborationsPage } from './routes/CollaborationsPage/CollaborationsPage.jsx';
 import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPage.jsx';
 import { CreateBlockPage } from './routes/CreateBlockPage/CreateBlockPage.jsx';
 import { CreateTemplatePage } from './routes/CreateTemplatePage/CreateTemplatePage.jsx';
@@ -16,6 +17,7 @@ import { ErrorPage } from './routes/ErrorPage/ErrorPage';
 import { LoginPage } from './routes/LoginPage/LoginPage';
 import { MainPage } from './routes/MainPage/MainPage';
 import { PanelPage } from './routes/PanelPage/PanelPage';
+import { PublicSurveyPage } from './routes/PublicSurveyPage/PublicSurveyPage.jsx';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
 import { SuggestElementPage } from './routes/SuggestElementPage/SuggestElementPage.jsx';
@@ -51,6 +53,10 @@ export const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
+        path: 'encuestas/:publicCode/responder',
+        element: <PublicSurveyPage />,
+      },
+      {
         path: 'perfil',
         element: (
           <RequireAuth>
@@ -82,6 +88,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={EDITOR_ROLE}>
               <SurveyListPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'colaboraciones',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={EDITOR_ROLE}>
+              <CollaborationsPage />
             </RequireRole>
           </RequireAuth>
         ),

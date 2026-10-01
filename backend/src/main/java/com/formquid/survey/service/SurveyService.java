@@ -221,6 +221,25 @@ public class SurveyService {
         if (!canViewPublicSurvey(survey)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no disponible públicamente");
         }
+        if (survey.getAccessMode() == SurveyAccessMode.PASSWORD_PROTECTED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Esta encuesta requiere contraseña");
+        }
+        return toResponse(survey);
+    }
+
+    @Transactional(readOnly = true)
+    public SurveyResponseDto getPasswordProtectedPublicSurvey(String publicCode, String accessPassword) {
+        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
+        if (!canViewPublicSurvey(survey)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no disponible públicamente");
+        }
+        if (survey.getAccessMode() != SurveyAccessMode.PASSWORD_PROTECTED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Esta encuesta no requiere contraseña");
+        }
+        if (accessPassword == null || !passwordEncoder.matches(accessPassword, survey.getAccessPasswordHash())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "La contraseña no es correcta");
+        }
         return toResponse(survey);
     }
 
@@ -493,7 +512,8 @@ public class SurveyService {
             survey.getTitle(),
             survey.getDescription(),
             survey.getImageKey(),
-            survey.getAccessMode()
+            survey.getAccessMode(),
+            tagsFrom(survey)
         );
     }
 

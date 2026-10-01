@@ -535,7 +535,6 @@ export function QuestionBuilder({
         <h2 className="builder-section-title">VISTA PREVIA DE LA PREGUNTA</h2>
         <div className="preview-container">
           <Question
-            questionNumber="Q"
             data={data}
             isCatalog={isCatalog}
             interactive={false}

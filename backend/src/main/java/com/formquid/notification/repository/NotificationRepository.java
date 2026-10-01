@@ -2,8 +2,10 @@ package com.formquid.notification.repository;
 
 import com.formquid.notification.dto.NotificationResponseDto;
 import com.formquid.notification.entity.Notification;
-import com.formquid.notification.entity.NotificationChannel;
-import com.formquid.notification.entity.NotificationTargetType;
+import com.formquid.notification.entity.NotificationType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,7 +19,7 @@ public interface NotificationRepository
     /**
      * Lista segura de notificaciones. No carga la entidad User asociada.
      */
-    @Query("""
+    @Query(value = """
         select new com.formquid.notification.dto.NotificationResponseDto(
             notification.id,
             notification.type,
@@ -31,24 +33,33 @@ public interface NotificationRepository
         )
         from Notification notification
         where notification.recipientUser.id = :userId
-        order by notification.createdAt desc
+          and (:unreadOnly = false or notification.readAt is null)
+          and (:type is null or notification.type = :type)
+        order by case when notification.readAt is null then 0 else 1 end,
+            notification.createdAt desc, notification.id desc
+    """, countQuery = """
+        select count(notification.id)
+        from Notification notification
+        where notification.recipientUser.id = :userId
+          and (:unreadOnly = false or notification.readAt is null)
+          and (:type is null or notification.type = :type)
     """)
-    List<NotificationResponseDto> findResponsesByRecipientUserId(
-        @Param("userId") Long userId
+    Page<NotificationResponseDto> findResponses(
+        @Param("userId") Long userId,
+        @Param("unreadOnly") boolean unreadOnly,
+        @Param("type") NotificationType type,
+        Pageable pageable
     );
 
-    long countByRecipientUserIdAndChannelAndReadAtIsNull(
-        Long recipientUserId,
-        NotificationChannel channel
-    );
+    long countByRecipientUserIdAndReadAtIsNull(Long recipientUserId);
 
     Optional<Notification> findByIdAndRecipientUserId(
         Long id,
         Long recipientUserId
     );
 
-    void deleteByTargetTypeAndTargetId(
-        NotificationTargetType targetType,
-        Long targetId
-    );
+    @Modifying(clearAutomatically = true)
+    @Query("update Notification n set n.readAt = :readAt where n.recipientUser.id = :userId and n.readAt is null")
+    int markAllAsRead(@Param("userId") Long userId, @Param("readAt") java.time.Instant readAt);
+
 }

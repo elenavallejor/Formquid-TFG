@@ -11,6 +11,13 @@ export function getPublicSurveyById(surveyId) {
   return apiClient(`/public/surveys/${surveyId}`, { method: 'GET' });
 }
 
+export function accessPasswordProtectedSurvey(surveyId, accessPassword) {
+  return apiClient(`/public/surveys/${surveyId}/access`, {
+    method: 'POST',
+    body: { accessPassword },
+  });
+}
+
 export function getMySurveys({
   search = '',
   lifecycleStatus = 'ALL',

@@ -3,6 +3,7 @@ import '@fontsource/lexend/400.css';
 import '@fontsource/opendyslexic/400.css';
 
 import { buildBlockQuestionFromCatalog, getBlockItems } from '../../utils/blockBuilderUtils.js';
+import { getOptionAnswerValue } from '../../utils/questionBuilderUtils.js';
 import { Question } from '../Question/Question.jsx';
 import { SURVEY_MODES } from './SurveyModes.js';
 
@@ -24,9 +25,21 @@ function isOtherAnswer(value) {
 }
 
 function getQuestionData(item) {
-  return item.question
-    ? { ...buildBlockQuestionFromCatalog(item.question), isRequired: Boolean(item.required) }
-    : { ...item, isRequired: Boolean(item.isRequired ?? item.required) };
+  if (!item.question) {
+    return { ...item, isRequired: Boolean(item.isRequired ?? item.required) };
+  }
+
+  return {
+    ...buildBlockQuestionFromCatalog(item.question),
+    id: item.question.id,
+    options: Array.isArray(item.question.options)
+      ? item.question.options.map((option) => ({ ...option }))
+      : [],
+    matrixRows: Array.isArray(item.question.matrixRows)
+      ? item.question.matrixRows.map((row) => ({ ...row }))
+      : [],
+    isRequired: Boolean(item.required),
+  };
 }
 
 function toDomId(value) {
@@ -37,8 +50,33 @@ function getBlockContentItems(block) {
   return Array.isArray(block.contentItems) ? block.contentItems : getBlockItems(block);
 }
 
+function getAlphabeticLabel(index) {
+  let value = index + 1;
+  let label = '';
+
+  while (value > 0) {
+    value -= 1;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  }
+
+  return label;
+}
+
+function collectBlockLabels(items) {
+  const labels = new Map();
+
+  items.forEach((item, index) => {
+    if (item.itemType === 'BLOCK') {
+      labels.set(`item-${index}`, getAlphabeticLabel(labels.size));
+    }
+  });
+
+  return labels;
+}
+
 function renderTextItem(item, path) {
-  return <div key={item.localId || item.id || path} className="survey-content-text">{item.textBody}</div>;
+  return <p key={item.localId || item.id || path} className="survey-content-text">{item.textBody}</p>;
 }
 
 function collectQuestions(items) {
@@ -74,6 +112,76 @@ function collectQuestions(items) {
   });
 
   return questions;
+}
+
+function buildSelectedOptions(data, value) {
+  const selections = Array.isArray(value) ? value : [value];
+
+  return selections.flatMap((selection) => {
+    if (isOtherAnswer(selection)) {
+      const otherOption = (data.options || []).find(
+        (option) => Boolean(option?.other ?? option?.isOther),
+      );
+      const optionId = selection.optionId ?? otherOption?.id;
+      return optionId != null
+        ? [{ optionId, otherText: String(selection.otherText || '').trim() }]
+        : [];
+    }
+
+    const option = (data.options || []).find(
+      (candidate, index) => getOptionAnswerValue(candidate, index) === selection,
+    );
+    return option?.id != null ? [{ optionId: option.id }] : [];
+  });
+}
+
+function buildParticipationAnswer(question, value) {
+  const { data } = question;
+  const baseAnswer = { questionId: data.id };
+
+  if (!data.id) return null;
+
+  if (data.questionType === 'TEXT') {
+    return isBlank(value) ? null : { ...baseAnswer, textValue: String(value) };
+  }
+
+  if (data.questionType === 'NUMBER' || data.questionType === 'SCALE') {
+    return isBlank(value) ? null : { ...baseAnswer, numericValue: Number(value) };
+  }
+
+  if (data.questionType === 'BOOLEAN') {
+    return value !== 'true' && value !== 'false'
+      ? null
+      : { ...baseAnswer, booleanValue: value === 'true' };
+  }
+
+  if (data.questionType === 'SINGLE_CHOICE') {
+    if (isBlank(value)) return null;
+    const selectedOptions = buildSelectedOptions(data, value);
+    return selectedOptions.length > 0 ? { ...baseAnswer, selectedOptions } : null;
+  }
+
+  if (data.questionType === 'MULTIPLE_CHOICE') {
+    if (!Array.isArray(value) || value.length === 0) return null;
+    const selectedOptions = buildSelectedOptions(data, value);
+    return selectedOptions.length > 0 ? { ...baseAnswer, selectedOptions } : null;
+  }
+
+  if (data.questionType === 'MATRIX_SCALE') {
+    const matrixValues = Object.entries(value || {}).flatMap(([rowIndex, numericValue]) => {
+      const matrixRowId = data.matrixRows?.[Number(rowIndex)]?.id;
+      return matrixRowId ? [{ matrixRowId, numericValue: Number(numericValue) }] : [];
+    });
+    return matrixValues.length > 0 ? { ...baseAnswer, matrixValues } : null;
+  }
+
+  return null;
+}
+
+function buildParticipationAnswers(questions, answers) {
+  return questions
+    .map((question) => buildParticipationAnswer(question, answers[question.answerKey]))
+    .filter(Boolean);
 }
 
 function getSetting(data, name) {
@@ -172,13 +280,22 @@ function getFocusTargetId(question) {
     : `${question.idBase}-group`;
 }
 
-export function Survey({ data, mode = SURVEY_MODES.VIEW, isPreview = false, onClosePreview, onSubmit }) {
+export function Survey({
+  data,
+  mode = SURVEY_MODES.VIEW,
+  isPreview = false,
+  isSubmitting = false,
+  onClosePreview,
+  onSubmit,
+}) {
   const [answers, setAnswers] = useState({});
   const [errors, setErrors] = useState({});
   const items = useMemo(() => data?.items || data?.contentItems || [], [data?.items, data?.contentItems]);
   const interactive = mode === SURVEY_MODES.RESPOND;
   const fontFamily = FONT_FAMILIES[data?.fontFamily] || FONT_FAMILIES.TIMES_NEW_ROMAN;
   const questions = useMemo(() => collectQuestions(items), [items]);
+  const hasRequiredQuestions = questions.some((question) => question.data.isRequired);
+  const blockLabels = useMemo(() => collectBlockLabels(items), [items]);
   const questionByPath = useMemo(
     () => new Map(questions.map((question) => [question.path, question])),
     [questions],
@@ -223,11 +340,20 @@ export function Survey({ data, mode = SURVEY_MODES.VIEW, isPreview = false, onCl
     if (item.itemType !== 'BLOCK') return null;
 
     const block = item.block || item;
+    const blockLabel = blockLabels.get(path);
+    const blockHeadingId = `survey-block-${blockLabel.toLowerCase()}-${toDomId(item.localId || item.id || path)}`;
     return (
-      <section key={item.localId || item.id || path} className="survey-response-block">
+      <section
+        key={item.localId || item.id || path}
+        className="survey-response-block"
+        aria-labelledby={blockHeadingId}
+      >
         <header>
-          <h2>{block.name || `Bloque ${index + 1}`}</h2>
-          {block.description && <p>{block.description}</p>}
+          <h2 id={blockHeadingId}>
+            <span className="survey-block-prefix" aria-hidden="true">{blockLabel}.</span>
+            <span className="sr-only">Bloque {blockLabel}: </span>
+            <span>{block.name || 'Sección sin título'}</span>
+          </h2>
         </header>
         <div className="survey-response-block-items">
           {getBlockContentItems(block).map((blockItem, blockIndex) => {
@@ -261,58 +387,75 @@ export function Survey({ data, mode = SURVEY_MODES.VIEW, isPreview = false, onCl
       return;
     }
 
-    onSubmit?.(answers);
+    onSubmit?.(buildParticipationAnswers(questions, answers));
   }
 
   const invalidQuestions = questions.filter((question) => errors[question.answerKey]);
 
   return (
-    <form className={`survey-component ${data?.fontFamily === 'OPEN_DYSLEXIC' ? 'font-open-dyslexic' : ''}`} style={{ fontFamily }} noValidate onSubmit={handleSubmit}>
+    <form
+      className={`survey-component ${data?.fontFamily === 'OPEN_DYSLEXIC' ? 'font-open-dyslexic' : ''}`}
+      style={{ fontFamily }}
+      aria-describedby={hasRequiredQuestions ? 'survey-required-note' : undefined}
+      noValidate
+      onSubmit={handleSubmit}
+    >
       {isPreview && <div className="survey-preview-notice" role="status">Estás previsualizando la encuesta. Las respuestas introducidas no se guardarán.</div>}
-      {data?.imageKey && <img className="survey-response-cover" src={data.imageKey} alt="" />}
-      <header className="survey-response-header">
-        <h1>{data?.title || 'Encuesta sin título'}</h1>
-        {data?.description && <p>{data.description}</p>}
-        {Array.isArray(data?.tags) && data.tags.length > 0 && <ul>{data.tags.map((tag) => <li key={tag}>#{tag}</li>)}</ul>}
-      </header>
+      <section className="survey-response-introduction" aria-labelledby="survey-response-title">
+        {data?.imageKey && <img className="survey-response-cover" src={data.imageKey} alt="" />}
+        <header className="survey-response-header">
+          <h1 id="survey-response-title">{data?.title || 'Encuesta sin título'}</h1>
+          {data?.description && <p>{data.description}</p>}
+          {Array.isArray(data?.tags) && data.tags.length > 0 && <ul>{data.tags.map((tag) => <li key={tag}>#{tag}</li>)}</ul>}
+        </header>
 
-      {invalidQuestions.length > 0 && (
-        <section className="survey-response-validation" role="alert" aria-labelledby="survey-validation-title">
-          <h2 id="survey-validation-title">
-            {invalidQuestions.length === 1
-              ? 'Hay un error que debes corregir'
-              : `Hay ${invalidQuestions.length} errores que debes corregir`}
-          </h2>
-          <ul>
-            {invalidQuestions.map((question) => {
-              const focusTargetId = getFocusTargetId(question);
-              return (
-                <li key={`${question.path}-error`}>
-                  <a
-                    href={`#${focusTargetId}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      document.getElementById(focusTargetId)?.focus();
-                    }}
-                  >
-                    Pregunta {question.questionNumber}: {errors[question.answerKey]}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+        {hasRequiredQuestions && (
+          <p id="survey-required-note" className="survey-required-note">
+            <span aria-hidden="true">*</span>
+            <span>Las preguntas marcadas con un asterisco son obligatorias.</span>
+          </p>
+        )}
+      </section>
 
-      <div className="survey-response-content">
-        {items.length > 0 ? items.map(renderItem) : <p className="survey-response-empty">Esta encuesta todavía no contiene elementos.</p>}
-      </div>
+      <section className="survey-response-questions" aria-label="Preguntas de la encuesta">
+        {invalidQuestions.length > 0 && (
+          <section className="survey-response-validation" role="alert" aria-labelledby="survey-validation-title">
+            <h2 id="survey-validation-title">
+              {invalidQuestions.length === 1
+                ? 'Hay un error que debes corregir'
+                : `Hay ${invalidQuestions.length} errores que debes corregir`}
+            </h2>
+            <ul>
+              {invalidQuestions.map((question) => {
+                const focusTargetId = getFocusTargetId(question);
+                return (
+                  <li key={`${question.path}-error`}>
+                    <a
+                      href={`#${focusTargetId}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        document.getElementById(focusTargetId)?.focus();
+                      }}
+                    >
+                      Pregunta {question.questionNumber}: {errors[question.answerKey]}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
-      {interactive && <footer className="survey-response-actions">
-        {isPreview
-          ? <button type="button" onClick={onClosePreview}>Cerrar previsualización</button>
-          : <button type="submit">Enviar respuestas</button>}
-      </footer>}
+        <div className="survey-response-content">
+          {items.length > 0 ? items.map(renderItem) : <p className="survey-response-empty">Esta encuesta todavía no contiene elementos.</p>}
+        </div>
+
+        {interactive && <footer className="survey-response-actions">
+          {isPreview
+            ? <button type="button" onClick={onClosePreview}>Cerrar previsualización</button>
+            : <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Enviando...' : 'Enviar respuestas'}</button>}
+        </footer>}
+      </section>
     </form>
   );
 }

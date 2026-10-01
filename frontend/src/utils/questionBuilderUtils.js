@@ -61,6 +61,7 @@ export const QUESTION_TYPES = [
 
 export const RANGE_QUESTION_TYPES = ['NUMBER', 'SCALE', 'MATRIX_SCALE'];
 export const CHOICE_QUESTION_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE'];
+const MAX_SCALE_VALUES = 30;
 
 export const SCALE_DISPLAY_OPTIONS = [
   { value: 'NUMERIC', label: 'Numérica' },
@@ -230,6 +231,10 @@ export function getOptionText(option) {
   return String(option?.label ?? option?.text ?? '');
 }
 
+export function getOptionAnswerValue(option, index) {
+  return option?.id == null ? `position:${index}` : `id:${option.id}`;
+}
+
 export function getOptionFactor(option) {
   return option?.evaluationFactor ?? option?.factor ?? '';
 }
@@ -272,6 +277,12 @@ export function getScaleDisplayValue(data) {
   );
 }
 
+function getScaleValueCount(minValue, maxValue, step) {
+  const steps = (maxValue - minValue) / step;
+  const roundedSteps = Math.round(steps);
+  return (Math.abs(steps - roundedSteps) < 1e-9 ? roundedSteps : Math.floor(steps)) + 1;
+}
+
 export function getScaleValues(data) {
   const minValue = getNumberValue(data.minValue, 1);
   const maxValue = getNumberValue(data.maxValue, 5);
@@ -281,13 +292,11 @@ export function getScaleValues(data) {
     return [minValue];
   }
 
-  const totalSteps =
-    Math.floor((maxValue - minValue) / step) + 1;
+  const totalSteps = getScaleValueCount(minValue, maxValue, step);
 
   return Array.from(
-    { length: Math.min(totalSteps, 30) },
-    (_, index) =>
-      Number((minValue + index * step).toFixed(2)),
+    { length: Math.min(totalSteps, MAX_SCALE_VALUES) },
+    (_, index) => Number((minValue + index * step).toPrecision(12)),
   );
 }
 
@@ -431,6 +440,13 @@ function getRangeValidationError(data) {
 
   if (step <= 0) {
     return 'El paso debe ser mayor que cero.';
+  }
+
+  if (
+    data.questionType !== 'NUMBER'
+    && getScaleValueCount(minValue, maxValue, step) > MAX_SCALE_VALUES
+  ) {
+    return `Una escala puede contener como máximo ${MAX_SCALE_VALUES} valores.`;
   }
 
   if (data.questionType !== 'NUMBER') {

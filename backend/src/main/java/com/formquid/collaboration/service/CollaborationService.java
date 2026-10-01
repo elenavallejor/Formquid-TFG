@@ -74,8 +74,6 @@ public class CollaborationService {
     public List<CollaborationRequestResponseDto> findRequestsForUser(Long userId) {
         return requestRepository.findRelatedToUser(userId)
             .stream()
-            .filter(request -> request.getRequestType() == CollaborationRequestType.ACCESS_REQUEST
-                || request.getSurvey().getOwner().getId().equals(userId))
             .map(this::toRequestResponse)
             .toList();
     }
@@ -128,7 +126,10 @@ public class CollaborationService {
             recipient,
             type,
             "Solicitud de colaboración",
-            "Hay una solicitud de colaboración para la encuesta " + survey.getTitle(),
+            (dto.requestType() == CollaborationRequestType.INVITATION
+                ? survey.getOwner().getName() + " te ha invitado a colaborar en "
+                : targetUser.getName() + " ha solicitado colaborar en ") + survey.getTitle()
+                + ". Permiso: " + (saved.getPermission() == CollaborationPermission.VIEW ? "solo lectura." : "edición."),
             saved
         );
 
@@ -153,8 +154,6 @@ public class CollaborationService {
         SurveyCollaborator saved = collaboratorRepository.save(collaborator);
         User recipient = getResolutionRecipient(request);
 
-        notificationService.deleteCollaborationRequestNotifications(request.getId());
-
         notificationService.createSurveyNotification(
             recipient,
             NotificationType.COLLABORATION_ACCEPTED,
@@ -177,8 +176,6 @@ public class CollaborationService {
 
         User recipient = getResolutionRecipient(request);
 
-        notificationService.deleteCollaborationRequestNotifications(request.getId());
-
         notificationService.createSurveyNotification(
             recipient,
             NotificationType.COLLABORATION_REJECTED,
@@ -197,8 +194,40 @@ public class CollaborationService {
     public void removeCollaborator(Long surveyId, Long collaboratorId, Long ownerId) {
         Survey survey = getSurvey(surveyId);
         ensureOwner(survey, ownerId);
+        SurveyCollaborator collaborator = getCollaborator(surveyId, collaboratorId);
 
-        collaboratorRepository.deleteByIdSurveyIdAndIdUserId(surveyId, collaboratorId);
+        collaboratorRepository.delete(collaborator);
+        notificationService.createSurveyNotification(
+            collaborator.getUser(),
+            NotificationType.COLLABORATION_REVOKED,
+            "Colaboración revocada",
+            "Tu colaboración en " + survey.getTitle() + " ha sido revocada",
+            survey
+        );
+    }
+
+    /**
+     * Actualiza el permiso de un colaborador.
+     */
+    @Transactional
+    public SurveyCollaboratorResponseDto updateCollaboratorPermission(
+        Long surveyId,
+        Long collaboratorId,
+        Long ownerId,
+        CollaborationPermission permission
+    ) {
+        Survey survey = getSurvey(surveyId);
+        ensureOwner(survey, ownerId);
+        SurveyCollaborator collaborator = getCollaborator(surveyId, collaboratorId);
+
+        if (collaborator.getPermission() == CollaborationPermission.EDIT && permission == CollaborationPermission.VIEW) {
+            notificationService.createSurveyNotification(collaborator.getUser(),
+                NotificationType.COLLABORATION_PERMISSION_REDUCED,
+                "Permiso de edición revocado",
+                "Tu permiso en " + survey.getTitle() + " ha cambiado a solo lectura. Ya no puedes editar la encuesta.", survey);
+        }
+        collaborator.setPermission(permission);
+        return toCollaboratorResponse(collaboratorRepository.save(collaborator));
     }
 
     /**
@@ -240,7 +269,7 @@ public class CollaborationService {
             survey.getOwner(),
             NotificationType.PUBLICATION_REQUEST,
             "Solicitud de publicación",
-            "Un colaborador ha solicitado publicar la encuesta " + survey.getTitle(),
+            request.getRequestedBy().getName() + " ha solicitado publicar la encuesta " + survey.getTitle(),
             request
         );
 
@@ -261,8 +290,6 @@ public class CollaborationService {
 
         surveyService.openAfterPublicationApproval(request.getSurvey());
 
-        notificationService.deletePublicationRequestNotifications(request.getId());
-
         notificationService.createSurveyNotification(
             request.getRequestedBy(),
             NotificationType.PUBLICATION_ACCEPTED,
@@ -281,8 +308,6 @@ public class CollaborationService {
     public void rejectPublication(Long requestId, Long ownerId) {
         PublicationRequest request = getPublicationRequest(requestId);
         ensureOwner(request.getSurvey(), ownerId);
-
-        notificationService.deletePublicationRequestNotifications(request.getId());
 
         notificationService.createSurveyNotification(
             request.getRequestedBy(),
@@ -373,6 +398,11 @@ public class CollaborationService {
     private CollaborationRequest getRequest(Long requestId) {
         return requestRepository.findById(requestId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Solicitud de colaboración no encontrada"));
+    }
+
+    private SurveyCollaborator getCollaborator(Long surveyId, Long collaboratorId) {
+        return collaboratorRepository.findById(new SurveyCollaboratorId(surveyId, collaboratorId))
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Colaborador no encontrado"));
     }
 
     /**

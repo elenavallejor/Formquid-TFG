@@ -7,8 +7,18 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: dev
+    depends_on:
+      - mailhog
     ports:
       - "8080:8080"
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: formquid-mailhog
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
     restart: unless-stopped
 
   frontend:

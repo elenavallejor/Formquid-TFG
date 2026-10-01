@@ -15,6 +15,10 @@ export function getCollaborationRequests(surveyId) {
   });
 }
 
+export function getCollaborationOverview() {
+  return apiClient('/collaboration-requests', { method: 'GET' });
+}
+
 export function createCollaborationRequest(surveyId, targetData) {
   return apiClient(`/surveys/${surveyId}/collaboration-requests`, {
     method: 'POST',
@@ -37,6 +41,13 @@ export function rejectCollaborationRequest(surveyId, requestId) {
 export function removeCollaborator(surveyId, collaboratorId) {
   return apiClient(`/surveys/${surveyId}/collaborators/${collaboratorId}`, {
     method: 'DELETE',
+  });
+}
+
+export function updateCollaboratorPermission(surveyId, collaboratorId, permission) {
+  return apiClient(`/surveys/${surveyId}/collaborators/${collaboratorId}`, {
+    method: 'PATCH',
+    body: { permission },
   });
 }
 

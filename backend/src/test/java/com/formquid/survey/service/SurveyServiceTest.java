@@ -3,6 +3,7 @@ package com.formquid.survey.service;
 import com.formquid.collaboration.entity.CollaborationPermission;
 import com.formquid.collaboration.repository.CollaborationRequestRepository;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.common.exception.ApiException;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -267,5 +269,57 @@ class SurveyServiceTest {
 
         assertThat(surveyService.canPreviewSurvey(survey, collaborator)).isTrue();
         assertThat(surveyService.canEditSurvey(survey, collaborator)).isFalse();
+    }
+
+    @Test
+    void passwordProtectedSurveyDoesNotExposeContentBeforeValidation() {
+        Survey survey = passwordProtectedSurvey();
+        when(surveyRepository.findByPublicCode("ABC123")).thenReturn(Optional.of(survey));
+
+        assertThatThrownBy(() -> surveyService.getPublicSurvey("abc123"))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> assertThat(((ApiException) exception).getStatus()).isEqualTo(HttpStatus.FORBIDDEN))
+            .hasMessage("Esta encuesta requiere contraseña");
+    }
+
+    @Test
+    void passwordProtectedSurveyExposesContentAfterSuccessfulValidation() {
+        Survey survey = passwordProtectedSurvey();
+        when(surveyRepository.findByPublicCode("ABC123")).thenReturn(Optional.of(survey));
+        when(passwordEncoder.matches("clave-correcta", "hash-seguro")).thenReturn(true);
+        when(contentService.findSurveyContent(40L)).thenReturn(List.of());
+
+        var response = surveyService.getPasswordProtectedPublicSurvey("abc123", "clave-correcta");
+
+        assertThat(response.publicCode()).isEqualTo("ABC123");
+        assertThat(response.accessMode()).isEqualTo(SurveyAccessMode.PASSWORD_PROTECTED);
+        assertThat(response.contentItems()).isEmpty();
+    }
+
+    @Test
+    void passwordProtectedSurveyRejectsAnInvalidPassword() {
+        Survey survey = passwordProtectedSurvey();
+        when(surveyRepository.findByPublicCode("ABC123")).thenReturn(Optional.of(survey));
+        when(passwordEncoder.matches("clave-incorrecta", "hash-seguro")).thenReturn(false);
+
+        assertThatThrownBy(() -> surveyService.getPasswordProtectedPublicSurvey("abc123", "clave-incorrecta"))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> assertThat(((ApiException) exception).getStatus()).isEqualTo(HttpStatus.FORBIDDEN))
+            .hasMessage("La contraseña no es correcta");
+    }
+
+    private Survey passwordProtectedSurvey() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        return Survey.builder()
+            .id(40L)
+            .owner(owner)
+            .publicCode("ABC123")
+            .title("Encuesta protegida")
+            .lifecycleStatus(SurveyLifecycle.OPEN)
+            .accessMode(SurveyAccessMode.PASSWORD_PROTECTED)
+            .visibility(SurveyVisibility.LISTED)
+            .accessPasswordHash("hash-seguro")
+            .tags(new String[0])
+            .build();
     }
 }

@@ -7,8 +7,10 @@ const PAGE_TITLES = [
   { pattern: /^\/solicita-cuenta\/?$/, title: 'Solicitar cuenta' },
   { pattern: /^\/perfil\/?$/, title: 'Mi cuenta' },
   { pattern: /^\/panel\/?$/, title: 'Panel' },
+  { pattern: /^\/colaboraciones\/?$/, title: 'Gestión de colaboraciones' },
   { pattern: /^\/sugerir-elemento\/?$/, title: 'Sugerir elemento' },
   { pattern: /^\/encuestas\/crear\/?$/, title: 'Crear encuesta' },
+  { pattern: /^\/encuestas\/[^/]+\/responder\/?$/, title: 'Responder encuesta' },
   { pattern: /^\/encuestas\/[^/]+\/editar\/?$/, title: 'Gestionar encuesta' },
   { pattern: /^\/encuestas\/?$/, title: 'Encuestas' },
   { pattern: /^\/catalogo\/crear\/pregunta\/?$/, title: 'Crear pregunta' },
@@ -24,8 +26,7 @@ const PAGE_TITLES = [
 ];
 
 function getPageTitle(pathname) {
-  return PAGE_TITLES.find(({ pattern }) => pattern.test(pathname))?.title
-    ?? 'Página no encontrada';
+  return PAGE_TITLES.find(({ pattern }) => pattern.test(pathname))?.title ?? 'Página no encontrada';
 }
 
 /** Mantiene un título de documento descriptivo en cada navegación de la SPA. */

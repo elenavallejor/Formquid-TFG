@@ -15,9 +15,9 @@
 }
 
 .question-prefix {
-  color: var(--color-info);
+  display: inline-block;
   font-weight: 700;
-  margin-right: 2px;
+  margin-right: 7px;
 }
 
 .required-asterisk {
@@ -42,10 +42,12 @@
 }
 
 .academic-controls-container {
+  width: 100%;
   margin-top: 12px;
 }
 
 .academic-question-group {
+  width: 100%;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -55,6 +57,10 @@
 .academic-question-group:focus-visible {
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
+}
+
+.academic-question-card label:has(input:disabled) {
+  cursor: default;
 }
 
 .academic-text-field[aria-invalid="true"],
@@ -74,7 +80,7 @@
   padding: 12px 14px;
   border: 1.5px solid var(--color-border);
   border-radius: 0;
-  background-color: var(--color-surface-muted);
+  background-color: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
   font-size: 18.125px;
@@ -89,6 +95,7 @@
 }
 
 .academic-text-field:disabled {
+  background-color: var(--color-surface-muted);
   color: var(--color-text-muted);
   cursor: default;
 }
@@ -105,7 +112,7 @@
   padding: 8px 12px;
   border: 1.5px solid var(--color-border);
   border-radius: 0;
-  background-color: var(--color-surface-muted);
+  background-color: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
   font-size: 18.75px;
@@ -118,6 +125,7 @@
 }
 
 .academic-number-input:disabled {
+  background-color: var(--color-surface-muted);
   color: var(--color-text-muted);
   cursor: default;
 }
@@ -221,7 +229,7 @@
 .academic-scale-block {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 20px;
   padding: 12px 0 6px;
   flex-wrap: wrap;
@@ -428,6 +436,6 @@
   .scale-columns-row {
     max-width: 100%;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
   }
 }

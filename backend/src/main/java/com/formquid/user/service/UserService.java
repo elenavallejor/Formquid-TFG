@@ -61,6 +61,7 @@ public class UserService {
 
         boolean changed = false;
         boolean emailChanged = false;
+        String previousEmail = user.getEmail();
 
         if (request.profile() != null) {
             changed = updateProfile(user, request.profile()) || changed;
@@ -74,6 +75,13 @@ public class UserService {
         }
         if (!changed) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "No se ha detectado ningún cambio en la cuenta");
+        }
+        if (request.password() != null || emailChanged) {
+            notificationService.createUserNotification(user, NotificationType.ACCOUNT_SECURITY_CHANGED,
+                "Cambio de seguridad en tu cuenta",
+                "Se ha actualizado " + (emailChanged ? "el correo de acceso" : "la contraseña")
+                    + " de tu cuenta de FormQuid. Si no has realizado este cambio, contacta con la administración.",
+                user, emailChanged ? previousEmail : user.getEmail());
         }
         return new UpdateAccountResult(user, emailChanged);
     }

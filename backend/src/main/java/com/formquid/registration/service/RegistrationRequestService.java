@@ -52,6 +52,10 @@ public class RegistrationRequestService {
 
         RegistrationRequest saved = requestRepository.save(entity);
         notificationService.notifyAdminsAboutRegistrationRequest(saved);
+        notificationService.sendPriorityEmail(email, NotificationType.REGISTRATION_RECEIVED,
+            "Solicitud de cuenta recibida",
+            "Hemos recibido tu solicitud de cuenta en FormQuid, " + saved.getName()
+                + ". Te avisaremos cuando se resuelva.");
         return toResponse(saved);
     }
 
@@ -74,13 +78,6 @@ public class RegistrationRequestService {
 
         User saved = userRepository.save(user);
 
-        notificationService.createEmail(
-            saved,
-            NotificationType.REGISTRATION_APPROVED,
-            "Solicitud aprobada",
-            "Tu solicitud de registro ha sido aprobada. Tu cuenta de FormQuid ya está activa."
-        );
-
         notificationService.createUserNotification(
             saved,
             NotificationType.REGISTRATION_APPROVED,
@@ -89,7 +86,6 @@ public class RegistrationRequestService {
             saved
         );
 
-        notificationService.deleteRegistrationRequestNotifications(request.getId());
         requestRepository.delete(request);
         return saved.getId();
     }
@@ -97,7 +93,9 @@ public class RegistrationRequestService {
     @Transactional
     public void reject(Long requestId) {
         RegistrationRequest request = getRequest(requestId);
-        notificationService.deleteRegistrationRequestNotifications(request.getId());
+        notificationService.sendPriorityEmail(request.getEmail(), NotificationType.REGISTRATION_REJECTED,
+            "Solicitud de cuenta rechazada",
+            "Tu solicitud de cuenta en FormQuid para " + request.getEmail() + " ha sido rechazada.");
         requestRepository.delete(request);
     }
 

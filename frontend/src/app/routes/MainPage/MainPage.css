@@ -1,4 +1,440 @@
 .main-page {
-  min-height: 100vh;
+  width: 100%;
   background-color: var(--color-background);
+  box-sizing: border-box;
+}
+
+.main-page-hero {
+  position: relative;
+  width: 100%;
+  min-height: clamp(300px, 24vw, 460px);
+  overflow: hidden;
+  background-color: #2d9996;
+  color: var(--color-text-on-dark);
+  display: flex;
+  align-items: center;
+}
+
+.main-page-hero::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-color: rgb(0 37 54 / 24%);
+  pointer-events: none;
+}
+
+.main-page-hero-picture {
+  position: absolute;
+  width: min(1500px, 100%);
+  margin: 0 auto;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.main-page-hero-picture img {
+  width: clamp(430px, 34vw, 560px);
+  height: auto;
+  display: block;
+  object-fit: contain;
+  transform: translateY(-11%);
+}
+
+.main-page-hero-content {
+  position: relative;
+  z-index: 2;
+  width: min(1500px, 100%);
+  margin: 0 auto;
+  padding: 30px 0;
+}
+
+.main-page-hero-content h1 {
+  max-width: 640px;
+  margin: 0 0 22px;
+  color: #ffffff;
+  font-size: 50px;
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.main-page-hero-content p {
+  max-width: 620px;
+  margin: 0;
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1.42;
+}
+
+.main-page-surveys {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 38px 0 68px;
+}
+
+.main-page-surveys-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 20px;
+}
+
+.main-page-surveys-header h2,
+.main-page-password-section h2 {
+  margin: 0 0 5px;
+  color: var(--color-primary);
+  font-size: 21.25px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.main-page-surveys-header p,
+.main-page-password-section header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 17.5px;
+  line-height: 1.4;
+}
+
+.main-page-controls {
+  width: min(590px, 100%);
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 12px;
+}
+
+.main-page-search {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.main-page-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-shadow);
+}
+
+.main-page-search svg {
+  flex: 0 0 auto;
+  font-size: 22px;
+}
+
+.main-page-search input {
+  min-width: 0;
+  width: 100%;
+  padding: 11px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 17.5px;
+}
+
+.main-page-search input:focus,
+.main-page-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.main-page-filter-button {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 17.5px;
+  font-weight: 700;
+}
+
+.main-page-filter-button:hover,
+.main-page-filter-button[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  background-color: var(--color-accent-surface);
+  color: var(--color-primary);
+}
+
+.main-page-filter-button svg {
+  font-size: 21px;
+}
+
+.main-page-filter-panel {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 22px auto;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+}
+
+.main-page-results-status {
+  margin: 18px 0 0;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.main-page-filter-panel legend {
+  padding: 0 6px;
+  color: var(--color-text);
+  font-size: 17.5px;
+  font-weight: 800;
+}
+
+.main-page-filter-panel label {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.main-page-filter-panel input {
+  accent-color: var(--color-primary);
+}
+
+.main-page-results {
+  min-height: 190px;
+}
+
+.main-page-survey-section + .main-page-survey-section {
+  margin-top: 46px;
+}
+
+.main-page-survey-grid,
+.main-page-results > .skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.main-page-password-section {
+  padding-top: 30px;
+  border-top: 1px solid var(--color-border);
+}
+
+.main-page-password-section > header {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-page-password-section > header > svg {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-size: 32px;
+}
+
+.main-page-empty {
+  min-height: 190px;
+  padding: 34px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.main-page-empty p {
+  margin: 0;
+  font-size: 18.75px;
+  font-weight: 700;
+}
+
+.main-page-empty button,
+.main-page-error > button {
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-dark);
+  font-size: 17.5px;
+  font-weight: 700;
+}
+
+.main-page-empty button:hover,
+.main-page-error > button:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.main-page-error {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-error-border);
+  border-radius: 8px;
+  background: var(--color-error-surface);
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.main-page-error p {
+  flex: 1;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+@media only screen and (max-width: 1180px) {
+  .main-page-survey-grid,
+  .main-page-results > .skeleton-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .main-page-hero-content h1,
+  .main-page-hero-content p {
+    max-width: 52%;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .main-page-surveys-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .main-page-controls {
+    width: 100%;
+  }
+
+  .main-page-filter-panel {
+    margin-left: 0;
+  }
+
+  .main-page-survey-grid,
+  .main-page-results > .skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media only screen and (max-width: 700px) {
+  .main-page-hero {
+    min-height: 410px;
+    align-items: flex-start;
+  }
+
+  .main-page-hero-picture {
+    top: auto;
+    bottom: 0;
+    height: auto;
+  }
+
+  .main-page-hero-picture img {
+    width: min(50vw, 320px);
+    height: auto;
+    transform: none;
+  }
+
+  .main-page-hero-content {
+    padding: 28px 16px 210px;
+  }
+
+  .main-page-hero-content h1,
+  .main-page-hero-content p {
+    max-width: 100%;
+  }
+
+  .main-page-hero-content h1 {
+    margin-bottom: 14px;
+    font-size: 34px;
+  }
+
+  .main-page-hero-content p {
+    max-width: 540px;
+    font-size: 19.5px;
+  }
+
+  .main-page-surveys {
+    padding: 30px 16px 48px;
+  }
+
+  .main-page-surveys-header h2,
+  .main-page-password-section h2 {
+    font-size: 21.25px;
+  }
+}
+
+@media only screen and (max-width: 560px) {
+  .main-page-controls {
+    grid-template-columns: 1fr auto;
+  }
+
+  .main-page-filter-button {
+    width: 48px;
+    padding: 0;
+  }
+
+  .main-page-filter-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .main-page-filter-panel {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .main-page-survey-grid,
+  .main-page-results > .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-page-error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media only screen and (max-width: 380px) {
+  .main-page-hero {
+    min-height: 340px;
+  }
+
+  .main-page-hero-content {
+    padding-right: 16px;
+    padding-bottom: 190px;
+    padding-left: 16px;
+  }
+
+  .main-page-hero-content h1 {
+    font-size: 30px;
+  }
 }

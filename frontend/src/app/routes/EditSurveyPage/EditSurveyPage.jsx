@@ -5,7 +5,19 @@ import '@fontsource/opendyslexic/400.css';
 import { FaRegClipboard } from 'react-icons/fa';
 import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdGroups, MdImage, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdVisibilityOff } from 'react-icons/md';
 
-import { acceptCollaborationRequest, acceptPublicationRequest, createCollaborationRequest, getCollaborationRequests, getCollaborators, getPublicationRequests, rejectCollaborationRequest, rejectPublicationRequest, removeCollaborator, requestPublication } from '../../../api/collaborationsApi.js';
+import {
+  acceptCollaborationRequest,
+  acceptPublicationRequest,
+  createCollaborationRequest,
+  getCollaborationRequests,
+  getCollaborators,
+  getPublicationRequests,
+  rejectCollaborationRequest,
+  rejectPublicationRequest,
+  removeCollaborator,
+  requestPublication,
+  updateCollaboratorPermission,
+} from '../../../api/collaborationsApi.js';
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
 import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle } from '../../../api/surveysApi.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
@@ -283,6 +295,49 @@ function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, on
   );
 }
 
+function CollaboratorItem({ collaborator, isOwner, isDisabled, onPermissionChange, onRemove }) {
+  const name = collaborator.name || collaborator.email || 'Usuario';
+
+  return (
+    <li>
+      <span className="edit-survey-avatar">{name.slice(0, 1).toUpperCase()}</span>
+      <span className="edit-survey-person-data">
+        <strong>{collaborator.name || 'Usuario'}</strong>
+        <small>{collaborator.email}</small>
+        {!isOwner && (
+          <span className={`edit-survey-permission-badge permission-${(collaborator.permission || 'EDIT').toLocaleLowerCase()}`}>
+            {collaborator.permission === 'VIEW' ? 'Solo lectura' : 'Puede editar'}
+          </span>
+        )}
+        <small>Desde el {formatDate(collaborator.joinedAt)}</small>
+      </span>
+      {isOwner && (
+        <span className="edit-survey-collaborator-actions">
+          <Dropdown
+            className="edit-survey-permission-select"
+            value={collaborator.permission}
+            disabled={isDisabled}
+            aria-label={`Permiso de ${name}`}
+            onChange={(event) => onPermissionChange(collaborator, event.target.value)}
+          >
+            <option value="VIEW">Solo lectura</option>
+            <option value="EDIT">Puede editar</option>
+          </Dropdown>
+          <button
+            type="button"
+            className="edit-survey-icon-danger"
+            aria-label={`Revocar la colaboración de ${name}`}
+            disabled={isDisabled}
+            onClick={() => onRemove(collaborator)}
+          >
+            <MdDeleteOutline aria-hidden="true" />
+          </button>
+        </span>
+      )}
+    </li>
+  );
+}
+
 function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requests, publicationRequests, onReload, onSurveyReload, onError, onSuccess }) {
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState('EDIT');
@@ -316,6 +371,23 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
     if (succeeded) { setEmail(''); setPermission('EDIT'); setMessage(''); }
   }
 
+  function changePermission(collaborator, nextPermission) {
+    if (nextPermission === collaborator.permission) return;
+    void runAction(
+      `permission-${collaborator.userId}`,
+      () => updateCollaboratorPermission(surveyId, collaborator.userId, nextPermission),
+      `Permiso de ${collaborator.name || collaborator.email || 'usuario'} actualizado.`,
+    );
+  }
+
+  function revokeCollaboration(collaborator) {
+    void runAction(
+      `remove-${collaborator.userId}`,
+      () => removeCollaborator(surveyId, collaborator.userId),
+      'Colaboración revocada.',
+    );
+  }
+
   return (
     <div className="edit-survey-collaboration-grid">
       {isOwner ? (
@@ -342,7 +414,20 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
 
       <section className="edit-survey-panel-card">
         <div className="edit-survey-card-heading"><div><h2>COLABORADORES</h2>{!isLoading && <p>{collaborators.length} en total</p>}</div></div>
-        {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={2} hasActions={false} /></div> : collaborators.length === 0 ? <p className="edit-survey-empty-state">Esta encuesta todavía no tiene colaboradores.</p> : <ul className="edit-survey-people-list">{collaborators.map((collaborator) => <li key={collaborator.userId}><span className="edit-survey-avatar">{(collaborator.name || collaborator.email || '?').slice(0, 1).toUpperCase()}</span><span className="edit-survey-person-data"><strong>{collaborator.name || 'Usuario'}</strong><small>{collaborator.email}</small><span className={`edit-survey-permission-badge permission-${(collaborator.permission || 'EDIT').toLocaleLowerCase()}`}>{collaborator.permission === 'VIEW' ? 'Solo lectura' : 'Puede editar'}</span><small>Desde el {formatDate(collaborator.joinedAt)}</small></span>{isOwner && <button type="button" className="edit-survey-icon-danger" aria-label={`Eliminar a ${collaborator.name || collaborator.email}`} disabled={pendingAction === `remove-${collaborator.userId}`} onClick={() => runAction(`remove-${collaborator.userId}`, () => removeCollaborator(surveyId, collaborator.userId), 'Colaborador eliminado.')}><MdDeleteOutline aria-hidden="true" /></button>}</li>)}</ul>}
+        {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={2} hasActions={false} /></div> : collaborators.length === 0 ? <p className="edit-survey-empty-state">Esta encuesta todavía no tiene colaboradores.</p> : (
+          <ul className="edit-survey-people-list">
+            {collaborators.map((collaborator) => (
+              <CollaboratorItem
+                key={collaborator.userId}
+                collaborator={collaborator}
+                isOwner={isOwner}
+                isDisabled={Boolean(pendingAction)}
+                onPermissionChange={changePermission}
+                onRemove={revokeCollaboration}
+              />
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="edit-survey-panel-card edit-survey-requests-card">
@@ -366,7 +451,7 @@ export function EditSurveyPage() {
   const [searchParams] = useSearchParams();
   const { user, isInitializing } = useAuth();
   const saveLockRef = useRef(false);
-  const [activeTab, setActiveTab] = useState(searchParams.get('seccion') === 'configuracion' ? 'SETTINGS' : 'SURVEY');
+  const [activeTab, setActiveTab] = useState(({ configuracion: 'SETTINGS', colaboraciones: 'COLLABORATIONS' })[searchParams.get('seccion')] || 'SURVEY');
   const tabRefs = useRef(new Map());
   const [survey, setSurvey] = useState(null);
   const [structure, setStructure] = useState(INITIAL_SURVEY_STRUCTURE);

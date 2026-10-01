@@ -62,12 +62,11 @@ public class ElementRequestService {
     public ApproveElementRequestResponseDto approve(Long id, User admin) {
         ElementRequest request = getRequest(id);
         Long createdId = createRequestedElement(request, admin);
-        notificationService.deleteElementRequestNotifications(request.getId());
         notificationService.createInternal(
             request.getRequestedBy(),
             NotificationType.ELEMENT_REQUEST_RESOLVED,
             "Solicitud de elemento aprobada",
-            "Tu propuesta de catálogo ha sido aprobada"
+            "Tu propuesta #" + request.getId() + " de " + request.getElementType() + " para el catálogo ha sido aprobada."
         );
         elementRequestRepository.delete(request);
         return new ApproveElementRequestResponseDto(createdId);
@@ -76,12 +75,11 @@ public class ElementRequestService {
     @Transactional
     public void reject(Long id) {
         ElementRequest request = getRequest(id);
-        notificationService.deleteElementRequestNotifications(request.getId());
         notificationService.createInternal(
             request.getRequestedBy(),
             NotificationType.ELEMENT_REQUEST_RESOLVED,
             "Solicitud de elemento rechazada",
-            "Tu propuesta de catálogo ha sido rechazada"
+            "Tu propuesta #" + request.getId() + " de " + request.getElementType() + " para el catálogo ha sido rechazada."
         );
         elementRequestRepository.delete(request);
     }

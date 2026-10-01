@@ -1,4 +1,5 @@
-import { MdCheckCircle, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
+import { MdArrowForward, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
+import { Link } from 'react-router-dom';
 
 import { formatDate } from '../../utils/formatDate.js';
 
@@ -33,7 +34,7 @@ function getCollaborationAction(survey, isRequesting) {
 
 export function SurveyCard({
   survey, onEdit, onView, onSupervise, onRequestCollaboration, onMoreOptions,
-  headingLevel = 3, isRequesting = false, variant = 'editor',
+  accessHref, headingLevel = 3, isRequesting = false, variant = 'editor',
 }) {
   const normalizedHeadingLevel = Math.min(6, Math.max(2, Number(headingLevel) || 3));
   const Heading = `h${normalizedHeadingLevel}`;
@@ -42,11 +43,13 @@ export function SurveyCard({
   const surveyTags = Array.isArray(tags) ? tags : [];
   const isAdminCard = variant === 'admin';
   const isDirectoryCard = variant === 'directory';
+  const isPublicCard = variant === 'public';
   const collaborationAction = getCollaborationAction(survey, isRequesting);
   const cardClassName = [
     'survey-card',
     isAdminCard && 'survey-card--admin',
     isDirectoryCard && 'survey-card--directory',
+    isPublicCard && 'survey-card--public',
   ].filter(Boolean).join(' ');
 
   return (
@@ -60,14 +63,22 @@ export function SurveyCard({
       <div className="survey-card-content">
         <Heading className="survey-card-title">{title}</Heading>
 
-        <div className="survey-card-badges">
-          <span className={`survey-status-badge status-${normalizedLifecycle.toLowerCase()}`}>
-            {LIFECYCLE_LABELS[normalizedLifecycle]}
-          </span>
-          {isAdminCard && <span className={`survey-visibility-badge visibility-${String(survey.visibility || 'UNLISTED').toLowerCase()}`}>
-            {VISIBILITY_LABELS[survey.visibility] || 'OCULTA'}
-          </span>}
-        </div>
+        {!isPublicCard && (
+          <div className="survey-card-badges">
+            <span className={`survey-status-badge status-${normalizedLifecycle.toLowerCase()}`}>
+              {LIFECYCLE_LABELS[normalizedLifecycle]}
+            </span>
+            {isAdminCard && <span className={`survey-visibility-badge visibility-${String(survey.visibility || 'UNLISTED').toLowerCase()}`}>
+              {VISIBILITY_LABELS[survey.visibility] || 'OCULTA'}
+            </span>}
+          </div>
+        )}
+
+        {isPublicCard && (
+          <p className="survey-card-description">
+            {survey.description || 'Participa y comparte tu opinión en esta encuesta.'}
+          </p>
+        )}
 
         {(isAdminCard || isDirectoryCard) && <dl className="survey-card-admin-details">
           <div><dt>Editor</dt><dd>{survey.editorName || 'Sin propietario'}</dd></div>
@@ -80,7 +91,31 @@ export function SurveyCard({
           {surveyTags.map((tag) => <span key={tag} className="survey-tag">{tag}</span>)}
         </div>}
 
-        <div className="survey-card-actions">
+        {isPublicCard && survey.accessMode !== 'PUBLIC' && (
+          <p className="survey-card-access">
+            {survey.accessMode === 'PASSWORD_PROTECTED'
+              ? <MdLockOutline aria-hidden="true" />
+              : <MdOutlinePerson aria-hidden="true" />}
+            <span>
+              {survey.accessMode === 'PASSWORD_PROTECTED'
+                ? 'Acceso con contraseña'
+                : 'Acceso con cuenta'}
+            </span>
+          </p>
+        )}
+
+        {isPublicCard && accessHref && (
+          <Link
+            className="survey-card-public-action"
+            to={accessHref}
+            aria-label={`Acceder a la encuesta: ${title}`}
+          >
+            <span>Acceder a la encuesta</span>
+            <MdArrowForward aria-hidden="true" />
+          </Link>
+        )}
+
+        {!isPublicCard && <div className="survey-card-actions">
           {isAdminCard && <>
             <button type="button" className="btn-survey-action btn-details" onClick={() => onView?.(id)}>
               <MdOutlineRemoveRedEye aria-hidden="true" /><span>Ver detalles</span>
@@ -107,7 +142,7 @@ export function SurveyCard({
           {onMoreOptions && <button type="button" className="btn-survey-more" onClick={() => onMoreOptions(id)} aria-label={`Más opciones para ${title}`}>
             <MdMoreVert aria-hidden="true" />
           </button>}
-        </div>
+        </div>}
       </div>
     </article>
   );

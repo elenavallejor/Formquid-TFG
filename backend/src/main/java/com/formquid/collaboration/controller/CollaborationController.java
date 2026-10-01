@@ -5,6 +5,7 @@ import com.formquid.collaboration.dto.CreateCollaborationRequestDto;
 import com.formquid.collaboration.dto.CreatePublicationRequestDto;
 import com.formquid.collaboration.dto.PublicationRequestResponseDto;
 import com.formquid.collaboration.dto.SurveyCollaboratorResponseDto;
+import com.formquid.collaboration.dto.UpdateCollaborationPermissionDto;
 import com.formquid.collaboration.service.CollaborationService;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.service.SurveyService;
@@ -16,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -85,6 +87,21 @@ public class CollaborationController {
         @AuthenticationPrincipal User user
     ) {
         collaborationService.removeCollaborator(surveyId, collaboratorId, user.getId());
+    }
+
+    @PatchMapping("/collaborators/{collaboratorId}")
+    public SurveyCollaboratorResponseDto updateCollaboratorPermission(
+        @PathVariable Long surveyId,
+        @PathVariable Long collaboratorId,
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody UpdateCollaborationPermissionDto request
+    ) {
+        return collaborationService.updateCollaboratorPermission(
+            surveyId,
+            collaboratorId,
+            user.getId(),
+            request.permission()
+        );
     }
 
     @PostMapping("/publication-requests")

@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ImUser } from 'react-icons/im';
 import { MdOutlineDashboard, MdOutlineKeyboardArrowDown, MdOutlineLogout, MdOutlineNotificationsNone, MdOutlinePerson } from 'react-icons/md';
 
-import formQuidLogo from '../../assets/images/formquid-logo.png';
-import { useAuth } from '../../context/AuthContext.jsx';
 import { getUnreadNotificationsCount } from '../../api/notificationsApi.js';
+import formQuidLogo from '../../assets/images/formquid-logo.png';
+import { NotificationsModal } from '../NotificationsModal/NotificationsModal.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { getUserInitials } from '../../utils/getUserInitials.js';
 
 import './Header.css';
@@ -28,7 +29,9 @@ export function Header() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
 
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState({ userId: null, count: 0 });
+  const unreadCount = notificationCount.userId === user?.id ? notificationCount.count : 0;
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const userDisplayName = getUserDisplayName(user);
@@ -38,14 +41,14 @@ export function Header() {
     let isMounted = true;
 
     if (!isAuthenticated || !user?.id) {
-      setUnreadCount(0);
       return undefined;
     }
 
-    getUnreadNotificationsCount()
+    function refreshCount() {
+      getUnreadNotificationsCount()
       .then((count) => {
         if (isMounted) {
-          setUnreadCount(count);
+          setNotificationCount({ userId: user.id, count });
         }
       })
       .catch((error) => {
@@ -54,9 +57,16 @@ export function Header() {
           error,
         );
       });
+    }
+
+    refreshCount();
+    window.addEventListener('notifications-changed', refreshCount);
+    window.addEventListener('focus', refreshCount);
 
     return () => {
       isMounted = false;
+      window.removeEventListener('notifications-changed', refreshCount);
+      window.removeEventListener('focus', refreshCount);
     };
   }, [isAuthenticated, user?.id]);
 
@@ -112,7 +122,7 @@ export function Header() {
                 className="notification-button"
                 type="button"
                 aria-label={notificationLabel}
-                onClick={() => navigate('/notificaciones')}
+                onClick={() => setNotificationsOpen(true)}
               >
                 <span className="notification-label">
                   NOTIFICACIONES
@@ -219,6 +229,7 @@ export function Header() {
           )}
         </nav>
       </div>
+      {isAuthenticated && notificationsOpen && <NotificationsModal onClose={() => setNotificationsOpen(false)} />}
     </header>
   );
 }

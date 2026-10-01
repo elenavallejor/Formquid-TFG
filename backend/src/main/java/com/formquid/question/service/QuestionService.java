@@ -45,6 +45,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class QuestionService {
 
+    private static final int MAX_SCALE_VALUE_COUNT = 30;
+
     private final QuestionRepository questionRepository;
 
     @Transactional(readOnly = true)
@@ -422,6 +424,16 @@ public class QuestionService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La escala contiene configuración incompatible");
         }
         validateNumericRange(settings);
+        BigDecimal valueCount = settings.maxValue()
+            .subtract(settings.minValue())
+            .divideToIntegralValue(settings.step())
+            .add(BigDecimal.ONE);
+        if (valueCount.compareTo(BigDecimal.valueOf(MAX_SCALE_VALUE_COUNT)) > 0) {
+            throw new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "Una escala puede contener como máximo " + MAX_SCALE_VALUE_COUNT + " valores"
+            );
+        }
         if (bipolar && (!hasText(settings.leftLabel()) || !hasText(settings.rightLabel()))) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La escala bipolar necesita etiquetas izquierda y derecha");
         }
