@@ -195,12 +195,16 @@ function getNumberSetting(data, name) {
   return Number.isFinite(number) ? number : null;
 }
 
+function requiredMessage(instruction) {
+  return `Esta pregunta es obligatoria: ${instruction}`;
+}
+
 function getQuestionValidationError(data, value) {
   const required = Boolean(data.isRequired);
   const type = data.questionType;
 
   if (type === 'TEXT') {
-    if (required && isBlank(value)) return 'Escribe una respuesta.';
+    if (required && isBlank(value)) return requiredMessage('escribe una respuesta.');
     const maxLength = getNumberSetting(data, 'maxLength');
     if (!isBlank(value) && maxLength !== null && String(value).length > maxLength) {
       return `La respuesta no puede superar ${maxLength} caracteres.`;
@@ -209,7 +213,7 @@ function getQuestionValidationError(data, value) {
   }
 
   if (type === 'NUMBER') {
-    if (isBlank(value)) return required ? 'Introduce un número.' : '';
+    if (isBlank(value)) return required ? requiredMessage('introduce un número.') : '';
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return 'Introduce un número válido.';
 
@@ -227,7 +231,7 @@ function getQuestionValidationError(data, value) {
   }
 
   if (type === 'SINGLE_CHOICE') {
-    if (required && isBlank(value)) return 'Selecciona una opción.';
+    if (required && isBlank(value)) return requiredMessage('selecciona una opción.');
     if (isOtherAnswer(value) && isBlank(value.otherText)) return 'Especifica la respuesta «Otro».';
     return '';
   }
@@ -236,10 +240,15 @@ function getQuestionValidationError(data, value) {
     const selections = Array.isArray(value) ? value : [];
     const minSelections = getNumberSetting(data, 'minSelections');
     const maxSelections = getNumberSetting(data, 'maxSelections');
-    if (selections.length === 0 && !required) return '';
     const effectiveMinimum = minSelections !== null && minSelections > 0
       ? minSelections
       : required ? 1 : 0;
+    if (selections.length === 0) {
+      if (!required) return '';
+      return requiredMessage(effectiveMinimum === 1
+        ? 'selecciona al menos una opción.'
+        : `selecciona al menos ${effectiveMinimum} opciones.`);
+    }
 
     if (selections.length < effectiveMinimum) {
       return effectiveMinimum === 1
@@ -256,22 +265,28 @@ function getQuestionValidationError(data, value) {
   }
 
   if (type === 'SCALE') {
-    return required && isBlank(value) ? 'Selecciona un valor de la escala.' : '';
+    return required && isBlank(value)
+      ? requiredMessage('selecciona un valor de la escala.')
+      : '';
   }
 
   if (type === 'MATRIX_SCALE') {
     const rows = Array.isArray(data.matrixRows) ? data.matrixRows : [];
     const answeredRows = value && typeof value === 'object' ? Object.keys(value).length : 0;
-    if (answeredRows === 0) return required ? 'Responde todas las filas de la matriz.' : '';
+    if (answeredRows === 0) {
+      return required ? requiredMessage('responde todas las filas de la matriz.') : '';
+    }
     if (answeredRows < rows.length) return 'Responde todas las filas de la matriz.';
     return '';
   }
 
   if (type === 'BOOLEAN') {
-    return required && value !== 'true' && value !== 'false' ? 'Selecciona una de las dos opciones.' : '';
+    return required && value !== 'true' && value !== 'false'
+      ? requiredMessage('selecciona una de las dos opciones.')
+      : '';
   }
 
-  return required && isBlank(value) ? 'Responde esta pregunta.' : '';
+  return required && isBlank(value) ? requiredMessage('responde esta pregunta.') : '';
 }
 
 function getFocusTargetId(question) {
@@ -316,6 +331,13 @@ export function Survey({
         value={answers[answerKey] ?? null}
         idBase={idBase}
         errorMessage={errors[answerKey] || ''}
+        onClearError={() => {
+          setErrors((current) => {
+            const nextErrors = { ...current };
+            delete nextErrors[answerKey];
+            return nextErrors;
+          });
+        }}
         onChange={(value) => {
           setAnswers((current) => ({ ...current, [answerKey]: value }));
           setErrors((current) => {
@@ -382,15 +404,17 @@ export function Survey({
     const firstInvalidQuestion = questions.find((question) => nextErrors[question.answerKey]);
     if (firstInvalidQuestion) {
       window.requestAnimationFrame(() => {
-        document.getElementById(getFocusTargetId(firstInvalidQuestion))?.focus();
+        const target = document.getElementById(getFocusTargetId(firstInvalidQuestion));
+        if (!target) return;
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+        target.focus({ preventScroll: true });
       });
       return;
     }
 
     onSubmit?.(buildParticipationAnswers(questions, answers));
   }
-
-  const invalidQuestions = questions.filter((question) => errors[question.answerKey]);
 
   return (
     <form
@@ -418,34 +442,6 @@ export function Survey({
       </section>
 
       <section className="survey-response-questions" aria-label="Preguntas de la encuesta">
-        {invalidQuestions.length > 0 && (
-          <section className="survey-response-validation" role="alert" aria-labelledby="survey-validation-title">
-            <h2 id="survey-validation-title">
-              {invalidQuestions.length === 1
-                ? 'Hay un error que debes corregir'
-                : `Hay ${invalidQuestions.length} errores que debes corregir`}
-            </h2>
-            <ul>
-              {invalidQuestions.map((question) => {
-                const focusTargetId = getFocusTargetId(question);
-                return (
-                  <li key={`${question.path}-error`}>
-                    <a
-                      href={`#${focusTargetId}`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        document.getElementById(focusTargetId)?.focus();
-                      }}
-                    >
-                      Pregunta {question.questionNumber}: {errors[question.answerKey]}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
         <div className="survey-response-content">
           {items.length > 0 ? items.map(renderItem) : <p className="survey-response-empty">Esta encuesta todavía no contiene elementos.</p>}
         </div>

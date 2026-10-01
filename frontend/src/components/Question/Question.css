@@ -418,13 +418,8 @@
   color: var(--color-text);
 }
 
-.question-error-message {
-  margin: 12px 0 0;
-  color: var(--color-error);
-  font-family: Arial, sans-serif;
-  font-size: 16.25px;
-  font-weight: 700;
-  line-height: 1.45;
+.academic-question-card > .error-message {
+  margin-top: 12px;
 }
 
 @media only screen and (max-width: 640px) {

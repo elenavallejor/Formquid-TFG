@@ -15,6 +15,7 @@ import {
   getScaleDisplayValue,
   getScaleValues,
 } from '../../utils/questionBuilderUtils.js';
+import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
 import './Question.css';
 
 const FACE_ICONS = [BsEmojiAngryFill, BsEmojiFrownFill, BsEmojiNeutralFill, BsEmojiSmileFill, BsEmojiLaughingFill];
@@ -52,6 +53,7 @@ export function Question({
   onChange = () => {},
   idBase,
   errorMessage = '',
+  onClearError = () => {},
 }) {
   const normalizedHeadingLevel = Math.min(6, Math.max(2, Number(headingLevel) || 3));
   const Heading = `h${normalizedHeadingLevel}`;
@@ -423,7 +425,7 @@ export function Question({
         )}
       </div>
 
-      {errorMessage && <p id={errorId} className="question-error-message">{errorMessage}</p>}
+      <ErrorMessage id={errorId} message={errorMessage} onClose={onClearError} />
     </article>
   );
 }

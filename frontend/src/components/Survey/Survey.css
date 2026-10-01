@@ -94,44 +94,6 @@
 .survey-response-block-items { display: flex; flex-direction: column; gap: 6px; }
 .survey-response-block-items > .academic-question-card:first-child { padding-top: 8px; }
 .survey-response-empty { margin: 0; padding: 34px 20px; border: 1px dashed var(--color-border); color: var(--color-text-muted); text-align: center; }
-.survey-response-validation {
-  margin: 22px 0 0;
-  padding: 16px 18px;
-  border: 2px solid var(--color-error);
-  border-radius: 8px;
-  background: var(--color-error-surface);
-  color: var(--color-text);
-  font-family: Arial, sans-serif;
-  font-size: 16.25px;
-}
-
-.survey-response-validation h2 {
-  margin: 0 0 8px;
-  color: var(--color-text);
-  font-size: 17.5px;
-  font-weight: 800;
-}
-
-.survey-response-validation ul {
-  margin: 0;
-  padding-left: 24px;
-}
-
-.survey-response-validation li + li {
-  margin-top: 5px;
-}
-
-.survey-response-validation a {
-  color: var(--color-text);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.survey-response-validation a:focus-visible {
-  outline: var(--focus-outline);
-  outline-offset: var(--focus-outline-offset);
-}
 .survey-response-actions { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--color-border); }
 .survey-response-actions button { padding: 12px 18px; border: 1px solid var(--color-primary); border-radius: 8px; background: var(--color-primary); color: var(--color-text-on-dark); font-family: Arial, sans-serif; font-size: 16.25px; font-weight: 800; cursor: pointer; }
 .survey-response-actions button:disabled { opacity: 0.68; cursor: wait; }
