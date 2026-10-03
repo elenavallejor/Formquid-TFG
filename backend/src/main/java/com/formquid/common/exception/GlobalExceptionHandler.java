@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
         ApiException exception,
         HttpServletRequest request
     ) {
-        return build(exception.getStatus(), exception.getMessage(), request);
+        return build(exception.getStatus(), exception.getMessage(), exception.getCode(), request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -138,10 +138,20 @@ public class GlobalExceptionHandler {
         String message,
         HttpServletRequest request
     ) {
+        return build(status, message, null, request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> build(
+        HttpStatus status,
+        String message,
+        String code,
+        HttpServletRequest request
+    ) {
         ApiErrorResponse error = new ApiErrorResponse(
             status.value(),
             status.getReasonPhrase(),
             message,
+            code,
             request.getServletPath()
         );
         return ResponseEntity.status(status).body(error);

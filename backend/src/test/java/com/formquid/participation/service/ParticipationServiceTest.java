@@ -2,6 +2,7 @@ package com.formquid.participation.service;
 
 import com.formquid.block.entity.Block;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.exception.ApiException;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
@@ -34,6 +35,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,7 +106,7 @@ class ParticipationServiceTest {
         when(contentItemRepository.findByParentBlockIdOrderByPositionAsc(20L)).thenReturn(List.of(textItem, questionItem));
         when(questionRepository.findByParentItemId(31L)).thenReturn(Optional.of(question));
         when(questionRepository.findById(40L)).thenReturn(Optional.of(question));
-        when(participationRepository.save(org.mockito.ArgumentMatchers.any(Participation.class))).thenAnswer(invocation -> {
+        when(participationRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Participation.class))).thenAnswer(invocation -> {
             Participation participation = invocation.getArgument(0);
             participation.setId(50L);
             participation.setSubmittedAt(Instant.parse("2026-09-15T10:00:00Z"));
@@ -123,11 +126,36 @@ class ParticipationServiceTest {
             new SubmitParticipationRequestDto(null, List.of(
                 new SubmitAnswerRequestDto(40L, "Respuesta", null, null, null, null)
             )),
-            null
+            null,
+            "respondent-token-hash"
         );
 
         assertThat(response.id()).isEqualTo(50L);
         assertThat(response.answers()).hasSize(1);
         assertThat(response.answers().getFirst().questionId()).isEqualTo(40L);
+    }
+
+    @Test
+    void submitRejectsASecondAnonymousParticipation() {
+        Survey survey = Survey.builder()
+            .id(1L)
+            .publicCode("ABCDEF234567")
+            .lifecycleStatus(SurveyLifecycle.OPEN)
+            .accessMode(SurveyAccessMode.PUBLIC)
+            .build();
+        when(surveyRepository.findByPublicCode("ABCDEF234567")).thenReturn(Optional.of(survey));
+        when(participationRepository.existsBySurveyIdAndRespondentTokenHash(1L, "respondent-token-hash"))
+            .thenReturn(true);
+
+        assertThatThrownBy(() -> participationService.submit(
+            "ABCDEF234567",
+            new SubmitParticipationRequestDto(null, List.of()),
+            null,
+            "respondent-token-hash"
+        ))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("Ya respondiste esta encuesta. Solo se puede enviar una vez.");
+
+        verifyNoInteractions(contentItemRepository, answerRepository);
     }
 }

@@ -1,25 +1,39 @@
 import { useEffect, useRef, useState } from 'react';
-import { MdArrowBack, MdCheckCircle, MdLockOutline } from 'react-icons/md';
+import {
+  MdArrowBack,
+  MdCheckCircle,
+  MdClose,
+  MdInfoOutline,
+  MdLockOutline,
+} from 'react-icons/md';
 import { Link, useParams } from 'react-router-dom';
 
-import { submitPublicParticipation } from '../../../api/participationApi.js';
+import {
+  submitAuthenticatedParticipation,
+  submitPublicParticipation,
+} from '../../../api/participationApi.js';
 import {
   accessPasswordProtectedSurvey,
   getPublicSurveyById,
+  getRegisteredSurveyByCode,
 } from '../../../api/surveysApi.js';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Survey } from '../../../components/Survey/Survey.jsx';
 import { SURVEY_MODES } from '../../../components/Survey/SurveyModes.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 import './PublicSurveyPage.css';
+
+const ALREADY_SUBMITTED_CODE = 'PARTICIPATION_ALREADY_SUBMITTED';
 
 function getRequestErrorMessage(error, fallback) {
   return error?.status && error.message ? error.message : fallback;
 }
 
-/** Permite consultar y responder una encuesta disponible sin iniciar sesión. */
+/** Permite consultar y responder una encuesta disponible. */
 export function PublicSurveyPage() {
   const { publicCode } = useParams();
+  const { isAuthenticated, isAuthLoading } = useAuth();
   const passwordInputRef = useRef(null);
   const statusRef = useRef(null);
   const surveyContentRef = useRef(null);
@@ -29,6 +43,7 @@ export function PublicSurveyPage() {
   const [passwordError, setPasswordError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [submitError, setSubmitError] = useState('');
+  const [alreadyParticipated, setAlreadyParticipated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,6 +51,8 @@ export function PublicSurveyPage() {
   const [requestVersion, setRequestVersion] = useState(0);
 
   useEffect(() => {
+    if (isAuthLoading) return undefined;
+
     let isActive = true;
 
     Promise.resolve().then(() => {
@@ -44,9 +61,16 @@ export function PublicSurveyPage() {
       setLoadError('');
       setRequiresPassword(false);
       setSurvey(null);
+      setSubmitted(false);
+      setAlreadyParticipated(false);
+      setSubmitError('');
     });
 
-    getPublicSurveyById(publicCode)
+    const getSurvey = isAuthenticated
+      ? getRegisteredSurveyByCode
+      : getPublicSurveyById;
+
+    getSurvey(publicCode)
       .then((response) => {
         if (!isActive) return;
         if (response.accessMode === 'PASSWORD_PROTECTED') {
@@ -75,7 +99,7 @@ export function PublicSurveyPage() {
     return () => {
       isActive = false;
     };
-  }, [publicCode, requestVersion]);
+  }, [isAuthenticated, isAuthLoading, publicCode, requestVersion]);
 
   useEffect(() => {
     if (submitted) statusRef.current?.focus();
@@ -122,9 +146,13 @@ export function PublicSurveyPage() {
     setIsSubmitting(true);
     setPasswordError('');
     setSubmitError('');
+    setAlreadyParticipated(false);
 
     try {
-      await submitPublicParticipation(publicCode, {
+      const submitParticipation = isAuthenticated
+        ? submitAuthenticatedParticipation
+        : submitPublicParticipation;
+      await submitParticipation(publicCode, {
         accessPassword: requiresPassword ? accessPassword : null,
         answers,
       });
@@ -135,6 +163,12 @@ export function PublicSurveyPage() {
         setRequiresPassword(true);
         setPasswordError('La contraseña no es correcta. Inténtalo de nuevo.');
         window.requestAnimationFrame(() => passwordInputRef.current?.focus());
+      } else if (
+        error.status === 409
+        && error.data?.code === ALREADY_SUBMITTED_CODE
+      ) {
+        setAlreadyParticipated(true);
+        window.requestAnimationFrame(() => statusRef.current?.focus());
       } else {
         setSubmitError(getRequestErrorMessage(
           error,
@@ -213,14 +247,42 @@ export function PublicSurveyPage() {
             tabIndex={-1}
           >
             <MdCheckCircle aria-hidden="true" />
-            <h1>¡Gracias por participar!</h1>
-            <p>Tus respuestas se han enviado correctamente.</p>
+            <h1>¡Respuestas enviadas!</h1>
+            <p>Gracias por participar. Tus respuestas se han guardado correctamente.</p>
             <Link to="/">Volver a las encuestas</Link>
           </section>
         )}
 
         {!isLoading && survey && !submitted && (
           <div ref={surveyContentRef} className="public-survey-content" tabIndex={-1}>
+            {alreadyParticipated && (
+              <section
+                ref={statusRef}
+                className="public-survey-participation-notice"
+                role="alert"
+                tabIndex={-1}
+                aria-labelledby="public-survey-participation-notice-title"
+              >
+                <MdInfoOutline aria-hidden="true" />
+                <div>
+                  <h2 id="public-survey-participation-notice-title">
+                    Ya has participado en esta encuesta
+                  </h2>
+                  <p>
+                    Esta encuesta ya tiene una respuesta tuya. Para cuidar los resultados,
+                    cada persona solo puede enviarla una vez.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cerrar aviso de participación anterior"
+                  onClick={() => setAlreadyParticipated(false)}
+                >
+                  <MdClose aria-hidden="true" />
+                </button>
+              </section>
+            )}
+
             {submitError && (
               <div ref={statusRef} className="public-survey-submit-error" role="alert" tabIndex={-1}>
                 {submitError}

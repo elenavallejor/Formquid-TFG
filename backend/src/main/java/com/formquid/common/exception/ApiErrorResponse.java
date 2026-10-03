@@ -7,6 +7,7 @@ public record ApiErrorResponse(
     int status,
     String error,
     String message,
+    String code,
     String path
 ) {
     public ApiErrorResponse(
@@ -15,6 +16,16 @@ public record ApiErrorResponse(
         String message,
         String path
     ) {
-        this(Instant.now(), status, error, message, path);
+        this(Instant.now(), status, error, message, null, path);
+    }
+
+    public ApiErrorResponse(
+        int status,
+        String error,
+        String message,
+        String code,
+        String path
+    ) {
+        this(Instant.now(), status, error, message, code, path);
     }
 }

@@ -139,6 +139,68 @@
   line-height: 1.5;
 }
 
+.public-survey-participation-notice {
+  width: 100%;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 2px solid var(--color-warning-border);
+  border-radius: 8px;
+  background-color: var(--color-warning-surface);
+  color: var(--color-text);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.public-survey-participation-notice > svg {
+  flex: 0 0 auto;
+  color: var(--color-warning);
+  font-size: 28px;
+}
+
+.public-survey-participation-notice > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.public-survey-participation-notice h2 {
+  margin: 0 0 4px;
+  color: var(--color-warning);
+  font-size: 20px;
+}
+
+.public-survey-participation-notice p {
+  margin: 0;
+  font-size: 17.5px;
+  line-height: 1.5;
+}
+
+.public-survey-participation-notice button {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-warning);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.public-survey-participation-notice button:hover {
+  background-color: var(--color-surface);
+}
+
+.public-survey-participation-notice button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
 .public-survey-message {
   width: min(680px, 100%);
   margin: 64px auto;

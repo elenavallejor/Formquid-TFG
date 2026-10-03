@@ -33,6 +33,7 @@ import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ParticipationService {
 
+    public static final String ALREADY_SUBMITTED_CODE = "PARTICIPATION_ALREADY_SUBMITTED";
+
     private final SurveyRepository surveyRepository;
     private final ContentItemRepository contentItemRepository;
     private final BlockRepository blockRepository;
@@ -64,10 +67,16 @@ public class ParticipationService {
      * Recibe encuesta abierta y respuestas, devuelve la participación guardada.
      */
     @Transactional
-    public ParticipationResponseDto submit(String publicCode, SubmitParticipationRequestDto request, User authenticatedUser) {
+    public ParticipationResponseDto submit(
+        String publicCode,
+        SubmitParticipationRequestDto request,
+        User authenticatedUser,
+        String respondentTokenHash
+    ) {
         Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         validateSurveyAccess(survey, request.accessPassword(), authenticatedUser);
+        validateRespondent(survey.getId(), authenticatedUser, respondentTokenHash);
 
         Map<Long, Boolean> requiredByQuestion = loadSurveyQuestions(survey.getId());
         Set<Long> receivedQuestionIds = new HashSet<>();
@@ -92,13 +101,45 @@ public class ParticipationService {
             }
         });
 
-        Participation participation = participationRepository.save(Participation.builder().survey(survey).build());
+        Participation participation = saveParticipation(survey, authenticatedUser, respondentTokenHash);
         for (SubmitAnswerRequestDto dto : answersByQuestion.values()) {
             if (!isEmpty(dto)) {
                 saveAnswer(participation, dto);
             }
         }
         return toResponse(participationRepository.findById(participation.getId()).orElse(participation));
+    }
+
+    private void validateRespondent(Long surveyId, User authenticatedUser, String respondentTokenHash) {
+        if (authenticatedUser == null && (respondentTokenHash == null || respondentTokenHash.isBlank())) {
+            throw new IllegalStateException("La participación no tiene una identidad asociada");
+        }
+        boolean alreadySubmitted = authenticatedUser != null
+            ? participationRepository.existsBySurveyIdAndRespondentUserId(surveyId, authenticatedUser.getId())
+            : participationRepository.existsBySurveyIdAndRespondentTokenHash(surveyId, respondentTokenHash);
+        if (alreadySubmitted) {
+            throw duplicateParticipation();
+        }
+    }
+
+    private Participation saveParticipation(Survey survey, User authenticatedUser, String respondentTokenHash) {
+        try {
+            return participationRepository.saveAndFlush(Participation.builder()
+                .survey(survey)
+                .respondentUser(authenticatedUser)
+                .respondentTokenHash(authenticatedUser == null ? respondentTokenHash : null)
+                .build());
+        } catch (DataIntegrityViolationException exception) {
+            throw duplicateParticipation();
+        }
+    }
+
+    private ApiException duplicateParticipation() {
+        return new ApiException(
+            HttpStatus.CONFLICT,
+            ALREADY_SUBMITTED_CODE,
+            "Ya respondiste esta encuesta. Solo se puede enviar una vez."
+        );
     }
 
     private void validateSurveyAccess(Survey survey, String accessPassword, User authenticatedUser) {

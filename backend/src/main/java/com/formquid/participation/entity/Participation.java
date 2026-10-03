@@ -1,6 +1,7 @@
 package com.formquid.participation.entity;
 
 import com.formquid.survey.entity.Survey;
+import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,6 +45,13 @@ public class Participation {
 
     @Column(name = "submitted_at", nullable = false)
     private Instant submittedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "respondent_user_id")
+    private User respondentUser;
+
+    @Column(name = "respondent_token_hash", length = 64)
+    private String respondentTokenHash;
 
     @OneToMany(mappedBy = "participation", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)

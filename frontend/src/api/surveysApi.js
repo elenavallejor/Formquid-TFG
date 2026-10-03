@@ -11,6 +11,10 @@ export function getPublicSurveyById(surveyId) {
   return apiClient(`/public/surveys/${surveyId}`, { method: 'GET' });
 }
 
+export function getRegisteredSurveyByCode(publicCode) {
+  return apiClient(`/surveys/by-code/${publicCode}`, { method: 'GET' });
+}
+
 export function accessPasswordProtectedSurvey(surveyId, accessPassword) {
   return apiClient(`/public/surveys/${surveyId}/access`, {
     method: 'POST',

@@ -11,5 +11,9 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     boolean existsBySurveyId(Long surveyId);
 
+    boolean existsBySurveyIdAndRespondentUserId(Long surveyId, Long userId);
+
+    boolean existsBySurveyIdAndRespondentTokenHash(Long surveyId, String tokenHash);
+
     List<Participation> findBySurveyIdOrderBySubmittedAtAsc(Long surveyId);
 }

@@ -28,6 +28,6 @@ public class AuthenticatedParticipationController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ParticipationResponseDto submit(@PathVariable String publicCode, @AuthenticationPrincipal User user, @Valid @RequestBody SubmitParticipationRequestDto request) {
-        return participationService.submit(publicCode, request, user);
+        return participationService.submit(publicCode, request, user, null);
     }
 }

@@ -83,6 +83,14 @@ public class SurveyController {
         return surveyService.findListedOpenForRegistered(user, tags);
     }
 
+    @GetMapping("/by-code/{publicCode}")
+    public SurveyResponseDto getOpenForRespondent(
+        @PathVariable String publicCode,
+        @AuthenticationPrincipal User user
+    ) {
+        return surveyService.getOpenSurveyForRespondent(publicCode, user);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SurveyResponseDto create(
