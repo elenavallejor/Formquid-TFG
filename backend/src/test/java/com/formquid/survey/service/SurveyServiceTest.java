@@ -13,6 +13,7 @@ import com.formquid.notification.service.NotificationService;
 import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.dto.AdminSurveySummaryDto;
+import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyAccessMode;
@@ -29,6 +30,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -66,6 +68,30 @@ class SurveyServiceTest {
 
     @InjectMocks
     private SurveyService surveyService;
+
+    @Test
+    void mainPageCombinesNameAndTagBeforePagination() {
+        PageRequest pageable = PageRequest.of(1, 3);
+        when(surveyRepository.findListedOpenPageByTag(
+            false,
+            "PUBLIC",
+            "clima",
+            "salud-mental",
+            pageable
+        )).thenReturn(Page.empty(pageable));
+
+        PageResponseDto<PublicSurveySummaryDto> response = surveyService.findListedOpenPage(
+            "  CLIMA  ",
+            " #Salud Mental ",
+            SurveyAccessMode.PUBLIC,
+            1,
+            3
+        );
+
+        assertThat(response.content()).isEmpty();
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(3);
+    }
 
     @Test
     void administrationLoadsOnlyRequestedSummaryPage() {

@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { MdFilterList, MdLockOutline, MdSearch } from 'react-icons/md';
+import { useEffect, useRef, useState } from 'react';
+import { FaRegClipboard } from 'react-icons/fa';
+import {
+  MdLockOutline,
+  MdOutlinePerson,
+  MdPublic,
+  MdSearch,
+} from 'react-icons/md';
 
 import { getPublicSurveys, getRegisteredSurveys } from '../../../api/surveysApi.js';
 import bannerSmall from '../../../assets/images/banner-small.png';
+import { Filter } from '../../../components/Filter/Filter.jsx';
+import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -10,17 +18,19 @@ import { useAuth } from '../../../context/AuthContext.jsx';
 import './MainPage.css';
 
 const ACCESS_FILTERS = {
-  ALL: 'ALL',
-  DIRECT: 'DIRECT',
+  PUBLIC: 'PUBLIC',
   PASSWORD: 'PASSWORD_PROTECTED',
+  AUTHENTICATED: 'AUTHENTICATED',
 };
 
-function normalizeSearchText(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('es');
-}
+const ACCESS_OPTIONS = [
+  { value: ACCESS_FILTERS.PUBLIC, label: 'Públicas' },
+  { value: ACCESS_FILTERS.PASSWORD, label: 'Con contraseña' },
+  { value: ACCESS_FILTERS.AUTHENTICATED, label: 'Para usuarios registrados' },
+];
+
+const DEFAULT_PAGE_SIZE = 9;
+const PAGE_SIZE_OPTIONS = [3, 9, 18];
 
 function getLoadErrorMessage(error) {
   return error?.status
@@ -28,27 +38,41 @@ function getLoadErrorMessage(error) {
     : 'No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
 }
 
-/**
- * Página principal de FormQuid.
- *
- * Presenta las encuestas disponibles y separa las de acceso directo de las
- * que requieren contraseña.
- */
-export function MainPage() {
-  const { isAuthenticated, isAuthLoading } = useAuth();
+function PaginatedSurveySection({
+  accessMode,
+  emptyMessage,
+  icon: Icon,
+  id,
+  isAuthLoading,
+  request,
+  search,
+  searchEmptyMessage,
+  tag,
+  title,
+  visible,
+}) {
   const [surveys, setSurveys] = useState([]);
-  const [search, setSearch] = useState('');
-  const [accessFilter, setAccessFilter] = useState(ACCESS_FILTERS.ALL);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [requestVersion, setRequestVersion] = useState(0);
+  const previousFilters = useRef({ search, tag });
 
   useEffect(() => {
-    if (isAuthLoading) return undefined;
+    if (previousFilters.current.search !== search || previousFilters.current.tag !== tag) {
+      previousFilters.current = { search, tag };
+      if (currentPage !== 0) {
+        setCurrentPage(0);
+        return undefined;
+      }
+    }
+
+    if (!visible || isAuthLoading) return undefined;
 
     let isActive = true;
-    const request = isAuthenticated ? getRegisteredSurveys : getPublicSurveys;
 
     Promise.resolve().then(() => {
       if (!isActive) return;
@@ -56,15 +80,24 @@ export function MainPage() {
       setErrorMessage('');
     });
 
-    request()
+    request({
+      search,
+      tag,
+      accessMode,
+      page: currentPage,
+      size: itemsPerPage,
+    })
       .then((response) => {
-        if (isActive) {
-          setSurveys(Array.isArray(response) ? response : []);
-        }
+        if (!isActive) return;
+        setSurveys(Array.isArray(response?.content) ? response.content : []);
+        setTotalItems(Number(response?.totalElements ?? 0));
+        setTotalPages(Number(response?.totalPages ?? 0));
       })
       .catch((error) => {
         if (!isActive) return;
         setSurveys([]);
+        setTotalItems(0);
+        setTotalPages(0);
         setErrorMessage(getLoadErrorMessage(error));
       })
       .finally(() => {
@@ -74,33 +107,121 @@ export function MainPage() {
     return () => {
       isActive = false;
     };
-  }, [isAuthenticated, isAuthLoading, requestVersion]);
+  }, [
+    accessMode,
+    currentPage,
+    isAuthLoading,
+    itemsPerPage,
+    request,
+    requestVersion,
+    search,
+    tag,
+    visible,
+  ]);
 
-  const filteredSurveys = useMemo(() => {
-    const normalizedSearch = normalizeSearchText(search.trim());
+  if (!visible) return null;
 
-    return surveys.filter((survey) => {
-      const matchesSearch = !normalizedSearch || normalizeSearchText(
-        `${survey.title || ''} ${survey.description || ''} ${(survey.tags || []).join(' ')}`,
-      ).includes(normalizedSearch);
-      const isPasswordProtected = survey.accessMode === 'PASSWORD_PROTECTED';
-      const matchesAccess = accessFilter === ACCESS_FILTERS.ALL
-        || (accessFilter === ACCESS_FILTERS.PASSWORD && isPasswordProtected)
-        || (accessFilter === ACCESS_FILTERS.DIRECT && !isPasswordProtected);
+  return (
+    <section
+      className="main-page-survey-section"
+      aria-busy={isLoading}
+      aria-labelledby={id}
+    >
+      <header>
+        <Icon aria-hidden="true" />
+        <h3 id={id}>{title}</h3>
+      </header>
 
-      return matchesSearch && matchesAccess;
-    });
-  }, [accessFilter, search, surveys]);
+      {errorMessage && (
+        <div className="main-page-error" role="alert">
+          <p>{errorMessage}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setIsLoading(true);
+              setErrorMessage('');
+              setRequestVersion((version) => version + 1);
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
-  const directSurveys = filteredSurveys.filter(
-    (survey) => survey.accessMode !== 'PASSWORD_PROTECTED',
+      {isLoading ? (
+        <>
+          <span className="sr-only" role="status">Cargando encuestas...</span>
+          <Skeleton
+            variant="grid"
+            count={Math.min(itemsPerPage, DEFAULT_PAGE_SIZE)}
+            hasActions={false}
+          />
+        </>
+      ) : !errorMessage && surveys.length > 0 ? (
+        <div className="main-page-survey-grid">
+          {surveys.map((survey) => (
+            <SurveyCard
+              key={survey.publicCode}
+              survey={survey}
+              headingLevel={4}
+              variant="public"
+              accessHref={`/${encodeURIComponent(survey.publicCode)}`}
+            />
+          ))}
+        </div>
+      ) : !errorMessage && (
+        <div className="main-page-section-empty" role="status">
+          <FaRegClipboard aria-hidden="true" />
+          <p>{search || tag ? searchEmptyMessage : emptyMessage}</p>
+        </div>
+      )}
+
+      {!isLoading && !errorMessage && totalItems > 0 && (
+        <Pagination
+          ariaLabel={`Paginación de ${title.toLowerCase()}`}
+          currentPage={currentPage}
+          itemLabel="encuestas"
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setItemsPerPage(size);
+            setCurrentPage(0);
+          }}
+          pageSize={itemsPerPage}
+          pageSizeLabel={`Encuestas por página en ${title.toLowerCase()}`}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          totalItems={totalItems}
+          totalPages={totalPages}
+        />
+      )}
+    </section>
   );
-  const passwordSurveys = filteredSurveys.filter(
-    (survey) => survey.accessMode === 'PASSWORD_PROTECTED',
+}
+
+/**
+ * Página principal de FormQuid.
+ *
+ * Presenta las encuestas disponibles agrupadas por su forma de acceso.
+ */
+export function MainPage() {
+  const { isAuthenticated, isAuthLoading } = useAuth();
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
+  const [selectedAccessModes, setSelectedAccessModes] = useState(
+    () => ACCESS_OPTIONS.map((option) => option.value),
   );
-  const hasResults = filteredSurveys.length > 0;
-  const showDirectSection = accessFilter !== ACCESS_FILTERS.PASSWORD;
-  const showPasswordSection = accessFilter !== ACCESS_FILTERS.DIRECT;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [search]);
+  const showPublicSection = selectedAccessModes.includes(ACCESS_FILTERS.PUBLIC);
+  const showPasswordSection = selectedAccessModes.includes(ACCESS_FILTERS.PASSWORD);
+  const showAuthenticatedSection = selectedAccessModes.includes(ACCESS_FILTERS.AUTHENTICATED);
+  const request = isAuthenticated ? getRegisteredSurveys : getPublicSurveys;
 
   return (
     <main className="main-page" aria-labelledby="main-page-title">
@@ -119,165 +240,98 @@ export function MainPage() {
 
       <div className="main-page-surveys">
         <div className="main-page-surveys-header">
-          <div>
-            <h2 id="available-surveys-title">NUESTRAS ENCUESTAS</h2>
+          <div className="main-page-surveys-intro">
+            <h2 id="available-surveys-title">Nuestras encuestas</h2>
             <p>Explora las encuestas disponibles y comparte tu opinión.</p>
           </div>
 
           <div className="main-page-controls" role="search">
             <label className="main-page-search">
-              <span className="sr-only">Buscar encuestas</span>
+              <span className="sr-only">Buscar encuestas por nombre</span>
               <MdSearch aria-hidden="true" />
               <input
                 type="search"
                 value={search}
-                placeholder="Buscar encuestas"
+                placeholder="Buscar por nombre"
                 onChange={(event) => setSearch(event.target.value)}
               />
             </label>
-            <button
-              type="button"
-              className="main-page-filter-button"
-              aria-expanded={filtersOpen}
-              aria-controls="main-page-access-filters"
-              onClick={() => setFiltersOpen((current) => !current)}
-            >
-              <MdFilterList aria-hidden="true" />
-              <span>Filtrar</span>
-            </button>
+            <Filter
+              label="Filtrar encuestas"
+              options={ACCESS_OPTIONS}
+              optionsLabel="Tipo de acceso"
+              selectedValues={selectedAccessModes}
+              textFilter={{ label: 'Etiqueta', placeholder: 'Buscar por etiqueta', value: tagFilter }}
+              onChange={(accessModes, tag) => {
+                setSelectedAccessModes(accessModes);
+                setTagFilter(tag);
+              }}
+              onReset={() => {
+                setSearch('');
+                setDebouncedSearch('');
+              }}
+            />
           </div>
         </div>
 
-        {filtersOpen && (
-          <fieldset id="main-page-access-filters" className="main-page-filter-panel">
-            <legend>Tipo de acceso</legend>
-            <label>
-              <input
-                type="radio"
-                name="access-filter"
-                value={ACCESS_FILTERS.ALL}
-                checked={accessFilter === ACCESS_FILTERS.ALL}
-                onChange={(event) => setAccessFilter(event.target.value)}
-              />
-              Todas
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="access-filter"
-                value={ACCESS_FILTERS.DIRECT}
-                checked={accessFilter === ACCESS_FILTERS.DIRECT}
-                onChange={(event) => setAccessFilter(event.target.value)}
-              />
-              Acceso directo
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="access-filter"
-                value={ACCESS_FILTERS.PASSWORD}
-                checked={accessFilter === ACCESS_FILTERS.PASSWORD}
-                onChange={(event) => setAccessFilter(event.target.value)}
-              />
-              Con contraseña
-            </label>
-          </fieldset>
-        )}
-
-        {!isLoading && !errorMessage && (
-          <p className="main-page-results-status" role="status" aria-live="polite">
-            {filteredSurveys.length === 1
-              ? '1 encuesta disponible'
-              : `${filteredSurveys.length} encuestas disponibles`}
-          </p>
-        )}
-
-        {errorMessage && (
-          <div className="main-page-error" role="alert">
-            <p>{errorMessage}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setIsLoading(true);
-                setErrorMessage('');
-                setRequestVersion((version) => version + 1);
-              }}
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        <div className="main-page-results" aria-busy={isLoading} aria-labelledby="available-surveys-title">
-          {isLoading ? (
-            <>
-              <span className="sr-only" role="status">Cargando encuestas...</span>
-              <Skeleton variant="grid" count={3} hasActions={false} />
-            </>
-          ) : !errorMessage && !hasResults ? (
-            <div className="main-page-empty" role="status">
-              <p>
-                {search || accessFilter !== ACCESS_FILTERS.ALL
-                  ? 'No encontramos encuestas que coincidan con tu búsqueda.'
-                  : 'No hay encuestas disponibles en este momento.'}
-              </p>
-              {(search || accessFilter !== ACCESS_FILTERS.ALL) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch('');
-                    setAccessFilter(ACCESS_FILTERS.ALL);
-                  }}
-                >
-                  Ver todas las encuestas
-                </button>
-              )}
+        <div className="main-page-results" aria-labelledby="available-surveys-title">
+          {selectedAccessModes.length === 0 && (
+            <div className="main-page-section-empty" role="status">
+              <FaRegClipboard aria-hidden="true" />
+              <p>Selecciona al menos un tipo de encuesta para ver los resultados.</p>
             </div>
-          ) : !errorMessage && (
-            <>
-              {showDirectSection && directSurveys.length > 0 && (
-                <section className="main-page-survey-section" aria-label="Encuestas de acceso directo">
-                  <div className="main-page-survey-grid">
-                    {directSurveys.map((survey) => (
-                      <SurveyCard
-                        key={survey.publicCode}
-                        survey={survey}
-                        headingLevel={3}
-                        variant="public"
-                        accessHref={!isAuthenticated
-                          ? `/${encodeURIComponent(survey.publicCode)}`
-                          : undefined}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {showPasswordSection && passwordSurveys.length > 0 && (
-                <section className="main-page-survey-section main-page-password-section" aria-labelledby="password-surveys-title">
-                  <header>
-                    <MdLockOutline aria-hidden="true" />
-                    <div>
-                      <h2 id="password-surveys-title">ENCUESTAS CON CONTRASEÑA</h2>
-                      <p>Necesitarás la contraseña de la encuesta para poder participar.</p>
-                    </div>
-                  </header>
-                  <div className="main-page-survey-grid">
-                    {passwordSurveys.map((survey) => (
-                      <SurveyCard
-                        key={survey.publicCode}
-                        survey={survey}
-                        headingLevel={3}
-                        variant="public"
-                        accessHref={!isAuthenticated
-                          ? `/${encodeURIComponent(survey.publicCode)}`
-                          : undefined}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
+          )}
+          <PaginatedSurveySection
+            accessMode={ACCESS_FILTERS.PUBLIC}
+            emptyMessage="No hay encuestas públicas disponibles."
+            icon={MdPublic}
+            id="public-surveys-title"
+            isAuthLoading={isAuthLoading}
+            request={request}
+            search={debouncedSearch}
+            searchEmptyMessage="No hay encuestas públicas que coincidan con tu búsqueda."
+            tag={tagFilter}
+            title="Encuestas públicas"
+            visible={showPublicSection}
+          />
+          <PaginatedSurveySection
+            accessMode={ACCESS_FILTERS.PASSWORD}
+            emptyMessage="No hay encuestas con contraseña disponibles."
+            icon={MdLockOutline}
+            id="password-surveys-title"
+            isAuthLoading={isAuthLoading}
+            request={request}
+            search={debouncedSearch}
+            searchEmptyMessage="No hay encuestas con contraseña que coincidan con tu búsqueda."
+            tag={tagFilter}
+            title="Encuestas con contraseña"
+            visible={showPasswordSection}
+          />
+          {isAuthenticated ? (
+            <PaginatedSurveySection
+              accessMode={ACCESS_FILTERS.AUTHENTICATED}
+              emptyMessage="No hay encuestas para usuarios registrados disponibles."
+              icon={MdOutlinePerson}
+              id="authenticated-surveys-title"
+              isAuthLoading={isAuthLoading}
+              request={request}
+              search={debouncedSearch}
+              searchEmptyMessage="No hay encuestas para usuarios registrados que coincidan con tu búsqueda."
+              tag={tagFilter}
+              title="Encuestas para usuarios registrados"
+              visible={showAuthenticatedSection}
+            />
+          ) : !isAuthLoading && showAuthenticatedSection && (
+            <section className="main-page-survey-section" aria-labelledby="authenticated-surveys-title">
+              <header>
+                <MdOutlinePerson aria-hidden="true" />
+                <h3 id="authenticated-surveys-title">Encuestas para usuarios registrados</h3>
+              </header>
+              <div className="main-page-section-empty" role="status">
+                <FaRegClipboard aria-hidden="true" />
+                <p>Inicia sesión para consultar estas encuestas.</p>
+              </div>
+            </section>
           )}
         </div>
       </div>

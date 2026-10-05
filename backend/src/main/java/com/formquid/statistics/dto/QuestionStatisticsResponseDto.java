@@ -12,6 +12,7 @@ public record QuestionStatisticsResponseDto(
     long omissions,
     double responseRate,
     NumericStatisticsDto numericStatistics,
+    List<ValueDistributionDto> valueDistribution,
     List<ChoiceOptionStatisticsDto> choiceStatistics,
     BooleanStatisticsDto booleanStatistics,
     List<MatrixRowStatisticsDto> matrixStatistics,

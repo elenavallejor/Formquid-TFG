@@ -212,8 +212,15 @@
 }
 
 .public-survey-message > svg {
-  color: var(--color-success);
+  color: var(--color-primary);
   font-size: 52px;
+}
+
+.public-survey-message-image {
+  width: min(144px, 45vw);
+  height: auto;
+  margin: 0 auto 12px;
+  display: block;
 }
 
 .public-survey-message h1 {

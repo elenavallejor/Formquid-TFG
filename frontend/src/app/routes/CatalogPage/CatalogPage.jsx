@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
+import { MdAdd, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
 
 import {
   deleteCatalogBlock,
@@ -14,11 +14,13 @@ import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
+import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
 import './CatalogPage.css';
 
 const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [5, 10, 20];
 
 const SECTION_CONFIG = {
   plantillas: {
@@ -73,14 +75,6 @@ function emptyCatalogState(isLoading = true) {
     isLoading,
     errorMessage: '',
   };
-}
-
-function getVisiblePages(currentPage, totalPages) {
-  if (totalPages <= 5) {
-    return Array.from({ length: totalPages }, (_, index) => index);
-  }
-  const firstPage = Math.min(Math.max(currentPage - 2, 0), totalPages - 5);
-  return Array.from({ length: 5 }, (_, index) => firstPage + index);
 }
 
 function filterAndSortItems(items, config, searchQuery, sortOrder) {
@@ -217,60 +211,25 @@ export function CatalogPage() {
     setPublicCurrentPage(0);
   }
 
-  function renderPagination(catalog, currentPage, setCurrentPage) {
+  function renderPagination(catalog, currentPage, setCurrentPage, source) {
     if (catalog.isLoading || catalog.errorMessage || catalog.totalItems === 0) return null;
-    const startItem = currentPage * itemsPerPage + 1;
-    const endItem = Math.min((currentPage + 1) * itemsPerPage, catalog.totalItems);
+    const paginationName = source === 'own'
+      ? `mis ${config.label.toLowerCase()}`
+      : `${config.label.toLowerCase()} de la lista pública`;
 
     return (
-      <footer className="catalog-pagination-footer">
-        <div className="pagination-count-label">
-          Mostrando {startItem} a {endItem} de {catalog.totalItems} {config.label.toLowerCase()}
-        </div>
-
-        <div className="pagination-numbers-bar">
-          <button
-            type="button"
-            className="btn-page-nav"
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage((page) => Math.max(page - 1, 0))}
-          >
-            <MdChevronLeft aria-hidden="true" />
-          </button>
-
-          {getVisiblePages(currentPage, catalog.totalPages).map((page) => (
-            <button
-              key={page}
-              type="button"
-              className={`btn-page-number ${currentPage === page ? 'active' : ''}`}
-              onClick={() => setCurrentPage(page)}
-            >
-              {page + 1}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            className="btn-page-nav"
-            disabled={currentPage >= catalog.totalPages - 1}
-            onClick={() => setCurrentPage((page) => Math.min(page + 1, catalog.totalPages - 1))}
-          >
-            <MdChevronRight aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="pagination-per-page">
-          <Dropdown
-            aria-label="Elementos por página"
-            value={itemsPerPage}
-            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
-          >
-            <option value={5}>5 por página</option>
-            <option value={10}>10 por página</option>
-            <option value={20}>20 por página</option>
-          </Dropdown>
-        </div>
-      </footer>
+      <Pagination
+        ariaLabel={`Paginación de ${paginationName}`}
+        currentPage={currentPage}
+        itemLabel={config.label.toLowerCase()}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={handlePageSizeChange}
+        pageSize={itemsPerPage}
+        pageSizeLabel={`Elementos por página en ${paginationName}`}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        totalItems={catalog.totalItems}
+        totalPages={catalog.totalPages}
+      />
     );
   }
 
@@ -301,7 +260,7 @@ export function CatalogPage() {
           onDelete={(item) => setDeleteModalState({ isOpen: true, item, source })}
         />
 
-        {renderPagination(catalog, currentPage, setCurrentPage)}
+        {renderPagination(catalog, currentPage, setCurrentPage, source)}
       </section>
     );
   }

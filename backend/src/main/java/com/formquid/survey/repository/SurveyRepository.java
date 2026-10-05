@@ -2,6 +2,7 @@ package com.formquid.survey.repository;
 
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.entity.Survey;
+import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,92 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     List<Survey> findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
         SurveyLifecycle lifecycleStatus,
         SurveyVisibility visibility
+    );
+
+    @Query(
+        value = """
+            select survey
+            from Survey survey
+            where survey.lifecycleStatus = :lifecycleStatus
+                and survey.visibility = :visibility
+                and (:includeAuthenticated = true or survey.accessMode <> :authenticatedAccessMode)
+                and (:accessMode is null or survey.accessMode = :accessMode)
+                and (
+                    :search = ''
+                    or lower(survey.title) like concat('%', :search, '%')
+                    or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
+                )
+            """,
+        countQuery = """
+            select count(survey.id)
+            from Survey survey
+            where survey.lifecycleStatus = :lifecycleStatus
+                and survey.visibility = :visibility
+                and (:includeAuthenticated = true or survey.accessMode <> :authenticatedAccessMode)
+                and (:accessMode is null or survey.accessMode = :accessMode)
+                and (
+                    :search = ''
+                    or lower(survey.title) like concat('%', :search, '%')
+                    or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
+                )
+            """
+    )
+    Page<Survey> findListedOpenPage(
+        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        @Param("visibility") SurveyVisibility visibility,
+        @Param("includeAuthenticated") boolean includeAuthenticated,
+        @Param("authenticatedAccessMode") SurveyAccessMode authenticatedAccessMode,
+        @Param("accessMode") SurveyAccessMode accessMode,
+        @Param("search") String search,
+        Pageable pageable
+    );
+
+    @Query(
+        value = """
+            select survey.*
+            from surveys survey
+            where survey.lifecycle_status = 'OPEN'
+                and survey.visibility = 'LISTED'
+                and (:includeAuthenticated = true or survey.access_mode <> 'AUTHENTICATED')
+                and (:accessMode = '' or survey.access_mode = :accessMode)
+                and (
+                    :search = ''
+                    or lower(survey.title) like concat('%', :search, '%')
+                    or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
+                )
+                and exists (
+                    select 1
+                    from unnest(survey.tags) as survey_tag(tag_text)
+                    where strpos(lower(survey_tag.tag_text), :tag) > 0
+                )
+            order by survey.created_at desc, survey.id desc
+            """,
+        countQuery = """
+            select count(survey.id)
+            from surveys survey
+            where survey.lifecycle_status = 'OPEN'
+                and survey.visibility = 'LISTED'
+                and (:includeAuthenticated = true or survey.access_mode <> 'AUTHENTICATED')
+                and (:accessMode = '' or survey.access_mode = :accessMode)
+                and (
+                    :search = ''
+                    or lower(survey.title) like concat('%', :search, '%')
+                    or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
+                )
+                and exists (
+                    select 1
+                    from unnest(survey.tags) as survey_tag(tag_text)
+                    where strpos(lower(survey_tag.tag_text), :tag) > 0
+                )
+            """,
+        nativeQuery = true
+    )
+    Page<Survey> findListedOpenPageByTag(
+        @Param("includeAuthenticated") boolean includeAuthenticated,
+        @Param("accessMode") String accessMode,
+        @Param("search") String search,
+        @Param("tag") String tag,
+        Pageable pageable
     );
 
     @Query(

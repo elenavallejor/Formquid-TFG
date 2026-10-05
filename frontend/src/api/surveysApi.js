@@ -3,8 +3,28 @@ import { apiClient } from './apiClient.js';
 /**
  * Gestiona las operaciones públicas, privadas y administrativas relacionadas con las encuestas.
  */
-export function getPublicSurveys() {
-  return apiClient('/public/surveys', { method: 'GET' });
+function getMainPageSurveys(path, {
+  search = '',
+  tag = '',
+  accessMode = 'ALL',
+  page = 0,
+  size = 9,
+} = {}) {
+  const params = new URLSearchParams();
+  const normalizedSearch = search.trim();
+  const normalizedTag = tag.trim();
+
+  if (normalizedSearch) params.set('search', normalizedSearch);
+  if (normalizedTag) params.set('tag', normalizedTag);
+  if (accessMode !== 'ALL') params.set('accessMode', accessMode);
+  params.set('page', String(page));
+  params.set('size', String(size));
+
+  return apiClient(`${path}?${params.toString()}`, { method: 'GET' });
+}
+
+export function getPublicSurveys(options) {
+  return getMainPageSurveys('/public/surveys/page', options);
 }
 
 export function getPublicSurveyById(surveyId) {
@@ -54,8 +74,8 @@ export function getMySurveys({
   });
 }
 
-export function getRegisteredSurveys() {
-  return apiClient('/surveys/registered', { method: 'GET' });
+export function getRegisteredSurveys(options) {
+  return getMainPageSurveys('/surveys/registered/page', options);
 }
 
 export function getSurveyDirectory({

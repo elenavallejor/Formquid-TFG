@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
+import { MdAdd, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
 import { getMySurveys } from '../../../api/surveysApi.js';
 import { AdminPanelButton } from '../../../components/AdminPanelButton/AdminPanelButton.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
+import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { PanelButton } from '../../../components/PanelButton/PanelButton.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
@@ -490,50 +491,18 @@ export function PanelPage() {
                         onEdit={(id) =>
                           navigate(`/encuestas/${id}/editar`)
                         }
-                        onView={(id) =>
-                          navigate(`/encuestas/${id}`)
-                        }
                       />
                     ))}
                   </div>
 
                   {totalPages > 1 && (
-                    <div className="pagination-controls">
-                      <button
-                        type="button"
-                        className="btn-pagination"
-                        disabled={currentPage === 0}
-                        onClick={() => {
-                          setCurrentPage((page) =>
-                            Math.max(page - 1, 0),
-                          );
-                        }}
-                      >
-                        <MdChevronLeft aria-hidden="true" />
-                        Anterior
-                      </button>
-
-                      <span className="pagination-info">
-                        Página{' '}
-                        <strong>{currentPage + 1}</strong>
-                        {' '}de{' '}
-                        <strong>{totalPages}</strong>
-                      </span>
-
-                      <button
-                        type="button"
-                        className="btn-pagination"
-                        disabled={currentPage >= totalPages - 1}
-                        onClick={() => {
-                          setCurrentPage((page) =>
-                            Math.min(page + 1, totalPages - 1),
-                          );
-                        }}
-                      >
-                        Siguiente
-                        <MdChevronRight aria-hidden="true" />
-                      </button>
-                    </div>
+                    <Pagination
+                      ariaLabel="Paginación de mis encuestas"
+                      currentPage={currentPage}
+                      onPageChange={setCurrentPage}
+                      totalPages={totalPages}
+                      variant="compact"
+                    />
                   )}
                 </>
               ) : null}

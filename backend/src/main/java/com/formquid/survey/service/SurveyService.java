@@ -41,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -204,6 +205,79 @@ public class SurveyService {
             .filter(survey -> matchesTags(survey, normalizedTags))
             .map(this::toPublicSummary)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDto<PublicSurveySummaryDto> findListedOpenPage(
+        String search,
+        String tag,
+        SurveyAccessMode accessMode,
+        int page,
+        int size
+    ) {
+        return findListedOpenPage(search, tag, accessMode, page, size, false);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDto<PublicSurveySummaryDto> findListedOpenForRegisteredPage(
+        User user,
+        String search,
+        String tag,
+        SurveyAccessMode accessMode,
+        int page,
+        int size
+    ) {
+        if (user == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
+        }
+        return findListedOpenPage(search, tag, accessMode, page, size, true);
+    }
+
+    private PageResponseDto<PublicSurveySummaryDto> findListedOpenPage(
+        String search,
+        String tag,
+        SurveyAccessMode accessMode,
+        int page,
+        int size,
+        boolean includeAuthenticated
+    ) {
+        if (page < 0 || size < 1 || size > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
+        }
+
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        String normalizedTag = tag == null ? "" : Normalizer.normalize(
+            tag.trim().toLowerCase(Locale.ROOT).replaceFirst("^#", ""),
+            Normalizer.Form.NFKC
+        ).replaceAll("\\s+", "-");
+        Page<Survey> surveys;
+        if (normalizedTag.isEmpty()) {
+            surveys = surveyRepository.findListedOpenPage(
+                SurveyLifecycle.OPEN,
+                SurveyVisibility.LISTED,
+                includeAuthenticated,
+                SurveyAccessMode.AUTHENTICATED,
+                accessMode,
+                normalizedSearch,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+            );
+        } else {
+            surveys = surveyRepository.findListedOpenPageByTag(
+                includeAuthenticated,
+                accessMode == null ? "" : accessMode.name(),
+                normalizedSearch,
+                normalizedTag,
+                PageRequest.of(page, size)
+            );
+        }
+
+        return new PageResponseDto<>(
+            surveys.getContent().stream().map(this::toPublicSummary).toList(),
+            surveys.getNumber(),
+            surveys.getSize(),
+            surveys.getTotalElements(),
+            surveys.getTotalPages()
+        );
     }
 
     @Transactional(readOnly = true)

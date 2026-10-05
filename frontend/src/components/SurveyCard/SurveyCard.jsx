@@ -1,4 +1,4 @@
-import { MdArrowForward, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
+import { MdArrowForward, MdBarChart, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 
 import { formatDate } from '../../utils/formatDate.js';
@@ -44,12 +44,15 @@ export function SurveyCard({
   const isAdminCard = variant === 'admin';
   const isDirectoryCard = variant === 'directory';
   const isPublicCard = variant === 'public';
+  const isResultsCard = variant === 'results';
+  const hasResultsDetails = Boolean(survey.editorName) || survey.responses !== undefined;
   const collaborationAction = getCollaborationAction(survey, isRequesting);
   const cardClassName = [
     'survey-card',
     isAdminCard && 'survey-card--admin',
     isDirectoryCard && 'survey-card--directory',
     isPublicCard && 'survey-card--public',
+    isResultsCard && 'survey-card--results',
   ].filter(Boolean).join(' ');
 
   return (
@@ -68,6 +71,11 @@ export function SurveyCard({
             <span className={`survey-status-badge status-${normalizedLifecycle.toLowerCase()}`}>
               {LIFECYCLE_LABELS[normalizedLifecycle]}
             </span>
+            {isResultsCard && (
+              <span className="survey-card-updated">
+                Actualizada {formatDate(survey.updatedAt)}
+              </span>
+            )}
             {isAdminCard && <span className={`survey-visibility-badge visibility-${String(survey.visibility || 'UNLISTED').toLowerCase()}`}>
               {VISIBILITY_LABELS[survey.visibility] || 'OCULTA'}
             </span>}
@@ -80,11 +88,11 @@ export function SurveyCard({
           </p>
         )}
 
-        {(isAdminCard || isDirectoryCard) && <dl className="survey-card-admin-details">
-          <div><dt>Editor</dt><dd>{survey.editorName || 'Sin propietario'}</dd></div>
+        {(isAdminCard || isDirectoryCard || (isResultsCard && hasResultsDetails)) && <dl className="survey-card-admin-details">
+          {(!isResultsCard || survey.editorName) && <div><dt>Editor</dt><dd>{survey.editorName || 'Sin propietario'}</dd></div>}
           {isAdminCard && <div><dt>Acceso</dt><dd>{ACCESS_LABELS[survey.accessMode] || survey.accessMode || '—'}</dd></div>}
-          {isAdminCard && <div><dt>Respuestas</dt><dd>{survey.responses ?? 0}</dd></div>}
-          <div><dt>Actualizada</dt><dd>{formatDate(survey.updatedAt)}</dd></div>
+          {(isAdminCard || isResultsCard) && survey.responses !== undefined && <div><dt>Respuestas</dt><dd>{survey.responses ?? 0}</dd></div>}
+          {!isResultsCard && <div><dt>Actualizada</dt><dd>{formatDate(survey.updatedAt)}</dd></div>}
         </dl>}
 
         {surveyTags.length > 0 && <div className="survey-card-tags">
@@ -130,7 +138,14 @@ export function SurveyCard({
               <span>{collaborationAction.label}</span>
             </button>
           )}
-          {!isAdminCard && !isDirectoryCard && <>
+          {isResultsCard && (
+            <button type="button" className="btn-survey-action btn-results" onClick={() => onView?.(id)}>
+              <MdBarChart aria-hidden="true" />
+              <span>Ver resultados</span>
+              <MdArrowForward aria-hidden="true" />
+            </button>
+          )}
+          {!isAdminCard && !isDirectoryCard && !isResultsCard && <>
             <button type="button" className="btn-survey-action btn-edit" onClick={() => onEdit?.(id)}>
               <MdOutlineEdit aria-hidden="true" /><span>Editar</span>
             </button>

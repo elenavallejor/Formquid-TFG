@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MdChevronLeft, MdChevronRight, MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPersonOutline, MdSearch } from 'react-icons/md';
+import { MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPersonOutline, MdSearch } from 'react-icons/md';
 
 import { deleteUser, getUsers, updateUserRole } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
+import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { DEFAULT_USERS_PAGE_SIZE, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserGenderLabel, getUserRoleLabel, getVisiblePages, getVisibleUsers } from '../../../utils/usersManagementUtils.js';
+import { DEFAULT_USERS_PAGE_SIZE, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserGenderLabel, getUserRoleLabel, getVisibleUsers } from '../../../utils/usersManagementUtils.js';
 
 import './UsersManagementPage.css';
 
@@ -69,11 +70,6 @@ export function UsersManagementPage() {
     [usersList, searchQuery, sortOrder]
   );
 
-  const visiblePages = useMemo(
-    () => getVisiblePages(currentPage, totalPages),
-    [currentPage, totalPages]
-  );
-
   async function handleConfirmRoleChange() {
     const { targetUser, nextRole } = roleModalState;
     if (!targetUser || !nextRole) return;
@@ -123,8 +119,6 @@ export function UsersManagementPage() {
     }
   }
 
-  const startItem = totalItems === 0 ? 0 : currentPage * itemsPerPage + 1;
-  const endItem = Math.min((currentPage + 1) * itemsPerPage, totalItems);
   const isPromotion = roleModalState.nextRole === 'ADMIN';
   const roleTargetName = roleModalState.targetUser?.name || 'este usuario';
   const deleteTargetName = deleteModalState.targetUser?.name || 'este usuario';
@@ -251,59 +245,21 @@ export function UsersManagementPage() {
         )}
 
         {!isLoading && !errorMessage && (totalItems > 0 || totalPages > 0) && (
-          <footer className="catalog-pagination-footer">
-            <div className="pagination-count-label">
-              Mostrando {startItem} a {endItem} de {totalItems} usuarios
-            </div>
-
-            <div className="pagination-numbers-bar">
-              <button
-                type="button"
-                className="btn-page-nav"
-                disabled={currentPage === 0 || isLoading}
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
-              >
-                <MdChevronLeft aria-hidden="true" />
-              </button>
-
-              {visiblePages.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`btn-page-number ${currentPage === page ? 'active' : ''}`}
-                  disabled={isLoading}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page + 1}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                className="btn-page-nav"
-                disabled={currentPage >= totalPages - 1 || isLoading}
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages - 1))}
-              >
-                <MdChevronRight aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="pagination-per-page">
-              <Dropdown
-                aria-label="Usuarios por página"
-                value={itemsPerPage}
-                disabled={isLoading}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(0);
-                }}
-              >
-                {USERS_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>{option} por página</option>
-                ))}
-              </Dropdown>
-            </div>
-          </footer>
+          <Pagination
+            ariaLabel="Paginación de usuarios"
+            currentPage={currentPage}
+            itemLabel="usuarios"
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setItemsPerPage(size);
+              setCurrentPage(0);
+            }}
+            pageSize={itemsPerPage}
+            pageSizeLabel="Usuarios por página"
+            pageSizeOptions={USERS_PAGE_SIZE_OPTIONS}
+            totalItems={totalItems}
+            totalPages={totalPages}
+          />
         )}
       </div>
 

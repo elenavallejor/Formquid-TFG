@@ -83,6 +83,8 @@ class CollaborationAndAnswerRepositoryTest {
 
         QuestionOption option = persist(QuestionOption.builder()
             .question(choiceQuestion).label("Sí").position(1).build());
+        QuestionOption unselectedOption = persist(QuestionOption.builder()
+            .question(choiceQuestion).label("No").position(2).build());
         MatrixRow secondRow = persist(MatrixRow.builder()
             .question(matrixQuestion).label("Segunda").position(2).build());
         MatrixRow firstRow = persist(MatrixRow.builder()
@@ -121,10 +123,17 @@ class CollaborationAndAnswerRepositoryTest {
         assertThat(answers.maxNumeric(numericQuestion.getId())).isEqualByComparingTo("8");
 
         assertThat(answerOptions.countOptionsByQuestion(choiceQuestion.getId()))
-            .singleElement().satisfies(row -> {
+            .hasSize(2)
+            .first().satisfies(row -> {
                 assertThat(row[0]).isEqualTo(option.getId());
                 assertThat(row[1]).isEqualTo("Sí");
                 assertThat(((Number) row[2]).longValue()).isEqualTo(1);
+            });
+        assertThat(answerOptions.countOptionsByQuestion(choiceQuestion.getId()))
+            .element(1).satisfies(row -> {
+                assertThat(row[0]).isEqualTo(unselectedOption.getId());
+                assertThat(row[1]).isEqualTo("No");
+                assertThat(((Number) row[2]).longValue()).isZero();
             });
         assertThat(matrixValues.findByQuestionId(matrixQuestion.getId()))
             .extracting(value -> value.getMatrixRow().getLabel())

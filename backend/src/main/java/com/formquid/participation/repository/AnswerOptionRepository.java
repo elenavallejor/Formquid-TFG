@@ -11,11 +11,12 @@ import java.util.List;
 public interface AnswerOptionRepository extends JpaRepository<AnswerOption, AnswerOptionId> {
 
     @Query("""
-        select selected.option.id, selected.option.label, count(selected)
-        from AnswerOption selected
-        where selected.answer.question.id = :questionId
-        group by selected.option.id, selected.option.label, selected.option.position
-        order by selected.option.position asc
+        select option.id, option.label, count(selected.answer.id)
+        from QuestionOption option
+        left join AnswerOption selected on selected.option.id = option.id
+        where option.question.id = :questionId
+        group by option.id, option.label, option.position
+        order by option.position asc
     """)
     List<Object[]> countOptionsByQuestion(@Param("questionId") Long questionId);
 }

@@ -17,6 +17,7 @@ import {
   getPublicSurveyById,
   getRegisteredSurveyByCode,
 } from '../../../api/surveysApi.js';
+import happyFormImage from '../../../assets/images/happy-form-white.png';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Survey } from '../../../components/Survey/Survey.jsx';
 import { SURVEY_MODES } from '../../../components/Survey/SurveyModes.js';
@@ -248,6 +249,11 @@ export function PublicSurveyPage() {
           >
             <MdCheckCircle aria-hidden="true" />
             <h1>¡Respuestas enviadas!</h1>
+            <img
+              className="public-survey-message-image"
+              src={happyFormImage}
+              alt="Mascota de FormQuid sonriendo"
+            />
             <p>Gracias por participar. Tus respuestas se han guardado correctamente.</p>
             <Link to="/">Volver a las encuestas</Link>
           </section>

@@ -20,7 +20,9 @@ import { PanelPage } from './routes/PanelPage/PanelPage';
 import { PublicSurveyPage } from './routes/PublicSurveyPage/PublicSurveyPage.jsx';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
+import { ResultsPage } from './routes/ResultsPage/ResultsPage.jsx';
 import { SuggestElementPage } from './routes/SuggestElementPage/SuggestElementPage.jsx';
+import { SurveyResultsPage } from './routes/SurveyResultsPage/SurveyResultsPage.jsx';
 import { AccountPage } from './routes/AccountPage/AccountPage.jsx';
 import { AdminSurveysPage } from './routes/AdminSurveysPage/AdminSurveysPage.jsx';
 import { SurveyListPage } from './routes/SurveyListPage/SurveyListPage.jsx';
@@ -118,6 +120,26 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={SURVEY_MANAGEMENT_ROLES}>
               <EditSurveyPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'resultados',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={SURVEY_MANAGEMENT_ROLES}>
+              <ResultsPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'encuestas/:surveyId/resultados',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={SURVEY_MANAGEMENT_ROLES}>
+              <SurveyResultsPage />
             </RequireRole>
           </RequireAuth>
         ),

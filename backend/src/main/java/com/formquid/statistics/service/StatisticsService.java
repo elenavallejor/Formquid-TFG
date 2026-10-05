@@ -24,6 +24,7 @@ import com.formquid.statistics.dto.MatrixRowStatisticsDto;
 import com.formquid.statistics.dto.NumericStatisticsDto;
 import com.formquid.statistics.dto.QuestionStatisticsResponseDto;
 import com.formquid.statistics.dto.SurveyStatisticsResponseDto;
+import com.formquid.statistics.dto.ValueDistributionDto;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.survey.service.SurveyService;
@@ -73,7 +74,7 @@ public class StatisticsService {
             participationCount,
             first,
             last,
-            globalTechnologyScore(questionStats, questions),
+            globalEvaluationScore(questionStats, questions),
             questionStats
         );
     }
@@ -120,12 +121,67 @@ public class StatisticsService {
             omissions,
             responseRate,
             numeric,
+            scaleValueDistribution(question, answers),
             choiceStatistics(question.getId(), answerCount),
             booleanStatistics(answers),
             matrixStatistics(question),
             normalizedScore,
             evaluationScore
         );
+    }
+
+    private List<ValueDistributionDto> scaleValueDistribution(Question question, List<Answer> answers) {
+        if (question.getQuestionType() != QuestionType.SCALE) {
+            return List.of();
+        }
+        return valueDistribution(question, answers.stream()
+            .map(Answer::getNumericValue)
+            .filter(value -> value != null)
+            .toList());
+    }
+
+    private List<ValueDistributionDto> valueDistribution(Question question, List<BigDecimal> values) {
+        Map<BigDecimal, Long> counts = values.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                BigDecimal::stripTrailingZeros,
+                java.util.TreeMap::new,
+                java.util.stream.Collectors.counting()
+            ));
+        addConfiguredScaleValues(question, counts);
+        if (counts.isEmpty()) {
+            return List.of();
+        }
+        long total = values.size();
+        return counts.entrySet().stream()
+            .map(entry -> new ValueDistributionDto(
+                entry.getKey(),
+                entry.getValue(),
+                total == 0 ? 0 : (entry.getValue() * 100.0) / total
+            ))
+            .toList();
+    }
+
+    private void addConfiguredScaleValues(Question question, Map<BigDecimal, Long> counts) {
+        QuestionSettings settings = question.getSettings();
+        if (settings == null || settings.getMinValue() == null || settings.getMaxValue() == null) {
+            return;
+        }
+        BigDecimal step = settings.getStep() == null ? BigDecimal.ONE : settings.getStep();
+        if (step.signum() <= 0 || settings.getMinValue().compareTo(settings.getMaxValue()) > 0) {
+            return;
+        }
+        BigDecimal configuredValueCount = settings.getMaxValue()
+            .subtract(settings.getMinValue())
+            .divide(step, 0, RoundingMode.FLOOR)
+            .add(BigDecimal.ONE);
+        if (configuredValueCount.compareTo(new BigDecimal("100")) > 0) {
+            return;
+        }
+        BigDecimal current = settings.getMinValue();
+        while (current.compareTo(settings.getMaxValue()) <= 0) {
+            counts.putIfAbsent(current.stripTrailingZeros(), 0L);
+            current = current.add(step);
+        }
     }
 
     private List<ChoiceOptionStatisticsDto> choiceStatistics(Long questionId, long answerCount) {
@@ -172,6 +228,7 @@ public class StatisticsService {
                     row.getLabel(),
                     values.size(),
                     numericStatistics(values),
+                    valueDistribution(question, values),
                     average(values.stream().map(value -> normalize(question, value)).filter(value -> value != null).toList())
                 );
             })
@@ -264,7 +321,7 @@ public class StatisticsService {
         return question.getEvaluationDirection() == EvaluationDirection.NEGATIVE ? -centered : centered;
     }
 
-    private Double globalTechnologyScore(List<QuestionStatisticsResponseDto> stats, List<Question> questions) {
+    private Double globalEvaluationScore(List<QuestionStatisticsResponseDto> stats, List<Question> questions) {
         Map<Long, Question> questionsById = questions.stream()
             .collect(java.util.stream.Collectors.toMap(Question::getId, question -> question));
         double weighted = 0;

@@ -305,7 +305,24 @@
   background-color: var(--color-success-surface);
 }
 
+.survey-card--results .btn-results {
+  flex: 1 1 100%;
+}
+
+.survey-card--results .survey-card-updated {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 13.75px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.survey-card--results .btn-results svg:last-child {
+  margin-left: auto;
+}
+
 .btn-survey-action.btn-view,
+.btn-survey-action.btn-results,
 .btn-survey-action.btn-supervise,
 .btn-survey-action.btn-collaborate {
   border: 1px solid var(--color-primary);
@@ -314,6 +331,7 @@
 }
 
 .btn-survey-action.btn-view:hover,
+.btn-survey-action.btn-results:hover,
 .btn-survey-action.btn-supervise:hover,
 .btn-survey-action.btn-collaborate:hover:not(:disabled) {
   background-color: var(--color-primary-hover);

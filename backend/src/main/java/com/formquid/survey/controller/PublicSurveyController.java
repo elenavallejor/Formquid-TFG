@@ -1,8 +1,10 @@
 package com.formquid.survey.controller;
 
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.survey.dto.PublicSurveyAccessRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
+import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.service.SurveyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,17 @@ public class PublicSurveyController {
     @GetMapping
     public List<PublicSurveySummaryDto> findListedOpen(@RequestParam(required = false) List<String> tags) {
         return surveyService.findListedOpen(tags);
+    }
+
+    @GetMapping("/page")
+    public PageResponseDto<PublicSurveySummaryDto> findListedOpenPage(
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) String tag,
+        @RequestParam(required = false) SurveyAccessMode accessMode,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "9") int size
+    ) {
+        return surveyService.findListedOpenPage(search, tag, accessMode, page, size);
     }
 
     @GetMapping("/{publicCode}")

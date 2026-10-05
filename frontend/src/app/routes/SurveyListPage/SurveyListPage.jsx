@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdChevronLeft, MdChevronRight, MdSearch } from 'react-icons/md';
+import { MdSearch } from 'react-icons/md';
 
 import { createCollaborationRequest } from '../../../api/collaborationsApi.js';
 import { getSurveyDirectory } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
+import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -16,12 +17,6 @@ import './SurveyListPage.css';
 const DEFAULT_PAGE_SIZE = 9;
 const PAGE_SIZE_OPTIONS = [9, 18, 30];
 const SEARCH_DEBOUNCE_MS = 300;
-
-function getVisiblePages(currentPage, totalPages) {
-  if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index);
-  const firstPage = Math.min(Math.max(currentPage - 2, 0), totalPages - 5);
-  return Array.from({ length: 5 }, (_, index) => firstPage + index);
-}
 
 export function SurveyListPage() {
   const { user } = useAuth();
@@ -80,13 +75,6 @@ export function SurveyListPage() {
 
     return () => { isActive = false; };
   }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, sortOrder]);
-
-  const visiblePages = useMemo(
-    () => getVisiblePages(currentPage, totalPages),
-    [currentPage, totalPages],
-  );
-  const startItem = totalItems === 0 ? 0 : currentPage * itemsPerPage + 1;
-  const endItem = Math.min((currentPage + 1) * itemsPerPage, totalItems);
 
   async function requestCollaboration(surveyId) {
     if (!user?.id || requestingSurveyId !== null) return;
@@ -178,27 +166,21 @@ export function SurveyListPage() {
         </section>
 
         {!isLoading && !errorMessage && totalItems > 0 && (
-          <footer className="survey-list-pagination">
-            <div className="survey-list-pagination-count">Mostrando {startItem} a {endItem} de {totalItems} encuestas</div>
-            <nav className="survey-list-pagination-pages" aria-label="Paginación de encuestas">
-              <button type="button" className="survey-list-page-nav" disabled={currentPage === 0} aria-label="Página anterior" onClick={() => setCurrentPage((page) => Math.max(page - 1, 0))}>
-                <MdChevronLeft aria-hidden="true" />
-              </button>
-              {visiblePages.map((page) => (
-                <button key={page} type="button" className={`survey-list-page-number ${currentPage === page ? 'active' : ''}`} aria-label={`Página ${page + 1}`} aria-current={currentPage === page ? 'page' : undefined} onClick={() => setCurrentPage(page)}>
-                  {page + 1}
-                </button>
-              ))}
-              <button type="button" className="survey-list-page-nav" disabled={currentPage >= totalPages - 1} aria-label="Página siguiente" onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages - 1))}>
-                <MdChevronRight aria-hidden="true" />
-              </button>
-            </nav>
-            <div className="survey-list-pagination-size">
-              <Dropdown value={itemsPerPage} aria-label="Encuestas por página" onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(0); }}>
-                {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size} por página</option>)}
-              </Dropdown>
-            </div>
-          </footer>
+          <Pagination
+            ariaLabel="Paginación de encuestas"
+            currentPage={currentPage}
+            itemLabel="encuestas"
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setItemsPerPage(size);
+              setCurrentPage(0);
+            }}
+            pageSize={itemsPerPage}
+            pageSizeLabel="Encuestas por página"
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            totalItems={totalItems}
+            totalPages={totalPages}
+          />
         )}
       </div>
     </main>

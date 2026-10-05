@@ -8,6 +8,7 @@ import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
+import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
@@ -81,6 +82,18 @@ public class SurveyController {
         @RequestParam(required = false) List<String> tags
     ) {
         return surveyService.findListedOpenForRegistered(user, tags);
+    }
+
+    @GetMapping("/registered/page")
+    public PageResponseDto<PublicSurveySummaryDto> findVisibleForRegisteredPage(
+        @AuthenticationPrincipal User user,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) String tag,
+        @RequestParam(required = false) SurveyAccessMode accessMode,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "9") int size
+    ) {
+        return surveyService.findListedOpenForRegisteredPage(user, search, tag, accessMode, page, size);
     }
 
     @GetMapping("/by-code/{publicCode}")

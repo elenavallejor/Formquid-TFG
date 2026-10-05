@@ -8,7 +8,7 @@ public record SurveyStatisticsResponseDto(
     long participations,
     Instant firstParticipation,
     Instant lastParticipation,
-    Double globalTechnologyScore,
+    Double globalEvaluationScore,
     List<QuestionStatisticsResponseDto> questions
 ) {
 }
