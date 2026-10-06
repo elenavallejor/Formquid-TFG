@@ -3,14 +3,13 @@ import { FaRegClipboard } from 'react-icons/fa';
 import { MdSearch } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 
-import { getAdminSurveys, getMySurveys } from '../../../api/surveysApi.js';
+import { getResultSurveys } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
 
 import './ResultsPage.css';
 
@@ -19,7 +18,6 @@ const PAGE_SIZE_OPTIONS = [9, 18, 30];
 
 export function ResultsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [surveys, setSurveys] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -40,22 +38,15 @@ export function ResultsPage() {
   }, [search]);
 
   useEffect(() => {
-    if (!user?.role) return undefined;
     let isActive = true;
-    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
-    const request = isAdmin
-      ? getAdminSurveys({
-        search: debouncedSearch,
-        lifecycleStatus: lifecycle,
-        page: currentPage,
-        size: itemsPerPage,
-      })
-      : getMySurveys({
-        search: debouncedSearch,
-        lifecycleStatus: lifecycle,
-        page: currentPage,
-        size: itemsPerPage,
-      });
+    const abortController = new AbortController();
+    const request = getResultSurveys({
+      search: debouncedSearch,
+      lifecycleStatus: lifecycle,
+      page: currentPage,
+      size: itemsPerPage,
+      signal: abortController.signal,
+    });
 
     Promise.resolve()
       .then(() => {
@@ -72,7 +63,7 @@ export function ResultsPage() {
         setTotalPages(Number(response?.totalPages ?? 0));
       })
       .catch((error) => {
-        if (!isActive) return;
+        if (!isActive || error.name === 'AbortError') return;
         setSurveys([]);
         setTotalItems(0);
         setTotalPages(0);
@@ -82,8 +73,11 @@ export function ResultsPage() {
         if (isActive) setIsLoading(false);
       });
 
-    return () => { isActive = false; };
-  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, user?.role]);
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
+  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle]);
 
   return (
     <main className="results-page">
@@ -128,8 +122,8 @@ export function ResultsPage() {
           ) : surveys.length === 0 ? (
             <div className="results-page-empty" role="status">
               <FaRegClipboard aria-hidden="true" />
-              <h2>No hay encuestas disponibles</h2>
-              <p>No se han encontrado encuestas que coincidan con los filtros.</p>
+              <h2>No hay encuestas con respuestas</h2>
+              <p>No se han encontrado encuestas con respuestas registradas que coincidan con los filtros.</p>
             </div>
           ) : (
             <div className="results-survey-grid">

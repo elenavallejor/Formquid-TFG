@@ -13,8 +13,9 @@ public interface MatrixAnswerValueRepository extends JpaRepository<MatrixAnswerV
     @Query("""
         select value
         from MatrixAnswerValue value
-        where value.answer.question.id = :questionId
-        order by value.matrixRow.position asc
+        join fetch value.matrixRow row
+        where value.answer.id in :answerIds
+        order by value.answer.id asc, row.position asc
     """)
-    List<MatrixAnswerValue> findByQuestionId(@Param("questionId") Long questionId);
+    List<MatrixAnswerValue> findByAnswerIdsWithRow(@Param("answerIds") List<Long> answerIds);
 }

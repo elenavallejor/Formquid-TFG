@@ -1,14 +1,20 @@
 package com.formquid.participation.service;
 
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
 import com.formquid.participation.dto.AnswerResponseDto;
 import com.formquid.participation.dto.MatrixAnswerRequestDto;
+import com.formquid.participation.dto.MatrixAnswerValueResponseDto;
 import com.formquid.participation.dto.OptionAnswerRequestDto;
+import com.formquid.participation.dto.ParticipationAnswerResponseDto;
+import com.formquid.participation.dto.ParticipationDetailResponseDto;
 import com.formquid.participation.dto.ParticipationResponseDto;
+import com.formquid.participation.dto.ParticipationSummaryResponseDto;
+import com.formquid.participation.dto.SelectedOptionResponseDto;
 import com.formquid.participation.dto.SubmitAnswerRequestDto;
 import com.formquid.participation.dto.SubmitParticipationRequestDto;
 import com.formquid.participation.entity.Answer;
@@ -18,6 +24,8 @@ import com.formquid.participation.entity.MatrixAnswerValue;
 import com.formquid.participation.entity.MatrixAnswerValueId;
 import com.formquid.participation.entity.Participation;
 import com.formquid.participation.repository.AnswerRepository;
+import com.formquid.participation.repository.AnswerOptionRepository;
+import com.formquid.participation.repository.MatrixAnswerValueRepository;
 import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.question.entity.MatrixRow;
 import com.formquid.question.entity.Question;
@@ -31,19 +39,24 @@ import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.repository.SurveyRepository;
+import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,6 +65,7 @@ import java.util.stream.Collectors;
 public class ParticipationService {
 
     public static final String ALREADY_SUBMITTED_CODE = "PARTICIPATION_ALREADY_SUBMITTED";
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final SurveyRepository surveyRepository;
     private final ContentItemRepository contentItemRepository;
@@ -61,7 +75,10 @@ public class ParticipationService {
     private final MatrixRowRepository matrixRowRepository;
     private final ParticipationRepository participationRepository;
     private final AnswerRepository answerRepository;
+    private final AnswerOptionRepository answerOptionRepository;
+    private final MatrixAnswerValueRepository matrixAnswerValueRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SurveyService surveyService;
 
     /**
      * Recibe encuesta abierta y respuestas, devuelve la participación guardada.
@@ -108,6 +125,111 @@ public class ParticipationService {
             }
         }
         return toResponse(participationRepository.findById(participation.getId()).orElse(participation));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponseDto<ParticipationSummaryResponseDto> findParticipationPage(
+        Long surveyId,
+        User actor,
+        int page,
+        int size
+    ) {
+        validatePagination(page, size);
+        Survey survey = getSurveyWithResultsAccess(surveyId, actor);
+        Page<ParticipationSummaryResponseDto> participations = participationRepository.findSummariesBySurveyId(
+            survey.getId(),
+            PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Order.desc("submittedAt"), Sort.Order.desc("id"))
+            )
+        );
+        return new PageResponseDto<>(
+            participations.getContent(),
+            participations.getNumber(),
+            participations.getSize(),
+            participations.getTotalElements(),
+            participations.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ParticipationDetailResponseDto getParticipationDetail(
+        Long surveyId,
+        Long participationId,
+        User actor
+    ) {
+        Survey survey = getSurveyWithResultsAccess(surveyId, actor);
+        Participation participation = participationRepository
+            .findDetailByIdAndSurveyId(participationId, survey.getId())
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Participación no encontrada"));
+        List<Answer> answers = answerRepository.findDetailsByParticipationId(participation.getId());
+        List<Long> answerIds = answers.stream().map(Answer::getId).toList();
+
+        Map<Long, List<SelectedOptionResponseDto>> optionsByAnswer = new LinkedHashMap<>();
+        Map<Long, List<MatrixAnswerValueResponseDto>> matrixValuesByAnswer = new LinkedHashMap<>();
+        if (!answerIds.isEmpty()) {
+            answerOptionRepository.findByAnswerIdsWithOption(answerIds).forEach(selected ->
+                optionsByAnswer.computeIfAbsent(selected.getAnswer().getId(), ignored -> new ArrayList<>())
+                    .add(new SelectedOptionResponseDto(
+                        selected.getOption().getId(),
+                        selected.getOption().getLabel(),
+                        selected.getOtherText()
+                    ))
+            );
+            matrixAnswerValueRepository.findByAnswerIdsWithRow(answerIds).forEach(value ->
+                matrixValuesByAnswer.computeIfAbsent(value.getAnswer().getId(), ignored -> new ArrayList<>())
+                    .add(new MatrixAnswerValueResponseDto(
+                        value.getMatrixRow().getId(),
+                        value.getMatrixRow().getLabel(),
+                        value.getNumericValue()
+                    ))
+            );
+        }
+
+        List<ParticipationAnswerResponseDto> responseAnswers = answers.stream()
+            .map(answer -> new ParticipationAnswerResponseDto(
+                answer.getId(),
+                answer.getQuestion().getId(),
+                answer.getQuestion().getStatement(),
+                answer.getQuestion().getQuestionType(),
+                answer.getTextValue(),
+                answer.getNumericValue(),
+                answer.getBooleanValue(),
+                answer.getQuestion().getSettings() == null
+                    ? null
+                    : answer.getQuestion().getSettings().getTrueLabel(),
+                answer.getQuestion().getSettings() == null
+                    ? null
+                    : answer.getQuestion().getSettings().getFalseLabel(),
+                List.copyOf(optionsByAnswer.getOrDefault(answer.getId(), List.of())),
+                List.copyOf(matrixValuesByAnswer.getOrDefault(answer.getId(), List.of()))
+            ))
+            .toList();
+
+        return new ParticipationDetailResponseDto(
+            participation.getId(),
+            survey.getId(),
+            survey.getTitle(),
+            participation.getSubmittedAt(),
+            responseAnswers
+        );
+    }
+
+    private Survey getSurveyWithResultsAccess(Long surveyId, User actor) {
+        Survey survey = surveyRepository.findById(surveyId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
+        surveyService.ensureCanViewResults(survey, actor);
+        return survey;
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "La página no puede ser negativa y su tamaño debe estar entre 1 y " + MAX_PAGE_SIZE
+            );
+        }
     }
 
     private void validateRespondent(Long surveyId, User authenticatedUser, String respondentTokenHash) {

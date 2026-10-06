@@ -1,0 +1,254 @@
+.survey-participations-container {
+  max-width: 1120px;
+}
+
+.survey-participations-card {
+  overflow: hidden;
+}
+
+.survey-participations-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.survey-participations-title > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.survey-participations-title svg {
+  width: 27px;
+  height: 27px;
+}
+
+.survey-participations-title > span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.survey-participations-body {
+  padding: 24px;
+}
+
+.survey-participations-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.survey-participations-list li {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 15px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--color-surface);
+}
+
+.survey-participations-list li.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.survey-participations-list li > div {
+  display: grid;
+  gap: 4px;
+}
+
+.survey-participations-list time,
+.participation-detail time {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.survey-participations-list button {
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 9px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.survey-participations-list button:hover,
+.survey-participations-list button:focus-visible {
+  background: var(--color-accent-surface);
+}
+
+.survey-participations-list button:focus-visible,
+.participation-detail-close:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.survey-participations-list button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.survey-participations-empty {
+  margin: 0;
+  padding: 36px 20px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.participation-detail {
+  margin-top: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--color-surface);
+}
+
+.participation-detail > header {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.participation-detail > header > div {
+  display: grid;
+  gap: 4px;
+}
+
+.participation-detail > header span {
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.participation-detail h2,
+.participation-answer-card h3 {
+  margin: 0;
+}
+
+.participation-detail-close {
+  border: 0;
+  padding: 7px;
+  display: inline-flex;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.participation-answers {
+  display: grid;
+  gap: 16px;
+}
+
+.participation-answer-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 18px;
+  background: var(--color-background);
+}
+
+.participation-answer-card > header {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.participation-answer-card > header strong {
+  color: var(--color-primary);
+}
+
+.participation-answer-card h3 {
+  color: var(--color-header);
+  font-size: 18px;
+}
+
+.participation-text-answer,
+.participation-scalar-answer {
+  margin: 14px 0 0;
+  white-space: pre-wrap;
+}
+
+.participation-scalar-answer {
+  color: var(--color-header);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.participation-option-list {
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.participation-option-list li {
+  border-left: 3px solid var(--color-primary);
+  padding: 7px 10px;
+  display: grid;
+  gap: 3px;
+  background: var(--color-surface);
+}
+
+.participation-option-list span {
+  color: var(--color-text-muted);
+}
+
+.participation-matrix-values {
+  margin: 14px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.participation-matrix-values div {
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.participation-matrix-values dt {
+  color: var(--color-text-muted);
+}
+
+.participation-matrix-values dd {
+  margin: 0;
+  color: var(--color-header);
+  font-weight: 700;
+}
+
+@media only screen and (max-width: 680px) {
+  .survey-participations-body,
+  .participation-detail {
+    padding: 18px;
+  }
+
+  .survey-participations-title,
+  .survey-participations-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .survey-participations-list button {
+    width: 100%;
+    justify-content: center;
+  }
+}

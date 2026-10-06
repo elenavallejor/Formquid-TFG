@@ -8,7 +8,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { getSurveyStatistics } from '../../../api/statisticsApi.js';
-import { getSurveyById } from '../../../api/surveysApi.js';
+import { getSurveyForResults } from '../../../api/surveysApi.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
@@ -322,7 +322,7 @@ export function SurveyResultsPage() {
           setIsLoading(true);
           setErrorMessage('');
         }
-        return Promise.all([getSurveyById(surveyId), getSurveyStatistics(surveyId)]);
+        return Promise.all([getSurveyForResults(surveyId), getSurveyStatistics(surveyId)]);
       })
       .then(([surveyResponse, statisticsResponse]) => {
         if (!isActive) return;
@@ -427,6 +427,18 @@ export function SurveyResultsPage() {
               <div><dt>PRIMERA RESPUESTA</dt><dd>{formatDateTime(statistics.firstParticipation)}</dd></div>
               <div><dt>ÚLTIMA RESPUESTA</dt><dd>{formatDateTime(statistics.lastParticipation)}</dd></div>
             </dl>
+
+            <div className="survey-results-participations-action">
+              <button
+                type="button"
+                disabled={statistics.participations === 0}
+                onClick={() => navigate(`/encuestas/${surveyId}/resultados/participaciones`)}
+              >
+                <MdOutlineRemoveRedEye aria-hidden="true" />
+                Ver participaciones individuales
+              </button>
+              <p>Las respuestas se muestran de forma anónima y no pueden modificarse.</p>
+            </div>
 
             <WeightedAnalysis
               score={statistics.globalEvaluationScore}

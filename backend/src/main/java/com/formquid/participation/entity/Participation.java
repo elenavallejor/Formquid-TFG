@@ -32,7 +32,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "participations", indexes = @Index(name = "idx_participations_survey_submitted", columnList = "survey_id, submitted_at"))
+@Table(
+    name = "participations",
+    indexes = @Index(
+        name = "idx_participations_survey_submitted",
+        columnList = "survey_id, submitted_at DESC, id DESC"
+    )
+)
 public class Participation {
 
     @Id
@@ -61,10 +67,5 @@ public class Participation {
     @PrePersist
     protected void onCreate() {
         submittedAt = Instant.now();
-    }
-
-    public void addAnswer(Answer answer) {
-        answers.add(answer);
-        answer.setParticipation(this);
     }
 }

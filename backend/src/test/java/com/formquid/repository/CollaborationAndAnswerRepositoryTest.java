@@ -16,6 +16,7 @@ import com.formquid.participation.entity.Participation;
 import com.formquid.participation.repository.AnswerOptionRepository;
 import com.formquid.participation.repository.AnswerRepository;
 import com.formquid.participation.repository.MatrixAnswerValueRepository;
+import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.question.entity.EvaluationDirection;
 import com.formquid.question.entity.MatrixRow;
 import com.formquid.question.entity.Question;
@@ -34,6 +35,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -48,13 +50,17 @@ class CollaborationAndAnswerRepositoryTest {
     @Autowired private AnswerRepository answers;
     @Autowired private AnswerOptionRepository answerOptions;
     @Autowired private MatrixAnswerValueRepository matrixValues;
+    @Autowired private ParticipationRepository participations;
     @Autowired private EntityManager entityManager;
 
     @Test
     void collaboratorQueries_exposePermissionAndEditableSurvey() {
         User owner = persistUser("collaboration-owner@example.com");
         User collaborator = persistUser("collaboration-editor@example.com");
+        User unrelatedOwner = persistUser("collaboration-unrelated@example.com");
         Survey survey = persistSurvey(owner, "COLLAB000001");
+        Survey ownedSurvey = persistSurvey(collaborator, "OWNED0000001");
+        persistSurvey(unrelatedOwner, "OTHER0000001");
         persist(SurveyCollaborator.builder()
             .id(new SurveyCollaboratorId(survey.getId(), collaborator.getId()))
             .survey(survey)
@@ -70,21 +76,18 @@ class CollaborationAndAnswerRepositoryTest {
         )).containsExactly(survey.getId());
         assertThat(surveys.findEditableByUser(
             collaborator.getId(), "", null, PageRequest.of(0, 10)
-        )).extracting(Survey::getId).containsExactly(survey.getId());
+        )).extracting(Survey::getId).containsExactlyInAnyOrder(survey.getId(), ownedSurvey.getId());
     }
 
     @Test
-    void answerRepositories_calculateAggregatesAndOrderedSelections() {
+    void participationResultQueries_returnStablePagesAndOrderedDetails() {
         User owner = persistUser("answer-owner@example.com");
         Survey survey = persistSurvey(owner, "ANSWERS00001");
-        Question numericQuestion = persistQuestion(survey, 1, QuestionType.NUMBER, "Número");
-        Question choiceQuestion = persistQuestion(survey, 2, QuestionType.SINGLE_CHOICE, "Opción");
-        Question matrixQuestion = persistQuestion(survey, 3, QuestionType.MATRIX_SCALE, "Matriz");
+        Question choiceQuestion = persistQuestion(survey, 1, QuestionType.SINGLE_CHOICE, "Opción");
+        Question matrixQuestion = persistQuestion(survey, 2, QuestionType.MATRIX_SCALE, "Matriz");
 
         QuestionOption option = persist(QuestionOption.builder()
             .question(choiceQuestion).label("Sí").position(1).build());
-        QuestionOption unselectedOption = persist(QuestionOption.builder()
-            .question(choiceQuestion).label("No").position(2).build());
         MatrixRow secondRow = persist(MatrixRow.builder()
             .question(matrixQuestion).label("Segunda").position(2).build());
         MatrixRow firstRow = persist(MatrixRow.builder()
@@ -96,10 +99,6 @@ class CollaborationAndAnswerRepositoryTest {
             .survey(survey).respondentTokenHash("d".repeat(64)).build());
         entityManager.flush();
 
-        persist(Answer.builder().participation(firstParticipation).question(numericQuestion)
-            .numericValue(new BigDecimal("2")).build());
-        persist(Answer.builder().participation(secondParticipation).question(numericQuestion)
-            .numericValue(new BigDecimal("8")).build());
         Answer selected = persist(Answer.builder()
             .participation(firstParticipation).question(choiceQuestion).build());
         Answer matrix = persist(Answer.builder()
@@ -116,28 +115,72 @@ class CollaborationAndAnswerRepositoryTest {
             .id(new MatrixAnswerValueId(matrix.getId(), firstRow.getId()))
             .answer(matrix).matrixRow(firstRow).numericValue(new BigDecimal("3")).build());
         entityManager.flush();
+        entityManager.createNativeQuery("""
+                update participations
+                set submitted_at = timestamp with time zone '2026-10-06 10:00:00+00'
+                where survey_id = :surveyId
+                """)
+            .setParameter("surveyId", survey.getId())
+            .executeUpdate();
+        entityManager.clear();
 
-        assertThat(answers.countByQuestionId(numericQuestion.getId())).isEqualTo(2);
-        assertThat(answers.averageNumeric(numericQuestion.getId())).isEqualTo(5.0);
-        assertThat(answers.minNumeric(numericQuestion.getId())).isEqualByComparingTo("2");
-        assertThat(answers.maxNumeric(numericQuestion.getId())).isEqualByComparingTo("8");
+        Sort stableSort = Sort.by(Sort.Order.desc("submittedAt"), Sort.Order.desc("id"));
+        var firstPage = participations.findSummariesBySurveyId(
+            survey.getId(), PageRequest.of(0, 1, stableSort)
+        );
+        var secondPage = participations.findSummariesBySurveyId(
+            survey.getId(), PageRequest.of(1, 1, stableSort)
+        );
+        assertThat(firstPage.getTotalElements()).isEqualTo(2);
+        assertThat(firstPage.getContent()).extracting("id").containsExactly(secondParticipation.getId());
+        assertThat(secondPage.getContent()).extracting("id").containsExactly(firstParticipation.getId());
 
-        assertThat(answerOptions.countOptionsByQuestion(choiceQuestion.getId()))
-            .hasSize(2)
-            .first().satisfies(row -> {
-                assertThat(row[0]).isEqualTo(option.getId());
-                assertThat(row[1]).isEqualTo("Sí");
-                assertThat(((Number) row[2]).longValue()).isEqualTo(1);
-            });
-        assertThat(answerOptions.countOptionsByQuestion(choiceQuestion.getId()))
-            .element(1).satisfies(row -> {
-                assertThat(row[0]).isEqualTo(unselectedOption.getId());
-                assertThat(row[1]).isEqualTo("No");
-                assertThat(((Number) row[2]).longValue()).isZero();
-            });
-        assertThat(matrixValues.findByQuestionId(matrixQuestion.getId()))
+        assertThat(participations.findDetailByIdAndSurveyId(firstParticipation.getId(), survey.getId()))
+            .isPresent();
+        assertThat(answers.findDetailsByParticipationId(firstParticipation.getId()))
+            .extracting(answer -> answer.getQuestion().getStatement())
+            .containsExactly("Opción", "Matriz");
+        assertThat(answerOptions.findByAnswerIdsWithOption(List.of(selected.getId(), matrix.getId())))
+            .extracting(value -> value.getOption().getLabel())
+            .containsExactly("Sí");
+        assertThat(matrixValues.findByAnswerIdsWithRow(List.of(selected.getId(), matrix.getId())))
             .extracting(value -> value.getMatrixRow().getLabel())
             .containsExactly("Primera", "Segunda");
+    }
+
+    @Test
+    void resultSurveyQuery_excludesSurveysWithoutResponsesAndUnauthorizedSurveys() {
+        User owner = persistUser("results-owner@example.com");
+        User collaborator = persistUser("results-collaborator@example.com");
+        User unrelatedOwner = persistUser("results-unrelated@example.com");
+        Survey collaboratingSurvey = persistSurvey(owner, "RESULT000001");
+        Survey ownedSurvey = persistSurvey(collaborator, "RESULT000002");
+        Survey emptyOwnedSurvey = persistSurvey(collaborator, "RESULT000003");
+        Survey unrelatedSurvey = persistSurvey(unrelatedOwner, "RESULT000004");
+        persist(SurveyCollaborator.builder()
+            .id(new SurveyCollaboratorId(collaboratingSurvey.getId(), collaborator.getId()))
+            .survey(collaboratingSurvey)
+            .user(collaborator)
+            .permission(CollaborationPermission.VIEW)
+            .build());
+        persist(Participation.builder().survey(collaboratingSurvey).respondentTokenHash("e".repeat(64)).build());
+        persist(Participation.builder().survey(ownedSurvey).respondentTokenHash("f".repeat(64)).build());
+        persist(Participation.builder().survey(unrelatedSurvey).respondentTokenHash("g".repeat(64)).build());
+        entityManager.flush();
+
+        var page = surveys.findResultSummaries(
+            collaborator.getId(),
+            false,
+            "",
+            null,
+            PageRequest.of(0, 10)
+        );
+
+        assertThat(page.getContent())
+            .extracting("id")
+            .containsExactlyInAnyOrder(collaboratingSurvey.getId(), ownedSurvey.getId())
+            .doesNotContain(emptyOwnedSurvey.getId(), unrelatedSurvey.getId());
+        assertThat(page.getContent()).allSatisfy(summary -> assertThat(summary.responses()).isEqualTo(1));
     }
 
     private Question persistQuestion(Survey survey, int position, QuestionType type, String statement) {

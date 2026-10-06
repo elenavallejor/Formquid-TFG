@@ -2,20 +2,19 @@ package com.formquid.statistics.service;
 
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
-import com.formquid.participation.entity.Answer;
-import com.formquid.participation.entity.Participation;
-import com.formquid.participation.repository.AnswerOptionRepository;
-import com.formquid.participation.repository.AnswerRepository;
-import com.formquid.participation.repository.MatrixAnswerValueRepository;
-import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.question.entity.EvaluationDirection;
 import com.formquid.question.entity.Question;
 import com.formquid.question.entity.QuestionSettings;
 import com.formquid.question.entity.QuestionType;
 import com.formquid.question.repository.QuestionRepository;
+import com.formquid.statistics.repository.StatisticsQueryRepository;
+import com.formquid.statistics.repository.StatisticsQueryRepository.ParticipationSummary;
+import com.formquid.statistics.repository.StatisticsQueryRepository.QuestionAggregate;
+import com.formquid.statistics.repository.StatisticsQueryRepository.ValueCount;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.survey.service.SurveyService;
@@ -41,26 +40,24 @@ import static org.mockito.Mockito.when;
 class StatisticsServiceTest {
 
     @Mock private SurveyRepository surveyRepository;
-    @Mock private ParticipationRepository participationRepository;
-    @Mock private AnswerRepository answerRepository;
-    @Mock private AnswerOptionRepository answerOptionRepository;
-    @Mock private MatrixAnswerValueRepository matrixAnswerValueRepository;
     @Mock private ContentItemRepository contentItemRepository;
     @Mock private QuestionRepository questionRepository;
     @Mock private BlockRepository blockRepository;
+    @Mock private StatisticsQueryRepository statisticsQueryRepository;
     @Mock private SurveyService surveyService;
 
     @InjectMocks
     private StatisticsService statisticsService;
 
     @Test
-    void getSurveyStatistics_calculatesNumericAndEvaluationScores() {
+    void getSurveyStatistics_calculatesNumericAndEvaluationScoresFromAggregates() {
         User user = User.builder().id(4L).build();
         Survey survey = Survey.builder().id(1L).build();
         ContentItem item = ContentItem.builder()
             .id(10L).itemType(ContentItemType.QUESTION).position(1).required(false).build();
         Question question = Question.builder()
             .id(20L)
+            .parentItem(item)
             .statement("Valoración")
             .questionType(QuestionType.NUMBER)
             .evaluationDirection(EvaluationDirection.POSITIVE)
@@ -70,24 +67,28 @@ class StatisticsServiceTest {
             .minValue(BigDecimal.ZERO)
             .maxValue(BigDecimal.TEN)
             .build());
-        var first = Participation.builder().submittedAt(Instant.parse("2026-01-01T10:00:00Z")).build();
-        var last = Participation.builder().submittedAt(Instant.parse("2026-01-02T10:00:00Z")).build();
-        var answers = List.of(
-            Answer.builder().numericValue(new BigDecimal("2")).build(),
-            Answer.builder().numericValue(new BigDecimal("8")).build()
-        );
+        Instant first = Instant.parse("2026-01-01T10:00:00Z");
+        Instant last = Instant.parse("2026-01-02T10:00:00Z");
+
         when(surveyRepository.findById(1L)).thenReturn(Optional.of(survey));
-        when(participationRepository.findBySurveyIdOrderBySubmittedAtAsc(1L)).thenReturn(List.of(first, last));
-        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of(item));
-        when(questionRepository.findByParentItemId(10L)).thenReturn(Optional.of(question));
-        when(answerRepository.findByQuestionId(20L)).thenReturn(answers);
-        when(answerOptionRepository.countOptionsByQuestion(20L)).thenReturn(List.of());
+        when(statisticsQueryRepository.summarizeParticipations(1L))
+            .thenReturn(new ParticipationSummary(2, first, last));
+        when(contentItemRepository.findSurveyContentRows(1L)).thenReturn(List.of(
+            new ContentItemRowDto(10L, ContentItemType.QUESTION, 1, false, null)
+        ));
+        when(questionRepository.findByParentItemIdsForStatistics(List.of(10L))).thenReturn(List.of(question));
+        when(statisticsQueryRepository.summarizeQuestions(List.of(20L))).thenReturn(List.of(
+            new QuestionAggregate(
+                20L, 2L, 5.0, new BigDecimal("2"), new BigDecimal("8"),
+                5.0, 3.0, 0L, 0L, 50.0
+            )
+        ));
 
         var response = statisticsService.getSurveyStatistics(1L, user);
 
         assertThat(response.participations()).isEqualTo(2);
-        assertThat(response.firstParticipation()).isEqualTo(first.getSubmittedAt());
-        assertThat(response.lastParticipation()).isEqualTo(last.getSubmittedAt());
+        assertThat(response.firstParticipation()).isEqualTo(first);
+        assertThat(response.lastParticipation()).isEqualTo(last);
         assertThat(response.globalEvaluationScore()).isEqualTo(0.0);
         assertThat(response.questions()).singleElement().satisfies(statistics -> {
             assertThat(statistics.answers()).isEqualTo(2);
@@ -103,13 +104,14 @@ class StatisticsServiceTest {
     }
 
     @Test
-    void getSurveyStatistics_calculatesScaleValuePercentages() {
+    void getSurveyStatistics_calculatesScaleValuePercentagesFromGroupedCounts() {
         User user = User.builder().id(4L).build();
         Survey survey = Survey.builder().id(1L).build();
         ContentItem item = ContentItem.builder()
             .id(10L).itemType(ContentItemType.QUESTION).position(1).required(false).build();
         Question question = Question.builder()
             .id(20L)
+            .parentItem(item)
             .statement("Satisfacción")
             .questionType(QuestionType.SCALE)
             .evaluationDirection(EvaluationDirection.NEUTRAL)
@@ -118,22 +120,24 @@ class StatisticsServiceTest {
             .minValue(BigDecimal.ONE)
             .maxValue(new BigDecimal("5"))
             .build());
-        var participations = List.of(
-            Participation.builder().submittedAt(Instant.parse("2026-01-01T10:00:00Z")).build(),
-            Participation.builder().submittedAt(Instant.parse("2026-01-02T10:00:00Z")).build(),
-            Participation.builder().submittedAt(Instant.parse("2026-01-03T10:00:00Z")).build()
-        );
-        var answers = List.of(
-            Answer.builder().numericValue(BigDecimal.ONE).build(),
-            Answer.builder().numericValue(BigDecimal.ONE).build(),
-            Answer.builder().numericValue(new BigDecimal("5")).build()
-        );
+
         when(surveyRepository.findById(1L)).thenReturn(Optional.of(survey));
-        when(participationRepository.findBySurveyIdOrderBySubmittedAtAsc(1L)).thenReturn(participations);
-        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of(item));
-        when(questionRepository.findByParentItemId(10L)).thenReturn(Optional.of(question));
-        when(answerRepository.findByQuestionId(20L)).thenReturn(answers);
-        when(answerOptionRepository.countOptionsByQuestion(20L)).thenReturn(List.of());
+        when(statisticsQueryRepository.summarizeParticipations(1L))
+            .thenReturn(new ParticipationSummary(3, null, null));
+        when(contentItemRepository.findSurveyContentRows(1L)).thenReturn(List.of(
+            new ContentItemRowDto(10L, ContentItemType.QUESTION, 1, false, null)
+        ));
+        when(questionRepository.findByParentItemIdsForStatistics(List.of(10L))).thenReturn(List.of(question));
+        when(statisticsQueryRepository.summarizeQuestions(List.of(20L))).thenReturn(List.of(
+            new QuestionAggregate(
+                20L, 3L, 7.0 / 3.0, BigDecimal.ONE, new BigDecimal("5"),
+                1.0, null, 0L, 0L, 100.0 / 3.0
+            )
+        ));
+        when(statisticsQueryRepository.findScaleValueCounts(List.of(20L))).thenReturn(List.of(
+            new ValueCount(20L, BigDecimal.ONE, 2L),
+            new ValueCount(20L, new BigDecimal("5"), 1L)
+        ));
 
         var response = statisticsService.getSurveyStatistics(1L, user);
 
@@ -151,15 +155,15 @@ class StatisticsServiceTest {
     }
 
     @Test
-    void getQuestionStatistics_rejectsQuestionOutsideSurvey() {
+    void getQuestionStatistics_rejectsQuestionOutsideSurveyBeforeQueryingAggregates() {
         User user = User.builder().id(4L).build();
         Survey survey = Survey.builder().id(1L).build();
         when(surveyRepository.findById(1L)).thenReturn(Optional.of(survey));
-        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of());
+        when(questionRepository.findForStatistics(1L, 99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> statisticsService.getQuestionStatistics(1L, 99L, user))
             .isInstanceOf(ApiException.class)
             .hasMessage("La pregunta no pertenece a la encuesta");
-        verify(questionRepository, never()).findById(99L);
+        verify(statisticsQueryRepository, never()).summarizeParticipations(1L);
     }
 }

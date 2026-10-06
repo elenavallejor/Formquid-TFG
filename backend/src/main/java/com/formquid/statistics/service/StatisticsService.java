@@ -1,19 +1,13 @@
 package com.formquid.statistics.service;
 
+import com.formquid.block.entity.Block;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
-import com.formquid.content.entity.ContentItem;
+import com.formquid.content.dto.BlockContentItemRowDto;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
-import com.formquid.participation.entity.Answer;
-import com.formquid.participation.entity.AnswerOption;
-import com.formquid.participation.entity.Participation;
-import com.formquid.participation.repository.AnswerOptionRepository;
-import com.formquid.participation.repository.AnswerRepository;
-import com.formquid.participation.repository.MatrixAnswerValueRepository;
-import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.question.entity.EvaluationDirection;
-import com.formquid.question.entity.MatrixRow;
 import com.formquid.question.entity.Question;
 import com.formquid.question.entity.QuestionSettings;
 import com.formquid.question.entity.QuestionType;
@@ -25,6 +19,14 @@ import com.formquid.statistics.dto.NumericStatisticsDto;
 import com.formquid.statistics.dto.QuestionStatisticsResponseDto;
 import com.formquid.statistics.dto.SurveyStatisticsResponseDto;
 import com.formquid.statistics.dto.ValueDistributionDto;
+import com.formquid.statistics.repository.StatisticsQueryRepository;
+import com.formquid.statistics.repository.StatisticsQueryRepository.ChoiceOptionAggregate;
+import com.formquid.statistics.repository.StatisticsQueryRepository.MatrixRowAggregate;
+import com.formquid.statistics.repository.StatisticsQueryRepository.MatrixValueCount;
+import com.formquid.statistics.repository.StatisticsQueryRepository.ParticipationSummary;
+import com.formquid.statistics.repository.StatisticsQueryRepository.QuestionAggregate;
+import com.formquid.statistics.repository.StatisticsQueryRepository.QuestionScore;
+import com.formquid.statistics.repository.StatisticsQueryRepository.ValueCount;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.survey.service.SurveyService;
@@ -36,44 +38,40 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.DoubleSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class StatisticsService {
 
     private final SurveyRepository surveyRepository;
-    private final ParticipationRepository participationRepository;
-    private final AnswerRepository answerRepository;
-    private final AnswerOptionRepository answerOptionRepository;
-    private final MatrixAnswerValueRepository matrixAnswerValueRepository;
     private final ContentItemRepository contentItemRepository;
     private final QuestionRepository questionRepository;
     private final BlockRepository blockRepository;
+    private final StatisticsQueryRepository statisticsQueryRepository;
     private final SurveyService surveyService;
 
     @Transactional(readOnly = true)
     public SurveyStatisticsResponseDto getSurveyStatistics(Long surveyId, User user) {
         Survey survey = getSurveyWithResultsAccess(surveyId, user);
-        List<Participation> participations = participationRepository.findBySurveyIdOrderBySubmittedAtAsc(surveyId);
-        long participationCount = participations.size();
-        Instant first = participations.isEmpty() ? null : participations.getFirst().getSubmittedAt();
-        Instant last = participations.isEmpty() ? null : participations.getLast().getSubmittedAt();
+        ParticipationSummary participationSummary = statisticsQueryRepository.summarizeParticipations(surveyId);
         List<Question> questions = loadSurveyQuestions(surveyId);
+        StatisticsData data = loadStatisticsData(questions);
         List<QuestionStatisticsResponseDto> questionStats = questions.stream()
-            .map(question -> getQuestionStatistics(question, participationCount))
+            .map(question -> getQuestionStatistics(question, participationSummary.participationCount(), data))
             .toList();
+
         return new SurveyStatisticsResponseDto(
             survey.getId(),
-            participationCount,
-            first,
-            last,
+            participationSummary.participationCount(),
+            participationSummary.firstParticipation(),
+            participationSummary.lastParticipation(),
             globalEvaluationScore(questionStats, questions),
             questionStats
         );
@@ -82,13 +80,10 @@ public class StatisticsService {
     @Transactional(readOnly = true)
     public QuestionStatisticsResponseDto getQuestionStatistics(Long surveyId, Long questionId, User user) {
         getSurveyWithResultsAccess(surveyId, user);
-        if (loadSurveyQuestions(surveyId).stream().noneMatch(question -> question.getId().equals(questionId))) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La pregunta no pertenece a la encuesta");
-        }
-        long participationCount = participationRepository.countBySurveyId(surveyId);
-        Question question = questionRepository.findById(questionId)
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Pregunta no encontrada"));
-        return getQuestionStatistics(question, participationCount);
+        Question question = questionRepository.findForStatistics(surveyId, questionId)
+            .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "La pregunta no pertenece a la encuesta"));
+        long participationCount = statisticsQueryRepository.summarizeParticipations(surveyId).participationCount();
+        return getQuestionStatistics(question, participationCount, loadStatisticsData(List.of(question)));
     }
 
     private Survey getSurveyWithResultsAccess(Long surveyId, User user) {
@@ -98,19 +93,91 @@ public class StatisticsService {
         return survey;
     }
 
-    private QuestionStatisticsResponseDto getQuestionStatistics(Question question, long participationCount) {
-        List<Answer> answers = answerRepository.findByQuestionId(question.getId());
-        long answerCount = answers.size();
+    private StatisticsData loadStatisticsData(List<Question> questions) {
+        List<Long> questionIds = questions.stream().map(Question::getId).toList();
+        List<Long> scaleQuestionIds = questionIdsByType(questions, QuestionType.SCALE);
+        List<Long> choiceQuestionIds = questionIdsByType(
+            questions, QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE
+        );
+        List<Long> matrixQuestionIds = questionIdsByType(questions, QuestionType.MATRIX_SCALE);
+
+        Map<Long, QuestionAggregate> questionAggregates = statisticsQueryRepository
+            .summarizeQuestions(questionIds).stream()
+            .collect(Collectors.toMap(QuestionAggregate::questionId, Function.identity()));
+        Map<Long, List<ValueCount>> scaleValueCounts = queryScaleValues(scaleQuestionIds).stream()
+            .collect(Collectors.groupingBy(ValueCount::questionId, LinkedHashMap::new, Collectors.toList()));
+        Map<Long, List<ChoiceOptionAggregate>> choiceOptions = queryChoiceOptions(choiceQuestionIds).stream()
+            .collect(Collectors.groupingBy(
+                ChoiceOptionAggregate::questionId, LinkedHashMap::new, Collectors.toList()
+            ));
+        Map<Long, Double> choiceScores = queryChoiceScores(choiceQuestionIds).stream()
+            .collect(Collectors.toMap(QuestionScore::questionId, QuestionScore::normalizedScore));
+        Map<Long, List<MatrixRowAggregate>> matrixRows = queryMatrixRows(matrixQuestionIds).stream()
+            .collect(Collectors.groupingBy(
+                MatrixRowAggregate::questionId, LinkedHashMap::new, Collectors.toList()
+            ));
+        Map<Long, List<MatrixValueCount>> matrixValueCounts = queryMatrixValues(matrixQuestionIds).stream()
+            .collect(Collectors.groupingBy(
+                MatrixValueCount::matrixRowId, LinkedHashMap::new, Collectors.toList()
+            ));
+        Map<Long, Double> matrixScores = queryMatrixScores(matrixQuestionIds).stream()
+            .collect(Collectors.toMap(QuestionScore::questionId, QuestionScore::normalizedScore));
+
+        return new StatisticsData(
+            questionAggregates,
+            scaleValueCounts,
+            choiceOptions,
+            choiceScores,
+            matrixRows,
+            matrixValueCounts,
+            matrixScores
+        );
+    }
+
+    private List<Long> questionIdsByType(List<Question> questions, QuestionType... types) {
+        List<QuestionType> acceptedTypes = List.of(types);
+        return questions.stream()
+            .filter(question -> acceptedTypes.contains(question.getQuestionType()))
+            .map(Question::getId)
+            .toList();
+    }
+
+    private List<ValueCount> queryScaleValues(List<Long> questionIds) {
+        return questionIds.isEmpty() ? List.of() : statisticsQueryRepository.findScaleValueCounts(questionIds);
+    }
+
+    private List<ChoiceOptionAggregate> queryChoiceOptions(List<Long> questionIds) {
+        return questionIds.isEmpty() ? List.of() : statisticsQueryRepository.summarizeChoiceOptions(questionIds);
+    }
+
+    private List<QuestionScore> queryChoiceScores(List<Long> questionIds) {
+        return questionIds.isEmpty() ? List.of() : statisticsQueryRepository.summarizeChoiceScores(questionIds);
+    }
+
+    private List<MatrixRowAggregate> queryMatrixRows(List<Long> questionIds) {
+        return questionIds.isEmpty() ? List.of() : statisticsQueryRepository.summarizeMatrixRows(questionIds);
+    }
+
+    private List<MatrixValueCount> queryMatrixValues(List<Long> questionIds) {
+        return questionIds.isEmpty() ? List.of() : statisticsQueryRepository.findMatrixValueCounts(questionIds);
+    }
+
+    private List<QuestionScore> queryMatrixScores(List<Long> questionIds) {
+        return questionIds.isEmpty() ? List.of() : statisticsQueryRepository.summarizeMatrixScores(questionIds);
+    }
+
+    private QuestionStatisticsResponseDto getQuestionStatistics(
+        Question question,
+        long participationCount,
+        StatisticsData data
+    ) {
+        QuestionAggregate aggregate = data.questionAggregates().getOrDefault(
+            question.getId(), QuestionAggregate.empty(question.getId())
+        );
+        long answerCount = aggregate.answerCount();
         long omissions = Math.max(0, participationCount - answerCount);
         double responseRate = participationCount == 0 ? 0 : (answerCount * 100.0) / participationCount;
-        NumericStatisticsDto numeric = numericStatistics(answers.stream()
-            .map(Answer::getNumericValue)
-            .filter(value -> value != null)
-            .toList());
-        Double normalizedScore = average(answers.stream()
-            .map(answer -> rawScore(question, answer))
-            .filter(value -> value != null)
-            .toList());
+        Double normalizedScore = normalizedScore(question, aggregate, data);
         Double evaluationScore = normalizedScore == null ? null : directionalScore(question, normalizedScore);
 
         return new QuestionStatisticsResponseDto(
@@ -120,38 +187,57 @@ public class StatisticsService {
             answerCount,
             omissions,
             responseRate,
-            numeric,
-            scaleValueDistribution(question, answers),
-            choiceStatistics(question.getId(), answerCount),
-            booleanStatistics(answers),
-            matrixStatistics(question),
+            numericStatistics(aggregate),
+            scaleValueDistribution(question, data.scaleValueCounts().getOrDefault(question.getId(), List.of())),
+            choiceStatistics(question.getId(), answerCount, data),
+            booleanStatistics(aggregate),
+            matrixStatistics(question, data),
             normalizedScore,
             evaluationScore
         );
     }
 
-    private List<ValueDistributionDto> scaleValueDistribution(Question question, List<Answer> answers) {
+    private NumericStatisticsDto numericStatistics(QuestionAggregate aggregate) {
+        return new NumericStatisticsDto(
+            aggregate.numericAverage(),
+            aggregate.numericMinimum(),
+            aggregate.numericMaximum(),
+            aggregate.numericMedian(),
+            aggregate.numericStandardDeviation()
+        );
+    }
+
+    private NumericStatisticsDto numericStatistics(MatrixRowAggregate aggregate) {
+        return new NumericStatisticsDto(
+            aggregate.numericAverage(),
+            aggregate.numericMinimum(),
+            aggregate.numericMaximum(),
+            aggregate.numericMedian(),
+            aggregate.numericStandardDeviation()
+        );
+    }
+
+    private List<ValueDistributionDto> scaleValueDistribution(
+        Question question,
+        List<ValueCount> valueCounts
+    ) {
         if (question.getQuestionType() != QuestionType.SCALE) {
             return List.of();
         }
-        return valueDistribution(question, answers.stream()
-            .map(Answer::getNumericValue)
-            .filter(value -> value != null)
-            .toList());
+        List<CountedValue> values = valueCounts.stream()
+            .map(value -> new CountedValue(value.value(), value.count()))
+            .toList();
+        return valueDistribution(question, values);
     }
 
-    private List<ValueDistributionDto> valueDistribution(Question question, List<BigDecimal> values) {
-        Map<BigDecimal, Long> counts = values.stream()
-            .collect(java.util.stream.Collectors.groupingBy(
-                BigDecimal::stripTrailingZeros,
-                java.util.TreeMap::new,
-                java.util.stream.Collectors.counting()
-            ));
+    private List<ValueDistributionDto> valueDistribution(Question question, List<CountedValue> valueCounts) {
+        Map<BigDecimal, Long> counts = new TreeMap<>();
+        valueCounts.forEach(valueCount -> counts.put(valueCount.value().stripTrailingZeros(), valueCount.count()));
+        long total = valueCounts.stream().mapToLong(CountedValue::count).sum();
         addConfiguredScaleValues(question, counts);
         if (counts.isEmpty()) {
             return List.of();
         }
-        long total = values.size();
         return counts.entrySet().stream()
             .map(entry -> new ValueDistributionDto(
                 entry.getKey(),
@@ -184,133 +270,72 @@ public class StatisticsService {
         }
     }
 
-    private List<ChoiceOptionStatisticsDto> choiceStatistics(Long questionId, long answerCount) {
-        return answerOptionRepository.countOptionsByQuestion(questionId).stream()
-            .map(row -> {
-                Long optionId = (Long) row[0];
-                String label = (String) row[1];
-                long count = ((Number) row[2]).longValue();
-                double percentage = answerCount == 0 ? 0 : (count * 100.0) / answerCount;
-                return new ChoiceOptionStatisticsDto(optionId, label, count, percentage);
-            })
+    private List<ChoiceOptionStatisticsDto> choiceStatistics(
+        Long questionId,
+        long answerCount,
+        StatisticsData data
+    ) {
+        return data.choiceOptions().getOrDefault(questionId, List.of()).stream()
+            .map(option -> new ChoiceOptionStatisticsDto(
+                option.optionId(),
+                option.label(),
+                option.count(),
+                answerCount == 0 ? 0 : (option.count() * 100.0) / answerCount
+            ))
             .toList();
     }
 
-    private BooleanStatisticsDto booleanStatistics(List<Answer> answers) {
-        long trueCount = answers.stream().filter(answer -> Boolean.TRUE.equals(answer.getBooleanValue())).count();
-        long falseCount = answers.stream().filter(answer -> Boolean.FALSE.equals(answer.getBooleanValue())).count();
-        long total = trueCount + falseCount;
+    private BooleanStatisticsDto booleanStatistics(QuestionAggregate aggregate) {
+        long total = aggregate.trueCount() + aggregate.falseCount();
         if (total == 0) {
             return null;
         }
         return new BooleanStatisticsDto(
-            trueCount,
-            falseCount,
-            (trueCount * 100.0) / total,
-            (falseCount * 100.0) / total
+            aggregate.trueCount(),
+            aggregate.falseCount(),
+            (aggregate.trueCount() * 100.0) / total,
+            (aggregate.falseCount() * 100.0) / total
         );
     }
 
-    private List<MatrixRowStatisticsDto> matrixStatistics(Question question) {
+    private List<MatrixRowStatisticsDto> matrixStatistics(Question question, StatisticsData data) {
         if (question.getQuestionType() != QuestionType.MATRIX_SCALE) {
             return List.of();
         }
-        Map<Long, List<BigDecimal>> valuesByRow = new LinkedHashMap<>();
-        matrixAnswerValueRepository.findByQuestionId(question.getId()).forEach(value ->
-            valuesByRow.computeIfAbsent(value.getMatrixRow().getId(), id -> new ArrayList<>()).add(value.getNumericValue())
-        );
-        return question.getMatrixRows().stream()
-            .sorted(Comparator.comparing(MatrixRow::getPosition))
-            .map(row -> {
-                List<BigDecimal> values = valuesByRow.getOrDefault(row.getId(), List.of());
-                return new MatrixRowStatisticsDto(
-                    row.getId(),
-                    row.getLabel(),
-                    values.size(),
-                    numericStatistics(values),
-                    valueDistribution(question, values),
-                    average(values.stream().map(value -> normalize(question, value)).filter(value -> value != null).toList())
-                );
-            })
+        return data.matrixRows().getOrDefault(question.getId(), List.of()).stream()
+            .map(row -> new MatrixRowStatisticsDto(
+                row.matrixRowId(),
+                row.label(),
+                row.answerCount(),
+                numericStatistics(row),
+                matrixValueDistribution(question, row.matrixRowId(), data),
+                row.normalizedAverage()
+            ))
             .toList();
     }
 
-    private NumericStatisticsDto numericStatistics(List<BigDecimal> values) {
-        if (values.isEmpty()) {
-            return new NumericStatisticsDto(null, null, null, null, null);
-        }
-        List<Double> sorted = values.stream().map(BigDecimal::doubleValue).sorted().toList();
-        DoubleSummaryStatistics stats = sorted.stream().mapToDouble(Double::doubleValue).summaryStatistics();
-        double average = stats.getAverage();
-        double variance = sorted.stream()
-            .mapToDouble(value -> Math.pow(value - average, 2))
-            .average()
-            .orElse(0);
-        return new NumericStatisticsDto(
-            average,
-            values.stream().min(BigDecimal::compareTo).orElse(null),
-            values.stream().max(BigDecimal::compareTo).orElse(null),
-            median(sorted),
-            Math.sqrt(variance)
-        );
+    private List<ValueDistributionDto> matrixValueDistribution(
+        Question question,
+        Long matrixRowId,
+        StatisticsData data
+    ) {
+        List<CountedValue> values = data.matrixValueCounts().getOrDefault(matrixRowId, List.of()).stream()
+            .map(value -> new CountedValue(value.value(), value.count()))
+            .toList();
+        return valueDistribution(question, values);
     }
 
-    private Double median(List<Double> sorted) {
-        if (sorted.isEmpty()) {
-            return null;
-        }
-        int middle = sorted.size() / 2;
-        if (sorted.size() % 2 == 1) {
-            return sorted.get(middle);
-        }
-        return (sorted.get(middle - 1) + sorted.get(middle)) / 2.0;
-    }
-
-    private Double rawScore(Question question, Answer answer) {
+    private Double normalizedScore(
+        Question question,
+        QuestionAggregate aggregate,
+        StatisticsData data
+    ) {
         return switch (question.getQuestionType()) {
-            case NUMBER, SCALE -> normalize(question, answer.getNumericValue());
-            case BOOLEAN -> booleanScore(question, answer.getBooleanValue());
-            case SINGLE_CHOICE, MULTIPLE_CHOICE -> choiceScore(answer);
-            case MATRIX_SCALE -> average(answer.getMatrixValues().stream()
-                .map(value -> normalize(question, value.getNumericValue()))
-                .filter(value -> value != null)
-                .toList());
+            case NUMBER, SCALE, BOOLEAN -> aggregate.scalarNormalizedScore();
+            case SINGLE_CHOICE, MULTIPLE_CHOICE -> data.choiceScores().get(question.getId());
+            case MATRIX_SCALE -> data.matrixScores().get(question.getId());
             case TEXT -> null;
         };
-    }
-
-    private Double normalize(Question question, BigDecimal value) {
-        if (value == null || question.getSettings() == null) {
-            return null;
-        }
-        QuestionSettings settings = question.getSettings();
-        if (settings.getMinValue() == null || settings.getMaxValue() == null
-            || settings.getMinValue().compareTo(settings.getMaxValue()) >= 0) {
-            return null;
-        }
-        BigDecimal range = settings.getMaxValue().subtract(settings.getMinValue());
-        BigDecimal normalized = value.subtract(settings.getMinValue())
-            .divide(range, 6, RoundingMode.HALF_UP)
-            .multiply(new BigDecimal("100"));
-        return Math.max(0, Math.min(100, normalized.doubleValue()));
-    }
-
-    private Double booleanScore(Question question, Boolean value) {
-        if (value == null || question.getSettings() == null) {
-            return null;
-        }
-        BigDecimal factor = value
-            ? question.getSettings().getTrueEvaluationFactor()
-            : question.getSettings().getFalseEvaluationFactor();
-        return factor == null ? null : factor.multiply(new BigDecimal("100")).doubleValue();
-    }
-
-    private Double choiceScore(Answer answer) {
-        return average(answer.getSelectedOptions().stream()
-            .map(AnswerOption::getOption)
-            .map(option -> option.getEvaluationFactor() == null ? null : option.getEvaluationFactor().multiply(new BigDecimal("100")).doubleValue())
-            .filter(value -> value != null)
-            .toList());
     }
 
     private Double directionalScore(Question question, Double normalizedScore) {
@@ -323,7 +348,7 @@ public class StatisticsService {
 
     private Double globalEvaluationScore(List<QuestionStatisticsResponseDto> stats, List<Question> questions) {
         Map<Long, Question> questionsById = questions.stream()
-            .collect(java.util.stream.Collectors.toMap(Question::getId, question -> question));
+            .collect(Collectors.toMap(Question::getId, Function.identity()));
         double weighted = 0;
         double totalWeight = 0;
         for (QuestionStatisticsResponseDto stat : stats) {
@@ -338,26 +363,80 @@ public class StatisticsService {
         return totalWeight == 0 ? null : weighted / totalWeight;
     }
 
-    private Double average(List<Double> values) {
-        if (values.isEmpty()) {
-            return null;
+    private List<Question> loadSurveyQuestions(Long surveyId) {
+        List<ContentItemRowDto> surveyContent = contentItemRepository.findSurveyContentRows(surveyId);
+        List<Long> blockParentItemIds = surveyContent.stream()
+            .filter(item -> item.itemType() == ContentItemType.BLOCK)
+            .map(ContentItemRowDto::id)
+            .toList();
+        List<Block> blocks = blockParentItemIds.isEmpty()
+            ? List.of()
+            : blockRepository.findByParentItemIdsWithDetails(blockParentItemIds);
+        Map<Long, Long> blockIdsByParentItem = blocks.stream()
+            .collect(Collectors.toMap(block -> block.getParentItem().getId(), Block::getId));
+        List<Long> blockIds = blocks.stream().map(Block::getId).toList();
+        List<BlockContentItemRowDto> blockContent = blockIds.isEmpty()
+            ? List.of()
+            : contentItemRepository.findBlockContentRows(blockIds);
+
+        List<Long> questionParentItemIds = new ArrayList<>();
+        surveyContent.stream()
+            .filter(item -> item.itemType() == ContentItemType.QUESTION)
+            .map(ContentItemRowDto::id)
+            .forEach(questionParentItemIds::add);
+        blockContent.stream()
+            .filter(item -> item.itemType() == ContentItemType.QUESTION)
+            .map(BlockContentItemRowDto::id)
+            .forEach(questionParentItemIds::add);
+        if (questionParentItemIds.isEmpty()) {
+            return List.of();
         }
-        return values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+
+        Map<Long, Question> questionsByParentItem = questionRepository
+            .findByParentItemIdsForStatistics(questionParentItemIds).stream()
+            .collect(Collectors.toMap(question -> question.getParentItem().getId(), Function.identity()));
+        Map<Long, List<BlockContentItemRowDto>> contentByBlock = blockContent.stream()
+            .collect(Collectors.groupingBy(
+                BlockContentItemRowDto::parentBlockId, LinkedHashMap::new, Collectors.toList()
+            ));
+
+        List<Question> orderedQuestions = new ArrayList<>();
+        for (ContentItemRowDto item : surveyContent) {
+            if (item.itemType() == ContentItemType.QUESTION) {
+                addQuestion(item.id(), questionsByParentItem, orderedQuestions);
+                continue;
+            }
+            if (item.itemType() != ContentItemType.BLOCK) {
+                continue;
+            }
+            Long blockId = blockIdsByParentItem.get(item.id());
+            contentByBlock.getOrDefault(blockId, List.of()).stream()
+                .filter(blockItem -> blockItem.itemType() == ContentItemType.QUESTION)
+                .forEach(blockItem -> addQuestion(blockItem.id(), questionsByParentItem, orderedQuestions));
+        }
+        return orderedQuestions;
     }
 
-    private List<Question> loadSurveyQuestions(Long surveyId) {
-        List<Question> questions = new ArrayList<>();
-        for (ContentItem item : contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)) {
-            if (item.getItemType() == ContentItemType.QUESTION) {
-                questionRepository.findByParentItemId(item.getId()).ifPresent(questions::add);
-            } else if (item.getItemType() == ContentItemType.BLOCK) {
-                blockRepository.findByParentItemId(item.getId()).ifPresent(block ->
-                    contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId()).stream()
-                        .sorted(Comparator.comparing(ContentItem::getPosition))
-                        .forEach(blockItem -> questionRepository.findByParentItemId(blockItem.getId()).ifPresent(questions::add))
-                );
-            }
+    private void addQuestion(
+        Long parentItemId,
+        Map<Long, Question> questionsByParentItem,
+        List<Question> target
+    ) {
+        Question question = questionsByParentItem.get(parentItemId);
+        if (question != null) {
+            target.add(question);
         }
-        return questions;
     }
+
+    private record CountedValue(BigDecimal value, long count) {}
+
+    private record StatisticsData(
+        Map<Long, QuestionAggregate> questionAggregates,
+        Map<Long, List<ValueCount>> scaleValueCounts,
+        Map<Long, List<ChoiceOptionAggregate>> choiceOptions,
+        Map<Long, Double> choiceScores,
+        Map<Long, List<MatrixRowAggregate>> matrixRows,
+        Map<Long, List<MatrixValueCount>> matrixValueCounts,
+        Map<Long, Double> matrixScores
+    ) {}
 }

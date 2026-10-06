@@ -20,6 +20,7 @@ import {
 } from '../../../api/collaborationsApi.js';
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
 import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle } from '../../../api/surveysApi.js';
+import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
@@ -196,7 +197,7 @@ function SurveyTagsEditor({ tags, readOnly, onChange }) {
     if (!/^[\p{L}\p{N}-]+$/u.test(tag)) return setTagError('La etiqueta solo admite letras, números y guiones.');
     if (tag.length > 50) return setTagError('La etiqueta no puede superar 50 caracteres.');
     if (tags.includes(tag)) return setTagError('Esta etiqueta ya está añadida.');
-    if (tags.length >= 4) return setTagError('Puedes añadir un máximo de cuatro etiquetas.');
+    if (tags.length >= MAX_SURVEY_TAGS) return setTagError(`Puedes añadir un máximo de ${MAX_SURVEY_TAGS} etiquetas.`);
     onChange([...tags, tag]);
     setTagInput('');
   }
@@ -206,14 +207,14 @@ function SurveyTagsEditor({ tags, readOnly, onChange }) {
       <div className="edit-survey-card-heading">
         <div>
           <h2 id="edit-survey-tags-title">ETIQUETAS</h2>
-          <p>Clasifica la encuesta con hasta cuatro etiquetas.</p>
+          <p>Clasifica la encuesta con hasta {MAX_SURVEY_TAGS} etiquetas.</p>
         </div>
-        <span className="edit-survey-tags-count">{tags.length}/4</span>
+        <span className="edit-survey-tags-count">{tags.length}/{MAX_SURVEY_TAGS}</span>
       </div>
       {!readOnly && <div className="create-survey-field edit-survey-tags-field">
         <div className="create-survey-tag-input">
-          <input id="edit-survey-tag" type="text" maxLength={50} value={tagInput} disabled={tags.length >= 4} placeholder="Ej.: uso-cotidiano, colegio..." aria-label="Nueva etiqueta" onChange={(event) => { setTagInput(event.target.value); setTagError(''); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ',') { event.preventDefault(); addTag(); } }} />
-          <button type="button" disabled={!tagInput.trim() || tags.length >= 4} onClick={addTag}>Añadir</button>
+          <input id="edit-survey-tag" type="text" maxLength={50} value={tagInput} disabled={tags.length >= MAX_SURVEY_TAGS} placeholder="Ej.: uso-cotidiano, colegio..." aria-label="Nueva etiqueta" onChange={(event) => { setTagInput(event.target.value); setTagError(''); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ',') { event.preventDefault(); addTag(); } }} />
+          <button type="button" disabled={!tagInput.trim() || tags.length >= MAX_SURVEY_TAGS} onClick={addTag}>Añadir</button>
         </div>
       </div>}
       {tagError && <p className="create-survey-inline-error" role="alert">{tagError}</p>}

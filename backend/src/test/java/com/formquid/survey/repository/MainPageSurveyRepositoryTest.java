@@ -12,6 +12,9 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,8 +64,96 @@ class MainPageSurveyRepositoryTest {
         assertThat(registeredPage.getContent().get(0).getTitle()).isEqualTo("Clima familiar");
     }
 
-    private void persistSurvey(User owner, String publicCode, String title, String tag, SurveyAccessMode accessMode) {
-        entityManager.persist(Survey.builder()
+    @Test
+    void publicListingUsesIdAsStableTieBreakerWhenCreationTimesMatch() {
+        User owner = User.builder()
+            .role(UserRole.EDITOR)
+            .email("stable-public-pages@example.com")
+            .name("Editora")
+            .gender(UserGender.OTHER)
+            .institution("FormQuid")
+            .passwordHash("not-used-in-tests")
+            .build();
+        entityManager.persist(owner);
+
+        Survey first = persistSurvey(
+            owner, "STABLEPAGE01", "Primera", "educacion", SurveyAccessMode.PUBLIC
+        );
+        Survey second = persistSurvey(
+            owner, "STABLEPAGE02", "Segunda", "educacion", SurveyAccessMode.PUBLIC
+        );
+        Survey third = persistSurvey(
+            owner, "STABLEPAGE03", "Tercera", "educacion", SurveyAccessMode.PUBLIC
+        );
+        entityManager.flush();
+        entityManager.createNativeQuery("""
+                update surveys
+                set created_at = timestamp with time zone '2026-01-01 10:00:00+00'
+                where owner_id = :ownerId
+                """)
+            .setParameter("ownerId", owner.getId())
+            .executeUpdate();
+        entityManager.clear();
+
+        Sort stableSort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+        var firstPage = surveys.findListedOpenPage(
+            SurveyLifecycle.OPEN,
+            SurveyVisibility.LISTED,
+            false,
+            SurveyAccessMode.AUTHENTICATED,
+            null,
+            "",
+            PageRequest.of(0, 2, stableSort)
+        );
+        var secondPage = surveys.findListedOpenPage(
+            SurveyLifecycle.OPEN,
+            SurveyVisibility.LISTED,
+            false,
+            SurveyAccessMode.AUTHENTICATED,
+            null,
+            "",
+            PageRequest.of(1, 2, stableSort)
+        );
+
+        assertThat(firstPage.getContent()).extracting(Survey::getId)
+            .containsExactly(third.getId(), second.getId());
+        assertThat(secondPage.getContent()).extracting(Survey::getId)
+            .containsExactly(first.getId());
+    }
+
+    @Test
+    void databaseAllowsTenSurveyTags() {
+        User owner = User.builder()
+            .role(UserRole.EDITOR)
+            .email("ten-tags@example.com")
+            .name("Editora")
+            .gender(UserGender.OTHER)
+            .institution("FormQuid")
+            .passwordHash("not-used-in-tests")
+            .build();
+        entityManager.persist(owner);
+        String[] tags = IntStream.rangeClosed(1, Survey.MAX_TAGS)
+            .mapToObj(index -> "etiqueta-" + index)
+            .toArray(String[]::new);
+        Survey survey = Survey.builder()
+            .owner(owner)
+            .title("Encuesta con diez etiquetas")
+            .tags(tags)
+            .lifecycleStatus(SurveyLifecycle.DRAFT)
+            .accessMode(SurveyAccessMode.PUBLIC)
+            .visibility(SurveyVisibility.UNLISTED)
+            .build();
+
+        entityManager.persist(survey);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(surveys.findById(survey.getId()).orElseThrow().getTags())
+            .containsExactly(tags);
+    }
+
+    private Survey persistSurvey(User owner, String publicCode, String title, String tag, SurveyAccessMode accessMode) {
+        Survey survey = Survey.builder()
             .publicCode(publicCode)
             .owner(owner)
             .title(title)
@@ -70,6 +161,8 @@ class MainPageSurveyRepositoryTest {
             .lifecycleStatus(SurveyLifecycle.OPEN)
             .accessMode(accessMode)
             .visibility(SurveyVisibility.LISTED)
-            .build());
+            .build();
+        entityManager.persist(survey);
+        return survey;
     }
 }

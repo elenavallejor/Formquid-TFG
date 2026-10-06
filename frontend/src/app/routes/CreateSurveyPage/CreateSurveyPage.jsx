@@ -18,6 +18,7 @@ import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { useModalFocus } from '../../../hooks/useModalFocus.js';
+import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
 import './CreateSurveyPage.css';
@@ -256,8 +257,8 @@ export function CreateSurveyPage() {
       setTagError('Esta etiqueta ya está añadida.');
       return;
     }
-    if (formData.tags.length >= 4) {
-      setTagError('Puedes añadir un máximo de cuatro etiquetas.');
+    if (formData.tags.length >= MAX_SURVEY_TAGS) {
+      setTagError(`Puedes añadir un máximo de ${MAX_SURVEY_TAGS} etiquetas.`);
       return;
     }
     updateForm({ tags: [...formData.tags, tag] });
@@ -419,14 +420,14 @@ export function CreateSurveyPage() {
               </Dropdown>
             </div>
             <div className="create-survey-field create-survey-tags-field">
-              <label htmlFor="survey-tag">Etiquetas ({formData.tags.length}/4)</label>
+              <label htmlFor="survey-tag">Etiquetas ({formData.tags.length}/{MAX_SURVEY_TAGS})</label>
               <div className="create-survey-tag-input">
                 <input
                   id="survey-tag"
                   type="text"
                   maxLength={50}
                   value={tagInput}
-                  disabled={formData.tags.length >= 4}
+                  disabled={formData.tags.length >= MAX_SURVEY_TAGS}
                   placeholder="Ej.: inteligencia-artificial"
                   onChange={(event) => { setTagInput(event.target.value); setTagError(''); }}
                   onKeyDown={(event) => {
@@ -436,7 +437,7 @@ export function CreateSurveyPage() {
                     }
                   }}
                 />
-                <button type="button" disabled={!tagInput.trim() || formData.tags.length >= 4} onClick={addTag}>Añadir</button>
+                <button type="button" disabled={!tagInput.trim() || formData.tags.length >= MAX_SURVEY_TAGS} onClick={addTag}>Añadir</button>
               </div>
               {tagError && <p className="create-survey-inline-error" role="alert">{tagError}</p>}
               {formData.tags.length > 0 && (

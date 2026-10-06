@@ -1,6 +1,7 @@
 package com.formquid.survey.repository;
 
 import com.formquid.survey.dto.AdminSurveySummaryDto;
+import com.formquid.survey.dto.SurveyResultsSummaryDto;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
@@ -24,11 +25,6 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     Optional<Survey> findByPublicCode(String publicCode);
 
     boolean existsByPublicCode(String publicCode);
-
-    List<Survey> findByLifecycleStatusAndVisibilityOrderByCreatedAtDesc(
-        SurveyLifecycle lifecycleStatus,
-        SurveyVisibility visibility
-    );
 
     @Query(
         value = """
@@ -180,6 +176,67 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
         from Survey survey
     """)
     List<AdminSurveySummaryDto> findRecentAdminSummaries(Pageable pageable);
+
+    @Query(
+        value = """
+            select new com.formquid.survey.dto.SurveyResultsSummaryDto(
+                survey.id,
+                survey.title,
+                survey.imageKey,
+                owner.name,
+                survey.lifecycleStatus,
+                count(participation.id),
+                survey.updatedAt
+            )
+            from Participation participation
+            join participation.survey survey
+            join survey.owner owner
+            where (
+                :administrator = true
+                or survey.owner.id = :userId
+                or exists (
+                    select 1
+                    from SurveyCollaborator collaborator
+                    where collaborator.survey = survey
+                        and collaborator.user.id = :userId
+                )
+            )
+                and (:search = '' or lower(survey.title) like concat('%', :search, '%'))
+                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+            group by
+                survey.id,
+                survey.title,
+                survey.imageKey,
+                owner.name,
+                survey.lifecycleStatus,
+                survey.updatedAt
+            order by survey.updatedAt desc, survey.id desc
+            """,
+        countQuery = """
+            select count(distinct survey.id)
+            from Participation participation
+            join participation.survey survey
+            where (
+                :administrator = true
+                or survey.owner.id = :userId
+                or exists (
+                    select 1
+                    from SurveyCollaborator collaborator
+                    where collaborator.survey = survey
+                        and collaborator.user.id = :userId
+                )
+            )
+                and (:search = '' or lower(survey.title) like concat('%', :search, '%'))
+                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+            """
+    )
+    Page<SurveyResultsSummaryDto> findResultSummaries(
+        @Param("userId") Long userId,
+        @Param("administrator") boolean administrator,
+        @Param("search") String search,
+        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        Pageable pageable
+    );
 
     @Query(
         value = """

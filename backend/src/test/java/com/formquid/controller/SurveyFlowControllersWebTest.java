@@ -6,15 +6,23 @@ import com.formquid.collaboration.controller.CollaborationController;
 import com.formquid.collaboration.controller.CollaborationOverviewController;
 import com.formquid.collaboration.service.CollaborationService;
 import com.formquid.config.SecurityConfig;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.content.controller.ContentController;
 import com.formquid.content.service.ContentService;
 import com.formquid.participation.controller.AuthenticatedParticipationController;
+import com.formquid.participation.controller.ParticipationResultsController;
+import com.formquid.participation.dto.ParticipationDetailResponseDto;
 import com.formquid.participation.dto.ParticipationResponseDto;
+import com.formquid.participation.dto.ParticipationSummaryResponseDto;
 import com.formquid.participation.service.ParticipationService;
 import com.formquid.statistics.controller.StatisticsController;
 import com.formquid.statistics.service.StatisticsService;
 import com.formquid.survey.controller.SurveyController;
+import com.formquid.survey.dto.PublicSurveySummaryDto;
+import com.formquid.survey.dto.SurveyResultsSummaryDto;
 import com.formquid.survey.entity.Survey;
+import com.formquid.survey.entity.SurveyAccessMode;
+import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
@@ -33,6 +41,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -48,7 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     CollaborationController.class,
     CollaborationOverviewController.class,
     StatisticsController.class,
-    AuthenticatedParticipationController.class
+    AuthenticatedParticipationController.class,
+    ParticipationResultsController.class
 })
 @Import({ SecurityConfig.class, JwtAuthenticationFilter.class })
 class SurveyFlowControllersWebTest {
@@ -71,6 +81,84 @@ class SurveyFlowControllersWebTest {
             .andExpect(status().isOk());
 
         verify(surveyService).getSurveyForUser(4L, editor);
+    }
+
+    @Test
+    void surveyResultsDetails_passAuthenticatedUserToRestrictedService() throws Exception {
+        User editor = editor();
+
+        mockMvc.perform(get("/api/v1/surveys/4/results").with(authentication(tokenFor(editor))))
+            .andExpect(status().isOk());
+
+        verify(surveyService).getSurveyForResults(4L, editor);
+    }
+
+    @Test
+    void resultSurveyList_passesFiltersAndPaginationToService() throws Exception {
+        User editor = editor();
+        when(surveyService.findResultSurveys(editor, "clima", SurveyLifecycle.CLOSED, 1, 18))
+            .thenReturn(new PageResponseDto<>(List.of(new SurveyResultsSummaryDto(
+                4L,
+                "Encuesta",
+                null,
+                "Editora",
+                SurveyLifecycle.CLOSED,
+                3,
+                Instant.parse("2026-10-06T10:00:00Z")
+            )), 1, 18, 20, 2));
+
+        mockMvc.perform(get("/api/v1/surveys/results")
+                .with(authentication(tokenFor(editor)))
+                .param("search", "clima")
+                .param("lifecycleStatus", "CLOSED")
+                .param("page", "1")
+                .param("size", "18"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content[0].responses").value(3))
+            .andExpect(jsonPath("$.page").value(1));
+
+        verify(surveyService).findResultSurveys(editor, "clima", SurveyLifecycle.CLOSED, 1, 18);
+    }
+
+    @Test
+    void registeredSurveyListPassesPaginationToService() throws Exception {
+        User editor = editor();
+        when(surveyService.findListedOpenForRegisteredPage(
+            editor, "clima", "educacion", SurveyAccessMode.AUTHENTICATED, 2, 9
+        )).thenReturn(new PageResponseDto<>(List.of(new PublicSurveySummaryDto(
+            "ABC123", "Encuesta", null, null, SurveyAccessMode.AUTHENTICATED, List.of("educacion")
+        )), 2, 9, 20, 3));
+
+        mockMvc.perform(get("/api/v1/surveys/registered/page")
+                .with(authentication(tokenFor(editor)))
+                .param("search", "clima")
+                .param("tag", "educacion")
+                .param("accessMode", "AUTHENTICATED")
+                .param("page", "2")
+                .param("size", "9"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content[0].publicCode").value("ABC123"))
+            .andExpect(jsonPath("$.page").value(2))
+            .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    void createSurvey_rejectsMoreThanTenTags() throws Exception {
+        User editor = editor();
+
+        mockMvc.perform(post("/api/v1/surveys")
+                .with(authentication(tokenFor(editor)))
+                .with(csrf())
+                .contentType("application/json")
+                .content("""
+                    {
+                      "title": "Encuesta",
+                      "tags": ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11"]
+                    }
+                    """))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(surveyService);
     }
 
     @Test
@@ -101,7 +189,7 @@ class SurveyFlowControllersWebTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray());
 
-        verify(surveyService).ensureCanViewResults(survey, editor);
+        verify(surveyService).ensureCanViewManagedSurvey(survey, editor);
     }
 
     @Test
@@ -142,6 +230,53 @@ class SurveyFlowControllersWebTest {
                 .content("{\"answers\":[{\"questionId\":12,\"booleanValue\":true}]}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(15));
+    }
+
+    @Test
+    void participationResults_passPaginationAndAuthenticatedUserToService() throws Exception {
+        User editor = editor();
+        Instant submittedAt = Instant.parse("2026-10-06T10:00:00Z");
+        when(participationService.findParticipationPage(4L, editor, 2, 25))
+            .thenReturn(new PageResponseDto<>(
+                List.of(new ParticipationSummaryResponseDto(15L, submittedAt)),
+                2,
+                25,
+                60,
+                3
+            ));
+
+        mockMvc.perform(get("/api/v1/surveys/4/participations")
+                .with(authentication(tokenFor(editor)))
+                .param("page", "2")
+                .param("size", "25"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content[0].id").value(15))
+            .andExpect(jsonPath("$.page").value(2))
+            .andExpect(jsonPath("$.totalPages").value(3));
+
+        verify(participationService).findParticipationPage(4L, editor, 2, 25);
+    }
+
+    @Test
+    void participationDetail_passesBothIdentifiersAndAuthenticatedUserToService() throws Exception {
+        User editor = editor();
+        when(participationService.getParticipationDetail(4L, 15L, editor))
+            .thenReturn(new ParticipationDetailResponseDto(
+                15L,
+                4L,
+                "Encuesta",
+                Instant.parse("2026-10-06T10:00:00Z"),
+                List.of()
+            ));
+
+        mockMvc.perform(get("/api/v1/surveys/4/participations/15")
+                .with(authentication(tokenFor(editor))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(15))
+            .andExpect(jsonPath("$.surveyId").value(4))
+            .andExpect(jsonPath("$.answers").isArray());
+
+        verify(participationService).getParticipationDetail(4L, 15L, editor);
     }
 
     @Test

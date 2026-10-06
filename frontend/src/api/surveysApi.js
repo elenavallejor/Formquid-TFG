@@ -74,6 +74,27 @@ export function getMySurveys({
   });
 }
 
+export function getResultSurveys({
+  search = '',
+  lifecycleStatus = 'ALL',
+  page = 0,
+  size = 9,
+  signal,
+} = {}) {
+  const params = new URLSearchParams();
+  const normalizedSearch = search.trim();
+
+  if (normalizedSearch) params.set('search', normalizedSearch);
+  if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
+  params.set('page', String(page));
+  params.set('size', String(size));
+
+  return apiClient(`/surveys/results?${params.toString()}`, {
+    method: 'GET',
+    signal,
+  });
+}
+
 export function getRegisteredSurveys(options) {
   return getMainPageSurveys('/surveys/registered/page', options);
 }
@@ -113,6 +134,10 @@ export function createSurveyFromTemplate(templateId, data) {
 
 export function getSurveyById(surveyId) {
   return apiClient(`/surveys/${surveyId}`, { method: 'GET' });
+}
+
+export function getSurveyForResults(surveyId) {
+  return apiClient(`/surveys/${surveyId}/results`, { method: 'GET' });
 }
 
 export function updateSurvey(surveyId, data) {

@@ -15,8 +15,6 @@ import java.util.Optional;
 
 public interface BlockRepository extends JpaRepository<Block, Long> {
 
-    List<Block> findByScopeOrderByNameAsc(BlockScope scope);
-
     @Query(
         value = """
             select new com.formquid.block.dto.BlockSummaryDto(

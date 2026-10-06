@@ -17,6 +17,7 @@ import { ErrorPage } from './routes/ErrorPage/ErrorPage';
 import { LoginPage } from './routes/LoginPage/LoginPage';
 import { MainPage } from './routes/MainPage/MainPage';
 import { PanelPage } from './routes/PanelPage/PanelPage';
+import { SurveyParticipationsPage } from './routes/SurveyParticipationsPage/SurveyParticipationsPage.jsx';
 import { PublicSurveyPage } from './routes/PublicSurveyPage/PublicSurveyPage.jsx';
 import { RegisterPage } from './routes/RegisterPage/RegisterPage';
 import { RegistrationRequestsPage } from './routes/RegistrationRequestsPage/RegistrationRequestsPage';
@@ -140,6 +141,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={SURVEY_MANAGEMENT_ROLES}>
               <SurveyResultsPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'encuestas/:surveyId/resultados/participaciones',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={SURVEY_MANAGEMENT_ROLES}>
+              <SurveyParticipationsPage />
             </RequireRole>
           </RequireAuth>
         ),

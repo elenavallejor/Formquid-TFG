@@ -8,6 +8,7 @@ import com.formquid.auth.security.JwtCookieService;
 import com.formquid.auth.security.JwtService;
 import com.formquid.auth.service.AuthService;
 import com.formquid.config.SecurityConfig;
+import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.participation.controller.ParticipationController;
 import com.formquid.participation.dto.ParticipationResponseDto;
@@ -100,19 +101,26 @@ class PublicControllersWebTest {
     }
 
     @Test
-    void publicSurveyList_bindsRepeatedTags() throws Exception {
-        when(surveyService.findListedOpen(List.of("infancia", "tecnologia"))).thenReturn(List.of(
-            new PublicSurveySummaryDto(
+    void publicSurveyList_bindsFiltersAndReturnsPageMetadata() throws Exception {
+        when(surveyService.findListedOpenPage("clima", "tecnologia", SurveyAccessMode.PUBLIC, 1, 3))
+            .thenReturn(new PageResponseDto<>(List.of(new PublicSurveySummaryDto(
                 "ABC123", "Encuesta", "Descripción", null, SurveyAccessMode.PUBLIC,
                 List.of("infancia", "tecnologia")
-            )
-        ));
+            )), 1, 3, 4, 2));
 
-        mockMvc.perform(get("/api/v1/public/surveys")
-                .param("tags", "infancia", "tecnologia"))
+        mockMvc.perform(get("/api/v1/public/surveys/page")
+                .param("search", "clima")
+                .param("tag", "tecnologia")
+                .param("accessMode", "PUBLIC")
+                .param("page", "1")
+                .param("size", "3"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].publicCode").value("ABC123"))
-            .andExpect(jsonPath("$[0].tags.length()").value(2));
+            .andExpect(jsonPath("$.content[0].publicCode").value("ABC123"))
+            .andExpect(jsonPath("$.content[0].tags.length()").value(2))
+            .andExpect(jsonPath("$.page").value(1))
+            .andExpect(jsonPath("$.size").value(3))
+            .andExpect(jsonPath("$.totalElements").value(4))
+            .andExpect(jsonPath("$.totalPages").value(2));
     }
 
     @Test

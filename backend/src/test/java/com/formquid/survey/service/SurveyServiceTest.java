@@ -39,8 +39,10 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
@@ -91,6 +93,39 @@ class SurveyServiceTest {
         assertThat(response.content()).isEmpty();
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.size()).isEqualTo(3);
+    }
+
+    @Test
+    void mainPageUsesStableCreatedAtAndIdOrder() {
+        PageRequest pageable = PageRequest.of(
+            0,
+            9,
+            Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+        );
+        when(surveyRepository.findListedOpenPage(
+            SurveyLifecycle.OPEN,
+            SurveyVisibility.LISTED,
+            false,
+            SurveyAccessMode.AUTHENTICATED,
+            SurveyAccessMode.PUBLIC,
+            "",
+            pageable
+        )).thenReturn(Page.empty(pageable));
+
+        PageResponseDto<PublicSurveySummaryDto> response = surveyService.findListedOpenPage(
+            null, null, SurveyAccessMode.PUBLIC, 0, 9
+        );
+
+        assertThat(response.content()).isEmpty();
+        assertThat(response.page()).isZero();
+        assertThat(response.size()).isEqualTo(9);
+    }
+
+    @Test
+    void mainPageRejectsUnboundedPageSize() {
+        assertThatThrownBy(() -> surveyService.findListedOpenPage(null, null, null, 0, 51))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("Paginación de encuestas no válida");
     }
 
     @Test
@@ -262,6 +297,40 @@ class SurveyServiceTest {
     }
 
     @Test
+    void update_acceptsAndPreservesTenTags() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        Survey survey = Survey.builder()
+            .id(10L)
+            .owner(owner)
+            .title("Encuesta")
+            .fontFamily(SurveyFontFamily.ARIAL)
+            .lifecycleStatus(SurveyLifecycle.DRAFT)
+            .accessMode(SurveyAccessMode.PUBLIC)
+            .visibility(SurveyVisibility.UNLISTED)
+            .build();
+        List<String> tags = IntStream.rangeClosed(1, Survey.MAX_TAGS)
+            .mapToObj(index -> "etiqueta-" + index)
+            .toList();
+        UpdateSurveyRequestDto request = new UpdateSurveyRequestDto(
+            "Encuesta",
+            null,
+            null,
+            SurveyFontFamily.ARIAL,
+            SurveyAccessMode.PUBLIC,
+            SurveyVisibility.UNLISTED,
+            null,
+            tags
+        );
+
+        when(surveyRepository.findById(10L)).thenReturn(Optional.of(survey));
+        when(contentService.findSurveyContent(10L)).thenReturn(List.of());
+
+        surveyService.update(10L, request, owner);
+
+        assertThat(survey.getTags()).containsExactlyElementsOf(tags);
+    }
+
+    @Test
     void administrationCanHideSurveyWithoutChangingItsLifecycle() {
         User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
         User admin = User.builder().id(3L).role(UserRole.ADMIN).build();
@@ -286,15 +355,87 @@ class SurveyServiceTest {
     }
 
     @Test
-    void viewingCollaboratorCanPreviewWithoutEditing() {
+    void viewingCollaboratorCannotEdit() {
         User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
         User collaborator = User.builder().id(4L).role(UserRole.EDITOR).build();
         Survey survey = Survey.builder().id(12L).owner(owner).build();
 
         when(collaboratorRepository.findPermission(12L, 4L)).thenReturn(Optional.of(CollaborationPermission.VIEW));
 
-        assertThat(surveyService.canPreviewSurvey(survey, collaborator)).isTrue();
         assertThat(surveyService.canEditSurvey(survey, collaborator)).isFalse();
+    }
+
+    @Test
+    void resultsAccess_allowsOwnerViewingCollaboratorAndAdministrator() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        User collaborator = User.builder().id(2L).role(UserRole.EDITOR).build();
+        User administrator = User.builder().id(3L).role(UserRole.ADMIN).build();
+        Survey survey = Survey.builder().id(12L).owner(owner).build();
+
+        when(collaboratorRepository.findPermission(12L, 2L))
+            .thenReturn(Optional.of(CollaborationPermission.VIEW));
+        when(participationRepository.existsBySurveyId(12L)).thenReturn(true);
+
+        assertThatCode(() -> surveyService.ensureCanViewResults(survey, owner))
+            .doesNotThrowAnyException();
+        assertThatCode(() -> surveyService.ensureCanViewResults(survey, collaborator))
+            .doesNotThrowAnyException();
+        assertThatCode(() -> surveyService.ensureCanViewResults(survey, administrator))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    void resultsAccess_rejectsEditorWithoutOwnershipOrCollaboration() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        User unrelatedEditor = User.builder().id(4L).role(UserRole.EDITOR).build();
+        Survey survey = Survey.builder().id(12L).owner(owner).build();
+
+        when(collaboratorRepository.findPermission(12L, 4L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> surveyService.ensureCanViewResults(survey, unrelatedEditor))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> assertThat(((ApiException) exception).getStatus())
+                .isEqualTo(HttpStatus.FORBIDDEN))
+            .hasMessage("No puedes consultar las estadísticas de esta encuesta");
+    }
+
+    @Test
+    void resultsAccess_rejectsSurveyWithoutRegisteredResponses() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        Survey survey = Survey.builder().id(12L).owner(owner).build();
+
+        when(participationRepository.existsBySurveyId(12L)).thenReturn(false);
+
+        assertThatThrownBy(() -> surveyService.ensureCanViewResults(survey, owner))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> {
+                ApiException apiException = (ApiException) exception;
+                assertThat(apiException.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                assertThat(apiException.getCode()).isEqualTo("SURVEY_RESULTS_NOT_AVAILABLE");
+            })
+            .hasMessage("La encuesta todavía no tiene respuestas registradas");
+    }
+
+    @Test
+    void resultsView_rejectsUnrelatedEditorEvenWhenSurveyIsPublicAndOpen() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        User unrelatedEditor = User.builder().id(4L).role(UserRole.EDITOR).build();
+        Survey survey = Survey.builder()
+            .id(12L)
+            .owner(owner)
+            .lifecycleStatus(SurveyLifecycle.OPEN)
+            .accessMode(SurveyAccessMode.PUBLIC)
+            .visibility(SurveyVisibility.LISTED)
+            .build();
+
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+        when(collaboratorRepository.findPermission(12L, 4L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> surveyService.getSurveyForResults(12L, unrelatedEditor))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> assertThat(((ApiException) exception).getStatus())
+                .isEqualTo(HttpStatus.FORBIDDEN))
+            .hasMessage("No puedes consultar las estadísticas de esta encuesta");
     }
 
     @Test

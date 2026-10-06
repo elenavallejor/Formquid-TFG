@@ -42,7 +42,7 @@ class SecurityConfigTest {
 
     @Test
     void cors_allowsOnlyConfiguredFrontendWithCredentials() {
-        var request = new MockHttpServletRequest("GET", "/api/v1/public/surveys");
+        var request = new MockHttpServletRequest("GET", "/api/v1/public/surveys/page");
         var configuration = config.corsConfigurationSource().getCorsConfiguration(request);
 
         assertThat(configuration.getAllowedOrigins()).containsExactly("http://localhost:5173");

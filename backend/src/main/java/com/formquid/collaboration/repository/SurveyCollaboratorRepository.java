@@ -23,8 +23,6 @@ public interface SurveyCollaboratorRepository extends JpaRepository<SurveyCollab
         """)
     Optional<CollaborationPermission> findPermission(@Param("surveyId") Long surveyId, @Param("userId") Long userId);
 
-    List<SurveyCollaborator> findByIdUserId(Long userId);
-
     List<SurveyCollaborator> findByIdSurveyId(Long surveyId);
 
     @Query("""

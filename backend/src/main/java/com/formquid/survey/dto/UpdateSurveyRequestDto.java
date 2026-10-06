@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
+import static com.formquid.survey.entity.Survey.MAX_TAGS;
+
 /**
  * Recibe los metadatos editables de una encuesta existente.
  */
@@ -19,6 +21,6 @@ public record UpdateSurveyRequestDto(
     SurveyAccessMode accessMode,
     SurveyVisibility visibility,
     String accessPassword,
-    @Size(max = 4) List<String> tags
+    @Size(max = MAX_TAGS) List<String> tags
 ) {
 }

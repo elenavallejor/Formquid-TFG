@@ -7,6 +7,7 @@ import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
+import com.formquid.survey.dto.SurveyResultsSummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
@@ -30,8 +31,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * Expone las operaciones autenticadas de creación, consulta y gestión de encuestas.
@@ -62,6 +61,17 @@ public class SurveyController {
         );
     }
 
+    @GetMapping("/results")
+    public PageResponseDto<SurveyResultsSummaryDto> findResults(
+        @AuthenticationPrincipal User user,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "9") int size
+    ) {
+        return surveyService.findResultSurveys(user, search, lifecycleStatus, page, size);
+    }
+
     @GetMapping("/directory")
     public PageResponseDto<SurveyDirectorySummaryDto> findDirectory(
         @AuthenticationPrincipal User user,
@@ -74,14 +84,6 @@ public class SurveyController {
         ) Pageable pageable
     ) {
         return surveyService.findDirectory(user, search, lifecycleStatus, pageable);
-    }
-
-    @GetMapping("/registered")
-    public List<PublicSurveySummaryDto> findVisibleForRegistered(
-        @AuthenticationPrincipal User user,
-        @RequestParam(required = false) List<String> tags
-    ) {
-        return surveyService.findListedOpenForRegistered(user, tags);
     }
 
     @GetMapping("/registered/page")
@@ -129,6 +131,14 @@ public class SurveyController {
         @AuthenticationPrincipal User user
     ) {
         return surveyService.getSurveyForUser(surveyId, user);
+    }
+
+    @GetMapping("/{surveyId}/results")
+    public SurveyResponseDto getForResults(
+        @PathVariable Long surveyId,
+        @AuthenticationPrincipal User user
+    ) {
+        return surveyService.getSurveyForResults(surveyId, user);
     }
 
     @PutMapping("/{surveyId}")

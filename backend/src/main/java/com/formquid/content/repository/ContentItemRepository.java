@@ -64,10 +64,6 @@ public interface ContentItemRepository extends JpaRepository<ContentItem, Long> 
         @Param("blockIds") Collection<Long> blockIds
     );
 
-    boolean existsBySurveyIdAndItemType(Long surveyId, ContentItemType itemType);
-
-    boolean existsByTemplateIdAndItemType(Long templateId, ContentItemType itemType);
-
     boolean existsByParentBlockIdAndItemType(Long blockId, ContentItemType itemType);
 
 }

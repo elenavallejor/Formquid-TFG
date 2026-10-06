@@ -143,6 +143,6 @@ public class CollaborationController {
 
     private void ensureCollaborationAccess(Long surveyId, User user) {
         Survey survey = surveyService.getSurvey(surveyId);
-        surveyService.ensureCanViewResults(survey, user);
+        surveyService.ensureCanViewManagedSurvey(survey, user);
     }
 }

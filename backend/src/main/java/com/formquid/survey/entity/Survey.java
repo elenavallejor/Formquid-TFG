@@ -53,18 +53,23 @@ import java.util.List;
         (access_mode = 'PASSWORD_PROTECTED' and access_password_hash is not null)
         or (access_mode <> 'PASSWORD_PROTECTED' and access_password_hash is null)
     )
-    and cardinality(tags) <= 4
+    and cardinality(tags) <= 10
 """)
 @Table(
     name = "surveys",
     uniqueConstraints = @UniqueConstraint(name = "uk_surveys_public_code", columnNames = "public_code"),
     indexes = {
         @Index(name = "idx_surveys_owner", columnList = "owner_id"),
-        @Index(name = "idx_surveys_lifecycle_visibility", columnList = "lifecycle_status, visibility"),
+        @Index(
+            name = "idx_surveys_public_listing",
+            columnList = "lifecycle_status, visibility, created_at DESC, id DESC"
+        ),
         @Index(name = "idx_surveys_updated_at", columnList = "updated_at")
     }
 )
 public class Survey {
+
+    public static final int MAX_TAGS = 10;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -157,9 +162,5 @@ public class Survey {
         if (tags == null) {
             tags = new String[0];
         }
-    }
-
-    public boolean isOpen() {
-        return lifecycleStatus == SurveyLifecycle.OPEN;
     }
 }

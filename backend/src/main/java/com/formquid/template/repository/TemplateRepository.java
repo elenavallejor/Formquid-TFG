@@ -8,14 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
 /**
  * Gestiona el acceso a plantillas y el listado ligero del catálogo.
  */
 public interface TemplateRepository extends JpaRepository<Template, Long> {
-
-    List<Template> findAllByOrderByTitleAsc();
 
     @Query(
         value = """

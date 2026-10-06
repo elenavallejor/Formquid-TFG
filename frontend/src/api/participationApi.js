@@ -16,3 +16,20 @@ export function submitAuthenticatedParticipation(surveyId, answersData) {
     body: answersData,
   });
 }
+
+export function getSurveyParticipations(surveyId, { page = 0, size = 10, signal } = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+  return apiClient(`/surveys/${surveyId}/participations?${params.toString()}`, {
+    method: 'GET',
+    signal,
+  });
+}
+
+export function getSurveyParticipation(surveyId, participationId) {
+  return apiClient(`/surveys/${surveyId}/participations/${participationId}`, {
+    method: 'GET',
+  });
+}

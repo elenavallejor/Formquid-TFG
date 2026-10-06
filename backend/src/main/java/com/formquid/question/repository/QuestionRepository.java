@@ -85,6 +85,34 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         @Param("parentItemIds") Collection<Long> parentItemIds
     );
 
+    @Query("""
+        select question
+        from Question question
+        left join fetch question.settings
+        where question.parentItem.id in :parentItemIds
+        """)
+    List<Question> findByParentItemIdsForStatistics(
+        @Param("parentItemIds") Collection<Long> parentItemIds
+    );
+
+    @Query("""
+        select question
+        from Question question
+        left join fetch question.settings
+        join question.parentItem item
+        left join item.parentBlock parentBlock
+        left join parentBlock.parentItem blockParentItem
+        where question.id = :questionId
+          and (
+              item.survey.id = :surveyId
+              or blockParentItem.survey.id = :surveyId
+          )
+        """)
+    Optional<Question> findForStatistics(
+        @Param("surveyId") Long surveyId,
+        @Param("questionId") Long questionId
+    );
+
     Optional<Question> findByParentItemId(Long parentItemId);
 
     long countBySourceFixedQuestionId(Long sourceFixedQuestionId);

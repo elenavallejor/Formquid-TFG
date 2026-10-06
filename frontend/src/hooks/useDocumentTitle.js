@@ -11,6 +11,8 @@ const PAGE_TITLES = [
   { pattern: /^\/sugerir-elemento\/?$/, title: 'Sugerir elemento' },
   { pattern: /^\/encuestas\/crear\/?$/, title: 'Crear encuesta' },
   { pattern: /^\/encuestas\/[^/]+\/editar\/?$/, title: 'Gestionar encuesta' },
+  { pattern: /^\/encuestas\/[^/]+\/resultados\/participaciones\/?$/, title: 'Participaciones individuales' },
+  { pattern: /^\/encuestas\/[^/]+\/resultados\/?$/, title: 'Resultados de encuesta' },
   { pattern: /^\/encuestas\/?$/, title: 'Encuestas' },
   { pattern: /^\/catalogo\/crear\/pregunta\/?$/, title: 'Crear pregunta' },
   { pattern: /^\/catalogo\/crear\/bloque\/?$/, title: 'Crear bloque' },
