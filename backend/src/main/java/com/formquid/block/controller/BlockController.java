@@ -4,6 +4,8 @@ import com.formquid.block.dto.BlockResponseDto;
 import com.formquid.block.dto.BlockSummaryDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.service.BlockService;
+import com.formquid.common.dto.CatalogSearchField;
+import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 /**
  * Controlador de bloques de catálogo.
@@ -43,9 +47,12 @@ public class BlockController {
         @AuthenticationPrincipal User user,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(defaultValue = "false") boolean mine
+        @RequestParam(defaultValue = "false") boolean mine,
+        @RequestParam(defaultValue = "") String search,
+        @RequestParam(defaultValue = "TITLE,DESCRIPTION,CREATOR") Set<CatalogSearchField> searchFields,
+        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder
     ) {
-        return blockService.findCatalogBlocks(page, size, user, mine);
+        return blockService.findCatalogBlocks(page, size, user, mine, search, searchFields, sortOrder);
     }
 
     @GetMapping("/builder")

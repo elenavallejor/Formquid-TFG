@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdAdd, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline, MdSearch } from 'react-icons/md';
+import { MdAdd, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline } from 'react-icons/md';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
-import { getMySurveys } from '../../../api/surveysApi.js';
+import { getAdminSurveys, getMySurveys } from '../../../api/surveysApi.js';
 import { AdminPanelButton } from '../../../components/AdminPanelButton/AdminPanelButton.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { PanelButton } from '../../../components/PanelButton/PanelButton.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { Table } from '../../../components/Table/Table.jsx';
@@ -20,6 +20,7 @@ import './PanelPage.css';
  * Muestra el panel correspondiente al rol y carga los datos necesarios para su gestión.
  */
 const EDITOR_SURVEYS_PAGE_SIZE = 9;
+const ADMIN_SURVEYS_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
 const ROLE_CONTENT = {
@@ -110,6 +111,11 @@ export function PanelPage() {
   const [registrationRequestsCount, setRegistrationRequestsCount] = useState(null);
   const [surveyCount, setSurveyCount] = useState(null);
   const [adminSurveys, setAdminSurveys] = useState([]);
+  const [adminSurveysPage, setAdminSurveysPage] = useState(0);
+  const [adminSurveysTotalItems, setAdminSurveysTotalItems] = useState(0);
+  const [adminSurveysTotalPages, setAdminSurveysTotalPages] = useState(0);
+  const [isAdminSurveysLoading, setIsAdminSurveysLoading] = useState(true);
+  const [adminSurveysError, setAdminSurveysError] = useState('');
 
   const [editorSurveys, setEditorSurveys] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,7 +175,6 @@ export function PanelPage() {
           setCatalogRequestsCount(null);
           setRegistrationRequestsCount(null);
           setSurveyCount(null);
-          setAdminSurveys([]);
 
           const dashboard = await getAdminDashboard();
 
@@ -185,12 +190,6 @@ export function PanelPage() {
 
           setSurveyCount(
             dashboard.surveyCount ?? 0,
-          );
-
-          setAdminSurveys(
-            Array.isArray(dashboard.recentSurveys)
-              ? dashboard.recentSurveys
-              : [],
           );
 
           return;
@@ -226,6 +225,48 @@ export function PanelPage() {
     sortOrder,
     currentPage,
   ]);
+
+  useEffect(() => {
+    if (!user?.id || !['ADMIN', 'SUPERADMIN'].includes(user.role)) return undefined;
+
+    let isActive = true;
+    const abortController = new AbortController();
+    const request = getAdminSurveys({
+      page: adminSurveysPage,
+      size: ADMIN_SURVEYS_PAGE_SIZE,
+      signal: abortController.signal,
+    });
+
+    Promise.resolve()
+      .then(() => {
+        if (isActive) {
+          setIsAdminSurveysLoading(true);
+          setAdminSurveysError('');
+        }
+        return request;
+      })
+      .then((response) => {
+        if (!isActive) return;
+        setAdminSurveys(Array.isArray(response?.content) ? response.content : []);
+        setAdminSurveysTotalItems(Number(response?.totalElements ?? 0));
+        setAdminSurveysTotalPages(Number(response?.totalPages ?? 0));
+      })
+      .catch((error) => {
+        if (!isActive || error.name === 'AbortError') return;
+        setAdminSurveys([]);
+        setAdminSurveysTotalItems(0);
+        setAdminSurveysTotalPages(0);
+        setAdminSurveysError(error.message || 'No se ha podido cargar el resumen de encuestas.');
+      })
+      .finally(() => {
+        if (isActive) setIsAdminSurveysLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
+  }, [adminSurveysPage, user?.id, user?.role]);
 
   if (!user) {
     return (
@@ -414,65 +455,46 @@ export function PanelPage() {
                 </Link>
               </div>
 
-              <div className="surveys-filters-bar">
-                <div className="surveys-search-wrapper">
-                  <MdSearch
-                    className="search-icon"
-                    aria-hidden="true"
-                  />
-
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    placeholder="Buscar encuestas..."
-                    aria-label="Buscar encuestas"
-                    onChange={(event) => {
-                      setSearchQuery(event.target.value);
-                      setCurrentPage(0);
-                    }}
-                  />
-                </div>
-
-                <div className="surveys-selects-group">
-                  <Dropdown
-                    value={statusFilter}
-                    aria-label="Filtrar encuestas por estado"
-                    onChange={(event) => {
-                      setStatusFilter(event.target.value);
-                      setCurrentPage(0);
-                    }}
-                  >
-                    <option value="ALL">
-                      Todos los estados
-                    </option>
-                    <option value="OPEN">
-                      ABIERTAS
-                    </option>
-                    <option value="DRAFT">
-                      BORRADORES
-                    </option>
-                    <option value="CLOSED">
-                      CERRADAS
-                    </option>
-                  </Dropdown>
-
-                  <Dropdown
-                    value={sortOrder}
-                    aria-label="Ordenar encuestas"
-                    onChange={(event) => {
-                      setSortOrder(event.target.value);
-                      setCurrentPage(0);
-                    }}
-                  >
-                    <option value="RECENT">
-                      Más recientes primero
-                    </option>
-                    <option value="OLDEST">
-                      Más antiguas primero
-                    </option>
-                  </Dropdown>
-                </div>
-              </div>
+              <SearchToolbar
+                ariaLabel="Búsqueda y filtros de mis encuestas"
+                searchLabel="Buscar mis encuestas"
+                searchPlaceholder="Buscar"
+                searchValue={searchQuery}
+                onSearchChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setCurrentPage(0);
+                }}
+                filterChoices={[{
+                  label: 'Estado de la encuesta',
+                  options: [
+                    { value: 'ALL', label: 'Todos los estados' },
+                    { value: 'OPEN', label: 'Abiertas' },
+                    { value: 'DRAFT', label: 'Borradores' },
+                    { value: 'CLOSED', label: 'Cerradas' },
+                  ],
+                  value: statusFilter,
+                  resetValue: 'ALL',
+                }]}
+                onFilterChange={(_values, _text, selectedChoices) => {
+                  setStatusFilter(selectedChoices[0]);
+                  setCurrentPage(0);
+                }}
+                onFilterReset={() => {
+                  setSearchQuery('');
+                  setDebouncedSearchQuery('');
+                  setCurrentPage(0);
+                }}
+                sortAriaLabel="Ordenar mis encuestas"
+                sortOptions={[
+                  { value: 'RECENT', label: 'Más recientes primero' },
+                  { value: 'OLDEST', label: 'Más antiguas primero' },
+                ]}
+                sortValue={sortOrder}
+                onSortChange={(event) => {
+                  setSortOrder(event.target.value);
+                  setCurrentPage(0);
+                }}
+              />
 
               {isLoading ? (
                 <Skeleton variant="grid" count={3} />
@@ -638,7 +660,7 @@ export function PanelPage() {
 
             <section
               className="admin-section surveys-summary-section"
-              aria-busy={isLoading}
+              aria-busy={isAdminSurveysLoading}
             >
               <div className="admin-section-header-row">
                 <h2 className="admin-section-title">
@@ -646,16 +668,29 @@ export function PanelPage() {
                 </h2>
               </div>
 
-              {isLoading ? (
-                <Skeleton variant="table" count={5} />
-              ) : !dataError ? (
+              {isAdminSurveysLoading ? (
+                <Skeleton variant="table" count={ADMIN_SURVEYS_PAGE_SIZE} />
+              ) : adminSurveysError ? (
+                <p className="panel-error-message" role="alert">{adminSurveysError}</p>
+              ) : (
                 <Table
                   headers={TABLE_HEADERS}
                   data={tableData}
                   emptyMessage="Todavía no hay encuestas registradas."
                   caption="Resumen de encuestas registradas"
+                  footer={adminSurveysTotalItems > 0 ? (
+                    <Pagination
+                      ariaLabel="Paginación del resumen de encuestas"
+                      currentPage={adminSurveysPage}
+                      itemLabel="encuestas"
+                      onPageChange={setAdminSurveysPage}
+                      pageSize={ADMIN_SURVEYS_PAGE_SIZE}
+                      totalItems={adminSurveysTotalItems}
+                      totalPages={adminSurveysTotalPages}
+                    />
+                  ) : null}
                 />
-              ) : null}
+              )}
             </section>
           </div>
         </section>

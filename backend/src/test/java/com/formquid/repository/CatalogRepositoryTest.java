@@ -21,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -59,22 +60,37 @@ class CatalogRepositoryTest {
             .template(template).itemType(ContentItemType.QUESTION).position(1).required(false).build());
         entityManager.flush();
 
-        assertThat(blocks.findCatalogSummaries(BlockScope.CATALOG, creator.getId(), true, PageRequest.of(0, 10)))
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, creator.getId(), true, "", true, true, true, catalogPage()
+        ))
             .singleElement().satisfies(summary -> {
                 assertThat(summary.name()).isEqualTo("Bloque propio");
                 assertThat(summary.questionCount()).isEqualTo(1);
                 assertThat(summary.creatorName()).isEqualTo("Creadora");
             });
-        assertThat(questions.findCatalogSummaries(QuestionScope.CATALOG_FIXED, creator.getId(), true, PageRequest.of(0, 10)))
+        assertThat(questions.findCatalogSummaries(
+            QuestionScope.CATALOG_FIXED, creator.getId(), true, "", true, true, true, catalogPage()
+        ))
             .singleElement().extracting(summary -> summary.statement()).isEqualTo("Pregunta propia");
-        assertThat(templates.findCatalogSummaries(creator.getId(), true, PageRequest.of(0, 10)))
+        assertThat(templates.findCatalogSummaries(
+            creator.getId(), true, "", true, true, true, catalogPage()
+        ))
             .singleElement().satisfies(summary -> {
                 assertThat(summary.title()).isEqualTo("Plantilla propia");
                 assertThat(summary.questionCount()).isEqualTo(1);
             });
 
-        assertThat(blocks.findCatalogSummaries(BlockScope.CATALOG, other.getId(), false, PageRequest.of(0, 10)))
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, other.getId(), false, "", true, true, true, catalogPage()
+        ))
             .extracting(summary -> summary.id()).contains(block.getId());
+
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, creator.getId(), true, "creadora", false, false, true, catalogPage()
+        )).hasSize(1);
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, creator.getId(), true, "creadora", true, false, false, catalogPage()
+        )).isEmpty();
     }
 
     @Test
@@ -103,6 +119,14 @@ class CatalogRepositoryTest {
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build());
+    }
+
+    private PageRequest catalogPage() {
+        return PageRequest.of(
+            0,
+            10,
+            Sort.by(Sort.Direction.DESC, "updatedAt").and(Sort.by(Sort.Direction.DESC, "id"))
+        );
     }
 
     private <T> T persist(T entity) {

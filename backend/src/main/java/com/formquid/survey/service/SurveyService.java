@@ -18,6 +18,8 @@ import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.SurveyResultsSummaryDto;
+import com.formquid.survey.dto.SurveyResultsSearchField;
+import com.formquid.survey.dto.SurveyResultsSortOrder;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.SurveySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
@@ -165,7 +167,9 @@ public class SurveyService {
     public PageResponseDto<SurveyResultsSummaryDto> findResultSurveys(
         User user,
         String search,
+        Set<SurveyResultsSearchField> searchFields,
         SurveyLifecycle lifecycleStatus,
+        SurveyResultsSortOrder sortOrder,
         int page,
         int size
     ) {
@@ -181,12 +185,23 @@ public class SurveyService {
         }
 
         String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        Set<SurveyResultsSearchField> safeSearchFields = searchFields == null ? Set.of() : searchFields;
+        boolean searchTitle = safeSearchFields.contains(SurveyResultsSearchField.TITLE);
+        boolean searchOwner = safeSearchFields.contains(SurveyResultsSearchField.OWNER);
+        Sort.Direction direction = sortOrder == SurveyResultsSortOrder.OLDEST
+            ? Sort.Direction.ASC
+            : Sort.Direction.DESC;
         Page<SurveyResultsSummaryDto> surveys = surveyRepository.findResultSummaries(
             user.getId(),
             administrator,
             normalizedSearch,
+            searchTitle,
+            searchOwner,
             lifecycleStatus,
-            PageRequest.of(page, size)
+            PageRequest.of(page, size, Sort.by(
+                new Sort.Order(direction, "updatedAt"),
+                new Sort.Order(direction, "id")
+            ))
         );
         return new PageResponseDto<>(
             surveys.getContent(),

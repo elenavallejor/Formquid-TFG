@@ -15,6 +15,7 @@ export function QuestionBuilder({
   onClose,
   onSave,
   modalTitle = 'Configurar pregunta',
+  includeEvaluation = false,
 }) {
   const [modalError, setModalError] = useState('');
   const modalRef = useRef(null);
@@ -41,7 +42,7 @@ export function QuestionBuilder({
   }
 
   function handleModalSave() {
-    const validationError = getQuestionBuilderValidationError(data);
+    const validationError = getQuestionBuilderValidationError(data, { includeEvaluation });
 
     if (validationError) {
       setModalError(validationError);
@@ -210,57 +211,61 @@ export function QuestionBuilder({
           </div>
         )}
 
-        <div className="config-grid-row">
-          <div className="config-label-cell">Dirección de evaluación:</div>
-          <div className="config-interactive-cell">
-            <div className="direction-btn-group">
-              <button
-                type="button"
-                className={data.evaluationDirection === 'POSITIVE' ? 'active' : ''}
-                aria-pressed={data.evaluationDirection === 'POSITIVE'}
-                disabled={isTextQuestion}
-                onClick={() => handleEvaluationDirection('POSITIVE')}
-              >
-                <MdOutlineThumbUp aria-hidden="true" />
-                Positiva
-              </button>
-              <button
-                type="button"
-                className={data.evaluationDirection === 'NEUTRAL' ? 'active' : ''}
-                aria-pressed={data.evaluationDirection === 'NEUTRAL'}
-                onClick={() => handleEvaluationDirection('NEUTRAL')}
-              >
-                Neutral
-              </button>
-              <button
-                type="button"
-                className={data.evaluationDirection === 'NEGATIVE' ? 'active' : ''}
-                aria-pressed={data.evaluationDirection === 'NEGATIVE'}
-                disabled={isTextQuestion}
-                onClick={() => handleEvaluationDirection('NEGATIVE')}
-              >
-                <MdOutlineThumbDown aria-hidden="true" />
-                Negativa
-              </button>
+        {includeEvaluation && (
+          <>
+            <div className="config-grid-row">
+              <div className="config-label-cell">Dirección de evaluación:</div>
+              <div className="config-interactive-cell">
+                <div className="direction-btn-group">
+                  <button
+                    type="button"
+                    className={data.evaluationDirection === 'POSITIVE' ? 'active' : ''}
+                    aria-pressed={data.evaluationDirection === 'POSITIVE'}
+                    disabled={isTextQuestion}
+                    onClick={() => handleEvaluationDirection('POSITIVE')}
+                  >
+                    <MdOutlineThumbUp aria-hidden="true" />
+                    Positiva
+                  </button>
+                  <button
+                    type="button"
+                    className={data.evaluationDirection === 'NEUTRAL' ? 'active' : ''}
+                    aria-pressed={data.evaluationDirection === 'NEUTRAL'}
+                    onClick={() => handleEvaluationDirection('NEUTRAL')}
+                  >
+                    Neutral
+                  </button>
+                  <button
+                    type="button"
+                    className={data.evaluationDirection === 'NEGATIVE' ? 'active' : ''}
+                    aria-pressed={data.evaluationDirection === 'NEGATIVE'}
+                    disabled={isTextQuestion}
+                    onClick={() => handleEvaluationDirection('NEGATIVE')}
+                  >
+                    <MdOutlineThumbDown aria-hidden="true" />
+                    Negativa
+                  </button>
+                </div>
+              </div>
+              <div className="config-help-cell">Indica si la respuesta se interpreta como favorable, desfavorable o solo informativa respecto al tema de investigación.</div>
             </div>
-          </div>
-          <div className="config-help-cell">Indica si la respuesta se interpreta como favorable, desfavorable o solo informativa respecto al tema de investigación.</div>
-        </div>
 
-        {data.evaluationDirection !== 'NEUTRAL' && (
-          <div className="config-grid-row">
-            <div className="config-label-cell">Peso de la pregunta:</div>
-            <div className="config-interactive-cell">
-              <input
-                type="number"
-                step="0.1"
-                placeholder="Ej. 1,5"
-                value={data.evaluationWeight ?? ''}
-                onChange={(event) => handleField('evaluationWeight', parseNumberValue(event.target.value))}
-              />
-            </div>
-            <div className="config-help-cell">Indica la importancia de esta pregunta dentro del cálculo de resultados del estudio.</div>
-          </div>
+            {data.evaluationDirection !== 'NEUTRAL' && (
+              <div className="config-grid-row">
+                <div className="config-label-cell">Peso de la pregunta:</div>
+                <div className="config-interactive-cell">
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="Ej. 1,5"
+                    value={data.evaluationWeight ?? ''}
+                    onChange={(event) => handleField('evaluationWeight', parseNumberValue(event.target.value))}
+                  />
+                </div>
+                <div className="config-help-cell">Indica la importancia de esta pregunta dentro del cálculo de resultados del estudio.</div>
+              </div>
+            )}
+          </>
         )}
 
         {data.questionType === 'TEXT' && (
@@ -417,7 +422,7 @@ export function QuestionBuilder({
                       placeholder="Texto de la opción"
                       onChange={(event) => handleOptionChange(index, 'label', event.target.value)}
                     />
-                    {data.evaluationDirection !== 'NEUTRAL' && (
+                    {includeEvaluation && data.evaluationDirection !== 'NEUTRAL' && (
                       <input
                         type="number"
                         step="0.1"
@@ -498,7 +503,7 @@ export function QuestionBuilder({
                   placeholder="Etiqueta afirmativa"
                   onChange={(event) => handleField('trueLabel', event.target.value)}
                 />
-                {data.evaluationDirection !== 'NEUTRAL' && (
+                {includeEvaluation && data.evaluationDirection !== 'NEUTRAL' && (
                   <input
                     type="number"
                     step="0.1"
@@ -515,7 +520,7 @@ export function QuestionBuilder({
                   placeholder="Etiqueta negativa"
                   onChange={(event) => handleField('falseLabel', event.target.value)}
                 />
-                {data.evaluationDirection !== 'NEUTRAL' && (
+                {includeEvaluation && data.evaluationDirection !== 'NEUTRAL' && (
                   <input
                     type="number"
                     step="0.1"
@@ -526,7 +531,11 @@ export function QuestionBuilder({
                 )}
               </div>
             </div>
-            <div className="config-help-cell">Textos y factores asociados a cada respuesta.</div>
+            <div className="config-help-cell">
+              {includeEvaluation
+                ? 'Textos y factores asociados a cada respuesta.'
+                : 'Textos mostrados para cada respuesta.'}
+            </div>
           </div>
         )}
       </section>

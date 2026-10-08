@@ -76,7 +76,9 @@ export function getMySurveys({
 
 export function getResultSurveys({
   search = '',
+  searchFields = [],
   lifecycleStatus = 'ALL',
+  sortOrder = 'NEWEST',
   page = 0,
   size = 9,
   signal,
@@ -85,7 +87,9 @@ export function getResultSurveys({
   const normalizedSearch = search.trim();
 
   if (normalizedSearch) params.set('search', normalizedSearch);
+  params.set('searchFields', searchFields.length > 0 ? searchFields.join(',') : 'NONE');
   if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
+  params.set('sortOrder', sortOrder);
   params.set('page', String(page));
   params.set('size', String(size));
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { MdAdd, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets, MdSearch } from 'react-icons/md';
+import { MdAdd, MdKeyboardArrowDown, MdKeyboardArrowRight, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineWidgets } from 'react-icons/md';
 
 import {
   deleteCatalogBlock,
@@ -13,14 +13,24 @@ import {
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
 import './CatalogPage.css';
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
+const SEARCH_CATEGORY_OPTIONS = [
+  { value: 'TITLE', label: 'Nombre o título' },
+  { value: 'DESCRIPTION', label: 'Descripción o anotación' },
+  { value: 'CREATOR', label: 'Creador' },
+];
+const ALL_SEARCH_CATEGORIES = SEARCH_CATEGORY_OPTIONS.map((option) => option.value);
+const SORT_OPTIONS = [
+  { value: 'NEWEST', label: 'Más reciente' },
+  { value: 'OLDEST', label: 'Más antigua' },
+];
 
 const SECTION_CONFIG = {
   plantillas: {
@@ -77,27 +87,6 @@ function emptyCatalogState(isLoading = true) {
   };
 }
 
-function filterAndSortItems(items, config, searchQuery, sortOrder) {
-  if (!config) return [];
-  const query = searchQuery.trim().toLowerCase();
-
-  return items
-    .filter((item) => {
-      if (!query) return true;
-      const title = String(item[config.titleKey] ?? '').toLowerCase();
-      const description = config.descriptionKey
-        ? String(item[config.descriptionKey] ?? '').toLowerCase()
-        : '';
-      const creator = String(item.creatorName ?? '').toLowerCase();
-      return title.includes(query) || description.includes(query) || creator.includes(query);
-    })
-    .sort((first, second) => {
-      const firstDate = new Date(first.updatedAt ?? 0).getTime();
-      const secondDate = new Date(second.updatedAt ?? 0).getTime();
-      return sortOrder === 'OLDEST' ? firstDate - secondDate : secondDate - firstDate;
-    });
-}
-
 export function CatalogPage() {
   const navigate = useNavigate();
   const { section } = useParams();
@@ -110,6 +99,8 @@ export function CatalogPage() {
   const [ownCatalog, setOwnCatalog] = useState(() => emptyCatalogState());
   const [publicCatalog, setPublicCatalog] = useState(() => emptyCatalogState());
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedSearchCategories, setSelectedSearchCategories] = useState(ALL_SEARCH_CATEGORIES);
   const [sortOrder, setSortOrder] = useState('NEWEST');
   const [ownCurrentPage, setOwnCurrentPage] = useState(0);
   const [publicCurrentPage, setPublicCurrentPage] = useState(0);
@@ -121,10 +112,12 @@ export function CatalogPage() {
   const isSuperadmin = user?.role === 'SUPERADMIN';
 
   useEffect(() => {
-    setOwnCurrentPage(0);
-    setPublicCurrentPage(0);
-    setSearchQuery('');
-  }, [section]);
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -148,6 +141,9 @@ export function CatalogPage() {
           page,
           size: itemsPerPage,
           mine,
+          search: debouncedSearch,
+          searchFields: selectedSearchCategories,
+          sortOrder,
         });
 
         if (requestVersion !== requestVersionRef.current) return;
@@ -171,15 +167,20 @@ export function CatalogPage() {
 
     if (canCreateCatalog) {
       void loadCatalog(true, ownCurrentPage, setOwnCatalog);
-    } else {
-      setOwnCatalog(emptyCatalogState(false));
     }
     void loadCatalog(false, publicCurrentPage, setPublicCatalog);
     return undefined;
-  }, [canCreateCatalog, config, itemsPerPage, ownCurrentPage, publicCurrentPage, user?.id]);
-
-  const visibleOwnItems = filterAndSortItems(ownCatalog.items, config, searchQuery, sortOrder);
-  const visiblePublicItems = filterAndSortItems(publicCatalog.items, config, searchQuery, sortOrder);
+  }, [
+    canCreateCatalog,
+    config,
+    debouncedSearch,
+    itemsPerPage,
+    ownCurrentPage,
+    publicCurrentPage,
+    selectedSearchCategories,
+    sortOrder,
+    user?.id,
+  ]);
 
   if (!config) {
     return <Navigate to="/catalogo/bloques" replace />;
@@ -317,6 +318,10 @@ export function CatalogPage() {
               className={`catalog-tab ${section === sectionKey ? 'active' : ''}`}
               role="tab"
               aria-selected={section === sectionKey}
+              onClick={() => {
+                setOwnCurrentPage(0);
+                setPublicCurrentPage(0);
+              }}
             >
               <tab.icon className="tab-icon" aria-hidden="true" />
               <span>{tab.label}</span>
@@ -324,37 +329,41 @@ export function CatalogPage() {
           ))}
         </div>
 
-        <section className="catalog-filters-bar" aria-label="Filtros del catálogo">
-          <div className="search-input-wrapper">
-            <MdSearch className="search-icon" aria-hidden="true" />
-            <input
-              type="search"
-              placeholder="Buscar por nombre, descripción o creador..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="catalog-filters-right">
-            <div className="sort-select-wrapper">
-              <span className="sort-label">Ordenar por:</span>
-              <Dropdown
-                aria-label="Ordenar catálogo"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-              >
-                <option value="NEWEST">Más reciente</option>
-                <option value="OLDEST">Más antigua</option>
-              </Dropdown>
-            </div>
-          </div>
-        </section>
+        <SearchToolbar
+          ariaLabel="Filtros del catálogo"
+          searchLabel="Introduce una palabra para buscar en el catálogo"
+          searchValue={searchQuery}
+          onSearchChange={(event) => {
+            setSearchQuery(event.target.value);
+            setOwnCurrentPage(0);
+            setPublicCurrentPage(0);
+          }}
+          filterOptions={SEARCH_CATEGORY_OPTIONS}
+          selectedFilterValues={selectedSearchCategories}
+          onFilterChange={(categories) => {
+            setSelectedSearchCategories(categories);
+            setOwnCurrentPage(0);
+            setPublicCurrentPage(0);
+          }}
+          onFilterReset={() => {
+            setSearchQuery('');
+            setDebouncedSearch('');
+          }}
+          sortAriaLabel="Ordenar catálogo"
+          sortOptions={SORT_OPTIONS}
+          sortValue={sortOrder}
+          onSortChange={(event) => {
+            setSortOrder(event.target.value);
+            setOwnCurrentPage(0);
+            setPublicCurrentPage(0);
+          }}
+        />
 
         <div className="catalog-results">
           {canCreateCatalog && renderCatalogSection({
             title: config.ownLabel,
             catalog: ownCatalog,
-            visibleItems: visibleOwnItems,
+            visibleItems: ownCatalog.items,
             currentPage: ownCurrentPage,
             setCurrentPage: setOwnCurrentPage,
             canManage: true,
@@ -364,7 +373,7 @@ export function CatalogPage() {
           {renderCatalogSection({
             title: 'LISTA PÚBLICA',
             catalog: publicCatalog,
-            visibleItems: visiblePublicItems,
+            visibleItems: publicCatalog.items,
             currentPage: publicCurrentPage,
             setCurrentPage: setPublicCurrentPage,
             canManage: isSuperadmin,

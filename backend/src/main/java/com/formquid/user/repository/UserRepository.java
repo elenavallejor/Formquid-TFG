@@ -42,14 +42,61 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 user.updatedAt
             )
             from User user
-            order by user.name asc
+            where :search = ''
+                or (:searchName = true and lower(user.name) like concat('%', :search, '%'))
+                or (:searchEmail = true and lower(user.email) like concat('%', :search, '%'))
+                or (:searchInstitution = true and lower(user.institution) like concat('%', :search, '%'))
+                or (
+                    :searchGender = true
+                    and lower(case
+                        when user.gender = com.formquid.user.entity.UserGender.MALE then 'hombre male'
+                        when user.gender = com.formquid.user.entity.UserGender.FEMALE then 'mujer female'
+                        else 'otro other'
+                    end) like concat('%', :search, '%')
+                )
+                or (
+                    :searchRole = true
+                    and lower(case
+                        when user.role = com.formquid.user.entity.UserRole.EDITOR then 'editor'
+                        when user.role = com.formquid.user.entity.UserRole.ADMIN then 'administrador admin'
+                        else 'superadministrador superadmin'
+                    end) like concat('%', :search, '%')
+                )
         """,
         countQuery = """
             select count(user)
             from User user
+            where :search = ''
+                or (:searchName = true and lower(user.name) like concat('%', :search, '%'))
+                or (:searchEmail = true and lower(user.email) like concat('%', :search, '%'))
+                or (:searchInstitution = true and lower(user.institution) like concat('%', :search, '%'))
+                or (
+                    :searchGender = true
+                    and lower(case
+                        when user.gender = com.formquid.user.entity.UserGender.MALE then 'hombre male'
+                        when user.gender = com.formquid.user.entity.UserGender.FEMALE then 'mujer female'
+                        else 'otro other'
+                    end) like concat('%', :search, '%')
+                )
+                or (
+                    :searchRole = true
+                    and lower(case
+                        when user.role = com.formquid.user.entity.UserRole.EDITOR then 'editor'
+                        when user.role = com.formquid.user.entity.UserRole.ADMIN then 'administrador admin'
+                        else 'superadministrador superadmin'
+                    end) like concat('%', :search, '%')
+                )
         """
     )
-    Page<UserResponseDto> findResponses(Pageable pageable);
+    Page<UserResponseDto> findResponses(
+        @Param("search") String search,
+        @Param("searchName") boolean searchName,
+        @Param("searchEmail") boolean searchEmail,
+        @Param("searchInstitution") boolean searchInstitution,
+        @Param("searchGender") boolean searchGender,
+        @Param("searchRole") boolean searchRole,
+        Pageable pageable
+    );
 
     @Query("""
         select new com.formquid.user.dto.UserResponseDto(

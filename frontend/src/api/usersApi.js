@@ -21,8 +21,22 @@ export function deleteMyAccount(data) {
   });
 }
 
-export function getUsers(page = 0, size = 20) {
-  return apiClient(`/users?page=${page}&size=${size}`, { method: 'GET' });
+export function getUsers({
+  page = 0,
+  size = 20,
+  search = '',
+  searchFields = [],
+  sortOrder = 'NAME_ASC',
+} = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+    sortOrder,
+    searchFields: searchFields.length > 0 ? searchFields.join(',') : 'NONE',
+  });
+  if (search.trim()) params.set('search', search.trim());
+
+  return apiClient(`/users?${params.toString()}`, { method: 'GET' });
 }
 
 export function updateUserRole(userId, role) {

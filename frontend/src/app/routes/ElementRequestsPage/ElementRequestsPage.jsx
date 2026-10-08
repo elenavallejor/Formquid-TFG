@@ -13,7 +13,6 @@ import {
   MdOutlineHelpOutline,
   MdOutlinePerson,
   MdOutlineWidgets,
-  MdSearch,
 } from 'react-icons/md';
 
 import {
@@ -24,8 +23,8 @@ import {
 import { Block } from '../../../components/Block/Block.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { Question } from '../../../components/Question/Question.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { TextContent, TextContentIcon } from '../../../components/TextContent/TextContent.jsx';
 import { buildBlockQuestionFromCatalog } from '../../../utils/blockBuilderUtils.js';
 import { QUESTION_TYPES } from '../../../utils/questionBuilderUtils.js';
@@ -63,6 +62,16 @@ const ROLE_LABELS = {
   ADMIN: 'Administrador',
   SUPERADMIN: 'Superadministrador',
 };
+
+const SEARCH_OPTIONS = [
+  { value: 'REQUESTER', label: 'Solicitante' },
+  { value: 'EMAIL', label: 'Correo' },
+  { value: 'ELEMENT', label: 'Elemento solicitado' },
+];
+const SORT_OPTIONS = [
+  { value: 'NEWEST', label: 'Más reciente' },
+  { value: 'OLDEST', label: 'Más antigua' },
+];
 
 function formatDateTime(value) {
   if (!value) return 'Fecha no disponible';
@@ -273,6 +282,9 @@ export function ElementRequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSearchFields, setSelectedSearchFields] = useState(
+    () => SEARCH_OPTIONS.map((option) => option.value),
+  );
   const [sortOrder, setSortOrder] = useState('NEWEST');
   const [collapsedIds, setCollapsedIds] = useState(() => new Set());
   const [modalState, setModalState] = useState({ action: null, request: null });
@@ -302,16 +314,19 @@ export function ElementRequestsPage() {
     const query = searchQuery.trim().toLocaleLowerCase('es');
 
     return requests
-      .filter((request) => [
-        request.requestedByName,
-        request.requestedByEmail,
-        getRequestTitle(request),
-      ].some((value) => value?.toLocaleLowerCase('es').includes(query)))
+      .filter((request) => !query || (
+        (selectedSearchFields.includes('REQUESTER')
+          && request.requestedByName?.toLocaleLowerCase('es').includes(query))
+        || (selectedSearchFields.includes('EMAIL')
+          && request.requestedByEmail?.toLocaleLowerCase('es').includes(query))
+        || (selectedSearchFields.includes('ELEMENT')
+          && getRequestTitle(request).toLocaleLowerCase('es').includes(query))
+      ))
       .sort((left, right) => {
         const difference = new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
         return sortOrder === 'NEWEST' ? difference : -difference;
       });
-  }, [requests, searchQuery, sortOrder]);
+  }, [requests, searchQuery, selectedSearchFields, sortOrder]);
 
   function toggleStructure(id) {
     setCollapsedIds((current) => {
@@ -375,26 +390,20 @@ export function ElementRequestsPage() {
           <p>Revisa y gestiona las solicitudes de creación de nuevos elementos sugeridos por los editores.</p>
         </header>
 
-        <section className="element-requests-filters" aria-label="Filtros de solicitudes">
-          <label className="element-requests-search">
-            <span className="sr-only">Buscar solicitudes</span>
-            <MdSearch aria-hidden="true" />
-            <input
-              type="search"
-              value={searchQuery}
-              placeholder="Buscar por nombre o elemento..."
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </label>
-
-          <div className="element-requests-sort">
-            <label htmlFor="element-requests-sort">Ordenar por:</label>
-            <Dropdown id="element-requests-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
-              <option value="NEWEST">Más reciente</option>
-              <option value="OLDEST">Más antigua</option>
-            </Dropdown>
-          </div>
-        </section>
+        <SearchToolbar
+          ariaLabel="Filtros de solicitudes del catálogo"
+          searchLabel="Introduce una palabra para buscar solicitudes del catálogo"
+          searchValue={searchQuery}
+          onSearchChange={(event) => setSearchQuery(event.target.value)}
+          filterOptions={SEARCH_OPTIONS}
+          selectedFilterValues={selectedSearchFields}
+          onFilterChange={setSelectedSearchFields}
+          onFilterReset={() => setSearchQuery('')}
+          sortAriaLabel="Ordenar solicitudes del catálogo"
+          sortOptions={SORT_OPTIONS}
+          sortValue={sortOrder}
+          onSortChange={(event) => setSortOrder(event.target.value)}
+        />
 
         <section className="element-requests-list" aria-label="Solicitudes pendientes del catálogo">
           {isLoading ? (
@@ -402,10 +411,17 @@ export function ElementRequestsPage() {
           ) : loadError ? (
             <p className="element-requests-status error" role="alert">{loadError}</p>
           ) : visibleRequests.length === 0 ? (
-            <div className="element-requests-empty">
-              {requests.length === 0
-                ? 'No hay solicitudes pendientes ahora mismo'
-                : 'No hay solicitudes pendientes que coincidan con la búsqueda.'}
+            <div className="element-requests-empty" role="status">
+              <h2>
+                {requests.length === 0
+                  ? 'No hay solicitudes pendientes'
+                  : 'No hay coincidencias'}
+              </h2>
+              <p>
+                {requests.length === 0
+                  ? 'No se han recibido solicitudes para el catálogo.'
+                  : 'No hay solicitudes pendientes que coincidan con la búsqueda.'}
+              </p>
             </div>
           ) : visibleRequests.map((request) => (
             <ElementRequestCard

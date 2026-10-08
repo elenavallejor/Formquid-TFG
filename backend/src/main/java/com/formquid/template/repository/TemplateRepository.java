@@ -38,8 +38,16 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
             left join item.block nestedBlock
             left join nestedBlock.contentItems blockItem
             where
-                (:mine = true and creator.id = :userId)
-                or (:mine = false and (creator.id is null or creator.id <> :userId))
+                (
+                    (:mine = true and creator.id = :userId)
+                    or (:mine = false and (creator.id is null or creator.id <> :userId))
+                )
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(template.title) like concat('%', :search, '%'))
+                    or (:searchDescription = true and lower(coalesce(template.description, '')) like concat('%', :search, '%'))
+                    or (:searchCreator = true and lower(coalesce(creator.name, '')) like concat('%', :search, '%'))
+                )
             group by
                 template.id,
                 template.title,
@@ -54,13 +62,25 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
             from Template template
             left join template.createdBy creator
             where
-                (:mine = true and creator.id = :userId)
-                or (:mine = false and (creator.id is null or creator.id <> :userId))
+                (
+                    (:mine = true and creator.id = :userId)
+                    or (:mine = false and (creator.id is null or creator.id <> :userId))
+                )
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(template.title) like concat('%', :search, '%'))
+                    or (:searchDescription = true and lower(coalesce(template.description, '')) like concat('%', :search, '%'))
+                    or (:searchCreator = true and lower(coalesce(creator.name, '')) like concat('%', :search, '%'))
+                )
             """
     )
     Page<TemplateSummaryDto> findCatalogSummaries(
         @Param("userId") Long userId,
         @Param("mine") boolean mine,
+        @Param("search") String search,
+        @Param("searchTitle") boolean searchTitle,
+        @Param("searchDescription") boolean searchDescription,
+        @Param("searchCreator") boolean searchCreator,
         Pageable pageable
     );
 }

@@ -1,6 +1,6 @@
 .results-page {
   min-height: calc(100vh - 70px);
-  padding: 42px 24px 64px;
+  padding: 32px 40px 60px;
   background: var(--color-background);
 }
 
@@ -14,13 +14,13 @@
 }
 
 .results-page-header {
-  margin: 24px 0;
+  margin: 0 0 24px;
 }
 
 .results-page-header h1 {
   margin: 0 0 6px;
   color: var(--color-header);
-  font-size: 35px;
+  font-size: 32.5px;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -29,53 +29,6 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: 17.5px;
-}
-
-.results-page-filters {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(190px, 240px);
-  gap: 12px;
-  margin-bottom: 22px;
-}
-
-.results-page-search {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.results-page-search:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-shadow);
-}
-
-.results-page-search svg {
-  flex: 0 0 auto;
-  font-size: 22.5px;
-}
-
-.results-page-search input {
-  min-width: 0;
-  width: 100%;
-  padding: 12px 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: 17.5px;
-}
-
-.results-page-search input:focus,
-.results-page-search input:focus-visible {
-  outline: none;
-  box-shadow: none;
 }
 
 .results-page-content {
@@ -140,7 +93,6 @@
     font-size: 30px;
   }
 
-  .results-page-filters,
   .results-survey-grid,
   .results-page-content .skeleton-grid {
     grid-template-columns: 1fr;

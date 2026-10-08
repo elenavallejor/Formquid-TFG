@@ -27,6 +27,7 @@ export function BlockBuilder({
   modalTitle = "Configurar bloque",
   errorMessage = "",
   onClearError,
+  includeEvaluation = false,
 }) {
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const [modalMode, setModalMode] = useState(null);
@@ -422,6 +423,7 @@ export function BlockBuilder({
           data={editingQuestion}
           onChange={setEditingQuestion}
           isCatalog={false}
+          includeEvaluation={includeEvaluation}
           isModal
           modalTitle={modalMode === "CREATE_QUESTION" ? "Crear pregunta propia" : "Editar pregunta"}
           onClose={closeModal}

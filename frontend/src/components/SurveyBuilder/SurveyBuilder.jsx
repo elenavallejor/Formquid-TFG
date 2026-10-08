@@ -18,6 +18,7 @@ export function SurveyBuilder({
       structureTitle="ESTRUCTURA DE LA ENCUESTA"
       structureDescription="Combina preguntas, textos y bloques, y ordénalos como aparecerán en la encuesta."
       containerLabel="encuesta"
+      includeEvaluation
     />
   );
 }

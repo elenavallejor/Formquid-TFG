@@ -1,5 +1,8 @@
 package com.formquid.question.service;
 
+import com.formquid.block.entity.BlockScope;
+import com.formquid.common.dto.CatalogSearchField;
+import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.content.entity.ContentItem;
@@ -35,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -50,12 +54,25 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
 
     @Transactional(readOnly = true)
-    public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(int page, int size, User user, boolean mine) {
-        Pageable pageable = catalogPageable(page, size);
+    public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(
+        int page,
+        int size,
+        User user,
+        boolean mine,
+        String search,
+        Set<CatalogSearchField> searchFields,
+        CatalogSortOrder sortOrder
+    ) {
+        Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
+        Pageable pageable = catalogPageable(page, size, sortOrder);
         Page<FixedQuestionSummaryDto> questions = questionRepository.findCatalogSummaries(
             QuestionScope.CATALOG_FIXED,
             user.getId(),
             mine,
+            normalizeSearch(search),
+            fields.contains(CatalogSearchField.TITLE),
+            fields.contains(CatalogSearchField.DESCRIPTION),
+            fields.contains(CatalogSearchField.CREATOR),
             pageable
         );
         return toPageResponse(questions);
@@ -63,7 +80,7 @@ public class QuestionService {
 
     @Transactional(readOnly = true)
     public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size) {
-        Pageable pageable = catalogPageable(page, size);
+        Pageable pageable = builderPageable(page, size);
         Page<QuestionResponseDto> questions = questionRepository
             .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, pageable)
             .map(this::toResponse);
@@ -116,7 +133,13 @@ public class QuestionService {
      */
     @Transactional
     public QuestionResponseDto createFixedQuestion(CreateFixedQuestionRequestDto request, User creator) {
-        Question question = buildQuestion(request.question(), QuestionScope.CATALOG_FIXED, null, null, creator);
+        Question question = buildQuestion(
+            withoutEvaluationConfiguration(request.question()),
+            QuestionScope.CATALOG_FIXED,
+            null,
+            null,
+            creator
+        );
         return toResponse(questionRepository.save(question));
     }
 
@@ -131,14 +154,26 @@ public class QuestionService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
         requireManagementPermission(question.getCreatedBy(), user);
-        return toResponse(applyQuestionDraft(question, request.question()));
+        return toResponse(applyQuestionDraft(
+            question,
+            withoutEvaluationConfiguration(request.question())
+        ));
     }
 
     /**
      * Recibe definición local y elemento padre, devuelve pregunta creada.
      */
     public Question createLocalQuestion(QuestionDraftDto dto, ContentItem parentItem, User creator) {
-        return questionRepository.save(buildQuestion(dto, QuestionScope.LOCAL, parentItem, null, creator));
+        QuestionDraftDto effectiveDraft = isCatalogContext(parentItem)
+            ? withoutEvaluationConfiguration(dto)
+            : dto;
+        return questionRepository.save(buildQuestion(
+            effectiveDraft,
+            QuestionScope.LOCAL,
+            parentItem,
+            null,
+            creator
+        ));
     }
 
     /**
@@ -148,7 +183,14 @@ public class QuestionService {
         if (fixedQuestion.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.CONFLICT, "Solo pueden copiarse preguntas fijas de catálogo");
         }
-        Question copy = copyQuestion(fixedQuestion, QuestionScope.FIXED_SNAPSHOT, parentItem, fixedQuestion, creator);
+        Question copy = copyQuestion(
+            fixedQuestion,
+            QuestionScope.FIXED_SNAPSHOT,
+            parentItem,
+            fixedQuestion,
+            creator,
+            !isCatalogContext(parentItem)
+        );
         return questionRepository.save(copy);
     }
 
@@ -158,7 +200,14 @@ public class QuestionService {
     public Question copyAsLocal(Question source, ContentItem parentItem, User creator) {
         Question catalogSource = source.getScope() == QuestionScope.CATALOG_FIXED ? source : source.getSourceFixedQuestion();
         QuestionScope scope = catalogSource == null ? QuestionScope.LOCAL : QuestionScope.FIXED_SNAPSHOT;
-        return questionRepository.save(copyQuestion(source, scope, parentItem, catalogSource, creator));
+        return questionRepository.save(copyQuestion(
+            source,
+            scope,
+            parentItem,
+            catalogSource,
+            creator,
+            !isCatalogContext(parentItem)
+        ));
     }
 
     /**
@@ -224,24 +273,31 @@ public class QuestionService {
         return question;
     }
 
-    private Question copyQuestion(Question source, QuestionScope scope, ContentItem parentItem, Question sourceFixedQuestion, User creator) {
+    private Question copyQuestion(
+        Question source,
+        QuestionScope scope,
+        ContentItem parentItem,
+        Question sourceFixedQuestion,
+        User creator,
+        boolean includeEvaluation
+    ) {
         Question copy = Question.builder()
             .parentItem(parentItem)
             .scope(scope)
             .statement(source.getStatement())
             .annotation(source.getAnnotation())
             .questionType(source.getQuestionType())
-            .evaluationDirection(source.getEvaluationDirection())
-            .evaluationWeight(source.getEvaluationWeight())
+            .evaluationDirection(includeEvaluation ? source.getEvaluationDirection() : EvaluationDirection.NEUTRAL)
+            .evaluationWeight(includeEvaluation ? source.getEvaluationWeight() : null)
             .sourceFixedQuestion(sourceFixedQuestion)
             .createdBy(creator)
             .options(new ArrayList<>())
             .matrixRows(new ArrayList<>())
             .build();
-        copy.setSettings(copySettings(source.getSettings()));
+        copy.setSettings(copySettings(source.getSettings(), includeEvaluation));
         source.getOptions().stream()
             .sorted(Comparator.comparing(QuestionOption::getPosition))
-            .map(this::copyOption)
+            .map(option -> copyOption(option, includeEvaluation))
             .forEach(copy::addOption);
         source.getMatrixRows().stream()
             .sorted(Comparator.comparing(MatrixRow::getPosition))
@@ -534,6 +590,73 @@ public class QuestionService {
         return direction == EvaluationDirection.NEUTRAL ? null : weight;
     }
 
+    private boolean isCatalogContext(ContentItem parentItem) {
+        if (parentItem == null) {
+            return false;
+        }
+        if (parentItem.getTemplate() != null) {
+            return true;
+        }
+        if (parentItem.getSurvey() != null || parentItem.getParentBlock() == null) {
+            return false;
+        }
+        if (parentItem.getParentBlock().getScope() == BlockScope.CATALOG) {
+            return true;
+        }
+        ContentItem blockOwner = parentItem.getParentBlock().getParentItem();
+        return blockOwner != null && blockOwner.getTemplate() != null;
+    }
+
+    private QuestionDraftDto withoutEvaluationConfiguration(QuestionDraftDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        List<QuestionOptionDto> options = dto.options() == null
+            ? null
+            : dto.options().stream()
+                .map(option -> option == null
+                    ? null
+                    : new QuestionOptionDto(
+                        option.id(),
+                        option.label(),
+                        option.position(),
+                        option.other(),
+                        null
+                    ))
+                .toList();
+        return new QuestionDraftDto(
+            dto.statement(),
+            dto.annotation(),
+            dto.questionType(),
+            EvaluationDirection.NEUTRAL,
+            null,
+            withoutEvaluationFactors(dto.settings()),
+            options,
+            dto.matrixRows()
+        );
+    }
+
+    private QuestionSettingsDto withoutEvaluationFactors(QuestionSettingsDto settings) {
+        if (settings == null) {
+            return null;
+        }
+        return new QuestionSettingsDto(
+            settings.maxLength(),
+            settings.minValue(),
+            settings.maxValue(),
+            settings.step(),
+            settings.minSelections(),
+            settings.maxSelections(),
+            settings.leftLabel(),
+            settings.rightLabel(),
+            settings.trueLabel(),
+            settings.falseLabel(),
+            null,
+            null,
+            settings.scaleDisplayType()
+        );
+    }
+
     private QuestionSettings toSettings(QuestionSettingsDto dto) {
         if (dto == null) {
             return QuestionSettings.builder().build();
@@ -572,7 +695,7 @@ public class QuestionService {
         settings.setScaleDisplayType(source.getScaleDisplayType());
     }
 
-    private QuestionSettings copySettings(QuestionSettings settings) {
+    private QuestionSettings copySettings(QuestionSettings settings, boolean includeEvaluation) {
         if (settings == null) {
             return QuestionSettings.builder().build();
         }
@@ -587,8 +710,8 @@ public class QuestionService {
             .rightLabel(settings.getRightLabel())
             .trueLabel(settings.getTrueLabel())
             .falseLabel(settings.getFalseLabel())
-            .trueEvaluationFactor(settings.getTrueEvaluationFactor())
-            .falseEvaluationFactor(settings.getFalseEvaluationFactor())
+            .trueEvaluationFactor(includeEvaluation ? settings.getTrueEvaluationFactor() : null)
+            .falseEvaluationFactor(includeEvaluation ? settings.getFalseEvaluationFactor() : null)
             .scaleDisplayType(settings.getScaleDisplayType())
             .build();
     }
@@ -602,12 +725,12 @@ public class QuestionService {
             .build();
     }
 
-    private QuestionOption copyOption(QuestionOption option) {
+    private QuestionOption copyOption(QuestionOption option, boolean includeEvaluation) {
         return QuestionOption.builder()
             .label(option.getLabel())
             .position(option.getPosition())
             .other(option.isOther())
-            .evaluationFactor(option.getEvaluationFactor())
+            .evaluationFactor(includeEvaluation ? option.getEvaluationFactor() : null)
             .build();
     }
 
@@ -686,14 +809,30 @@ public class QuestionService {
         return rows == null ? List.of() : rows.stream().filter(Objects::nonNull).toList();
     }
 
-    private Pageable catalogPageable(int page, int size) {
+    private Pageable catalogPageable(int page, int size, CatalogSortOrder sortOrder) {
+        validatePage(page, size);
+        Sort.Direction direction = sortOrder == CatalogSortOrder.OLDEST
+            ? Sort.Direction.ASC
+            : Sort.Direction.DESC;
+        return PageRequest.of(page, size, Sort.by(direction, "updatedAt").and(Sort.by(direction, "id")));
+    }
+
+    private Pageable builderPageable(int page, int size) {
+        validatePage(page, size);
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    private void validatePage(int page, int size) {
         if (page < 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
         }
         if (size < 1 || size > 100) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y 100");
         }
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    private String normalizeSearch(String search) {
+        return search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
     }
 
     private String trimToNull(String value) {

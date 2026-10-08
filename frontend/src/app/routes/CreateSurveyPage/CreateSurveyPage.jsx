@@ -9,7 +9,6 @@ import {
   MdKeyboardArrowRight,
   MdOutlineDescription,
   MdOutlineInsertDriveFile,
-  MdSearch,
 } from 'react-icons/md';
 
 import { getCatalogTemplates } from '../../../api/catalogApi.js';
@@ -17,6 +16,7 @@ import { createSurvey, createSurveyFromTemplate } from '../../../api/surveysApi.
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { useModalFocus } from '../../../hooks/useModalFocus.js';
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 
@@ -57,6 +57,11 @@ const FONT_OPTIONS = [
   },
 ];
 
+const TEMPLATE_SEARCH_OPTIONS = [
+  { value: 'title', label: 'Título' },
+  { value: 'description', label: 'Descripción' },
+];
+
 function normalizeTag(value) {
   let normalized = value.trim().toLocaleLowerCase('es');
   if (normalized.startsWith('#')) normalized = normalized.slice(1);
@@ -67,6 +72,9 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect, returnFo
   const [view, setView] = useState('CHOICE');
   const [templates, setTemplates] = useState([]);
   const [search, setSearch] = useState('');
+  const [selectedSearchFields, setSelectedSearchFields] = useState(
+    () => TEMPLATE_SEARCH_OPTIONS.map((option) => option.value),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const dialogRef = useRef(null);
@@ -90,6 +98,7 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect, returnFo
   function resetModal() {
     setView('CHOICE');
     setSearch('');
+    setSelectedSearchFields(TEMPLATE_SEARCH_OPTIONS.map((option) => option.value));
     setLoadError('');
   }
 
@@ -121,9 +130,10 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect, returnFo
 
   const visibleTemplates = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('es');
-    return templates.filter((template) => [template.title, template.description]
-      .some((value) => value?.toLocaleLowerCase('es').includes(query)));
-  }, [search, templates]);
+    return templates.filter((template) => selectedSearchFields.some((field) => (
+      template[field]?.toLocaleLowerCase('es').includes(query)
+    )));
+  }, [search, selectedSearchFields, templates]);
 
   if (!isOpen) return null;
 
@@ -168,17 +178,22 @@ function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect, returnFo
           </div>
         ) : (
           <>
-            <label className="survey-template-search">
-              <span className="sr-only">Buscar plantillas</span>
-              <MdSearch aria-hidden="true" />
-              <input
-                ref={searchInputRef}
-                type="search"
-                value={search}
-                placeholder="Buscar plantillas..."
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </label>
+            <SearchToolbar
+              ariaLabel="Búsqueda y filtros de plantillas"
+              searchLabel="Buscar plantillas"
+              searchPlaceholder="Buscar"
+              searchValue={search}
+              searchInputRef={searchInputRef}
+              onSearchChange={(event) => setSearch(event.target.value)}
+              filterOptions={TEMPLATE_SEARCH_OPTIONS}
+              filterOptionsLabel="Filtrar por"
+              selectedFilterValues={selectedSearchFields}
+              onFilterChange={setSelectedSearchFields}
+              onFilterReset={() => {
+                setSearch('');
+                setSelectedSearchFields(TEMPLATE_SEARCH_OPTIONS.map((option) => option.value));
+              }}
+            />
 
             <div className="survey-template-list">
               {isLoading ? (

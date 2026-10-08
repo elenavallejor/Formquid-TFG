@@ -520,28 +520,12 @@
   transform: translateX(3px);
 }
 
-.survey-template-search {
-  position: relative;
-  display: block;
+.survey-origin-modal .search-toolbar {
   margin: 20px 26px 12px;
 }
 
-.survey-template-search svg {
-  position: absolute;
-  top: 50%;
-  left: 13px;
-  color: var(--color-text-muted);
-  transform: translateY(-50%);
-}
-
-.survey-template-search input {
+.survey-origin-modal .search-toolbar__search {
   width: 100%;
-  padding: 11px 13px 11px 39px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  color: var(--color-text);
-  font: inherit;
-  box-sizing: border-box;
 }
 
 .survey-template-list {

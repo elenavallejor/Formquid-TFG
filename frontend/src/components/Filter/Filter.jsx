@@ -4,12 +4,35 @@ import { MdClose } from 'react-icons/md';
 
 import './Filter.css';
 
-/** Filtro múltiple con menú flotante y aplicación explícita de la selección. */
-export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', selectedValues, textFilter, onChange, onReset }) {
+/** Filtro con menú flotante, selección múltiple y una selección exclusiva opcional. */
+export function Filter({
+  label = 'Filtrar',
+  options = [],
+  optionsLabel = 'Opciones',
+  selectedValues = [],
+  textFilter,
+  choiceFilter,
+  choiceFilters,
+  onChange,
+  onReset,
+}) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const [draftValues, setDraftValues] = useState(selectedValues);
   const [draftText, setDraftText] = useState(textFilter?.value ?? '');
+  const choiceDefinitions = choiceFilters?.length > 0
+    ? choiceFilters
+    : choiceFilter
+      ? [choiceFilter]
+      : [];
+  const returnsChoiceList = choiceFilters?.length > 0;
+  const appliedChoiceValues = choiceDefinitions.map((definition) => (
+    definition.value ?? definition.resetValue ?? definition.options?.[0]?.value ?? ''
+  ));
+  const initialChoiceValues = choiceDefinitions.map((definition) => (
+    definition.resetValue ?? definition.options?.[0]?.value ?? definition.value ?? ''
+  ));
+  const [draftChoices, setDraftChoices] = useState(initialChoiceValues);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(max-width: 767px)').matches),
   );
@@ -29,7 +52,14 @@ export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', 
         ? options.find((option) => option.value === selectedValues[0])?.label ?? 'Una seleccionada'
         : `${selectedValues.length} seleccionadas`;
   const appliedText = textFilter?.value?.trim() ?? '';
-  const hasActiveFilters = selectedValues.length !== options.length || Boolean(appliedText);
+  const hasActiveChoice = choiceDefinitions.some((definition, index) => (
+    appliedChoiceValues[index] !== definition.resetValue
+  ));
+  const hasActiveFilters = selectedValues.length !== options.length || Boolean(appliedText) || hasActiveChoice;
+  const selectedChoiceLabels = choiceDefinitions
+    .map((definition, index) => definition.options?.find((option) => option.value === appliedChoiceValues[index])?.label)
+    .filter(Boolean)
+    .join(', ');
 
   useEffect(() => {
     if (!window.matchMedia) return undefined;
@@ -78,9 +108,14 @@ export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', 
   function openMenu() {
     setDraftValues(selectedValues);
     setDraftText(textFilter?.value ?? '');
+    setDraftChoices(appliedChoiceValues);
     if (!isMobile) {
       const bounds = wrapperRef.current?.getBoundingClientRect();
-      const estimatedHeight = Math.min(170 + options.length * 42 + (textFilter ? 70 : 0), 480);
+      const estimatedHeight = Math.min(
+        170 + options.length * 42 + (textFilter ? 70 : 0)
+          + choiceDefinitions.reduce((height, definition) => height + 60 + (definition.options?.length ?? 0) * 42, 0),
+        480,
+      );
       const spaceBelow = bounds ? window.innerHeight - bounds.bottom : 0;
       setOpenUp(Boolean(bounds && spaceBelow < estimatedHeight && bounds.top > spaceBelow));
     }
@@ -94,7 +129,7 @@ export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', 
   }
 
   function applyFilters() {
-    onChange(draftValues, draftText.trim());
+    onChange(draftValues, draftText.trim(), returnsChoiceList ? draftChoices : draftChoices[0]);
     closeAndFocus();
   }
 
@@ -102,7 +137,8 @@ export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', 
     const initialValues = options.map((option) => option.value);
     setDraftValues(initialValues);
     setDraftText('');
-    onChange(initialValues, '');
+    setDraftChoices(initialChoiceValues);
+    onChange(initialValues, '', returnsChoiceList ? initialChoiceValues : initialChoiceValues[0]);
     onReset?.();
     closeAndFocus();
   }
@@ -125,29 +161,53 @@ export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', 
           />
         </label>
       )}
-      <div className="filter__options-title">{optionsLabel}</div>
-      <button
-        type="button"
-        className="filter__select-all"
-        onClick={() => setDraftValues(options.map((option) => option.value))}
-      >
-        Ver todas
-      </button>
-      <div className="filter__options" role="group" aria-label={optionsLabel}>
-        {options.map((option, index) => (
-          <label key={option.value} className="filter__option">
-            <input
-              ref={index === 0 ? firstOptionRef : undefined}
-              type="checkbox"
-              checked={draftValues.includes(option.value)}
-              onChange={() => toggleOption(option.value)}
-            />
-            <span>{option.label}</span>
-          </label>
-        ))}
-      </div>
+      {options.length > 0 && (
+        <>
+          <div className="filter__options-title">{optionsLabel}</div>
+          <button
+            type="button"
+            className="filter__select-all"
+            onClick={() => setDraftValues(options.map((option) => option.value))}
+          >
+            Ver todas
+          </button>
+          <div className="filter__options" role="group" aria-label={optionsLabel}>
+            {options.map((option, index) => (
+              <label key={option.value} className="filter__option" htmlFor={`${menuId}-option-${index}`}>
+                <input
+                  id={`${menuId}-option-${index}`}
+                  ref={index === 0 ? firstOptionRef : undefined}
+                  type="checkbox"
+                  checked={draftValues.includes(option.value)}
+                  onChange={() => toggleOption(option.value)}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+      {choiceDefinitions.map((definition, groupIndex) => (
+        <div className="filter__choice-group" key={definition.label}>
+          <div className="filter__options-title">{definition.label}</div>
+          <div className="filter__choice-options" role="radiogroup" aria-label={definition.label}>
+            {definition.options?.map((option) => (
+              <label key={option.value} className="filter__option" htmlFor={`${menuId}-choice-${groupIndex}-${option.value}`}>
+                <input
+                  id={`${menuId}-choice-${groupIndex}-${option.value}`}
+                  type="radio"
+                  name={`${menuId}-choice-${groupIndex}`}
+                  checked={draftChoices[groupIndex] === option.value}
+                  onChange={() => setDraftChoices((current) => current.map((value, index) => index === groupIndex ? option.value : value))}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
       <div className="filter__footer">
-        <button type="button" className="filter__reset" onClick={resetFilters}>Resetear</button>
+        <button type="button" className="filter__reset" onClick={resetFilters}>Borrar filtros</button>
         <button type="button" className="filter__apply" onClick={applyFilters}>Aplicar</button>
       </div>
     </>
@@ -173,7 +233,7 @@ export function Filter({ label = 'Filtrar', options, optionsLabel = 'Opciones', 
         aria-expanded={open}
         aria-controls={menuId}
         aria-haspopup={isMobile ? 'dialog' : undefined}
-        aria-label={`${label}: ${selectedLabel}${appliedText ? `, etiqueta ${appliedText}` : ''}`}
+        aria-label={`${label}: ${selectedLabel}${selectedChoiceLabels ? `, ${selectedChoiceLabels}` : ''}${appliedText ? `, etiqueta ${appliedText}` : ''}`}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();

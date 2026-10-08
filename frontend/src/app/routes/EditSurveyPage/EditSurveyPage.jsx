@@ -726,7 +726,7 @@ export function EditSurveyPage() {
                 {canPreviewSurvey && <button type="button" className="edit-survey-preview-button" disabled={isPageLoading || !survey} onClick={() => setIsPreviewOpen(true)}><MdOutlineVisibility aria-hidden="true" />Previsualizar</button>}
                 {primaryActionLabel && <button type="button" className="btn-create-submit" disabled={isSaving || isPageLoading || !survey} onClick={handlePrimaryAction}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : primaryActionLabel}</span></button>}
               </div>}
-              {survey && <span className={`edit-survey-status status-${survey.lifecycleStatus.toLocaleLowerCase()}`}>{LIFECYCLE_LABELS[survey.lifecycleStatus]}</span>}
+              {survey && <span className={`table-badge table-badge-${survey.lifecycleStatus.toLocaleLowerCase()}`}>{LIFECYCLE_LABELS[survey.lifecycleStatus]}</span>}
             </div>}
           </header>
 

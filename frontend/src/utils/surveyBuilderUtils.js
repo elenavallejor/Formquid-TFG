@@ -40,7 +40,7 @@ export function getSurveyStructureValidationError(data) {
     title: 'Encuesta',
     description: '',
     items: data?.items || [],
-  });
+  }, { includeEvaluation: true });
 }
 
 export function getSurveyPublicationValidationError(data) {
@@ -59,6 +59,6 @@ export function buildSurveyStructurePayload(data) {
       title: 'Encuesta',
       description: null,
       items: data?.items || [],
-    }).items,
+    }, { includeEvaluation: true }).items,
   };
 }

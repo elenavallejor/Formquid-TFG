@@ -8,6 +8,8 @@ import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.SurveyResultsSummaryDto;
+import com.formquid.survey.dto.SurveyResultsSearchField;
+import com.formquid.survey.dto.SurveyResultsSortOrder;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
@@ -31,6 +33,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 /**
  * Expone las operaciones autenticadas de creación, consulta y gestión de encuestas.
@@ -65,11 +69,21 @@ public class SurveyController {
     public PageResponseDto<SurveyResultsSummaryDto> findResults(
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) String search,
+        @RequestParam(defaultValue = "TITLE,OWNER") Set<SurveyResultsSearchField> searchFields,
         @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @RequestParam(defaultValue = "NEWEST") SurveyResultsSortOrder sortOrder,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "9") int size
     ) {
-        return surveyService.findResultSurveys(user, search, lifecycleStatus, page, size);
+        return surveyService.findResultSurveys(
+            user,
+            search,
+            searchFields,
+            lifecycleStatus,
+            sortOrder,
+            page,
+            size
+        );
     }
 
     @GetMapping("/directory")

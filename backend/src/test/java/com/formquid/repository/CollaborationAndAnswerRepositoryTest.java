@@ -172,6 +172,8 @@ class CollaborationAndAnswerRepositoryTest {
             collaborator.getId(),
             false,
             "",
+            true,
+            true,
             null,
             PageRequest.of(0, 10)
         );

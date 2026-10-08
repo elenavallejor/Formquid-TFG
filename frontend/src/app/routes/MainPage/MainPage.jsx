@@ -252,16 +252,16 @@ export function MainPage() {
               <input
                 type="search"
                 value={search}
-                placeholder="Buscar por nombre"
+                placeholder="Buscar"
                 onChange={(event) => setSearch(event.target.value)}
               />
             </label>
             <Filter
-              label="Filtrar encuestas"
+              label="Filtrar"
               options={ACCESS_OPTIONS}
               optionsLabel="Tipo de acceso"
               selectedValues={selectedAccessModes}
-              textFilter={{ label: 'Etiqueta', placeholder: 'Buscar por etiqueta', value: tagFilter }}
+              textFilter={{ label: 'Etiqueta', placeholder: 'Buscar', value: tagFilter }}
               onChange={(accessModes, tag) => {
                 setSelectedAccessModes(accessModes);
                 setTagFilter(tag);

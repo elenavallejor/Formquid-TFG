@@ -74,12 +74,6 @@ const ELEMENT_CONFIG = {
   },
 };
 
-const EVALUATION_DIRECTION_LABELS = {
-  POSITIVE: 'Positiva',
-  NEUTRAL: 'Neutral',
-  NEGATIVE: 'Negativa',
-};
-
 const SCALE_DISPLAY_LABELS = {
   NUMERIC: 'Numérica',
   STARS: 'Estrellas',
@@ -96,16 +90,6 @@ function getQuestionSettingRows(question) {
   const questionType = QUESTION_TYPES.find((type) => type.id === question.questionType);
   const rows = [
     { label: 'Tipo de pregunta', value: questionType?.title || question.questionType },
-    {
-      label: 'Dirección de evaluación',
-      value: EVALUATION_DIRECTION_LABELS[question.evaluationDirection] || question.evaluationDirection,
-    },
-    {
-      label: 'Peso',
-      value: question.evaluationDirection === 'NEUTRAL'
-        ? 'No aplica'
-        : question.evaluationWeight,
-    },
   ];
 
   function add(label, value) {
@@ -138,8 +122,6 @@ function getQuestionSettingRows(question) {
   if (question.questionType === 'BOOLEAN') {
     add('Respuesta afirmativa', settings.trueLabel);
     add('Respuesta negativa', settings.falseLabel);
-    add('Factor afirmativo', settings.trueEvaluationFactor);
-    add('Factor negativo', settings.falseEvaluationFactor);
   }
 
   return rows;

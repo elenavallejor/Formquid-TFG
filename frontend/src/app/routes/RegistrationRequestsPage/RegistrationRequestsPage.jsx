@@ -1,13 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MdSearch, MdKeyboardArrowRight } from 'react-icons/md';
+import { MdKeyboardArrowRight } from 'react-icons/md';
 
 import { TarjetaSolicitud } from '../../../components/TarjetaSolicitud/TarjetaSolicitud';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { getPendingRegistrationRequests, approveRegistrationRequest, rejectRegistrationRequest } from '../../../api/registrationRequestsApi';
 
 import './RegistrationRequestsPage.css';
+
+const SEARCH_OPTIONS = [
+  { value: 'NAME', label: 'Nombre' },
+  { value: 'EMAIL', label: 'Correo' },
+  { value: 'INSTITUTION', label: 'Institución' },
+];
+const SORT_OPTIONS = [
+  { value: 'NEWEST', label: 'Más reciente' },
+  { value: 'OLDEST', label: 'Más antigua' },
+];
 
 /**
  * Página de gestión de solicitudes de registro. ADMIN y SUPERADMIN
@@ -20,6 +30,9 @@ export function RegistrationRequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSearchFields, setSelectedSearchFields] = useState(
+    () => SEARCH_OPTIONS.map((option) => option.value),
+  );
   const [sortOrder, setSortOrder] = useState('NEWEST');
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -106,17 +119,17 @@ export function RegistrationRequestsPage() {
     const query = searchQuery.trim().toLowerCase();
 
     return requests
-      .filter((request) => (
-        request.name?.toLowerCase().includes(query) ||
-        request.email?.toLowerCase().includes(query) ||
-        request.institution?.toLowerCase().includes(query)
+      .filter((request) => !query || (
+        (selectedSearchFields.includes('NAME') && request.name?.toLowerCase().includes(query)) ||
+        (selectedSearchFields.includes('EMAIL') && request.email?.toLowerCase().includes(query)) ||
+        (selectedSearchFields.includes('INSTITUTION') && request.institution?.toLowerCase().includes(query))
       ))
       .sort((a, b) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
         return sortOrder === 'NEWEST' ? dateB - dateA : dateA - dateB;
       });
-  }, [requests, searchQuery, sortOrder]);
+  }, [requests, searchQuery, selectedSearchFields, sortOrder]);
 
   const isAcceptAction = modalState.actionType === 'ACCEPT';
   const applicantName = modalState.solicitud?.name || 'este usuario';
@@ -137,25 +150,20 @@ export function RegistrationRequestsPage() {
           <p>Revisa y gestiona las solicitudes de alta de nuevos editores en la plataforma.</p>
         </header>
 
-        <section className="filters-bar" aria-label="Filtros de búsqueda">
-          <div className="search-input-wrapper">
-            <MdSearch className="search-icon" aria-hidden="true" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, correo o institución..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
-
-          <div className="sort-selector-wrapper">
-            <label htmlFor="sort-select">Ordenar por:</label>
-            <Dropdown id="sort-select" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
-              <option value="NEWEST">Más reciente</option>
-              <option value="OLDEST">Más antigua</option>
-            </Dropdown>
-          </div>
-        </section>
+        <SearchToolbar
+          ariaLabel="Filtros de solicitudes de registro"
+          searchLabel="Introduce una palabra para buscar solicitudes de registro"
+          searchValue={searchQuery}
+          onSearchChange={(event) => setSearchQuery(event.target.value)}
+          filterOptions={SEARCH_OPTIONS}
+          selectedFilterValues={selectedSearchFields}
+          onFilterChange={setSelectedSearchFields}
+          onFilterReset={() => setSearchQuery('')}
+          sortAriaLabel="Ordenar solicitudes de registro"
+          sortOptions={SORT_OPTIONS}
+          sortValue={sortOrder}
+          onSortChange={(event) => setSortOrder(event.target.value)}
+        />
 
         <section className="requests-list" aria-label="Listado de solicitudes">
           {isLoading ? (

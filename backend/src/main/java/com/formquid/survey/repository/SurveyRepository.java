@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -157,26 +156,6 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
         Pageable pageable
     );
 
-    @Query("""
-        select new com.formquid.survey.dto.AdminSurveySummaryDto(
-            survey.id,
-            survey.title,
-            survey.imageKey,
-            survey.owner.name,
-            survey.lifecycleStatus,
-            survey.accessMode,
-            survey.visibility,
-            (
-                select count(participation.id)
-                from Participation participation
-                where participation.survey = survey
-            ),
-            survey.updatedAt
-        )
-        from Survey survey
-    """)
-    List<AdminSurveySummaryDto> findRecentAdminSummaries(Pageable pageable);
-
     @Query(
         value = """
             select new com.formquid.survey.dto.SurveyResultsSummaryDto(
@@ -201,7 +180,11 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                         and collaborator.user.id = :userId
                 )
             )
-                and (:search = '' or lower(survey.title) like concat('%', :search, '%'))
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(survey.title) like concat('%', :search, '%'))
+                    or (:searchOwner = true and lower(owner.name) like concat('%', :search, '%'))
+                )
                 and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
             group by
                 survey.id,
@@ -210,12 +193,12 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 owner.name,
                 survey.lifecycleStatus,
                 survey.updatedAt
-            order by survey.updatedAt desc, survey.id desc
             """,
         countQuery = """
             select count(distinct survey.id)
             from Participation participation
             join participation.survey survey
+            join survey.owner owner
             where (
                 :administrator = true
                 or survey.owner.id = :userId
@@ -226,7 +209,11 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                         and collaborator.user.id = :userId
                 )
             )
-                and (:search = '' or lower(survey.title) like concat('%', :search, '%'))
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(survey.title) like concat('%', :search, '%'))
+                    or (:searchOwner = true and lower(owner.name) like concat('%', :search, '%'))
+                )
                 and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
             """
     )
@@ -234,6 +221,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
         @Param("userId") Long userId,
         @Param("administrator") boolean administrator,
         @Param("search") String search,
+        @Param("searchTitle") boolean searchTitle,
+        @Param("searchOwner") boolean searchOwner,
         @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
         Pageable pageable
     );

@@ -21,11 +21,13 @@ import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
+import com.formquid.user.dto.UserResponseDto;
 import com.formquid.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
@@ -60,6 +62,24 @@ class AdministrationRepositoryTest {
 
         assertThat(userProjection.email()).isEqualTo("owner-admin-view@example.com");
         assertThat(userProjection.name()).isEqualTo("Propietaria");
+        assertThat(users.findResponses(
+            "propietaria",
+            true,
+            false,
+            false,
+            false,
+            false,
+            PageRequest.of(0, 10, Sort.by("name"))
+        )).extracting(UserResponseDto::id).contains(owner.getId());
+        assertThat(users.findResponses(
+            "editor",
+            false,
+            false,
+            false,
+            false,
+            true,
+            PageRequest.of(0, 10, Sort.by("name"))
+        )).extracting(UserResponseDto::id).contains(owner.getId());
         assertThat(surveyPage).singleElement().satisfies(summary -> {
             assertThat(summary.title()).isEqualTo("Encuesta visible");
             assertThat(summary.editorName()).isEqualTo("Propietaria");

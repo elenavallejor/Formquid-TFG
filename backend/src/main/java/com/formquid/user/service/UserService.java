@@ -11,16 +11,22 @@ import com.formquid.user.dto.DeleteOwnAccountRequestDto;
 import com.formquid.user.dto.UpdateAccountRequestDto;
 import com.formquid.user.dto.UpdateAccountResult;
 import com.formquid.user.dto.UserResponseDto;
+import com.formquid.user.dto.UserSearchField;
+import com.formquid.user.dto.UserSortOrder;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Gestiona usuarios, cuenta propia, roles y transferencia de propiedad.
@@ -38,8 +44,23 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public PageResponseDto<UserResponseDto> findAll(int page, int size) {
-        Page<UserResponseDto> users = userRepository.findResponses(createPageRequest(page, size));
+    public PageResponseDto<UserResponseDto> findAll(
+        int page,
+        int size,
+        String search,
+        Set<UserSearchField> searchFields,
+        UserSortOrder sortOrder
+    ) {
+        Set<UserSearchField> fields = searchFields == null ? Set.of() : searchFields;
+        Page<UserResponseDto> users = userRepository.findResponses(
+            normalizeSearch(search),
+            fields.contains(UserSearchField.NAME),
+            fields.contains(UserSearchField.EMAIL),
+            fields.contains(UserSearchField.INSTITUTION),
+            fields.contains(UserSearchField.GENDER),
+            fields.contains(UserSearchField.ROLE),
+            createPageRequest(page, size, sortOrder)
+        );
         return new PageResponseDto<>(users.getContent(), users.getNumber(), users.getSize(), users.getTotalElements(), users.getTotalPages());
     }
 
@@ -151,14 +172,24 @@ public class UserService {
         return new UserResponseDto(user.getId(), user.getRole(), user.getEmail(), user.getName(), user.getGender(), user.getInstitution(), user.getCreatedAt(), user.getUpdatedAt());
     }
 
-    private PageRequest createPageRequest(int page, int size) {
+    private PageRequest createPageRequest(int page, int size, UserSortOrder sortOrder) {
         if (page < 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
         }
         if (size < 1 || size > MAX_PAGE_SIZE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y " + MAX_PAGE_SIZE);
         }
-        return PageRequest.of(page, size);
+        Sort sort = switch (sortOrder) {
+            case NAME_DESC -> Sort.by(Sort.Direction.DESC, "name").and(Sort.by(Sort.Direction.DESC, "id"));
+            case NEWEST -> Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"));
+            case OLDEST -> Sort.by(Sort.Direction.ASC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"));
+            default -> Sort.by(Sort.Direction.ASC, "name").and(Sort.by(Sort.Direction.ASC, "id"));
+        };
+        return PageRequest.of(page, size, sort);
+    }
+
+    private String normalizeSearch(String search) {
+        return search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
     }
 
     private boolean updateProfile(User user, UpdateAccountRequestDto.ProfileData profile) {

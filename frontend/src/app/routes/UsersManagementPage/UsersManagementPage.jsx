@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPersonOutline, MdSearch } from 'react-icons/md';
+import { useEffect, useRef, useState } from 'react';
+import { MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPersonOutline } from 'react-icons/md';
 
 import { deleteUser, getUsers, updateUserRole } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { DEFAULT_USERS_PAGE_SIZE, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserGenderLabel, getUserRoleLabel, getVisibleUsers } from '../../../utils/usersManagementUtils.js';
+import { DEFAULT_USERS_PAGE_SIZE, USER_SEARCH_OPTIONS, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserGenderLabel, getUserRoleLabel } from '../../../utils/usersManagementUtils.js';
 
 import './UsersManagementPage.css';
 
@@ -23,6 +23,10 @@ export function UsersManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedSearchFields, setSelectedSearchFields] = useState(
+    () => USER_SEARCH_OPTIONS.map((option) => option.value),
+  );
   const [sortOrder, setSortOrder] = useState('NAME_ASC');
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_USERS_PAGE_SIZE);
@@ -34,6 +38,11 @@ export function UsersManagementPage() {
   const [actionError, setActionError] = useState('');
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  useEffect(() => {
     const requestVersion = ++requestVersionRef.current;
 
     async function loadUsers() {
@@ -42,7 +51,13 @@ export function UsersManagementPage() {
         setErrorMessage('');
         setUsersList([]);
 
-        const response = await getUsers(currentPage, itemsPerPage);
+        const response = await getUsers({
+          page: currentPage,
+          size: itemsPerPage,
+          search: debouncedSearch,
+          searchFields: selectedSearchFields,
+          sortOrder,
+        });
 
         if (requestVersion !== requestVersionRef.current) return;
 
@@ -63,12 +78,7 @@ export function UsersManagementPage() {
 
     void loadUsers();
     return undefined;
-  }, [currentPage, itemsPerPage]);
-
-  const visibleUsers = useMemo(
-    () => getVisibleUsers(usersList, searchQuery, sortOrder),
-    [usersList, searchQuery, sortOrder]
-  );
+  }, [currentPage, debouncedSearch, itemsPerPage, selectedSearchFields, sortOrder]);
 
   async function handleConfirmRoleChange() {
     const { targetUser, nextRole } = roleModalState;
@@ -139,32 +149,32 @@ export function UsersManagementPage() {
           <p className="users-subtitle">Gestiona a los usuarios de la plataforma y sus respectivos permisos.</p>
         </header>
 
-        <section className="catalog-filters-bar" aria-label="Filtros de usuarios">
-          <div className="search-input-wrapper">
-            <MdSearch className="search-icon" aria-hidden="true" />
-            <input
-              type="search"
-              placeholder="Buscar por nombre, correo, institución, género o rol..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="catalog-filters-right">
-            <div className="sort-select-wrapper">
-              <span className="sort-label">Ordenar por:</span>
-              <Dropdown
-                aria-label="Ordenar usuarios"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-              >
-                {USER_SORT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Dropdown>
-            </div>
-          </div>
-        </section>
+        <SearchToolbar
+          ariaLabel="Filtros de usuarios"
+          searchLabel="Introduce una palabra para buscar usuarios"
+          searchValue={searchQuery}
+          onSearchChange={(event) => {
+            setSearchQuery(event.target.value);
+            setCurrentPage(0);
+          }}
+          filterOptions={USER_SEARCH_OPTIONS}
+          selectedFilterValues={selectedSearchFields}
+          onFilterChange={(fields) => {
+            setSelectedSearchFields(fields);
+            setCurrentPage(0);
+          }}
+          onFilterReset={() => {
+            setSearchQuery('');
+            setDebouncedSearch('');
+          }}
+          sortAriaLabel="Ordenar usuarios"
+          sortOptions={USER_SORT_OPTIONS}
+          sortValue={sortOrder}
+          onSortChange={(event) => {
+            setSortOrder(event.target.value);
+            setCurrentPage(0);
+          }}
+        />
 
         {isLoading ? (
           <div className="users-list-wrapper">
@@ -174,13 +184,13 @@ export function UsersManagementPage() {
           <div className="users-empty-state" role="alert">
             <p>{errorMessage}</p>
           </div>
-        ) : visibleUsers.length === 0 ? (
+        ) : usersList.length === 0 ? (
           <div className="users-empty-state">
             <p>No se han encontrado usuarios que coincidan con la búsqueda.</p>
           </div>
         ) : (
           <div className="users-list-wrapper">
-            {visibleUsers.map((item) => {
+            {usersList.map((item) => {
               const nextRole = getNextRole(item.role);
               const canUpdateRole = canChangeUserRole(item, user) && nextRole;
               const canRemoveUser = canDeleteUser(item, user);

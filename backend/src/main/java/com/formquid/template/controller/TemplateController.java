@@ -1,5 +1,7 @@
 package com.formquid.template.controller;
 
+import com.formquid.common.dto.CatalogSearchField;
+import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.template.dto.CreateTemplateRequestDto;
 import com.formquid.template.dto.TemplateResponseDto;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
+
 
 /**
  * Expone las operaciones de consulta y creación de plantillas del catálogo.
@@ -38,9 +42,12 @@ public class TemplateController {
         @AuthenticationPrincipal User user,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(defaultValue = "false") boolean mine
+        @RequestParam(defaultValue = "false") boolean mine,
+        @RequestParam(defaultValue = "") String search,
+        @RequestParam(defaultValue = "TITLE,DESCRIPTION,CREATOR") Set<CatalogSearchField> searchFields,
+        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder
     ) {
-        return templateService.findAll(page, size, user, mine);
+        return templateService.findAll(page, size, user, mine, search, searchFields, sortOrder);
     }
 
     @GetMapping("/{templateId}")

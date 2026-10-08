@@ -39,6 +39,12 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
                 )
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(block.name) like concat('%', :search, '%'))
+                    or (:searchDescription = true and lower(coalesce(block.description, '')) like concat('%', :search, '%'))
+                    or (:searchCreator = true and lower(coalesce(creator.name, '')) like concat('%', :search, '%'))
+                )
             group by
                 block.id,
                 block.name,
@@ -56,12 +62,22 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
                 )
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(block.name) like concat('%', :search, '%'))
+                    or (:searchDescription = true and lower(coalesce(block.description, '')) like concat('%', :search, '%'))
+                    or (:searchCreator = true and lower(coalesce(creator.name, '')) like concat('%', :search, '%'))
+                )
             """
     )
     Page<BlockSummaryDto> findCatalogSummaries(
         @Param("scope") BlockScope scope,
         @Param("userId") Long userId,
         @Param("mine") boolean mine,
+        @Param("search") String search,
+        @Param("searchTitle") boolean searchTitle,
+        @Param("searchDescription") boolean searchDescription,
+        @Param("searchCreator") boolean searchCreator,
         Pageable pageable
     );
 

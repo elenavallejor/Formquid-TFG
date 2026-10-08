@@ -5,6 +5,8 @@ import com.formquid.auth.security.JwtCookieService;
 import com.formquid.auth.security.JwtService;
 import com.formquid.block.controller.BlockController;
 import com.formquid.block.service.BlockService;
+import com.formquid.common.dto.CatalogSearchField;
+import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.config.SecurityConfig;
 import com.formquid.dashboard.controller.AdminDashboardController;
 import com.formquid.dashboard.service.AdminDashboardService;
@@ -24,6 +26,8 @@ import com.formquid.template.controller.TemplateController;
 import com.formquid.template.service.TemplateService;
 import com.formquid.user.controller.UserController;
 import com.formquid.user.dto.UserResponseDto;
+import com.formquid.user.dto.UserSearchField;
+import com.formquid.user.dto.UserSortOrder;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
@@ -38,6 +42,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -94,6 +99,31 @@ class CatalogAndAdminControllersWebTest {
         verify(blockService).findCatalogBlock(11L);
         verify(questionService).findFixedQuestion(12L);
         verify(templateService).findById(13L);
+    }
+
+    @Test
+    void catalogList_acceptsSearchCategoriesAndSortOrder() throws Exception {
+        User editor = user(1L, UserRole.EDITOR);
+
+        mockMvc.perform(get("/api/v1/catalog/blocks")
+                .param("page", "2")
+                .param("size", "5")
+                .param("mine", "true")
+                .param("search", "infantil")
+                .param("searchFields", "TITLE,CREATOR")
+                .param("sortOrder", "OLDEST")
+                .with(authentication(tokenFor(editor))))
+            .andExpect(status().isOk());
+
+        verify(blockService).findCatalogBlocks(
+            2,
+            5,
+            editor,
+            true,
+            "infantil",
+            Set.of(CatalogSearchField.TITLE, CatalogSearchField.CREATOR),
+            CatalogSortOrder.OLDEST
+        );
     }
 
     @Test
@@ -178,7 +208,19 @@ class CatalogAndAdminControllersWebTest {
                 .with(authentication(tokenFor(user(3L, UserRole.SUPERADMIN)))))
             .andExpect(status().isOk());
 
-        verify(userService).findAll(0, 20);
+        verify(userService).findAll(
+            0,
+            20,
+            "",
+            Set.of(
+                UserSearchField.NAME,
+                UserSearchField.EMAIL,
+                UserSearchField.INSTITUTION,
+                UserSearchField.GENDER,
+                UserSearchField.ROLE
+            ),
+            UserSortOrder.NAME_ASC
+        );
     }
 
     private User user(Long id, UserRole role) {

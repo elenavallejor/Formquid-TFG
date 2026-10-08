@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdSearch } from 'react-icons/md';
 
 import { createCollaborationRequest } from '../../../api/collaborationsApi.js';
 import { getSurveyDirectory } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -113,30 +112,43 @@ export function SurveyListPage() {
           <p>Explora las encuestas de otros editores y solicita colaborar en su creación.</p>
         </header>
 
-        <section className="survey-list-filters" aria-label="Filtros de encuestas">
-          <div className="survey-list-search">
-            <MdSearch aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              placeholder="Buscar por título o editor"
-              aria-label="Buscar encuestas"
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-
-          <Dropdown value={lifecycle} aria-label="Filtrar por estado" onChange={(event) => { setLifecycle(event.target.value); setCurrentPage(0); }}>
-            <option value="ALL">Todos los estados</option>
-            <option value="DRAFT">BORRADORES</option>
-            <option value="OPEN">ABIERTAS</option>
-            <option value="CLOSED">CERRADAS</option>
-          </Dropdown>
-
-          <Dropdown value={sortOrder} aria-label="Ordenar encuestas" onChange={(event) => { setSortOrder(event.target.value); setCurrentPage(0); }}>
-            <option value="RECENT">Más recientes primero</option>
-            <option value="OLDEST">Más antiguas primero</option>
-          </Dropdown>
-        </section>
+        <SearchToolbar
+          ariaLabel="Búsqueda y filtros del listado de encuestas"
+          searchLabel="Buscar encuestas"
+          searchPlaceholder="Buscar"
+          searchValue={search}
+          onSearchChange={(event) => setSearch(event.target.value)}
+          filterChoices={[{
+            label: 'Estado de la encuesta',
+            options: [
+              { value: 'ALL', label: 'Todos los estados' },
+              { value: 'DRAFT', label: 'Borradores' },
+              { value: 'OPEN', label: 'Abiertas' },
+              { value: 'CLOSED', label: 'Cerradas' },
+            ],
+            value: lifecycle,
+            resetValue: 'ALL',
+          }]}
+          onFilterChange={(_values, _text, selectedChoices) => {
+            setLifecycle(selectedChoices[0]);
+            setCurrentPage(0);
+          }}
+          onFilterReset={() => {
+            setSearch('');
+            setDebouncedSearch('');
+            setCurrentPage(0);
+          }}
+          sortAriaLabel="Ordenar encuestas"
+          sortOptions={[
+            { value: 'RECENT', label: 'Más recientes primero' },
+            { value: 'OLDEST', label: 'Más antiguas primero' },
+          ]}
+          sortValue={sortOrder}
+          onSortChange={(event) => {
+            setSortOrder(event.target.value);
+            setCurrentPage(0);
+          }}
+        />
 
         {errorMessage && <ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} />}
         {successMessage && <p className="survey-list-success" role="status">{successMessage}</p>}

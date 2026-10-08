@@ -35,6 +35,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
                 )
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(question.statement) like concat('%', :search, '%'))
+                    or (:searchDescription = true and lower(coalesce(question.annotation, '')) like concat('%', :search, '%'))
+                    or (:searchCreator = true and lower(coalesce(creator.name, '')) like concat('%', :search, '%'))
+                )
             """,
         countQuery = """
             select count(question.id)
@@ -45,12 +51,22 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
                 )
+                and (
+                    :search = ''
+                    or (:searchTitle = true and lower(question.statement) like concat('%', :search, '%'))
+                    or (:searchDescription = true and lower(coalesce(question.annotation, '')) like concat('%', :search, '%'))
+                    or (:searchCreator = true and lower(coalesce(creator.name, '')) like concat('%', :search, '%'))
+                )
             """
     )
     Page<FixedQuestionSummaryDto> findCatalogSummaries(
         @Param("scope") QuestionScope scope,
         @Param("userId") Long userId,
         @Param("mine") boolean mine,
+        @Param("search") String search,
+        @Param("searchTitle") boolean searchTitle,
+        @Param("searchDescription") boolean searchDescription,
+        @Param("searchCreator") boolean searchCreator,
         Pageable pageable
     );
 

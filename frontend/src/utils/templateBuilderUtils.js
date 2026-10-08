@@ -118,7 +118,7 @@ export function addCatalogQuestionToTemplateBlock(templateBlock, question, targe
   };
 }
 
-export function getTemplateBuilderValidationError(data) {
+export function getTemplateBuilderValidationError(data, { includeEvaluation = false } = {}) {
   if (!data?.title?.trim()) return 'Debes asignar un título a la plantilla.';
 
   let questionNumber = 0;
@@ -130,11 +130,11 @@ export function getTemplateBuilderValidationError(data) {
       questionNumber += 1;
     }
     if (item.itemType === 'QUESTION' && !item.fixedQuestionId) {
-      const questionError = getQuestionBuilderValidationError(item);
+      const questionError = getQuestionBuilderValidationError(item, { includeEvaluation });
       if (questionError) return `Pregunta ${questionNumber}: ${questionError}`;
     }
     if (item.itemType === 'BLOCK' && item.block && !item.blockId) {
-      const blockError = getBlockBuilderValidationError(item.block);
+      const blockError = getBlockBuilderValidationError(item.block, { includeEvaluation });
       if (blockError) return `Bloque «${item.block.name || 'sin nombre'}»: ${blockError}`;
     }
   }
@@ -142,7 +142,7 @@ export function getTemplateBuilderValidationError(data) {
   return '';
 }
 
-export function buildCreateCatalogTemplatePayload(data) {
+export function buildCreateCatalogTemplatePayload(data, { includeEvaluation = false } = {}) {
   return {
     title: data.title.trim(),
     description: data.description?.trim() || null,
@@ -159,7 +159,7 @@ export function buildCreateCatalogTemplatePayload(data) {
       if (item.itemType === 'BLOCK') {
         return item.blockId
           ? { ...baseItem, blockId: item.blockId }
-          : { ...baseItem, block: buildCreateCatalogBlockPayload(item.block) };
+          : { ...baseItem, block: buildCreateCatalogBlockPayload(item.block, { includeEvaluation }) };
       }
       if (item.fixedQuestionId) {
         return {
@@ -171,7 +171,7 @@ export function buildCreateCatalogTemplatePayload(data) {
       return {
         ...baseItem,
         required: Boolean(item.isRequired),
-        question: buildQuestionDraftPayload(item),
+        question: buildQuestionDraftPayload(item, { includeEvaluation }),
       };
     }),
   };

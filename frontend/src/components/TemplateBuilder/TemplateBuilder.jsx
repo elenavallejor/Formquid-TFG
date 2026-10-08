@@ -65,6 +65,7 @@ export function TemplateBuilder({
   structureDescription = 'Combina preguntas, textos y bloques, y ordénalos como aparecerán.',
   containerLabel = 'plantilla',
   readOnly = false,
+  includeEvaluation = false,
 }) {
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
   const [modalMode, setModalMode] = useState(null);
@@ -447,7 +448,7 @@ export function TemplateBuilder({
   }
 
   function handleSaveBlock() {
-    const validationError = getBlockBuilderValidationError(editingBlock);
+    const validationError = getBlockBuilderValidationError(editingBlock, { includeEvaluation });
     if (validationError) {
       setModalError(validationError);
       return;
@@ -593,7 +594,7 @@ export function TemplateBuilder({
         </div>}
       </section>
 
-      {(modalMode === 'CREATE_QUESTION' || modalMode === 'EDIT_QUESTION' || modalMode === 'EDIT_BLOCK_QUESTION') && <QuestionBuilder data={editingQuestion} onChange={setEditingQuestion} isCatalog={false} isModal modalTitle={modalMode === 'CREATE_QUESTION' ? 'Crear pregunta propia' : 'Editar pregunta'} onClose={closeModal} onSave={handleSaveQuestion} />}
+      {(modalMode === 'CREATE_QUESTION' || modalMode === 'EDIT_QUESTION' || modalMode === 'EDIT_BLOCK_QUESTION') && <QuestionBuilder data={editingQuestion} onChange={setEditingQuestion} isCatalog={false} includeEvaluation={includeEvaluation} isModal modalTitle={modalMode === 'CREATE_QUESTION' ? 'Crear pregunta propia' : 'Editar pregunta'} onClose={closeModal} onSave={handleSaveQuestion} />}
 
       {(modalMode === 'CREATE_TEXT' || modalMode === 'EDIT_TEXT' || modalMode === 'EDIT_BLOCK_TEXT') && (
         <div className="block-modal-overlay" onClick={closeModal}>
@@ -612,6 +613,7 @@ export function TemplateBuilder({
         <BlockBuilder
           data={editingBlock}
           onChange={(nextBlock) => { setEditingBlock(nextBlock); setModalError(''); }}
+          includeEvaluation={includeEvaluation}
           isModal
           modalTitle={modalMode === 'CREATE_BLOCK' ? 'CREAR BLOQUE' : 'EDITAR BLOQUE'}
           errorMessage={modalError}

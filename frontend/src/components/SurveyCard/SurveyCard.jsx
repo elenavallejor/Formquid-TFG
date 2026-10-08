@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { formatDate } from '../../utils/formatDate.js';
 
+import '../Table/Table.css';
 import './SurveyCard.css';
 
 /**
@@ -68,7 +69,7 @@ export function SurveyCard({
 
         {!isPublicCard && (
           <div className="survey-card-badges">
-            <span className={`survey-status-badge status-${normalizedLifecycle.toLowerCase()}`}>
+            <span className={`table-badge table-badge-${normalizedLifecycle.toLowerCase()}`}>
               {LIFECYCLE_LABELS[normalizedLifecycle]}
             </span>
             {isResultsCard && (
@@ -76,7 +77,7 @@ export function SurveyCard({
                 Actualizada {formatDate(survey.updatedAt)}
               </span>
             )}
-            {isAdminCard && <span className={`survey-visibility-badge visibility-${String(survey.visibility || 'UNLISTED').toLowerCase()}`}>
+            {isAdminCard && <span className={`table-badge table-badge-${String(survey.visibility || 'UNLISTED').toLowerCase()}`}>
               {VISIBILITY_LABELS[survey.visibility] || 'OCULTA'}
             </span>}
           </div>
@@ -90,7 +91,7 @@ export function SurveyCard({
 
         {(isAdminCard || isDirectoryCard || (isResultsCard && hasResultsDetails)) && <dl className="survey-card-admin-details">
           {(!isResultsCard || survey.editorName) && <div><dt>Editor</dt><dd>{survey.editorName || 'Sin propietario'}</dd></div>}
-          {isAdminCard && <div><dt>Acceso</dt><dd>{ACCESS_LABELS[survey.accessMode] || survey.accessMode || '—'}</dd></div>}
+          {isAdminCard && <div><dt>Acceso</dt><dd><span className={`table-badge table-badge-${String(survey.accessMode || 'PUBLIC').toLowerCase()}`}>{ACCESS_LABELS[survey.accessMode] || survey.accessMode || '—'}</span></dd></div>}
           {(isAdminCard || isResultsCard) && survey.responses !== undefined && <div><dt>Respuestas</dt><dd>{survey.responses ?? 0}</dd></div>}
           {!isResultsCard && <div><dt>Actualizada</dt><dd>{formatDate(survey.updatedAt)}</dd></div>}
         </dl>}

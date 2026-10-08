@@ -1,5 +1,7 @@
 package com.formquid.question.controller;
 
+import com.formquid.common.dto.CatalogSearchField;
+import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.question.dto.CreateFixedQuestionRequestDto;
 import com.formquid.question.dto.FixedQuestionSummaryDto;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
+
 /**
  * Expone las operaciones de consulta y administración de preguntas fijas del catálogo.
  */
@@ -37,9 +41,12 @@ public class QuestionController {
         @AuthenticationPrincipal User user,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(defaultValue = "false") boolean mine
+        @RequestParam(defaultValue = "false") boolean mine,
+        @RequestParam(defaultValue = "") String search,
+        @RequestParam(defaultValue = "TITLE,DESCRIPTION,CREATOR") Set<CatalogSearchField> searchFields,
+        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder
     ) {
-        return questionService.findFixedQuestions(page, size, user, mine);
+        return questionService.findFixedQuestions(page, size, user, mine, search, searchFields, sortOrder);
     }
 
     @GetMapping("/builder")

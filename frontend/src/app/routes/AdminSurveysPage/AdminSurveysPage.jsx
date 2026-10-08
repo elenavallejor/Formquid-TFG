@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdSearch } from 'react-icons/md';
 
 import { getAdminSurveys } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 
@@ -83,23 +82,46 @@ export function AdminSurveysPage() {
           </div>
         </header>
 
-        <section className="admin-surveys-filters" aria-label="Filtros de encuestas">
-          <div className="admin-surveys-search">
-            <MdSearch aria-hidden="true" />
-            <input type="search" value={search} placeholder="Buscar por título o propietario" aria-label="Buscar encuestas" onChange={(event) => setSearch(event.target.value)} />
-          </div>
-          <Dropdown value={lifecycle} aria-label="Filtrar por ciclo de vida" onChange={(event) => { setLifecycle(event.target.value); setCurrentPage(0); }}>
-            <option value="ALL">Todos los estados</option>
-            <option value="DRAFT">BORRADOR</option>
-            <option value="OPEN">ABIERTAS</option>
-            <option value="CLOSED">CERRADAS</option>
-          </Dropdown>
-          <Dropdown value={visibility} aria-label="Filtrar por visibilidad" onChange={(event) => { setVisibility(event.target.value); setCurrentPage(0); }}>
-            <option value="ALL">Todas las visibilidades</option>
-            <option value="LISTED">LISTADAS</option>
-            <option value="UNLISTED">OCULTAS</option>
-          </Dropdown>
-        </section>
+        <SearchToolbar
+          ariaLabel="Búsqueda y filtros de supervisión de encuestas"
+          searchLabel="Buscar encuestas supervisadas"
+          searchPlaceholder="Buscar"
+          searchValue={search}
+          onSearchChange={(event) => setSearch(event.target.value)}
+          filterChoices={[
+            {
+              label: 'Estado de la encuesta',
+              options: [
+                { value: 'ALL', label: 'Todos los estados' },
+                { value: 'DRAFT', label: 'Borradores' },
+                { value: 'OPEN', label: 'Abiertas' },
+                { value: 'CLOSED', label: 'Cerradas' },
+              ],
+              value: lifecycle,
+              resetValue: 'ALL',
+            },
+            {
+              label: 'Visibilidad',
+              options: [
+                { value: 'ALL', label: 'Todas las visibilidades' },
+                { value: 'LISTED', label: 'Listadas' },
+                { value: 'UNLISTED', label: 'Ocultas' },
+              ],
+              value: visibility,
+              resetValue: 'ALL',
+            },
+          ]}
+          onFilterChange={(_values, _text, selectedChoices) => {
+            setLifecycle(selectedChoices[0]);
+            setVisibility(selectedChoices[1]);
+            setCurrentPage(0);
+          }}
+          onFilterReset={() => {
+            setSearch('');
+            setDebouncedSearch('');
+            setCurrentPage(0);
+          }}
+        />
 
         {errorMessage && <ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} />}
         <section className="admin-surveys-results" aria-busy={isLoading}>

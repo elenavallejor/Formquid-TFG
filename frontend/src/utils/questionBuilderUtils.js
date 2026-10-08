@@ -99,7 +99,7 @@ export const INITIAL_QUESTION_STATE = {
   falseFactor: 0,
 };
 
-export function getQuestionBuilderValidationError(data) {
+export function getQuestionBuilderValidationError(data, { includeEvaluation = false } = {}) {
   if (!hasText(data.statement)) {
     return 'Debes redactar el enunciado de la pregunta.';
   }
@@ -108,19 +108,24 @@ export function getQuestionBuilderValidationError(data) {
     return 'Selecciona un tipo de pregunta válido.';
   }
 
-  if (!['POSITIVE', 'NEGATIVE', 'NEUTRAL'].includes(data.evaluationDirection)) {
+  if (
+    includeEvaluation
+    && !['POSITIVE', 'NEGATIVE', 'NEUTRAL'].includes(data.evaluationDirection)
+  ) {
     return 'Selecciona una dirección de evaluación válida.';
   }
 
   if (
-    data.questionType === 'TEXT'
+    includeEvaluation
+    && data.questionType === 'TEXT'
     && data.evaluationDirection !== 'NEUTRAL'
   ) {
     return 'Las preguntas de texto deben ser neutrales.';
   }
 
   if (
-    data.evaluationDirection !== 'NEUTRAL'
+    includeEvaluation
+    && data.evaluationDirection !== 'NEUTRAL'
     && !isPositiveNumber(data.evaluationWeight)
   ) {
     return 'El peso debe ser mayor que cero.';
@@ -149,7 +154,8 @@ export function getQuestionBuilderValidationError(data) {
     }
 
     if (
-      data.evaluationDirection !== 'NEUTRAL'
+      includeEvaluation
+      && data.evaluationDirection !== 'NEUTRAL'
       && options.some(
         (option) => !isValidNumber(getOptionFactor(option)),
       )
@@ -192,7 +198,8 @@ export function getQuestionBuilderValidationError(data) {
   }
 
   if (
-    data.questionType === 'BOOLEAN'
+    includeEvaluation
+    && data.questionType === 'BOOLEAN'
     && data.evaluationDirection !== 'NEUTRAL'
     && (
       !isValidNumber(data.trueFactor)
@@ -211,18 +218,26 @@ export function buildCreateFixedQuestionPayload(data) {
   };
 }
 
-export function buildQuestionDraftPayload(data) {
+export function buildQuestionDraftPayload(data, { includeEvaluation = false } = {}) {
+  const normalizedData = includeEvaluation
+    ? data
+    : {
+        ...data,
+        evaluationDirection: 'NEUTRAL',
+        evaluationWeight: null,
+      };
+
   return {
     statement: data.statement.trim(),
     annotation: trimToNull(data.annotation),
     questionType: data.questionType,
-    evaluationDirection: data.evaluationDirection,
+    evaluationDirection: normalizedData.evaluationDirection,
     evaluationWeight:
-      data.evaluationDirection === 'NEUTRAL'
+      normalizedData.evaluationDirection === 'NEUTRAL'
         ? null
-        : toNumberOrNull(data.evaluationWeight),
-    settings: buildQuestionSettings(data),
-    options: buildQuestionOptions(data),
+        : toNumberOrNull(normalizedData.evaluationWeight),
+    settings: buildQuestionSettings(normalizedData),
+    options: buildQuestionOptions(normalizedData),
     matrixRows: buildMatrixRows(data),
   };
 }

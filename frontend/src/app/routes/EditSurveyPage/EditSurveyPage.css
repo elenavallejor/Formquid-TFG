@@ -93,31 +93,6 @@
   opacity: 0.55;
 }
 
-.edit-survey-status {
-  display: inline-flex;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 13.75px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.edit-survey-status.status-draft {
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-}
-
-.edit-survey-status.status-open {
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
-}
-
-.edit-survey-status.status-closed {
-  background: var(--color-header);
-  color: var(--color-text-on-dark);
-}
-
 .survey-detail-title-bar {
   justify-content: space-between;
 }
@@ -890,7 +865,7 @@
     align-items: stretch;
   }
 
-  .edit-survey-header-actions .edit-survey-status {
+  .edit-survey-header-actions .table-badge {
     align-self: flex-end;
   }
 

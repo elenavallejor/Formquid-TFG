@@ -9,6 +9,8 @@ import com.formquid.user.dto.UpdateAccountRequestDto;
 import com.formquid.user.dto.UpdateAccountResult;
 import com.formquid.user.dto.UpdateUserRoleRequestDto;
 import com.formquid.user.dto.UserResponseDto;
+import com.formquid.user.dto.UserSearchField;
+import com.formquid.user.dto.UserSortOrder;
 import com.formquid.user.entity.User;
 import com.formquid.user.service.UserService;
 import jakarta.validation.Valid;
@@ -28,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 /**
  * Expone las operaciones de usuario, cuenta propia, roles y transferencia de propiedad.
@@ -69,8 +73,14 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('SUPERADMIN')")
-    public PageResponseDto<UserResponseDto> findAll(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return userService.findAll(page, size);
+    public PageResponseDto<UserResponseDto> findAll(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(defaultValue = "") String search,
+        @RequestParam(defaultValue = "NAME,EMAIL,INSTITUTION,GENDER,ROLE") Set<UserSearchField> searchFields,
+        @RequestParam(defaultValue = "NAME_ASC") UserSortOrder sortOrder
+    ) {
+        return userService.findAll(page, size, search, searchFields, sortOrder);
     }
 
     @PatchMapping("/{userId}/role")

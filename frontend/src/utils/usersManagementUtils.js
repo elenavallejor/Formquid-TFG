@@ -12,6 +12,14 @@ export const USER_SORT_OPTIONS = [
   { value: 'OLDEST', label: 'Más antigua' },
 ];
 
+export const USER_SEARCH_OPTIONS = [
+  { value: 'NAME', label: 'Nombre' },
+  { value: 'EMAIL', label: 'Correo' },
+  { value: 'INSTITUTION', label: 'Institución' },
+  { value: 'GENDER', label: 'Género' },
+  { value: 'ROLE', label: 'Rol' },
+];
+
 const ROLE_LABELS = {
   EDITOR: 'EDITOR',
   ADMIN: 'ADMINISTRADOR/A',
@@ -67,47 +75,4 @@ export function canChangeUserRole(user, currentUser) {
 
 export function canDeleteUser(user, currentUser) {
   return !isCurrentUser(user, currentUser) && user?.role !== 'SUPERADMIN';
-}
-
-export function filterUsers(users, searchQuery) {
-  const query = searchQuery.trim().toLowerCase();
-
-  if (!query) return users;
-
-  return users.filter((user) => {
-    const name = String(user.name ?? '').toLowerCase();
-    const email = String(user.email ?? '').toLowerCase();
-    const institution = String(user.institution ?? '').toLowerCase();
-    const gender = getUserGenderLabel(user.gender).toLowerCase();
-    const role = getUserRoleLabel(user.role).toLowerCase();
-
-    return (
-      name.includes(query) ||
-      email.includes(query) ||
-      institution.includes(query) ||
-      gender.includes(query) ||
-      role.includes(query)
-    );
-  });
-}
-
-export function sortUsers(users, sortOrder) {
-  return [...users].sort((a, b) => {
-    if (sortOrder === 'NAME_ASC') {
-      return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'es', { sensitivity: 'base' });
-    }
-
-    if (sortOrder === 'NAME_DESC') {
-      return String(b.name ?? '').localeCompare(String(a.name ?? ''), 'es', { sensitivity: 'base' });
-    }
-
-    const dateA = new Date(a.createdAt ?? 0).getTime();
-    const dateB = new Date(b.createdAt ?? 0).getTime();
-
-    return sortOrder === 'OLDEST' ? dateA - dateB : dateB - dateA;
-  });
-}
-
-export function getVisibleUsers(users, searchQuery, sortOrder) {
-  return sortUsers(filterUsers(users, searchQuery), sortOrder);
 }

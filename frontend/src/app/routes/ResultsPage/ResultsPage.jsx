@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdSearch } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 
 import { getResultSurveys } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
+import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 
@@ -15,13 +14,31 @@ import './ResultsPage.css';
 
 const DEFAULT_PAGE_SIZE = 9;
 const PAGE_SIZE_OPTIONS = [9, 18, 30];
+const SEARCH_OPTIONS = [
+  { value: 'TITLE', label: 'Título' },
+  { value: 'OWNER', label: 'Editor o propietario' },
+];
+const LIFECYCLE_OPTIONS = [
+  { value: 'ALL', label: 'Todos los estados' },
+  { value: 'DRAFT', label: 'Borradores' },
+  { value: 'OPEN', label: 'Abiertas' },
+  { value: 'CLOSED', label: 'Cerradas' },
+];
+const SORT_OPTIONS = [
+  { value: 'NEWEST', label: 'Más reciente' },
+  { value: 'OLDEST', label: 'Más antigua' },
+];
 
 export function ResultsPage() {
   const navigate = useNavigate();
   const [surveys, setSurveys] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedSearchFields, setSelectedSearchFields] = useState(
+    () => SEARCH_OPTIONS.map((option) => option.value),
+  );
   const [lifecycle, setLifecycle] = useState('ALL');
+  const [sortOrder, setSortOrder] = useState('NEWEST');
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [totalItems, setTotalItems] = useState(0);
@@ -42,7 +59,9 @@ export function ResultsPage() {
     const abortController = new AbortController();
     const request = getResultSurveys({
       search: debouncedSearch,
+      searchFields: selectedSearchFields,
       lifecycleStatus: lifecycle,
+      sortOrder,
       page: currentPage,
       size: itemsPerPage,
       signal: abortController.signal,
@@ -77,7 +96,7 @@ export function ResultsPage() {
       isActive = false;
       abortController.abort();
     };
-  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle]);
+  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, selectedSearchFields, sortOrder]);
 
   return (
     <main className="results-page">
@@ -91,28 +110,35 @@ export function ResultsPage() {
           </div>
         </header>
 
-        <section className="results-page-filters" aria-label="Filtros de encuestas">
-          <div className="results-page-search">
-            <MdSearch aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              placeholder="Buscar por título"
-              aria-label="Buscar encuestas por título"
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-          <Dropdown
-            value={lifecycle}
-            aria-label="Filtrar por estado"
-            onChange={(event) => { setLifecycle(event.target.value); setCurrentPage(0); }}
-          >
-            <option value="ALL">Todos los estados</option>
-            <option value="DRAFT">BORRADORES</option>
-            <option value="OPEN">ABIERTAS</option>
-            <option value="CLOSED">CERRADAS</option>
-          </Dropdown>
-        </section>
+        <SearchToolbar
+          ariaLabel="Búsqueda y filtros de encuestas con resultados"
+          searchLabel="Buscar encuestas con resultados"
+          searchPlaceholder="Buscar"
+          searchValue={search}
+          onSearchChange={(event) => setSearch(event.target.value)}
+          filterOptions={SEARCH_OPTIONS}
+          filterOptionsLabel="Filtrar por"
+          selectedFilterValues={selectedSearchFields}
+          filterChoice={{
+            label: 'Estado de la encuesta',
+            options: LIFECYCLE_OPTIONS,
+            value: lifecycle,
+            resetValue: 'ALL',
+          }}
+          onFilterChange={(values, _text, selectedLifecycle) => {
+            setSelectedSearchFields(values);
+            setLifecycle(selectedLifecycle);
+            setCurrentPage(0);
+          }}
+          onFilterReset={() => setCurrentPage(0)}
+          sortAriaLabel="Ordenar encuestas con resultados"
+          sortOptions={SORT_OPTIONS}
+          sortValue={sortOrder}
+          onSortChange={(event) => {
+            setSortOrder(event.target.value);
+            setCurrentPage(0);
+          }}
+        />
 
         {errorMessage && <ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} />}
 

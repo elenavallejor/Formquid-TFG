@@ -9,7 +9,7 @@ export const INITIAL_BLOCK_STATE = {
   questions: [],
 };
 
-export function getBlockBuilderValidationError(data) {
+export function getBlockBuilderValidationError(data, { includeEvaluation = false } = {}) {
   if (!hasText(data?.name)) return 'Debes asignar un nombre al bloque.';
   const items = getBlockItems(data);
   if (!items.some((item) => item.itemType === 'QUESTION'))
@@ -23,13 +23,13 @@ export function getBlockBuilderValidationError(data) {
       continue;
     }
     questionNumber += 1;
-    const questionError = getQuestionBuilderValidationError(item, false);
+    const questionError = getQuestionBuilderValidationError(item, { includeEvaluation });
     if (questionError) return `Pregunta ${questionNumber}: ${questionError}`;
   }
   return '';
 }
 
-export function buildCreateCatalogBlockPayload(data) {
+export function buildCreateCatalogBlockPayload(data, { includeEvaluation = false } = {}) {
   return {
     name: data.name.trim(),
     description: trimToNull(data.description),
@@ -46,7 +46,7 @@ export function buildCreateCatalogBlockPayload(data) {
             required: Boolean(item.isRequired),
             ...(item.fixedQuestionId
               ? { fixedQuestionId: item.fixedQuestionId }
-              : { question: buildQuestionDraftPayload(item) }),
+              : { question: buildQuestionDraftPayload(item, { includeEvaluation }) }),
           },
     ),
   };

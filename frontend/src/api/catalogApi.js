@@ -7,12 +7,24 @@ const pageCaches = {
   templates: new Map(),
 };
 
-function buildPaginatedPath(path, { page = 0, size = 10, mine } = {}) {
+function buildPaginatedPath(path, {
+  page = 0,
+  size = 10,
+  mine,
+  search,
+  searchFields,
+  sortOrder,
+} = {}) {
   const params = new URLSearchParams();
 
   params.set('page', String(page));
   params.set('size', String(size));
   if (typeof mine === 'boolean') params.set('mine', String(mine));
+  if (search?.trim()) params.set('search', search.trim());
+  if (Array.isArray(searchFields)) {
+    params.set('searchFields', searchFields.length > 0 ? searchFields.join(',') : 'NONE');
+  }
+  if (sortOrder) params.set('sortOrder', sortOrder);
 
   return `${path}?${params.toString()}`;
 }
@@ -82,6 +94,9 @@ export function getCatalogQuestions(options = {}) {
     page = 0,
     size = 10,
     mine = false,
+    search = '',
+    searchFields,
+    sortOrder,
     refresh = false,
   } = options;
 
@@ -89,6 +104,9 @@ export function getCatalogQuestions(options = {}) {
     page,
     size,
     mine,
+    search,
+    searchFields,
+    sortOrder,
   });
 
   return getCachedPage(
@@ -165,6 +183,9 @@ export function getCatalogBlocks(options = {}) {
     page = 0,
     size = 10,
     mine = false,
+    search = '',
+    searchFields,
+    sortOrder,
     refresh = false,
   } = options;
 
@@ -172,6 +193,9 @@ export function getCatalogBlocks(options = {}) {
     page,
     size,
     mine,
+    search,
+    searchFields,
+    sortOrder,
   });
 
   return getCachedPage(
@@ -248,6 +272,9 @@ export function getCatalogTemplates(options = {}) {
     page = 0,
     size = 10,
     mine = false,
+    search = '',
+    searchFields,
+    sortOrder,
     refresh = false,
   } = options;
 
@@ -255,6 +282,9 @@ export function getCatalogTemplates(options = {}) {
     page,
     size,
     mine,
+    search,
+    searchFields,
+    sortOrder,
   });
 
   return getCachedPage(

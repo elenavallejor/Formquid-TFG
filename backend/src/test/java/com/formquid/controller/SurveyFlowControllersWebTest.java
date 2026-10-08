@@ -20,6 +20,8 @@ import com.formquid.statistics.service.StatisticsService;
 import com.formquid.survey.controller.SurveyController;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyResultsSummaryDto;
+import com.formquid.survey.dto.SurveyResultsSearchField;
+import com.formquid.survey.dto.SurveyResultsSortOrder;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
@@ -37,6 +39,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
@@ -96,7 +99,15 @@ class SurveyFlowControllersWebTest {
     @Test
     void resultSurveyList_passesFiltersAndPaginationToService() throws Exception {
         User editor = editor();
-        when(surveyService.findResultSurveys(editor, "clima", SurveyLifecycle.CLOSED, 1, 18))
+        when(surveyService.findResultSurveys(
+            editor,
+            "clima",
+            Set.of(SurveyResultsSearchField.TITLE),
+            SurveyLifecycle.CLOSED,
+            SurveyResultsSortOrder.OLDEST,
+            1,
+            18
+        ))
             .thenReturn(new PageResponseDto<>(List.of(new SurveyResultsSummaryDto(
                 4L,
                 "Encuesta",
@@ -110,14 +121,24 @@ class SurveyFlowControllersWebTest {
         mockMvc.perform(get("/api/v1/surveys/results")
                 .with(authentication(tokenFor(editor)))
                 .param("search", "clima")
+                .param("searchFields", "TITLE")
                 .param("lifecycleStatus", "CLOSED")
+                .param("sortOrder", "OLDEST")
                 .param("page", "1")
                 .param("size", "18"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.content[0].responses").value(3))
             .andExpect(jsonPath("$.page").value(1));
 
-        verify(surveyService).findResultSurveys(editor, "clima", SurveyLifecycle.CLOSED, 1, 18);
+        verify(surveyService).findResultSurveys(
+            editor,
+            "clima",
+            Set.of(SurveyResultsSearchField.TITLE),
+            SurveyLifecycle.CLOSED,
+            SurveyResultsSortOrder.OLDEST,
+            1,
+            18
+        );
     }
 
     @Test
