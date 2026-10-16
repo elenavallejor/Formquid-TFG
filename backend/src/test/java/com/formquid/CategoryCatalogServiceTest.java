@@ -39,7 +39,7 @@ class CategoryCatalogServiceTest {
 
     @Test
     void rejectsNameThatCannotBecomeValidCode() {
-        assertThatThrownBy(() -> service.create(new CreateCategoryRequestDto("😀")))
+        assertThatThrownBy(() -> service.create(new CreateCategoryRequestDto("!!!")))
             .isInstanceOf(ApiException.class)
             .hasMessage("El nombre no genera un código de categoría válido");
     }
