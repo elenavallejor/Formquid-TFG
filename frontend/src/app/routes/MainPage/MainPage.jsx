@@ -219,6 +219,12 @@ export function MainPage() {
   const showPublicSection = selectedAccessModes.includes(ACCESS_FILTERS.PUBLIC);
   const showPasswordSection = selectedAccessModes.includes(ACCESS_FILTERS.PASSWORD);
   const showAuthenticatedSection = selectedAccessModes.includes(ACCESS_FILTERS.AUTHENTICATED);
+  const availableAccessOptions = isAuthenticated
+    ? ACCESS_OPTIONS
+    : ACCESS_OPTIONS.filter((option) => option.value !== ACCESS_FILTERS.AUTHENTICATED);
+  const visibleSelectedAccessModes = selectedAccessModes.filter((mode) => (
+    isAuthenticated || mode !== ACCESS_FILTERS.AUTHENTICATED
+  ));
   const request = isAuthenticated ? getRegisteredSurveys : getPublicSurveys;
 
   return (
@@ -256,9 +262,9 @@ export function MainPage() {
             </label>
             <Filter
               label="Filtrar"
-              options={ACCESS_OPTIONS}
+              options={availableAccessOptions}
               optionsLabel="Tipo de acceso"
-              selectedValues={selectedAccessModes}
+              selectedValues={visibleSelectedAccessModes}
               textFilter={{ label: 'Etiqueta', placeholder: 'Buscar', value: tagFilter }}
               onChange={(accessModes, tag) => {
                 setSelectedAccessModes(accessModes);
@@ -273,7 +279,7 @@ export function MainPage() {
         </div>
 
         <div className="main-page-results" aria-labelledby="available-surveys-title">
-          {selectedAccessModes.length === 0 && (
+          {visibleSelectedAccessModes.length === 0 && (
             <div className="main-page-section-empty" role="status">
               <FaRegClipboard aria-hidden="true" />
               <p>Selecciona al menos un tipo de encuesta para ver los resultados.</p>
@@ -305,7 +311,7 @@ export function MainPage() {
             title="Encuestas con contraseña"
             visible={showPasswordSection}
           />
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <PaginatedSurveySection
               accessMode={ACCESS_FILTERS.AUTHENTICATED}
               emptyMessage="No hay encuestas para usuarios registrados disponibles."
@@ -319,17 +325,6 @@ export function MainPage() {
               title="Encuestas para usuarios registrados"
               visible={showAuthenticatedSection}
             />
-          ) : !isAuthLoading && showAuthenticatedSection && (
-            <section className="main-page-survey-section" aria-labelledby="authenticated-surveys-title">
-              <header>
-                <MdOutlinePerson aria-hidden="true" />
-                <h3 id="authenticated-surveys-title">Encuestas para usuarios registrados</h3>
-              </header>
-              <div className="main-page-section-empty" role="status">
-                <FaRegClipboard aria-hidden="true" />
-                <p>Inicia sesión para consultar estas encuestas.</p>
-              </div>
-            </section>
           )}
         </div>
       </div>

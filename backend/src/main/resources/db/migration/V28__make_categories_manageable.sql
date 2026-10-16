@@ -65,6 +65,53 @@ ALTER TABLE blocks ADD CONSTRAINT fk_blocks_category
 ALTER TABLE questions ADD CONSTRAINT fk_questions_category
     FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT NOT VALID;
 
+CREATE OR REPLACE FUNCTION block_answer_structure_constraint_trigger()
+RETURNS trigger AS $$
+DECLARE
+    checked_question record;
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.category IS DISTINCT FROM NEW.category
+           AND to_jsonb(OLD) - 'category' - 'updated_at'
+               = to_jsonb(NEW) - 'category' - 'updated_at' THEN
+            RETURN NULL;
+        END IF;
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN NULL;
+    END IF;
+    FOR checked_question IN
+        SELECT question.id
+        FROM content_items nested_item
+        JOIN questions question ON question.parent_item_id = nested_item.id
+        WHERE nested_item.parent_block_id = NEW.id
+    LOOP
+        PERFORM prevent_answered_question_change(checked_question.id);
+    END LOOP;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION answer_question_structure_constraint_trigger()
+RETURNS trigger AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.category IS DISTINCT FROM NEW.category
+           AND to_jsonb(OLD) - 'category' - 'updated_at'
+               = to_jsonb(NEW) - 'category' - 'updated_at' THEN
+            RETURN NULL;
+        END IF;
+    END IF;
+    IF TG_OP IN ('UPDATE', 'DELETE') THEN
+        PERFORM prevent_answered_question_change(OLD.id);
+    END IF;
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN
+        PERFORM prevent_answered_question_change(NEW.id);
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 UPDATE surveys s SET category = t.code FROM category_translation t WHERE s.category = t.old_code;
 UPDATE templates x SET category = t.code FROM category_translation t WHERE x.category = t.old_code;
 UPDATE blocks b SET category = t.code FROM category_translation t WHERE b.category = t.old_code;

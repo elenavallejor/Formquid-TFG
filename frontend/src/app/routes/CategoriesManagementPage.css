@@ -1,12 +1,291 @@
-.categories-page { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-.categories-page h1 { margin: 1.5rem 0 .5rem; }
-.categories-form { display: grid; gap: .5rem; margin: 2rem 0; }
-.categories-form > div { display: flex; gap: .75rem; flex-wrap: wrap; }
-.categories-form input { flex: 1; min-width: 240px; padding: .75rem; border: 1px solid #aaa; border-radius: .5rem; }
-.categories-form button { padding: .75rem 1.25rem; border: 0; border-radius: .5rem; background: #303080; color: white; cursor: pointer; }
-.categories-form button:disabled { opacity: .6; cursor: default; }
-.categories-error { color: #9d1c1c; }
-.categories-success { color: #176b35; }
-.categories-list { padding: 0; list-style: none; display: grid; gap: .5rem; }
-.categories-list li { display: flex; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; background: #fff; border: 1px solid #ddd; border-radius: .5rem; }
-.categories-list small { color: #67518a; }
+.categories-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding: 32px 40px 60px;
+  background: var(--color-background);
+}
+
+.categories-container {
+  width: min(1500px, 100%);
+  margin: 0 auto;
+}
+
+.categories-page .breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.categories-page .breadcrumb-nav a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.categories-page .breadcrumb-nav a:hover {
+  color: var(--color-primary);
+}
+
+.categories-page-header {
+  margin-bottom: 28px;
+}
+
+.categories-page-header h1 {
+  margin: 0;
+  color: var(--color-header);
+  font-size: 32.5px;
+  font-weight: 800;
+}
+
+.categories-page-header p {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 17.5px;
+}
+
+.categories-create-card {
+  padding: 28px 32px 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+
+.categories-create-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.categories-create-icon,
+.categories-list-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  color: var(--color-super);
+  background: var(--color-super-surface);
+}
+
+.categories-create-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  font-size: 32px;
+}
+
+.categories-create-heading h2 {
+  margin: 0;
+  color: var(--color-header);
+  font-size: 21.25px;
+  font-weight: 800;
+}
+
+.categories-create-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 16.25px;
+}
+
+.categories-form {
+  display: grid;
+  gap: 9px;
+}
+
+.categories-form label {
+  color: var(--color-header);
+  font-size: 16.25px;
+  font-weight: 700;
+}
+
+.categories-form-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.categories-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-size: 16.25px;
+}
+
+.categories-form input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.categories-form button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--color-super);
+  border-radius: 8px;
+  background: var(--color-super);
+  color: var(--color-text-on-dark);
+  font-size: 16.25px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.categories-form button:hover:not(:disabled) {
+  background: #68367b;
+}
+
+.categories-form button:disabled {
+  opacity: 0.55;
+}
+
+.categories-form button svg {
+  font-size: 22px;
+}
+
+.categories-error,
+.categories-success {
+  margin: 18px 0 0;
+  padding: 12px 16px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 16.25px;
+  font-weight: 600;
+}
+
+.categories-error {
+  border-color: var(--color-error-border);
+  background: var(--color-error-surface);
+  color: var(--color-error);
+}
+
+.categories-success {
+  border-color: var(--color-success-border);
+  background: var(--color-success-surface);
+  color: var(--color-success);
+}
+
+.categories-available {
+  margin-top: 36px;
+}
+
+.categories-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.categories-section-heading h2 {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 21.25px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.categories-section-heading > span {
+  color: var(--color-text-muted);
+  font-size: 16.25px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.categories-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.categories-list li {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+
+.categories-list-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  font-size: 24px;
+}
+
+.categories-list-name {
+  min-width: 0;
+  flex: 1;
+  color: var(--color-header);
+  font-size: 17.5px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.categories-list small {
+  flex: none;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--color-super-surface);
+  color: var(--color-super);
+  font-size: 13.75px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.categories-empty {
+  padding: 48px 24px;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 17.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .categories-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .categories-page {
+    padding: 24px 16px 48px;
+  }
+
+  .categories-create-card {
+    padding: 22px 18px;
+  }
+
+  .categories-form-controls {
+    flex-direction: column;
+  }
+
+  .categories-form button {
+    width: 100%;
+  }
+
+  .categories-list {
+    grid-template-columns: 1fr;
+  }
+}
