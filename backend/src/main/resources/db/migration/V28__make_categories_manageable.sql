@@ -1,5 +1,4 @@
--- Category codes stay as strings in the API. The initial Spanish vocabulary is seeded here;
--- additional categories can be inserted without changing Java code or database constraints.
+
 CREATE TABLE categories (
     code varchar(64) PRIMARY KEY,
     name varchar(100) NOT NULL,
@@ -52,22 +51,21 @@ ALTER TABLE templates DROP CONSTRAINT ck_templates_category;
 ALTER TABLE blocks DROP CONSTRAINT ck_blocks_category;
 ALTER TABLE questions DROP CONSTRAINT ck_questions_category;
 
-UPDATE surveys s SET category = t.code FROM category_translation t WHERE s.category = t.old_code;
-UPDATE templates x SET category = t.code FROM category_translation t WHERE x.category = t.old_code;
-UPDATE blocks b SET category = t.code FROM category_translation t WHERE b.category = t.old_code;
-UPDATE questions q SET category = t.code FROM category_translation t WHERE q.category = t.old_code;
-
 ALTER TABLE surveys ALTER COLUMN category TYPE varchar(64), ALTER COLUMN category SET DEFAULT 'OTROS';
 ALTER TABLE templates ALTER COLUMN category TYPE varchar(64), ALTER COLUMN category SET DEFAULT 'OTROS';
 ALTER TABLE blocks ALTER COLUMN category TYPE varchar(64), ALTER COLUMN category SET DEFAULT 'OTROS';
 ALTER TABLE questions ALTER COLUMN category TYPE varchar(64), ALTER COLUMN category SET DEFAULT 'OTROS';
 
 ALTER TABLE surveys ADD CONSTRAINT fk_surveys_category
-    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT;
+    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT NOT VALID;
 ALTER TABLE templates ADD CONSTRAINT fk_templates_category
-    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT;
+    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT NOT VALID;
 ALTER TABLE blocks ADD CONSTRAINT fk_blocks_category
-    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT;
+    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT NOT VALID;
 ALTER TABLE questions ADD CONSTRAINT fk_questions_category
-    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT;
-ALTER TABLE surveys ADD CONSTRAINT ck_surveys_category CHECK (category <> 'DATOS_PERSONALES');
+    FOREIGN KEY (category) REFERENCES categories(code) ON UPDATE RESTRICT ON DELETE RESTRICT NOT VALID;
+
+UPDATE surveys s SET category = t.code FROM category_translation t WHERE s.category = t.old_code;
+UPDATE templates x SET category = t.code FROM category_translation t WHERE x.category = t.old_code;
+UPDATE blocks b SET category = t.code FROM category_translation t WHERE b.category = t.old_code;
+UPDATE questions q SET category = t.code FROM category_translation t WHERE q.category = t.old_code;

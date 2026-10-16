@@ -96,6 +96,7 @@
 .admin-cards-grid-full {
   display: grid;
   grid-template-columns: 1fr;
+  gap: 20px;
 }
 
 .catalog-buttons-grid {

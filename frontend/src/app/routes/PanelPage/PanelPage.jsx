@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaRegClipboard } from 'react-icons/fa';
 import { MdAdd, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline } from 'react-icons/md';
+import { TbCategoryPlus } from 'react-icons/tb';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
 import { getAdminSurveys, getMySurveys } from '../../../api/surveysApi.js';
@@ -634,7 +635,7 @@ export function PanelPage() {
                   <AdminPanelButton
                     title="CATEGORÍAS"
                     description="Crea categorías para clasificar encuestas y elementos del catálogo."
-                    icon={MdOutlineWidgets}
+                    icon={TbCategoryPlus}
                     to="/superadmin/categorias"
                     buttonLabel="Ver categorías"
                     theme="purple"
