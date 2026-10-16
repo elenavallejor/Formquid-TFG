@@ -1,5 +1,10 @@
 package com.formquid.controller;
 
+import com.formquid.common.Category;
+import com.formquid.common.CategoryController;
+import com.formquid.common.dto.CategoryResponseDto;
+import com.formquid.common.dto.CreateCategoryRequestDto;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.auth.security.JwtAuthenticationFilter;
 import com.formquid.auth.security.JwtCookieService;
 import com.formquid.auth.security.JwtService;
@@ -29,7 +34,6 @@ import com.formquid.user.dto.UserResponseDto;
 import com.formquid.user.dto.UserSearchField;
 import com.formquid.user.dto.UserSortOrder;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import com.formquid.user.service.UserService;
@@ -64,7 +68,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     RegistrationRequestAdminController.class,
     AdminSurveyController.class,
     NotificationController.class,
-    UserController.class
+    UserController.class,
+    CategoryController.class
 })
 @Import({ SecurityConfig.class, JwtAuthenticationFilter.class })
 class CatalogAndAdminControllersWebTest {
@@ -84,6 +89,28 @@ class CatalogAndAdminControllersWebTest {
     @MockitoBean private JwtService jwtService;
     @MockitoBean private JwtCookieService jwtCookieService;
     @MockitoBean private UserRepository userRepository;
+    @MockitoBean private CategoryCatalogService categoryCatalogService;
+
+    @Test
+    void categoryCreation_requiresSuperadmin() throws Exception {
+        when(categoryCatalogService.create(any(CreateCategoryRequestDto.class)))
+            .thenReturn(new CategoryResponseDto("TECNOLOGIA_ASISTIVA", "Tecnología asistiva", false));
+
+        mockMvc.perform(post("/api/v1/categories")
+                .contentType("application/json")
+                .content("{\"name\":\"Tecnología asistiva\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(user(2L, UserRole.ADMIN)))))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/categories")
+                .contentType("application/json")
+                .content("{\"name\":\"Tecnología asistiva\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(user(3L, UserRole.SUPERADMIN)))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.code").value("TECNOLOGIA_ASISTIVA"));
+    }
 
     @Test
     void catalogDetails_areAvailableToAuthenticatedEditor() throws Exception {
@@ -112,6 +139,7 @@ class CatalogAndAdminControllersWebTest {
                 .param("search", "infantil")
                 .param("searchFields", "TITLE,CREATOR")
                 .param("sortOrder", "OLDEST")
+                .param("category", "DATOS_PERSONALES")
                 .with(authentication(tokenFor(editor))))
             .andExpect(status().isOk());
 
@@ -122,7 +150,8 @@ class CatalogAndAdminControllersWebTest {
             true,
             "infantil",
             Set.of(CatalogSearchField.TITLE, CatalogSearchField.CREATOR),
-            CatalogSortOrder.OLDEST
+            CatalogSortOrder.OLDEST,
+            Category.DATOS_PERSONALES
         );
     }
 
@@ -188,14 +217,16 @@ class CatalogAndAdminControllersWebTest {
     void profile_returnsCurrentDomainUser() throws Exception {
         User editor = user(8L, UserRole.EDITOR);
         when(userService.getProfile(editor)).thenReturn(new UserResponseDto(
-            8L, UserRole.EDITOR, "user8@example.com", "Usuario", UserGender.OTHER,
-            "Centro", Instant.parse("2026-01-01T10:00:00Z"), Instant.parse("2026-01-01T10:00:00Z")
+            8L, UserRole.EDITOR, "user8@example.com", "Usuario",
+            "Centro", "España", Instant.parse("2026-01-01T10:00:00Z"), Instant.parse("2026-01-01T10:00:00Z")
         ));
 
         mockMvc.perform(get("/api/v1/users/me").with(authentication(tokenFor(editor))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(8))
-            .andExpect(jsonPath("$.role").value("EDITOR"));
+            .andExpect(jsonPath("$.role").value("EDITOR"))
+            .andExpect(jsonPath("$.country").value("España"))
+            .andExpect(jsonPath("$.gender").doesNotExist());
     }
 
     @Test
@@ -216,7 +247,7 @@ class CatalogAndAdminControllersWebTest {
                 UserSearchField.NAME,
                 UserSearchField.EMAIL,
                 UserSearchField.INSTITUTION,
-                UserSearchField.GENDER,
+                UserSearchField.COUNTRY,
                 UserSearchField.ROLE
             ),
             UserSortOrder.NAME_ASC

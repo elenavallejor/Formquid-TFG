@@ -11,6 +11,7 @@ import { CreateQuestionPage } from './routes/CreateQuestionPage/CreateQuestionPa
 import { CreateBlockPage } from './routes/CreateBlockPage/CreateBlockPage.jsx';
 import { CreateTemplatePage } from './routes/CreateTemplatePage/CreateTemplatePage.jsx';
 import { CreateSurveyPage } from './routes/CreateSurveyPage/CreateSurveyPage.jsx';
+import { ImportSurveyPage } from './routes/ImportSurveyPage/ImportSurveyPage.jsx';
 import { EditSurveyPage } from './routes/EditSurveyPage/EditSurveyPage.jsx';
 import { EditElementPage } from './routes/EditElementPage/EditElementPage.jsx';
 import { ErrorPage } from './routes/ErrorPage/ErrorPage';
@@ -28,6 +29,7 @@ import { AccountPage } from './routes/AccountPage/AccountPage.jsx';
 import { AdminSurveysPage } from './routes/AdminSurveysPage/AdminSurveysPage.jsx';
 import { SurveyListPage } from './routes/SurveyListPage/SurveyListPage.jsx';
 import { UsersManagementPage } from './routes/UsersManagementPage/UsersManagementPage.jsx';
+import { CategoriesManagementPage } from './routes/CategoriesManagementPage.jsx';
 
 /**
  * Define las rutas de la aplicación y aplica las restricciones de autenticación y rol necesarias.
@@ -111,6 +113,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={EDITOR_ROLE}>
               <CreateSurveyPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'encuestas/importar',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={EDITOR_ROLE}>
+              <ImportSurveyPage />
             </RequireRole>
           </RequireAuth>
         ),
@@ -245,6 +257,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <RequireRole allowedRoles={ADMIN_ROLES}>
               <ElementRequestsPage />
+            </RequireRole>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'superadmin/categorias',
+        element: (
+          <RequireAuth>
+            <RequireRole allowedRoles={SUPERADMIN_ROLE}>
+              <CategoriesManagementPage />
             </RequireRole>
           </RequireAuth>
         ),

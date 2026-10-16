@@ -1,6 +1,5 @@
 package com.formquid.user.dto;
 
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 
 import java.time.Instant;
@@ -13,8 +12,8 @@ public record UserResponseDto(
     UserRole role,
     String email,
     String name,
-    UserGender gender,
     String institution,
+    String country,
     Instant createdAt,
     Instant updatedAt
 ) {

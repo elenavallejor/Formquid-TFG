@@ -1,10 +1,13 @@
 package com.formquid.template.entity;
 
+import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -53,6 +56,10 @@ public class Template {
     @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(nullable = false, length = 64)
+    @Builder.Default
+    private Category category = Category.OTROS;
+
     @Column(columnDefinition = "text")
     private String description;
 
@@ -77,6 +84,7 @@ public class Template {
 
     @PrePersist
     protected void onCreate() {
+        if (category == null) category = Category.OTROS;
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;

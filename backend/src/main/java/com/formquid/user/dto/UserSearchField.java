@@ -5,7 +5,7 @@ public enum UserSearchField {
     NAME,
     EMAIL,
     INSTITUTION,
-    GENDER,
+    COUNTRY,
     ROLE,
     NONE
 }

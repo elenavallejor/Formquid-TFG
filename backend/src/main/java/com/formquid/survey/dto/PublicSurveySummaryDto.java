@@ -1,5 +1,6 @@
 package com.formquid.survey.dto;
 
+import com.formquid.common.Category;
 import com.formquid.survey.entity.SurveyAccessMode;
 
 import java.util.List;
@@ -13,6 +14,7 @@ public record PublicSurveySummaryDto(
     String description,
     String imageKey,
     SurveyAccessMode accessMode,
-    List<String> tags
+    List<String> tags,
+    Category category
 ) {
 }

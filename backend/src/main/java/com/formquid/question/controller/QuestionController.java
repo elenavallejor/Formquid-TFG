@@ -1,5 +1,6 @@
 package com.formquid.question.controller;
 
+import com.formquid.common.Category;
 import com.formquid.common.dto.CatalogSearchField;
 import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
@@ -44,17 +45,19 @@ public class QuestionController {
         @RequestParam(defaultValue = "false") boolean mine,
         @RequestParam(defaultValue = "") String search,
         @RequestParam(defaultValue = "TITLE,DESCRIPTION,CREATOR") Set<CatalogSearchField> searchFields,
-        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder
+        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder,
+        @RequestParam(required = false) Category category
     ) {
-        return questionService.findFixedQuestions(page, size, user, mine, search, searchFields, sortOrder);
+        return questionService.findFixedQuestions(page, size, user, mine, search, searchFields, sortOrder, category);
     }
 
     @GetMapping("/builder")
     public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) Category category
     ) {
-        return questionService.findFixedQuestionsForBuilder(page, size);
+        return questionService.findFixedQuestionsForBuilder(page, size, category);
     }
 
     @GetMapping("/{questionId}")

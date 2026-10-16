@@ -1,5 +1,6 @@
 package com.formquid.survey.entity;
 
+import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
@@ -54,6 +55,7 @@ import java.util.List;
         or (access_mode <> 'PASSWORD_PROTECTED' and access_password_hash is null)
     )
     and cardinality(tags) <= 10
+    and category <> 'DATOS_PERSONALES'
 """)
 @Table(
     name = "surveys",
@@ -84,6 +86,10 @@ public class Survey {
 
     @Column(nullable = false, length = 200)
     private String title;
+
+    @Column(nullable = false, length = 64)
+    @Builder.Default
+    private Category category = Category.OTROS;
 
     @Column(columnDefinition = "text")
     private String description;
@@ -142,6 +148,9 @@ public class Survey {
     }
 
     public void normalize() {
+        if (category == null) {
+            category = Category.OTROS;
+        }
         if (lifecycleStatus == null) {
             lifecycleStatus = SurveyLifecycle.DRAFT;
         }

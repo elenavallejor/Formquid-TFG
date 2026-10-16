@@ -1,5 +1,6 @@
 package com.formquid.question.dto;
 
+import com.formquid.common.Category;
 import com.formquid.question.entity.EvaluationDirection;
 import com.formquid.question.entity.QuestionScope;
 import com.formquid.question.entity.QuestionType;
@@ -22,11 +23,10 @@ public record QuestionResponseDto(
     QuestionSettingsDto settings,
     List<QuestionOptionDto> options,
     List<MatrixRowDto> matrixRows,
-    Long sourceFixedQuestionId,
     Long creatorId,
     String creatorName,
     Instant createdAt,
     Instant updatedAt,
-    Long usageCount
+    Category category
 ) {
 }

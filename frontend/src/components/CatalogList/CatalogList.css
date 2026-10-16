@@ -100,6 +100,13 @@
   flex-shrink: 0;
 }
 
+.catalog-item-icon--question {
+  box-sizing: border-box;
+  border: 2px solid;
+  background-color: var(--color-surface);
+  font-size: 22.5px;
+}
+
 .catalog-item-info h3 {
   margin: 0 0 4px;
   font-size: 17.5px;
@@ -217,7 +224,7 @@
   z-index: 20;
   display: flex;
   flex-direction: column;
-  min-width: 160px;
+  min-width: 190px;
   overflow: hidden;
 }
 
@@ -233,6 +240,7 @@
   color: var(--color-text);
   cursor: pointer;
   transition: background-color 0.15s ease;
+  white-space: nowrap;
 }
 
 .menu-option svg {
@@ -243,20 +251,17 @@
   background-color: var(--color-surface-muted);
 }
 
+.menu-option:focus-visible {
+  outline-offset: -3px;
+  background-color: var(--color-surface-muted);
+}
+
 .menu-option-details {
   color: var(--color-primary);
 }
 
-.menu-option-details:hover {
-  background: var(--color-success-surface);
-}
-
 .menu-option.option-delete {
   color: var(--color-error);
-}
-
-.menu-option.option-delete:hover {
-  background-color: var(--color-error-surface);
 }
 
 .empty-catalog-card {

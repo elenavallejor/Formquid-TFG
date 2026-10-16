@@ -1,11 +1,14 @@
 package com.formquid.survey.controller;
 
+import com.formquid.common.Category;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.survey.dto.ChangeSurveyLifecycleRequestDto;
+import com.formquid.survey.dto.CreateImportedSurveyRequestDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.dto.SurveyPageResponseDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
+import com.formquid.survey.dto.SurveyImportPreviewDto;
 import com.formquid.survey.dto.SurveyResponseDto;
 import com.formquid.survey.dto.SurveyResultsSummaryDto;
 import com.formquid.survey.dto.SurveyResultsSearchField;
@@ -14,6 +17,7 @@ import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.service.SurveyService;
+import com.formquid.survey.service.SurveyOdtImportService;
 import com.formquid.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,8 +37,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
 
@@ -45,6 +53,7 @@ import java.util.Set;
 public class SurveyController {
 
     private final SurveyService surveyService;
+    private final SurveyOdtImportService surveyOdtImportService;
 
     @GetMapping
     public SurveyPageResponseDto findMine(
@@ -107,9 +116,10 @@ public class SurveyController {
         @RequestParam(required = false) String tag,
         @RequestParam(required = false) SurveyAccessMode accessMode,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "9") int size
+        @RequestParam(defaultValue = "9") int size,
+        @RequestParam(required = false) Category category
     ) {
-        return surveyService.findListedOpenForRegisteredPage(user, search, tag, accessMode, page, size);
+        return surveyService.findListedOpenForRegisteredPage(user, search, tag, accessMode, page, size, category);
     }
 
     @GetMapping("/by-code/{publicCode}")
@@ -137,6 +147,22 @@ public class SurveyController {
         @Valid @RequestBody CreateSurveyRequestDto request
     ) {
         return surveyService.createFromTemplate(templateId, request, user);
+    }
+
+    @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('EDITOR')")
+    public SurveyImportPreviewDto previewImport(@RequestPart("file") MultipartFile file) {
+        return surveyOdtImportService.preview(file);
+    }
+
+    @PostMapping("/from-import")
+    @PreAuthorize("hasRole('EDITOR')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SurveyResponseDto createFromImport(
+        @AuthenticationPrincipal User user,
+        @Valid @RequestBody CreateImportedSurveyRequestDto request
+    ) {
+        return surveyOdtImportService.createImported(request, user);
     }
 
     @GetMapping("/{surveyId}")

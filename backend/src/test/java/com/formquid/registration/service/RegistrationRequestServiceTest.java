@@ -6,7 +6,6 @@ import com.formquid.registration.dto.CreateRegistrationRequestDto;
 import com.formquid.registration.entity.RegistrationRequest;
 import com.formquid.registration.repository.RegistrationRequestRepository;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -42,8 +41,8 @@ class RegistrationRequestServiceTest {
     @Test
     void create_normalizesEmailAndNeverStoresPlainPassword() {
         var request = new CreateRegistrationRequestDto(
-            "  CHILD@EXAMPLE.COM ", "  Ana  ", UserGender.FEMALE,
-            "  Colegio  ", "  Quiero crear encuestas  ", "plain-secret"
+            "  CHILD@EXAMPLE.COM ", "  Ana  ",
+            "  Colegio  ", "  España  ", "  Quiero crear encuestas  ", "plain-secret"
         );
         when(passwordEncoder.encode("plain-secret")).thenReturn("password-hash");
         when(requestRepository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> {
@@ -59,6 +58,7 @@ class RegistrationRequestServiceTest {
         assertThat(entity.getValue().getEmail()).isEqualTo("child@example.com");
         assertThat(entity.getValue().getPasswordHash()).isEqualTo("password-hash");
         assertThat(entity.getValue().getName()).isEqualTo("Ana");
+        assertThat(entity.getValue().getCountry()).isEqualTo("España");
         assertThat(response.id()).isEqualTo(5L);
         verify(notificationService).notifyAdminsAboutRegistrationRequest(entity.getValue());
     }
@@ -67,7 +67,7 @@ class RegistrationRequestServiceTest {
     void create_rejectsEmailAlreadyPending() {
         when(requestRepository.existsByEmail("person@example.com")).thenReturn(true);
         var request = new CreateRegistrationRequestDto(
-            "PERSON@example.com", "Ana", UserGender.OTHER, "Colegio", "Motivación", "secret123"
+            "PERSON@example.com", "Ana", "Colegio", "España", "Motivación", "secret123"
         );
 
         assertThatThrownBy(() -> registrationService.create(request))
@@ -81,7 +81,7 @@ class RegistrationRequestServiceTest {
             .id(6L)
             .email("editor@example.com")
             .name("Editora")
-            .gender(UserGender.FEMALE)
+            .country("España")
             .institution("Centro")
             .passwordHash("password-hash")
             .build();
@@ -97,6 +97,7 @@ class RegistrationRequestServiceTest {
         ArgumentCaptor<User> user = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(user.capture());
         assertThat(user.getValue().getRole()).isEqualTo(UserRole.EDITOR);
+        assertThat(user.getValue().getCountry()).isEqualTo("España");
         assertThat(user.getValue().getPassword()).isEqualTo("password-hash");
         assertThat(userId).isEqualTo(21L);
         verify(requestRepository).delete(pending);

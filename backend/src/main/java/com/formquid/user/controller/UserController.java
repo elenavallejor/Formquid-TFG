@@ -77,7 +77,7 @@ public class UserController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size,
         @RequestParam(defaultValue = "") String search,
-        @RequestParam(defaultValue = "NAME,EMAIL,INSTITUTION,GENDER,ROLE") Set<UserSearchField> searchFields,
+        @RequestParam(defaultValue = "NAME,EMAIL,INSTITUTION,COUNTRY,ROLE") Set<UserSearchField> searchFields,
         @RequestParam(defaultValue = "NAME_ASC") UserSortOrder sortOrder
     ) {
         return userService.findAll(page, size, search, searchFields, sortOrder);

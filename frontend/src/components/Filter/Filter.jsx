@@ -42,6 +42,7 @@ export function Filter({
   const mobileCloseRef = useRef(null);
   const firstOptionRef = useRef(null);
   const focusFirstOptionOnOpen = useRef(false);
+  const pointerDownInsideRef = useRef(false);
   const menuId = useId();
   const modalTitleId = useId();
   const selectedLabel = selectedValues.length === options.length
@@ -217,8 +218,19 @@ export function Filter({
     <div
       ref={wrapperRef}
       className={`filter${open ? ' filter--open' : ''}${openUp ? ' filter--open-up' : ''}`}
+      onPointerDownCapture={() => {
+        pointerDownInsideRef.current = true;
+        window.setTimeout(() => {
+          pointerDownInsideRef.current = false;
+        }, 0);
+      }}
       onBlurCapture={(event) => {
-        if (!isMobile && event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+        if (
+          !isMobile
+          && !pointerDownInsideRef.current
+          && event.relatedTarget
+          && !event.currentTarget.contains(event.relatedTarget)
+        ) {
           setOpen(false);
         }
       }}

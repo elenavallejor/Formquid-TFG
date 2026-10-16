@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
 import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { loadUserData } from '../../../utils/loadUserData.js';
-import { GENDER_OPTIONS, hasAccountFormErrors, hasFormChanges, validateEmailChange, validatePasswordChange, validatePersonalInfo } from '../../../utils/accountFormUtils.js';
+import { hasAccountFormErrors, hasFormChanges, hasPersonalChanges, validateEmailChange, validatePasswordChange, validatePersonalInfo } from '../../../utils/accountFormUtils.js';
 import './AccountPage.css';
 
 /**
@@ -22,8 +21,8 @@ export function AccountPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [initialPersonalData, setInitialPersonalData] = useState({ nombre: '', institucion: '', genero: 'MALE' });
-  const [personalData, setPersonalData] = useState({ nombre: '', institucion: '', genero: 'MALE' });
+  const [initialPersonalData, setInitialPersonalData] = useState({ nombre: '', institucion: '', pais: '' });
+  const [personalData, setPersonalData] = useState({ nombre: '', institucion: '', pais: '' });
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
   const [emailData, setEmailData] = useState({ currentEmail: '', newEmail: '', confirmNewEmail: '' });
   const [showPassword, setShowPassword] = useState({ new: false, confirm: false });
@@ -95,7 +94,7 @@ export function AccountPage() {
       return;
     }
 
-    const personalErrors = validatePersonalInfo(personalData);
+    const personalErrors = hasPersonalChanges(personalData, initialPersonalData) ? validatePersonalInfo(personalData) : {};
     if (hasAccountFormErrors(personalErrors)) {
       setGlobalError(Object.values(personalErrors)[0]);
       return;
@@ -148,13 +147,10 @@ export function AccountPage() {
         const normalizedPersonalData = {
           name: personalData.nombre.trim(),
           institution: personalData.institucion.trim(),
-          gender: personalData.genero,
+          country: personalData.pais.trim(),
         };
 
-        const isPersonalChanged =
-          normalizedPersonalData.name !== initialPersonalData.nombre.trim() ||
-          normalizedPersonalData.institution !== initialPersonalData.institucion.trim() ||
-          normalizedPersonalData.gender !== initialPersonalData.genero;
+        const isPersonalChanged = hasPersonalChanges(personalData, initialPersonalData);
 
         const payload = {
           currentPassword,
@@ -170,7 +166,7 @@ export function AccountPage() {
           const updatedPersonalData = {
             nombre: normalizedUser?.name ?? normalizedPersonalData.name,
             institucion: normalizedUser?.institution ?? normalizedPersonalData.institution,
-            genero: normalizedUser?.gender ?? normalizedPersonalData.gender,
+            pais: normalizedUser?.country ?? normalizedPersonalData.country,
           };
 
           setPersonalData(updatedPersonalData);
@@ -269,20 +265,12 @@ export function AccountPage() {
                 <label htmlFor="institucion">Institución</label>
                 <input type="text" id="institucion" name="institucion" value={personalData.institucion} onChange={handlePersonalChange} autoComplete="organization" />
               </div>
-            </div>
-
-            <div className="account-grid-2 margin-top-field">
               <div className="input-field-group">
-                <label htmlFor="genero">Género</label>
-                <Dropdown id="genero" name="genero" value={personalData.genero} onChange={handlePersonalChange}>
-                  {GENDER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Dropdown>
+                <label htmlFor="pais">País</label>
+                <input type="text" id="pais" name="pais" value={personalData.pais} onChange={handlePersonalChange} maxLength={100} autoComplete="country-name" />
               </div>
             </div>
+
           </section>
 
           <section className="account-card-section">

@@ -1,5 +1,6 @@
 package com.formquid.survey.dto;
 
+import com.formquid.common.Category;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyFontFamily;
@@ -28,6 +29,7 @@ public record SurveyResponseDto(
     boolean canEdit,
     boolean canPreview,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

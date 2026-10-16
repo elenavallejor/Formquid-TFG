@@ -1,6 +1,8 @@
 package com.formquid.question.service;
 
 import com.formquid.block.entity.BlockScope;
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.common.dto.CatalogSearchField;
 import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
@@ -52,6 +54,7 @@ public class QuestionService {
     private static final int MAX_SCALE_VALUE_COUNT = 30;
 
     private final QuestionRepository questionRepository;
+    private final CategoryCatalogService categoryCatalogService;
 
     @Transactional(readOnly = true)
     public PageResponseDto<FixedQuestionSummaryDto> findFixedQuestions(
@@ -61,7 +64,8 @@ public class QuestionService {
         boolean mine,
         String search,
         Set<CatalogSearchField> searchFields,
-        CatalogSortOrder sortOrder
+        CatalogSortOrder sortOrder,
+        Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
         Pageable pageable = catalogPageable(page, size, sortOrder);
@@ -73,16 +77,17 @@ public class QuestionService {
             fields.contains(CatalogSearchField.TITLE),
             fields.contains(CatalogSearchField.DESCRIPTION),
             fields.contains(CatalogSearchField.CREATOR),
+            category,
             pageable
         );
         return toPageResponse(questions);
     }
 
     @Transactional(readOnly = true)
-    public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size) {
+    public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size, Category category) {
         Pageable pageable = builderPageable(page, size);
         Page<QuestionResponseDto> questions = questionRepository
-            .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, pageable)
+            .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, category, pageable)
             .map(this::toResponse);
         return toPageResponse(questions);
     }
@@ -103,7 +108,7 @@ public class QuestionService {
         if (question.getScope() != QuestionScope.CATALOG_FIXED) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
-        return toResponse(question, questionRepository.countBySourceFixedQuestionId(questionId));
+        return toResponse(question);
     }
 
     @Transactional
@@ -113,9 +118,6 @@ public class QuestionService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
         requireManagementPermission(question.getCreatedBy(), user);
-        if (questionRepository.countBySourceFixedQuestionId(questionId) > 0) {
-            throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar una pregunta fija que está siendo utilizada");
-        }
         questionRepository.delete(question);
     }
 
@@ -137,9 +139,10 @@ public class QuestionService {
             withoutEvaluationConfiguration(request.question()),
             QuestionScope.CATALOG_FIXED,
             null,
-            null,
             creator
         );
+        question.setCategory(request.category() == null ? Category.OTROS : request.category());
+        categoryCatalogService.requireExisting(question.getCategory());
         return toResponse(questionRepository.save(question));
     }
 
@@ -154,6 +157,10 @@ public class QuestionService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
         requireManagementPermission(question.getCreatedBy(), user);
+        if (request.category() != null) {
+            categoryCatalogService.requireExisting(request.category());
+            question.setCategory(request.category());
+        }
         return toResponse(applyQuestionDraft(
             question,
             withoutEvaluationConfiguration(request.question())
@@ -171,7 +178,6 @@ public class QuestionService {
             effectiveDraft,
             QuestionScope.LOCAL,
             parentItem,
-            null,
             creator
         ));
     }
@@ -187,7 +193,6 @@ public class QuestionService {
             fixedQuestion,
             QuestionScope.FIXED_SNAPSHOT,
             parentItem,
-            fixedQuestion,
             creator,
             !isCatalogContext(parentItem)
         );
@@ -198,13 +203,11 @@ public class QuestionService {
      * Recibe una pregunta origen y devuelve una copia local.
      */
     public Question copyAsLocal(Question source, ContentItem parentItem, User creator) {
-        Question catalogSource = source.getScope() == QuestionScope.CATALOG_FIXED ? source : source.getSourceFixedQuestion();
-        QuestionScope scope = catalogSource == null ? QuestionScope.LOCAL : QuestionScope.FIXED_SNAPSHOT;
+        QuestionScope scope = source.getScope() == QuestionScope.LOCAL ? QuestionScope.LOCAL : QuestionScope.FIXED_SNAPSHOT;
         return questionRepository.save(copyQuestion(
             source,
             scope,
             parentItem,
-            catalogSource,
             creator,
             !isCatalogContext(parentItem)
         ));
@@ -248,17 +251,17 @@ public class QuestionService {
         }
     }
 
-    private Question buildQuestion(QuestionDraftDto dto, QuestionScope scope, ContentItem parentItem, Question sourceFixedQuestion, User creator) {
+    private Question buildQuestion(QuestionDraftDto dto, QuestionScope scope, ContentItem parentItem, User creator) {
         validateQuestion(dto);
         Question question = Question.builder()
             .parentItem(parentItem)
             .scope(scope)
+            .category(categoryFrom(parentItem))
             .statement(dto.statement().trim())
             .annotation(trimToNull(dto.annotation()))
             .questionType(dto.questionType())
             .evaluationDirection(dto.evaluationDirection())
             .evaluationWeight(weightFor(dto.evaluationDirection(), dto.evaluationWeight()))
-            .sourceFixedQuestion(sourceFixedQuestion)
             .createdBy(creator)
             .options(new ArrayList<>())
             .matrixRows(new ArrayList<>())
@@ -277,19 +280,18 @@ public class QuestionService {
         Question source,
         QuestionScope scope,
         ContentItem parentItem,
-        Question sourceFixedQuestion,
         User creator,
         boolean includeEvaluation
     ) {
         Question copy = Question.builder()
             .parentItem(parentItem)
             .scope(scope)
+            .category(source.getCategory())
             .statement(source.getStatement())
             .annotation(source.getAnnotation())
             .questionType(source.getQuestionType())
             .evaluationDirection(includeEvaluation ? source.getEvaluationDirection() : EvaluationDirection.NEUTRAL)
             .evaluationWeight(includeEvaluation ? source.getEvaluationWeight() : null)
-            .sourceFixedQuestion(sourceFixedQuestion)
             .createdBy(creator)
             .options(new ArrayList<>())
             .matrixRows(new ArrayList<>())
@@ -749,10 +751,6 @@ public class QuestionService {
     }
 
     public QuestionResponseDto toResponse(Question question) {
-        return toResponse(question, null);
-    }
-
-    private QuestionResponseDto toResponse(Question question, Long usageCount) {
         QuestionSettings settings = question.getSettings();
         User creator = question.getCreatedBy();
         return new QuestionResponseDto(
@@ -792,13 +790,20 @@ public class QuestionService {
                 .sorted(Comparator.comparing(MatrixRow::getPosition))
                 .map(row -> new MatrixRowDto(row.getId(), row.getLabel(), row.getPosition()))
                 .toList(),
-            question.getSourceFixedQuestion() == null ? null : question.getSourceFixedQuestion().getId(),
             creator == null ? null : creator.getId(),
             creator == null ? null : creator.getName(),
             question.getCreatedAt(),
             question.getUpdatedAt(),
-            usageCount
+            question.getCategory()
         );
+    }
+
+    private Category categoryFrom(ContentItem parentItem) {
+        if (parentItem == null) return Category.OTROS;
+        if (parentItem.getParentBlock() != null) return parentItem.getParentBlock().getCategory();
+        if (parentItem.getTemplate() != null) return parentItem.getTemplate().getCategory();
+        if (parentItem.getSurvey() != null) return parentItem.getSurvey().getCategory();
+        return Category.OTROS;
     }
 
     private List<QuestionOptionDto> safeOptions(List<QuestionOptionDto> options) {

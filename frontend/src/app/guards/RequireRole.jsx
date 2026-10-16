@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 
+import { Skeleton } from '../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 /**
@@ -9,7 +10,11 @@ export function RequireRole({ allowedRoles, children }) {
   const { user, isInitializing } = useAuth();
 
   if (isInitializing) {
-    return <main className="route-loading-state" aria-busy="true" />;
+    return (
+      <main className="route-loading-state" aria-busy="true">
+        <Skeleton variant="list" count={4} hasActions={false} label="Cargando página…" />
+      </main>
+    );
   }
 
   if (!user || !allowedRoles.includes(user.role)) {

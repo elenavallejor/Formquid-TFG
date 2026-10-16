@@ -1,5 +1,6 @@
 package com.formquid.survey.dto;
 
+import com.formquid.common.Category;
 import com.formquid.survey.entity.SurveyLifecycle;
 
 import java.time.Instant;
@@ -14,6 +15,7 @@ public record SurveySummaryDto(
     String imageKey,
     SurveyLifecycle lifecycleStatus,
     List<String> tags,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

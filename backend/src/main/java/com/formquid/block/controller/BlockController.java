@@ -1,5 +1,6 @@
 package com.formquid.block.controller;
 
+import com.formquid.common.Category;
 import com.formquid.block.dto.BlockResponseDto;
 import com.formquid.block.dto.BlockSummaryDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
@@ -50,17 +51,19 @@ public class BlockController {
         @RequestParam(defaultValue = "false") boolean mine,
         @RequestParam(defaultValue = "") String search,
         @RequestParam(defaultValue = "TITLE,DESCRIPTION,CREATOR") Set<CatalogSearchField> searchFields,
-        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder
+        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder,
+        @RequestParam(required = false) Category category
     ) {
-        return blockService.findCatalogBlocks(page, size, user, mine, search, searchFields, sortOrder);
+        return blockService.findCatalogBlocks(page, size, user, mine, search, searchFields, sortOrder, category);
     }
 
     @GetMapping("/builder")
     public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) Category category
     ) {
-        return blockService.findCatalogBlocksForBuilder(page, size);
+        return blockService.findCatalogBlocksForBuilder(page, size, category);
     }
 
     @GetMapping("/{blockId}")

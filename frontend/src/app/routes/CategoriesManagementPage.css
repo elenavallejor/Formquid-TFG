@@ -1,0 +1,12 @@
+.categories-page { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+.categories-page h1 { margin: 1.5rem 0 .5rem; }
+.categories-form { display: grid; gap: .5rem; margin: 2rem 0; }
+.categories-form > div { display: flex; gap: .75rem; flex-wrap: wrap; }
+.categories-form input { flex: 1; min-width: 240px; padding: .75rem; border: 1px solid #aaa; border-radius: .5rem; }
+.categories-form button { padding: .75rem 1.25rem; border: 0; border-radius: .5rem; background: #303080; color: white; cursor: pointer; }
+.categories-form button:disabled { opacity: .6; cursor: default; }
+.categories-error { color: #9d1c1c; }
+.categories-success { color: #176b35; }
+.categories-list { padding: 0; list-style: none; display: grid; gap: .5rem; }
+.categories-list li { display: flex; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; background: #fff; border: 1px solid #ddd; border-radius: .5rem; }
+.categories-list small { color: #67518a; }

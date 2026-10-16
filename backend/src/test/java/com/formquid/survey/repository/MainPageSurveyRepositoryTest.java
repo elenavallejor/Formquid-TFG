@@ -1,12 +1,12 @@
 package com.formquid.survey.repository;
 
+import com.formquid.common.Category;
 import com.formquid.config.PostgresDataJpaTest;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @PostgresDataJpaTest
 class MainPageSurveyRepositoryTest {
@@ -30,7 +31,6 @@ class MainPageSurveyRepositoryTest {
             .role(UserRole.EDITOR)
             .email("main-page-filter@example.com")
             .name("Editora")
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build();
@@ -45,13 +45,13 @@ class MainPageSurveyRepositoryTest {
         entityManager.clear();
 
         var firstPage = surveys.findListedOpenPageByTag(
-            false, "", "clima", "salud-mental", PageRequest.of(0, 1)
+            false, "", "", "clima", "salud-mental", PageRequest.of(0, 1)
         );
         var secondPage = surveys.findListedOpenPageByTag(
-            false, "", "clima", "salud-mental", PageRequest.of(1, 1)
+            false, "", "", "clima", "salud-mental", PageRequest.of(1, 1)
         );
         var registeredPage = surveys.findListedOpenPageByTag(
-            true, "AUTHENTICATED", "clima", "salud-mental", PageRequest.of(0, 1)
+            true, "AUTHENTICATED", "", "clima", "salud-mental", PageRequest.of(0, 1)
         );
 
         assertThat(firstPage.getTotalElements()).isEqualTo(2);
@@ -70,7 +70,6 @@ class MainPageSurveyRepositoryTest {
             .role(UserRole.EDITOR)
             .email("stable-public-pages@example.com")
             .name("Editora")
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build();
@@ -102,6 +101,7 @@ class MainPageSurveyRepositoryTest {
             false,
             SurveyAccessMode.AUTHENTICATED,
             null,
+            null,
             "",
             PageRequest.of(0, 2, stableSort)
         );
@@ -110,6 +110,7 @@ class MainPageSurveyRepositoryTest {
             SurveyVisibility.LISTED,
             false,
             SurveyAccessMode.AUTHENTICATED,
+            null,
             null,
             "",
             PageRequest.of(1, 2, stableSort)
@@ -127,7 +128,6 @@ class MainPageSurveyRepositoryTest {
             .role(UserRole.EDITOR)
             .email("ten-tags@example.com")
             .name("Editora")
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build();
@@ -150,6 +150,33 @@ class MainPageSurveyRepositoryTest {
 
         assertThat(surveys.findById(survey.getId()).orElseThrow().getTags())
             .containsExactly(tags);
+    }
+
+    @Test
+    void surveyCategoryFilterAndDatabaseConstraint() {
+        User owner = User.builder()
+            .role(UserRole.EDITOR)
+            .email("category-owner@example.com")
+            .name("Editora")
+            .institution("FormQuid")
+            .passwordHash("not-used-in-tests")
+            .build();
+        entityManager.persist(owner);
+        Survey smartphone = persistSurvey(owner, "CATEGORY0001", "Teléfonos", "móvil", SurveyAccessMode.PUBLIC);
+        smartphone.setCategory(Category.TELEFONO_INTELIGENTE);
+        persistSurvey(owner, "CATEGORY0002", "Otros", "otro", SurveyAccessMode.PUBLIC);
+        entityManager.flush();
+
+        var page = surveys.findListedOpenPage(
+            SurveyLifecycle.OPEN, SurveyVisibility.LISTED, false, SurveyAccessMode.AUTHENTICATED,
+            null, Category.TELEFONO_INTELIGENTE, "", PageRequest.of(0, 9)
+        );
+        assertThat(page.getContent()).extracting(Survey::getId).containsExactly(smartphone.getId());
+
+        assertThatThrownBy(() -> entityManager.createNativeQuery(
+            "update surveys set category = 'DATOS_PERSONALES' where id = :id"
+        ).setParameter("id", smartphone.getId()).executeUpdate())
+            .isInstanceOf(RuntimeException.class);
     }
 
     private Survey persistSurvey(User owner, String publicCode, String title, String tag, SurveyAccessMode accessMode) {

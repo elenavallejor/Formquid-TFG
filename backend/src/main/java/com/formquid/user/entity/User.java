@@ -38,7 +38,6 @@ import java.util.List;
 @Entity
 @Check(constraints = """
     role in ('EDITOR', 'ADMIN', 'SUPERADMIN')
-    and gender in ('MALE', 'FEMALE', 'OTHER')
     and email = lower(btrim(email))
 """)
 @Table(
@@ -65,12 +64,11 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 150)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private UserGender gender;
-
     @Column(nullable = false, length = 200)
     private String institution;
+
+    @Column(length = 100)
+    private String country;
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;

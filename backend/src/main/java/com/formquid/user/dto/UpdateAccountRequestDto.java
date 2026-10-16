@@ -1,6 +1,5 @@
 package com.formquid.user.dto;
 
-import com.formquid.user.entity.UserGender;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -17,7 +16,7 @@ public record UpdateAccountRequestDto(
     public record ProfileData(
         @Size(max = 150) String name,
         @Size(max = 200) String institution,
-        UserGender gender
+        @Size(max = 100) String country
     ) {
     }
 

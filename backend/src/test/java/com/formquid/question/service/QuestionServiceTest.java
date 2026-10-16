@@ -1,5 +1,7 @@
 package com.formquid.question.service;
 
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.question.dto.CreateFixedQuestionRequestDto;
 import com.formquid.question.dto.QuestionDraftDto;
@@ -33,6 +35,8 @@ class QuestionServiceTest {
 
     @Mock
     private QuestionRepository questionRepository;
+    @Mock
+    private CategoryCatalogService categoryCatalogService;
 
     @InjectMocks
     private QuestionService questionService;
@@ -73,12 +77,13 @@ class QuestionServiceTest {
             .thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = questionService.createFixedQuestion(
-            new CreateFixedQuestionRequestDto(evaluableChoiceQuestion()),
+            new CreateFixedQuestionRequestDto(evaluableChoiceQuestion(), Category.DATOS_PERSONALES),
             null
         );
 
         assertThat(response.evaluationDirection()).isEqualTo(EvaluationDirection.NEUTRAL);
         assertThat(response.evaluationWeight()).isNull();
+        assertThat(response.category()).isEqualTo(Category.DATOS_PERSONALES);
         assertThat(response.options())
             .extracting(QuestionOptionDto::evaluationFactor)
             .containsOnlyNulls();
@@ -124,6 +129,7 @@ class QuestionServiceTest {
             .thenAnswer(invocation -> invocation.getArgument(0));
         Question source = Question.builder()
             .scope(QuestionScope.CATALOG_FIXED)
+            .category(Category.DATOS_PERSONALES)
             .statement("Pregunta evaluable antigua")
             .questionType(QuestionType.SINGLE_CHOICE)
             .evaluationDirection(EvaluationDirection.POSITIVE)
@@ -147,6 +153,8 @@ class QuestionServiceTest {
         Question surveyCopy = questionService.createFixedSnapshot(source, surveyItem, null);
 
         assertThat(catalogCopy.getEvaluationDirection()).isEqualTo(EvaluationDirection.NEUTRAL);
+        assertThat(catalogCopy.getCategory()).isEqualTo(Category.DATOS_PERSONALES);
+        assertThat(surveyCopy.getCategory()).isEqualTo(Category.DATOS_PERSONALES);
         assertThat(catalogCopy.getEvaluationWeight()).isNull();
         assertThat(catalogCopy.getOptions().getFirst().getEvaluationFactor()).isNull();
         assertThat(surveyCopy.getEvaluationDirection()).isEqualTo(EvaluationDirection.POSITIVE);

@@ -5,6 +5,7 @@ import { MdClose, MdSave } from 'react-icons/md';
 import { createCatalogBlock } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
@@ -20,6 +21,7 @@ export function CreateBlockPage() {
   const saveLockRef = useRef(false);
 
   const [formData, setFormData] = useState(INITIAL_BLOCK_STATE);
+  const [category, setCategory] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -55,6 +57,7 @@ export function CreateBlockPage() {
     try {
       setIsSaving(true);
       const payload = buildCreateCatalogBlockPayload(formData);
+      if (category) payload.category = category;
       await createCatalogBlock(payload);
       setSuccessMsg('Bloque creado con éxito. Redirigiendo...');
 
@@ -107,6 +110,9 @@ export function CreateBlockPage() {
               <span>{isSaving ? "Guardando..." : "Crear bloque"}</span>
             </button>
           </header>
+          <div className="builder-field">
+            <CategorySelect id="block-category" value={category} onChange={setCategory} />
+          </div>
 
           {errorMsg && (
             <div className="account-error-banner" role="alert">

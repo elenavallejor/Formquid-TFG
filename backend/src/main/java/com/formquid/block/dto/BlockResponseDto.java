@@ -1,5 +1,6 @@
 package com.formquid.block.dto;
 
+import com.formquid.common.Category;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.content.dto.ContentItemResponseDto;
 
@@ -12,7 +13,6 @@ import java.util.List;
 public record BlockResponseDto(
     Long id,
     BlockScope scope,
-    Long sourceBlockId,
     String name,
     String description,
     List<ContentItemResponseDto> contentItems,
@@ -20,6 +20,6 @@ public record BlockResponseDto(
     String creatorName,
     Instant createdAt,
     Instant updatedAt,
-    Long usageCount
+    Category category
 ) {
 }

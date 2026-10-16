@@ -4,6 +4,7 @@ import { MdClose, MdSave } from 'react-icons/md';
 
 import { createCatalogQuestion } from '../../../api/catalogApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { buildCreateFixedQuestionPayload, getQuestionBuilderValidationError, INITIAL_QUESTION_STATE } from '../../../utils/questionBuilderUtils.js';
@@ -19,6 +20,7 @@ export function CreateQuestionPage() {
   const { isInitializing } = useAuth();
 
   const [formData, setFormData] = useState(INITIAL_QUESTION_STATE);
+  const [category, setCategory] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -37,6 +39,7 @@ export function CreateQuestionPage() {
     try {
       setIsSaving(true);
       const payload = buildCreateFixedQuestionPayload(formData);
+      if (category) payload.category = category;
       await createCatalogQuestion(payload);
       setSuccessMsg('Pregunta fija creada con éxito. Redirigiendo...');
 
@@ -75,6 +78,9 @@ export function CreateQuestionPage() {
             <span>{isSaving ? 'Guardando...' : 'Crear pregunta'}</span>
           </button>
         </header>
+        <div className="builder-field">
+          <CategorySelect id="question-category" value={category} onChange={setCategory} />
+        </div>
 
         {errorMsg && (
           <div className="account-error-banner" role="alert">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPersonOutline } from 'react-icons/md';
+import { MdKeyboardArrowRight, MdMailOutline, MdOutlineBusiness, MdPublic } from 'react-icons/md';
 
 import { deleteUser, getUsers, updateUserRole } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
@@ -8,7 +8,7 @@ import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { DEFAULT_USERS_PAGE_SIZE, USER_SEARCH_OPTIONS, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserGenderLabel, getUserRoleLabel } from '../../../utils/usersManagementUtils.js';
+import { DEFAULT_USERS_PAGE_SIZE, USER_SEARCH_OPTIONS, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserRoleLabel } from '../../../utils/usersManagementUtils.js';
 
 import './UsersManagementPage.css';
 
@@ -158,7 +158,10 @@ export function UsersManagementPage() {
             setCurrentPage(0);
           }}
           filterOptions={USER_SEARCH_OPTIONS}
+          filterLabel="Filtrar"
+          filterOptionsLabel="Buscar usuarios por"
           selectedFilterValues={selectedSearchFields}
+          showFilter
           onFilterChange={(fields) => {
             setSelectedSearchFields(fields);
             setCurrentPage(0);
@@ -213,10 +216,7 @@ export function UsersManagementPage() {
                           <MdOutlineBusiness aria-hidden="true" />
                           {item.institution || 'Sin institución'}
                         </span>
-                        <span className="user-detail-item">
-                          <MdPersonOutline aria-hidden="true" />
-                          {getUserGenderLabel(item.gender)}
-                        </span>
+                        <span className="user-detail-item"><MdPublic aria-hidden="true" />{item.country || 'País no indicado'}</span>
                       </div>
                     </div>
                   </div>

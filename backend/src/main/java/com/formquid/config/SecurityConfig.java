@@ -140,6 +140,9 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/public/**")
             .permitAll()
 
+            .requestMatchers(HttpMethod.GET, "/api/v1/categories")
+            .permitAll()
+
             .anyRequest()
             .authenticated()
         );

@@ -1,5 +1,6 @@
 package com.formquid.template.repository;
 
+import com.formquid.common.Category;
 import com.formquid.template.dto.TemplateSummaryDto;
 import com.formquid.template.entity.Template;
 import org.springframework.data.domain.Page;
@@ -30,7 +31,8 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
                     end
                 ), 0),
                 template.createdAt,
-                template.updatedAt
+                template.updatedAt,
+                template.category
             )
             from Template template
             left join template.createdBy creator
@@ -42,6 +44,7 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
                 )
+                and (:category is null or template.category = :category)
                 and (
                     :search = ''
                     or (:searchTitle = true and lower(template.title) like concat('%', :search, '%'))
@@ -55,7 +58,8 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
                 template.imageKey,
                 creator.name,
                 template.createdAt,
-                template.updatedAt
+                template.updatedAt,
+                template.category
             """,
         countQuery = """
             select count(template.id)
@@ -66,6 +70,7 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
                 )
+                and (:category is null or template.category = :category)
                 and (
                     :search = ''
                     or (:searchTitle = true and lower(template.title) like concat('%', :search, '%'))
@@ -81,6 +86,7 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
         @Param("searchTitle") boolean searchTitle,
         @Param("searchDescription") boolean searchDescription,
         @Param("searchCreator") boolean searchCreator,
+        @Param("category") Category category,
         Pageable pageable
     );
 }

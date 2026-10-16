@@ -9,6 +9,7 @@ const PAGE_TITLES = [
   { pattern: /^\/panel\/?$/, title: 'Panel' },
   { pattern: /^\/colaboraciones\/?$/, title: 'Gestión de colaboraciones' },
   { pattern: /^\/sugerir-elemento\/?$/, title: 'Sugerir elemento' },
+  { pattern: /^\/encuestas\/importar\/?$/, title: 'Importar encuesta desde ODT' },
   { pattern: /^\/encuestas\/crear\/?$/, title: 'Crear encuesta' },
   { pattern: /^\/encuestas\/[^/]+\/editar\/?$/, title: 'Gestionar encuesta' },
   { pattern: /^\/encuestas\/[^/]+\/resultados\/participaciones\/?$/, title: 'Participaciones individuales' },

@@ -7,7 +7,6 @@ import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -78,7 +77,6 @@ class ParticipationRepositoryTest {
             .role(UserRole.EDITOR)
             .email(email)
             .name("Usuario de prueba")
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build();

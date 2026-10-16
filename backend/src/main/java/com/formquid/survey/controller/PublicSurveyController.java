@@ -1,5 +1,6 @@
 package com.formquid.survey.controller;
 
+import com.formquid.common.Category;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.survey.dto.PublicSurveyAccessRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
@@ -32,9 +33,10 @@ public class PublicSurveyController {
         @RequestParam(required = false) String tag,
         @RequestParam(required = false) SurveyAccessMode accessMode,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "9") int size
+        @RequestParam(defaultValue = "9") int size,
+        @RequestParam(required = false) Category category
     ) {
-        return surveyService.findListedOpenPage(search, tag, accessMode, page, size);
+        return surveyService.findListedOpenPage(search, tag, accessMode, page, size, category);
     }
 
     @GetMapping("/{publicCode}")

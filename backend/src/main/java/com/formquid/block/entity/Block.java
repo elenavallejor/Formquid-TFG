@@ -1,5 +1,6 @@
 package com.formquid.block.entity;
 
+import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
@@ -42,7 +43,7 @@ import java.util.List;
 @Check(constraints = """
     scope in ('CATALOG', 'SNAPSHOT')
     and (
-        (scope = 'CATALOG' and parent_item_id is null and source_block_id is null)
+        (scope = 'CATALOG' and parent_item_id is null)
         or (scope = 'SNAPSHOT' and parent_item_id is not null)
     )""")
 @Table(
@@ -50,7 +51,6 @@ import java.util.List;
     uniqueConstraints = @UniqueConstraint(name = "uk_blocks_parent_item", columnNames = "parent_item_id"),
     indexes = {
         @Index(name = "idx_blocks_scope", columnList = "scope"),
-        @Index(name = "idx_blocks_source", columnList = "source_block_id"),
         @Index(name = "idx_blocks_created_by", columnList = "created_by_user_id")
     }
 )
@@ -72,12 +72,12 @@ public class Block {
     @Column(nullable = false, length = 30)
     private BlockScope scope;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_block_id")
-    private Block sourceBlock;
-
     @Column(nullable = false, length = 150)
     private String name;
+
+    @Column(nullable = false, length = 64)
+    @Builder.Default
+    private Category category = Category.OTROS;
 
     @Column(columnDefinition = "text")
     private String description;
@@ -100,6 +100,7 @@ public class Block {
 
     @PrePersist
     protected void onCreate() {
+        if (category == null) category = Category.OTROS;
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;

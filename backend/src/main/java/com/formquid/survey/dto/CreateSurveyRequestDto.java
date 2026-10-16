@@ -1,5 +1,6 @@
 package com.formquid.survey.dto;
 
+import com.formquid.common.Category;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyFontFamily;
 import com.formquid.survey.entity.SurveyVisibility;
@@ -21,6 +22,7 @@ public record CreateSurveyRequestDto(
     SurveyAccessMode accessMode,
     SurveyVisibility visibility,
     String accessPassword,
-    @Size(max = MAX_TAGS) List<String> tags
+    @Size(max = MAX_TAGS) List<String> tags,
+    Category category
 ) {
 }

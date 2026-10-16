@@ -2,7 +2,6 @@ package com.formquid.config.initializer;
 
 import com.formquid.common.service.EmailNormalizer;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +30,11 @@ public class SuperadminInitializer implements CommandLineRunner {
     @Value("${app.superadmin.name:${SUPERADMIN_NAME:Superadministrador}}")
     private String name;
 
-    @Value("${app.superadmin.gender:${SUPERADMIN_GENDER:OTHER}}")
-    private String gender;
-
     @Value("${app.superadmin.institution:${SUPERADMIN_INSTITUTION:FormQuid}}")
     private String institution;
+
+    @Value("${app.superadmin.country:${SUPERADMIN_COUNTRY:}}")
+    private String country;
 
     @Override
     @Transactional
@@ -45,8 +44,8 @@ public class SuperadminInitializer implements CommandLineRunner {
                 .role(UserRole.SUPERADMIN)
                 .email(EmailNormalizer.normalize(email))
                 .name(name)
-                .gender(parseGender(gender))
                 .institution(institution)
+                .country(country.isBlank() ? null : country.trim())
                 .passwordHash(passwordEncoder.encode(password))
                 .build());
             return;
@@ -59,11 +58,4 @@ public class SuperadminInitializer implements CommandLineRunner {
         }
     }
 
-    private UserGender parseGender(String value) {
-        try {
-            return UserGender.valueOf(value.trim().toUpperCase());
-        } catch (RuntimeException exception) {
-            return UserGender.OTHER;
-        }
-    }
 }

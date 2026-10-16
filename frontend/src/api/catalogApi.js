@@ -14,6 +14,7 @@ function buildPaginatedPath(path, {
   search,
   searchFields,
   sortOrder,
+  category,
 } = {}) {
   const params = new URLSearchParams();
 
@@ -25,6 +26,7 @@ function buildPaginatedPath(path, {
     params.set('searchFields', searchFields.length > 0 ? searchFields.join(',') : 'NONE');
   }
   if (sortOrder) params.set('sortOrder', sortOrder);
+  if (category) params.set('category', category);
 
   return `${path}?${params.toString()}`;
 }
@@ -97,6 +99,7 @@ export function getCatalogQuestions(options = {}) {
     search = '',
     searchFields,
     sortOrder,
+    category,
     refresh = false,
   } = options;
 
@@ -107,6 +110,7 @@ export function getCatalogQuestions(options = {}) {
     search,
     searchFields,
     sortOrder,
+    category,
   });
 
   return getCachedPage(
@@ -186,6 +190,7 @@ export function getCatalogBlocks(options = {}) {
     search = '',
     searchFields,
     sortOrder,
+    category,
     refresh = false,
   } = options;
 
@@ -196,6 +201,7 @@ export function getCatalogBlocks(options = {}) {
     search,
     searchFields,
     sortOrder,
+    category,
   });
 
   return getCachedPage(
@@ -275,6 +281,7 @@ export function getCatalogTemplates(options = {}) {
     search = '',
     searchFields,
     sortOrder,
+    category,
     refresh = false,
   } = options;
 
@@ -285,6 +292,7 @@ export function getCatalogTemplates(options = {}) {
     search,
     searchFields,
     sortOrder,
+    category,
   });
 
   return getCachedPage(

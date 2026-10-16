@@ -1,5 +1,6 @@
 package com.formquid.block.dto;
 
+import com.formquid.common.Category;
 import java.time.Instant;
 
 /**
@@ -12,6 +13,7 @@ public record BlockSummaryDto(
     String creatorName,
     long questionCount,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

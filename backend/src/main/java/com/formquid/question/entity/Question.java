@@ -1,5 +1,6 @@
 package com.formquid.question.entity;
 
+import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
@@ -48,9 +49,8 @@ import java.util.List;
     and question_type in ('TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BOOLEAN')
     and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
     and (
-        (scope = 'CATALOG_FIXED' and parent_item_id is null and source_fixed_question_id is null)
-        or (scope = 'LOCAL' and parent_item_id is not null and source_fixed_question_id is null)
-        or (scope = 'FIXED_SNAPSHOT' and parent_item_id is not null and source_fixed_question_id is not null)
+        (scope = 'CATALOG_FIXED' and parent_item_id is null)
+        or (scope in ('LOCAL', 'FIXED_SNAPSHOT') and parent_item_id is not null)
     )
     and (
         (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)
@@ -62,7 +62,6 @@ import java.util.List;
     uniqueConstraints = @UniqueConstraint(name = "uk_questions_parent_item", columnNames = "parent_item_id"),
     indexes = {
         @Index(name = "idx_questions_scope", columnList = "scope"),
-        @Index(name = "idx_questions_source_fixed", columnList = "source_fixed_question_id"),
         @Index(name = "idx_questions_created_by", columnList = "created_by_user_id")
     }
 )
@@ -83,6 +82,10 @@ public class Question {
     @Column(nullable = false, columnDefinition = "text")
     private String statement;
 
+    @Column(nullable = false, length = 64)
+    @Builder.Default
+    private Category category = Category.OTROS;
+
     @Column(columnDefinition = "text")
     private String annotation;
 
@@ -96,10 +99,6 @@ public class Question {
 
     @Column(name = "evaluation_weight")
     private BigDecimal evaluationWeight;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_fixed_question_id")
-    private Question sourceFixedQuestion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
@@ -128,6 +127,7 @@ public class Question {
 
     @PrePersist
     protected void onCreate() {
+        if (category == null) category = Category.OTROS;
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;

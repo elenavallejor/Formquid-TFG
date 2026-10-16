@@ -23,6 +23,7 @@ import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility,
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
@@ -160,6 +161,7 @@ function settingsFromSurvey(survey) {
     visibility: survey?.visibility || 'UNLISTED',
     accessPassword: '',
     tags: survey?.tags || [],
+    category: survey?.category || '',
   };
 }
 
@@ -261,6 +263,10 @@ function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, on
       <section className="create-survey-card" aria-labelledby="edit-survey-appearance-title">
         <h2 id="edit-survey-appearance-title">APARIENCIA</h2>
         <div className="create-survey-grid edit-survey-appearance-layout">
+          <div className="create-survey-field">
+            <CategorySelect id="edit-survey-category" surveyOnly value={data.category}
+              onChange={(category) => onChange({ category })} />
+          </div>
           <div className="create-survey-field">
             <label htmlFor="edit-survey-font">Tipografía</label>
             <Dropdown id="edit-survey-font" value={data.fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value })}>
@@ -603,7 +609,7 @@ export function EditSurveyPage() {
     if (saveLockRef.current) return;
     saveLockRef.current = true; setIsSaving(true); clearMessages();
     try {
-      const response = await updateSurvey(surveyId, { title: settings.title.trim(), description: settings.description.trim() || null, imageKey: settings.imageKey.trim() || null, fontFamily: settings.fontFamily, accessMode: settings.accessMode, visibility: settings.visibility, accessPassword: settings.accessMode === 'PASSWORD_PROTECTED' ? settings.accessPassword || null : null, tags: settings.tags });
+      const response = await updateSurvey(surveyId, { title: settings.title.trim(), description: settings.description.trim() || null, imageKey: settings.imageKey.trim() || null, fontFamily: settings.fontFamily, accessMode: settings.accessMode, visibility: settings.visibility, accessPassword: settings.accessMode === 'PASSWORD_PROTECTED' ? settings.accessPassword || null : null, tags: settings.tags, category: settings.category });
       setSurvey(response); setSettings(settingsFromSurvey(response)); setHasTagChanges(false); setHasSettingsChanges(false); setSuccessMessage('Configuración guardada correctamente.');
     } catch (error) {
       setErrorMessage(error.message || 'No se ha podido guardar la configuración.');

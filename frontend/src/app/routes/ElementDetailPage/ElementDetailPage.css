@@ -143,13 +143,6 @@
   overflow-wrap: anywhere;
 }
 
-.catalog-detail-usage {
-  margin: 16px 0 0;
-  color: var(--color-header);
-  font-size: 18.75px;
-  font-weight: 700;
-}
-
 .catalog-detail-settings {
   margin-top: 24px;
   overflow: hidden;

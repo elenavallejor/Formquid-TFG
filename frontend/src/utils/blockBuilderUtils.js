@@ -59,9 +59,7 @@ export function buildBlockQuestionFromCatalog(question) {
   return {
     ...INITIAL_QUESTION_STATE,
     itemType: 'QUESTION',
-    fixedQuestionId: question.scope === 'CATALOG_FIXED'
-      ? question.id
-      : question.sourceFixedQuestionId || undefined,
+    fixedQuestionId: question.scope === 'CATALOG_FIXED' ? question.id : undefined,
     statement: question.statement || '',
     annotation: question.annotation || '',
     questionType: question.questionType,

@@ -1,5 +1,6 @@
 package com.formquid.template.controller;
 
+import com.formquid.common.Category;
 import com.formquid.common.dto.CatalogSearchField;
 import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
@@ -45,9 +46,10 @@ public class TemplateController {
         @RequestParam(defaultValue = "false") boolean mine,
         @RequestParam(defaultValue = "") String search,
         @RequestParam(defaultValue = "TITLE,DESCRIPTION,CREATOR") Set<CatalogSearchField> searchFields,
-        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder
+        @RequestParam(defaultValue = "NEWEST") CatalogSortOrder sortOrder,
+        @RequestParam(required = false) Category category
     ) {
-        return templateService.findAll(page, size, user, mine, search, searchFields, sortOrder);
+        return templateService.findAll(page, size, user, mine, search, searchFields, sortOrder, category);
     }
 
     @GetMapping("/{templateId}")

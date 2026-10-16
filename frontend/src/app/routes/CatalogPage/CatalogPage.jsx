@@ -12,6 +12,7 @@ import {
 } from '../../../api/catalogApi.js';
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
@@ -102,6 +103,7 @@ export function CatalogPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedSearchCategories, setSelectedSearchCategories] = useState(ALL_SEARCH_CATEGORIES);
   const [sortOrder, setSortOrder] = useState('NEWEST');
+  const [category, setCategory] = useState('');
   const [ownCurrentPage, setOwnCurrentPage] = useState(0);
   const [publicCurrentPage, setPublicCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -144,6 +146,7 @@ export function CatalogPage() {
           search: debouncedSearch,
           searchFields: selectedSearchCategories,
           sortOrder,
+          category,
         });
 
         if (requestVersion !== requestVersionRef.current) return;
@@ -172,6 +175,7 @@ export function CatalogPage() {
     return undefined;
   }, [
     canCreateCatalog,
+    category,
     config,
     debouncedSearch,
     itemsPerPage,
@@ -358,6 +362,14 @@ export function CatalogPage() {
             setPublicCurrentPage(0);
           }}
         />
+
+        <div className="create-survey-field">
+          <CategorySelect id="catalog-category" value={category} onChange={(value) => {
+            setCategory(value);
+            setOwnCurrentPage(0);
+            setPublicCurrentPage(0);
+          }} />
+        </div>
 
         <div className="catalog-results">
           {canCreateCatalog && renderCatalogSection({

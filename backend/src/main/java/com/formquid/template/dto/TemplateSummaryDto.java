@@ -1,5 +1,6 @@
 package com.formquid.template.dto;
 
+import com.formquid.common.Category;
 import java.time.Instant;
 
 /**
@@ -13,6 +14,7 @@ public record TemplateSummaryDto(
     String creatorName,
     long questionCount,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

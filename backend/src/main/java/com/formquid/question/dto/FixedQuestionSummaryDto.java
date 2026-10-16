@@ -1,5 +1,6 @@
 package com.formquid.question.dto;
 
+import com.formquid.common.Category;
 import com.formquid.question.entity.QuestionType;
 
 import java.time.Instant;
@@ -13,6 +14,7 @@ public record FixedQuestionSummaryDto(
     QuestionType questionType,
     String creatorName,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

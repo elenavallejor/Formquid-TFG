@@ -4,6 +4,7 @@ import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.common.exception.ApiException;
 import com.formquid.user.dto.DeleteOwnAccountRequestDto;
+import com.formquid.user.dto.UpdateAccountRequestDto;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.user.dto.UserResponseDto;
 import com.formquid.user.entity.User;
@@ -56,6 +57,19 @@ class UserServiceTest {
 
         assertThat(user.getRole()).isEqualTo(UserRole.SUPERADMIN);
         assertThat(response.role()).isEqualTo(UserRole.SUPERADMIN);
+    }
+
+    @Test
+    void updateAccountStoresCountryForExistingUser() {
+        User user = User.builder().id(7L).name("Ana").institution("Asociación").passwordHash("hash").build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("current", "hash")).thenReturn(true);
+
+        userService.updateMyAccount(7L, new UpdateAccountRequestDto(
+            new UpdateAccountRequestDto.ProfileData("Ana", "Asociación", "España"), null, null, "current"
+        ));
+
+        assertThat(user.getCountry()).isEqualTo("España");
     }
 
     @Test

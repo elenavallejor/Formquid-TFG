@@ -4,36 +4,33 @@
 export const ACCOUNT_FORM_LIMITS = {
   name: 150,
   institution: 200,
+  country: 100,
   email: 320,
   passwordMin: 8,
   passwordMax: 120,
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const VALID_GENDERS = new Set(['FEMALE', 'MALE', 'OTHER']);
-
-export const GENDER_OPTIONS = [
-  { value: 'MALE', label: 'Masculino' },
-  { value: 'FEMALE', label: 'Femenino' },
-  { value: 'OTHER', label: 'Otro' },
-];
-
-export function hasFormChanges(personalData, initialPersonalData, passwordData, emailData) {
-  const isPersonalChanged =
+export function hasPersonalChanges(personalData, initialPersonalData) {
+  return (
     personalData.nombre.trim() !== initialPersonalData.nombre.trim() ||
     personalData.institucion.trim() !== initialPersonalData.institucion.trim() ||
-    personalData.genero !== initialPersonalData.genero;
+    personalData.pais.trim() !== initialPersonalData.pais.trim()
+  );
+}
 
+export function hasFormChanges(personalData, initialPersonalData, passwordData, emailData) {
   const isPasswordEntered = Boolean(passwordData.newPassword || passwordData.confirmPassword);
   const isEmailEntered = Boolean(emailData.newEmail || emailData.confirmNewEmail);
 
-  return isPersonalChanged || isPasswordEntered || isEmailEntered;
+  return hasPersonalChanges(personalData, initialPersonalData) || isPasswordEntered || isEmailEntered;
 }
 
 export function validatePersonalInfo(data) {
   const errors = {};
   const name = (data.nombre || '').trim();
   const institution = (data.institucion || '').trim();
+  const country = (data.pais || '').trim();
 
   if (!name) {
     errors.nombre = 'Introduce tu nombre completo.';
@@ -47,8 +44,10 @@ export function validatePersonalInfo(data) {
     errors.institucion = `La institución no puede superar los ${ACCOUNT_FORM_LIMITS.institution} caracteres.`;
   }
 
-  if (!data.genero || !VALID_GENDERS.has(data.genero)) {
-    errors.genero = 'Selecciona un género válido.';
+  if (!country) {
+    errors.pais = 'Introduce tu país.';
+  } else if (country.length > ACCOUNT_FORM_LIMITS.country) {
+    errors.pais = `El país no puede superar los ${ACCOUNT_FORM_LIMITS.country} caracteres.`;
   }
 
   return errors;

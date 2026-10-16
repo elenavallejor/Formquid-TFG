@@ -1,23 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '@fontsource/lexend/400.css';
 import '@fontsource/opendyslexic/400.css';
 import {
   MdAdd,
   MdClose,
   MdImage,
-  MdKeyboardArrowRight,
-  MdOutlineDescription,
-  MdOutlineInsertDriveFile,
 } from 'react-icons/md';
 
-import { getCatalogTemplates } from '../../../api/catalogApi.js';
-import { createSurvey, createSurveyFromTemplate } from '../../../api/surveysApi.js';
+import { createSurvey, createSurveyFromImport, createSurveyFromTemplate } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
-import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
-import { useModalFocus } from '../../../hooks/useModalFocus.js';
+import { SurveyOriginModal } from '../../../components/SurveyOriginModal/SurveyOriginModal.jsx';
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
@@ -32,6 +28,7 @@ const INITIAL_FORM = {
   visibility: 'UNLISTED',
   accessPassword: '',
   tags: [],
+  category: '',
 };
 
 const FONT_OPTIONS = [
@@ -57,189 +54,29 @@ const FONT_OPTIONS = [
   },
 ];
 
-const TEMPLATE_SEARCH_OPTIONS = [
-  { value: 'title', label: 'Título' },
-  { value: 'description', label: 'Descripción' },
-];
-
 function normalizeTag(value) {
   let normalized = value.trim().toLocaleLowerCase('es');
   if (normalized.startsWith('#')) normalized = normalized.slice(1);
   return normalized.normalize('NFKC').replace(/\s+/g, '-');
 }
 
-function SurveyOriginModal({ isOpen, selectedOrigin, onClose, onSelect, returnFocusRef }) {
-  const [view, setView] = useState('CHOICE');
-  const [templates, setTemplates] = useState([]);
-  const [search, setSearch] = useState('');
-  const [selectedSearchFields, setSelectedSearchFields] = useState(
-    () => TEMPLATE_SEARCH_OPTIONS.map((option) => option.value),
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState('');
-  const dialogRef = useRef(null);
-  const titleRef = useRef(null);
-  const searchInputRef = useRef(null);
-
-  useModalFocus({
-    isOpen,
-    onClose: handleClose,
-    dialogRef,
-    initialFocusRef: titleRef,
-    returnFocusRef,
-  });
-
-  useEffect(() => {
-    if (!isOpen || view !== 'TEMPLATES') return undefined;
-    const focusFrame = window.requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }));
-    return () => window.cancelAnimationFrame(focusFrame);
-  }, [isOpen, view]);
-
-  function resetModal() {
-    setView('CHOICE');
-    setSearch('');
-    setSelectedSearchFields(TEMPLATE_SEARCH_OPTIONS.map((option) => option.value));
-    setLoadError('');
-  }
-
-  function handleClose() {
-    resetModal();
-    onClose();
-  }
-
-  function handleSelect(origin) {
-    resetModal();
-    onSelect(origin);
-  }
-
-  async function showTemplates() {
-    setView('TEMPLATES');
-    if (templates.length > 0 || isLoading) return;
-
-    try {
-      setIsLoading(true);
-      setLoadError('');
-      const response = await getCatalogTemplates({ page: 0, size: 100 });
-      setTemplates(Array.isArray(response) ? response : response?.content || []);
-    } catch {
-      setLoadError('No se pudieron cargar las plantillas del catálogo.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const visibleTemplates = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase('es');
-    return templates.filter((template) => selectedSearchFields.some((field) => (
-      template[field]?.toLocaleLowerCase('es').includes(query)
-    )));
-  }, [search, selectedSearchFields, templates]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="survey-origin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) handleClose(); }}>
-      <section
-        ref={dialogRef}
-        tabIndex={-1}
-        className={`survey-origin-modal survey-origin-modal-${view.toLocaleLowerCase()}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="survey-origin-title"
-      >
-        <header>
-          <div>
-            <h2 ref={titleRef} id="survey-origin-title" tabIndex={-1}>
-              {view === 'CHOICE' ? '¿CÓMO QUIERES EMPEZAR?' : 'SELECCIONA UNA PLANTILLA'}
-            </h2>
-            <p>
-              {view === 'CHOICE'
-                ? 'Elige el punto de partida de la nueva encuesta.'
-                : 'La plantilla se copiará y la encuesta será independiente.'}
-            </p>
-          </div>
-          <button type="button" className="survey-origin-close" aria-label={selectedOrigin ? 'Cerrar selector de origen' : 'Cerrar y elegir más tarde'} onClick={handleClose}>
-            <MdClose aria-hidden="true" />
-          </button>
-        </header>
-
-        {view === 'CHOICE' ? (
-          <div className="survey-origin-options">
-            <button type="button" onClick={() => handleSelect({ type: 'BLANK' })}>
-              <span className="survey-origin-option-icon"><MdOutlineInsertDriveFile aria-hidden="true" /></span>
-              <span><strong>Empezar desde cero</strong><small>Crea un borrador sin contenido y añade después su estructura.</small></span>
-              <span className="survey-origin-option-action">Seleccionar <MdKeyboardArrowRight aria-hidden="true" /></span>
-            </button>
-            <button type="button" onClick={showTemplates}>
-              <span className="survey-origin-option-icon"><MdOutlineDescription aria-hidden="true" /></span>
-              <span><strong>Usar una plantilla</strong><small>Copia una estructura del catálogo como punto de partida.</small></span>
-              <span className="survey-origin-option-action">Ver plantillas <MdKeyboardArrowRight aria-hidden="true" /></span>
-            </button>
-          </div>
-        ) : (
-          <>
-            <SearchToolbar
-              ariaLabel="Búsqueda y filtros de plantillas"
-              searchLabel="Buscar plantillas"
-              searchPlaceholder="Buscar"
-              searchValue={search}
-              searchInputRef={searchInputRef}
-              onSearchChange={(event) => setSearch(event.target.value)}
-              filterOptions={TEMPLATE_SEARCH_OPTIONS}
-              filterOptionsLabel="Filtrar por"
-              selectedFilterValues={selectedSearchFields}
-              onFilterChange={setSelectedSearchFields}
-              onFilterReset={() => {
-                setSearch('');
-                setSelectedSearchFields(TEMPLATE_SEARCH_OPTIONS.map((option) => option.value));
-              }}
-            />
-
-            <div className="survey-template-list">
-              {isLoading ? (
-                <p className="survey-template-status">Cargando plantillas...</p>
-              ) : loadError ? (
-                <p className="survey-template-status error" role="alert">{loadError}</p>
-              ) : visibleTemplates.length === 0 ? (
-                <p className="survey-template-status">No hay plantillas disponibles.</p>
-              ) : visibleTemplates.map((template) => (
-                <button
-                  key={template.id}
-                  type="button"
-                  className="survey-template-option"
-                  onClick={() => handleSelect({ type: 'TEMPLATE', template })}
-                >
-                  <span className="survey-template-image">
-                    {template.imageKey
-                      ? <img src={template.imageKey} alt="" />
-                      : <MdOutlineDescription aria-hidden="true" />}
-                  </span>
-                  <span>
-                    <strong>{template.title}</strong>
-                    <small>{template.description || 'Sin descripción'}</small>
-                  </span>
-                  <MdKeyboardArrowRight aria-hidden="true" />
-                </button>
-              ))}
-            </div>
-
-            <footer>
-              <button type="button" className="survey-origin-back" onClick={() => setView('CHOICE')}>Volver</button>
-            </footer>
-          </>
-        )}
-      </section>
-    </div>
-  );
-}
-
 export function CreateSurveyPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const importedSurvey = location.state?.importedSurvey ?? null;
+  const selectedSurveyOrigin = location.state?.surveyOrigin ?? null;
+  const initialOrigin = importedSurvey
+    ? { type: 'IMPORT', imported: importedSurvey }
+    : selectedSurveyOrigin;
   const saveLockRef = useRef(false);
   const originTriggerRef = useRef(null);
-  const [formData, setFormData] = useState(INITIAL_FORM);
-  const [origin, setOrigin] = useState(null);
-  const [isOriginOpen, setIsOriginOpen] = useState(true);
+  const [formData, setFormData] = useState(() => ({
+    ...INITIAL_FORM,
+    title: importedSurvey?.title ?? '',
+    description: importedSurvey?.description ?? '',
+  }));
+  const [origin, setOrigin] = useState(() => initialOrigin);
+  const [isOriginOpen, setIsOriginOpen] = useState(() => !initialOrigin);
   const [tagInput, setTagInput] = useState('');
   const [tagError, setTagError] = useState('');
   const [imageHasError, setImageHasError] = useState(false);
@@ -308,14 +145,20 @@ export function CreateSurveyPage() {
         ? formData.accessPassword
         : null,
       tags: formData.tags,
+      ...(formData.category ? { category: formData.category } : {}),
     };
 
     saveLockRef.current = true;
     setIsSaving(true);
     try {
-      const survey = origin.type === 'TEMPLATE'
-        ? await createSurveyFromTemplate(origin.template.id, payload)
-        : await createSurvey(payload);
+      let survey;
+      if (origin.type === 'TEMPLATE') {
+        survey = await createSurveyFromTemplate(origin.template.id, payload);
+      } else if (origin.type === 'IMPORT') {
+        survey = await createSurveyFromImport(payload, origin.imported.content);
+      } else {
+        survey = await createSurvey(payload);
+      }
       navigate(`/encuestas/${survey.id}/editar`, {
         replace: true,
         state: { survey },
@@ -329,8 +172,10 @@ export function CreateSurveyPage() {
   }
 
   const originLabel = origin?.type === 'TEMPLATE'
-    ? `Plantilla: ${origin.template.title}`
-    : 'Encuesta desde cero';
+    ? `Plantilla del catálogo: ${origin.template.title}`
+    : origin?.type === 'IMPORT'
+      ? `Documento ODT: ${origin.imported.fileName}`
+      : 'Encuesta desde cero';
 
   return (
     <main className="create-survey-page">
@@ -348,7 +193,7 @@ export function CreateSurveyPage() {
           </div>
           <button type="button" className="btn-create-submit" disabled={isSaving || !origin} onClick={handleCreate}>
             <MdAdd aria-hidden="true" />
-            <span>{isSaving ? 'Creando...' : 'Crear encuesta'}</span>
+            <span>{isSaving ? 'Creando...' : origin?.type === 'IMPORT' ? 'Importar y crear borrador' : 'Crear encuesta'}</span>
           </button>
         </header>
 
@@ -424,6 +269,10 @@ export function CreateSurveyPage() {
         <section className="create-survey-card" aria-labelledby="survey-appearance-title">
           <h2 id="survey-appearance-title">APARIENCIA Y CLASIFICACIÓN</h2>
           <div className="create-survey-grid">
+            <div className="create-survey-field">
+              <CategorySelect id="survey-category" surveyOnly defaultLabel="Heredar la plantilla u Otros" value={formData.category}
+                onChange={(category) => updateForm({ category })} />
+            </div>
             <div className="create-survey-field">
               <label htmlFor="survey-font">Tipografía</label>
               <Dropdown id="survey-font" value={formData.fontFamily} onChange={(event) => updateForm({ fontFamily: event.target.value })}>
@@ -501,7 +350,14 @@ export function CreateSurveyPage() {
       <SurveyOriginModal
         isOpen={isOriginOpen}
         selectedOrigin={origin}
-        onClose={() => setIsOriginOpen(false)}
+        onClose={() => {
+          if (origin) {
+            setIsOriginOpen(false);
+          } else {
+            navigate('/panel');
+          }
+        }}
+        onImport={() => navigate('/encuestas/importar')}
         onSelect={selectOrigin}
         returnFocusRef={originTriggerRef}
       />

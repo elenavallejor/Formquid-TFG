@@ -12,6 +12,7 @@ import {
 } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
@@ -95,6 +96,7 @@ export function EditElementPage() {
   const config = ELEMENT_CONFIG[elementType];
   const saveLockRef = useRef(false);
   const [formData, setFormData] = useState(null);
+  const [category, setCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -119,6 +121,7 @@ export function EditElementPage() {
 
     if (canReuseElement) {
       setFormData(config.toState(navigationState.element));
+      setCategory(navigationState.element.category || '');
       setIsLoading(false);
       return () => { isMounted = false; };
     }
@@ -127,6 +130,7 @@ export function EditElementPage() {
       .then((element) => {
         if (!isMounted) return;
         setFormData(config.toState(element));
+        setCategory(element.category || '');
       })
       .catch((error) => {
         if (isMounted) setErrorMsg(error.message || config.loadError);
@@ -196,7 +200,7 @@ export function EditElementPage() {
 
     try {
       setIsSaving(true);
-      await config.update(elementId, config.toPayload(formData));
+      await config.update(elementId, { ...config.toPayload(formData), ...(category ? { category } : {}) });
       setHasUnsavedChanges(false);
       setSuccessMsg(config.successMessage);
       window.setTimeout(() => navigate(config.catalogPath), 1200);
@@ -267,6 +271,11 @@ export function EditElementPage() {
           <span>{isSaving ? 'Guardando...' : 'Guardar cambios'}</span>
         </button>
       </header>
+
+      {!isLoading && formData && <div className="builder-field">
+        <CategorySelect id="edit-element-category" value={category}
+          onChange={(value) => { setCategory(value); setHasUnsavedChanges(true); }} />
+      </div>}
 
       {errorMsg && (
         <div className="edit-element-message">

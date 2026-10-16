@@ -3,6 +3,7 @@ import { MdMoreVert, MdOutlineDelete, MdOutlineEdit, MdOutlineVisibility } from 
 
 import { formatDate } from '../../utils/formatDate.js';
 import { getUserInitials } from '../../utils/getUserInitials.js';
+import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
 
 import './CatalogList.css';
@@ -30,19 +31,47 @@ export function CatalogList({
 }) {
   const [openRowMenuId, setOpenRowMenuId] = useState(null);
   const actionMenuRef = useRef(null);
+  const actionTriggerRef = useRef(null);
+  const focusLastActionOnOpenRef = useRef(false);
   const scrollHelpId = `catalog-scroll-help-${useId().replaceAll(':', '')}`;
+  const actionMenuBaseId = `catalog-action-menu-${useId().replaceAll(':', '')}`;
   const hasActions = canManageCatalog || Boolean(onView);
   const isScrollable = items.length > 5;
 
   useEffect(() => {
+    if (openRowMenuId === null) return undefined;
+
     function handleClickOutside(event) {
       if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
         setOpenRowMenuId(null);
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openRowMenuId]);
+
+  useEffect(() => {
+    if (openRowMenuId === null) return undefined;
+
+    const menuItems = Array.from(actionMenuRef.current?.querySelectorAll('[role="menuitem"]') ?? []);
+    const itemToFocus = focusLastActionOnOpenRef.current
+      ? menuItems.at(-1)
+      : menuItems[0];
+    focusLastActionOnOpenRef.current = false;
+    itemToFocus?.focus();
+
+    function handleEscape(event) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      const trigger = actionTriggerRef.current;
+      setOpenRowMenuId(null);
+      window.requestAnimationFrame(() => trigger?.focus());
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [openRowMenuId]);
 
   if (isLoading && items.length === 0) {
     return (
@@ -74,7 +103,25 @@ export function CatalogList({
     );
   }
 
-  const ItemIcon = config.icon;
+  const DefaultItemIcon = config.icon;
+
+  function handleActionMenuKeyDown(event) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+
+    const menuItems = Array.from(event.currentTarget.querySelectorAll('[role="menuitem"]'));
+    if (menuItems.length === 0) return;
+
+    event.preventDefault();
+    const currentIndex = menuItems.indexOf(document.activeElement);
+    let nextIndex;
+
+    if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = menuItems.length - 1;
+    else if (event.key === 'ArrowUp') nextIndex = currentIndex <= 0 ? menuItems.length - 1 : currentIndex - 1;
+    else nextIndex = currentIndex >= menuItems.length - 1 ? 0 : currentIndex + 1;
+
+    menuItems[nextIndex]?.focus();
+  }
 
   function renderActions(item) {
     if (!canManageCatalog) {
@@ -94,26 +141,60 @@ export function CatalogList({
       );
     }
 
+    const isOpen = openRowMenuId === item.id;
+    const itemLabel = item[config.titleKey] || config.singularLabel;
+    const triggerId = `${actionMenuBaseId}-trigger-${item.id}`;
+    const menuId = `${actionMenuBaseId}-${item.id}`;
+
     return (
-      <div className="catalog-actions-cell">
+      <div
+        className="catalog-actions-cell"
+        onBlurCapture={(event) => {
+          if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+            setOpenRowMenuId(null);
+          }
+        }}
+      >
         <button
+          ref={isOpen ? actionTriggerRef : undefined}
+          id={triggerId}
           type="button"
           className="btn-item-more"
-          aria-label="Opciones"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpenRowMenuId(openRowMenuId === item.id ? null : item.id);
+          aria-label={`Opciones de ${itemLabel}`}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? menuId : undefined}
+          onMouseDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+            event.preventDefault();
+            focusLastActionOnOpenRef.current = event.key === 'ArrowUp';
+            if (!isOpen) setOpenRowMenuId(item.id);
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            focusLastActionOnOpenRef.current = false;
+            setOpenRowMenuId(isOpen ? null : item.id);
           }}
         >
           <MdMoreVert aria-hidden="true" />
         </button>
 
-        {openRowMenuId === item.id && (
-          <div className="catalog-action-menu" ref={actionMenuRef}>
+        {isOpen && (
+          <div
+            ref={actionMenuRef}
+            id={menuId}
+            className="catalog-action-menu"
+            role="menu"
+            aria-labelledby={triggerId}
+            onKeyDown={handleActionMenuKeyDown}
+          >
             {onView && (
               <button
                 type="button"
                 className="menu-option menu-option-details"
+                role="menuitem"
+                tabIndex={-1}
                 onClick={() => {
                   setOpenRowMenuId(null);
                   onView(item);
@@ -126,6 +207,8 @@ export function CatalogList({
             <button
               type="button"
               className="menu-option"
+              role="menuitem"
+              tabIndex={-1}
               onClick={() => {
                 setOpenRowMenuId(null);
                 onEdit(item.id);
@@ -137,6 +220,8 @@ export function CatalogList({
             <button
               type="button"
               className="menu-option option-delete"
+              role="menuitem"
+              tabIndex={-1}
               onClick={() => {
                 setOpenRowMenuId(null);
                 onDelete(item);
@@ -177,6 +262,10 @@ export function CatalogList({
           tabIndex={isScrollable ? 0 : undefined}
         >
           {items.map((item) => {
+            const questionTypeConfig = config.detailKey === 'questionType'
+              ? QUESTION_TYPES.find((type) => type.id === item.questionType)
+              : null;
+            const ItemIcon = questionTypeConfig?.icon ?? DefaultItemIcon;
             const rawTitle = item[config.titleKey] || 'Sin título';
             const title = config.titleKey === 'name' ? rawTitle.toUpperCase() : rawTitle;
             const description = config.descriptionKey
@@ -196,7 +285,13 @@ export function CatalogList({
                 className={`catalog-block-card ${!hasActions ? 'no-actions' : ''} ${!canManageCatalog && onView ? 'view-action' : ''}`}
               >
                 <div className="col-main catalog-item-main">
-                  <div className="catalog-item-icon">
+                  <div
+                    className={`catalog-item-icon ${questionTypeConfig ? 'catalog-item-icon--question' : ''}`}
+                    style={questionTypeConfig
+                      ? { color: questionTypeConfig.color, borderColor: `${questionTypeConfig.color}60` }
+                      : undefined}
+                    title={questionTypeConfig?.title}
+                  >
                     <ItemIcon aria-hidden="true" />
                   </div>
                   <div className="catalog-item-info">

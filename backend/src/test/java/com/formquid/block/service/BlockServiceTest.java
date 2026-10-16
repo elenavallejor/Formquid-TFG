@@ -1,6 +1,7 @@
 package com.formquid.block.service;
 
 import com.formquid.block.dto.CreateBlockItemRequestDto;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
@@ -31,6 +32,8 @@ class BlockServiceTest {
     private BlockRepository blockRepository;
     @Mock
     private ContentService contentService;
+    @Mock
+    private CategoryCatalogService categoryCatalogService;
 
     @InjectMocks
     private BlockService blockService;
@@ -40,7 +43,7 @@ class BlockServiceTest {
         var request = new CreateBlockRequestDto("Bloque", null, List.of(
             fixedQuestion(1, 11L),
             fixedQuestion(3, 12L)
-        ));
+        ), null);
 
         assertThatThrownBy(() -> blockService.validateDraft(request))
             .isInstanceOf(ApiException.class)
@@ -61,11 +64,10 @@ class BlockServiceTest {
     }
 
     @Test
-    void delete_allowsSuperadminWhenBlockIsUnused() {
+    void delete_allowsSuperadminToRemoveCatalogBlock() {
         User admin = User.builder().id(2L).role(UserRole.SUPERADMIN).build();
         Block block = Block.builder().id(8L).scope(BlockScope.CATALOG).build();
         when(blockRepository.findById(8L)).thenReturn(Optional.of(block));
-        when(blockRepository.countBySourceBlockId(8L)).thenReturn(0L);
 
         blockService.deleteCatalogBlock(8L, admin);
 

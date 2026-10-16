@@ -166,7 +166,7 @@ public class ElementRequestService {
             request.getRequestedBy().getName(),
             request.getRequestedBy().getEmail(),
             request.getRequestedBy().getInstitution(),
-            request.getRequestedBy().getGender(),
+            request.getRequestedBy().getCountry(),
             request.getRequestedBy().getRole(),
             request.getElementType(),
             request.getMessage(),

@@ -87,7 +87,6 @@ export function buildTemplateStateFromResponse(template) {
         itemType: 'QUESTION',
         localId: createLocalId('template-question'),
         isRequired: Boolean(item.required),
-        fixedQuestionId: item.question?.sourceFixedQuestionId || undefined,
       };
     }),
   };

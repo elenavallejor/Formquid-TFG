@@ -11,8 +11,8 @@ import {
   MdOutlineDescription,
   MdOutlineEmail,
   MdOutlineHelpOutline,
-  MdOutlinePerson,
   MdOutlineWidgets,
+  MdPublic,
 } from 'react-icons/md';
 
 import {
@@ -25,6 +25,7 @@ import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Question } from '../../../components/Question/Question.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
+import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TextContent, TextContentIcon } from '../../../components/TextContent/TextContent.jsx';
 import { buildBlockQuestionFromCatalog } from '../../../utils/blockBuilderUtils.js';
 import { QUESTION_TYPES } from '../../../utils/questionBuilderUtils.js';
@@ -49,12 +50,6 @@ const TYPE_CONFIG = {
     structureLabel: 'ESTRUCTURA DE LA PLANTILLA',
     icon: MdOutlineDescription,
   },
-};
-
-const GENDER_LABELS = {
-  FEMALE: 'Mujer',
-  MALE: 'Hombre',
-  OTHER: 'Otro',
 };
 
 const ROLE_LABELS = {
@@ -227,7 +222,7 @@ function ElementRequestCard({ request, isCollapsed, onToggle, onAccept, onDeny }
         <ul className="element-request-user-data">
           <li><MdOutlineEmail aria-hidden="true" /><span>{request.requestedByEmail || '—'}</span></li>
           <li><MdOutlineBusiness aria-hidden="true" /><span>{request.requestedByInstitution || '—'}</span></li>
-          <li><MdOutlinePerson aria-hidden="true" /><span>{GENDER_LABELS[request.requestedByGender] || 'No especificado'}</span></li>
+          <li><MdPublic aria-hidden="true" /><span>{request.requestedByCountry || 'País no indicado'}</span></li>
           <li>
             <MdOutlineCalendarToday aria-hidden="true" />
             <time dateTime={request.createdAt}>{formatDateTime(request.createdAt)}</time>
@@ -405,9 +400,9 @@ export function ElementRequestsPage() {
           onSortChange={(event) => setSortOrder(event.target.value)}
         />
 
-        <section className="element-requests-list" aria-label="Solicitudes pendientes del catálogo">
+        <section className="element-requests-list" aria-label="Solicitudes pendientes del catálogo" aria-busy={isLoading}>
           {isLoading ? (
-            <p className="element-requests-status">Cargando solicitudes...</p>
+            <Skeleton variant="list" count={3} label="Cargando solicitudes para el catálogo…" />
           ) : loadError ? (
             <p className="element-requests-status error" role="alert">{loadError}</p>
           ) : visibleRequests.length === 0 ? (

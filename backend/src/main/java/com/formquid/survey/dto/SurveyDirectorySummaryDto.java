@@ -1,5 +1,6 @@
 package com.formquid.survey.dto;
 
+import com.formquid.common.Category;
 import com.formquid.survey.entity.SurveyLifecycle;
 
 import java.time.Instant;
@@ -18,6 +19,7 @@ public record SurveyDirectorySummaryDto(
     Instant updatedAt,
     boolean ownedByCurrentUser,
     boolean collaborating,
-    boolean collaborationRequestPending
+    boolean collaborationRequestPending,
+    Category category
 ) {
 }

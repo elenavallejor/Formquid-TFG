@@ -44,8 +44,6 @@ const ELEMENT_CONFIG = {
     icon: MdOutlineWidgets,
     load: getCatalogBlockById,
     deleteApi: deleteCatalogBlock,
-    showUsage: true,
-    usedLabel: 'usado',
   },
   pregunta: {
     label: 'pregunta',
@@ -57,8 +55,6 @@ const ELEMENT_CONFIG = {
     icon: MdOutlineHelpOutline,
     load: getCatalogQuestionById,
     deleteApi: deleteCatalogQuestion,
-    showUsage: true,
-    usedLabel: 'usada',
   },
   plantilla: {
     label: 'plantilla',
@@ -70,7 +66,6 @@ const ELEMENT_CONFIG = {
     icon: MdOutlineDescription,
     load: getCatalogTemplateById,
     deleteApi: deleteCatalogTemplate,
-    showUsage: false,
   },
 };
 
@@ -441,13 +436,6 @@ export function ElementDetailPage() {
                   <dd>{formatDateTime(element.updatedAt)}</dd>
                 </div>
               </dl>
-
-              {config.showUsage && (
-                <p className="catalog-detail-usage">
-                  Ha sido {config.usedLabel} {element.usageCount ?? 0}{' '}
-                  {(element.usageCount ?? 0) === 1 ? 'vez' : 'veces'} en elementos del catálogo y encuestas.
-                </p>
-              )}
 
               {elementType === 'pregunta' && <QuestionSettings question={element} />}
 

@@ -1,7 +1,6 @@
 package com.formquid.elementrequest.dto;
 
 import com.formquid.elementrequest.entity.RequestedElementType;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 
 import java.time.Instant;
@@ -13,7 +12,7 @@ public record ElementRequestResponseDto(
     String requestedByName,
     String requestedByEmail,
     String requestedByInstitution,
-    UserGender requestedByGender,
+    String requestedByCountry,
     UserRole requestedByRole,
     RequestedElementType elementType,
     String message,

@@ -1,5 +1,6 @@
 package com.formquid.template.dto;
 
+import com.formquid.common.Category;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -12,6 +13,7 @@ public record CreateTemplateRequestDto(
     @NotBlank @Size(max = 200) String title,
     String description,
     String imageKey,
-    @NotEmpty List<@NotNull @Valid CreateTemplateItemRequestDto> items
+    @NotEmpty List<@NotNull @Valid CreateTemplateItemRequestDto> items,
+    Category category
 ) {
 }

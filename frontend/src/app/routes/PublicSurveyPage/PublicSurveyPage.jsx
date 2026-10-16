@@ -192,8 +192,7 @@ export function PublicSurveyPage() {
 
         {isLoading && (
           <section aria-busy="true" aria-label="Cargando encuesta">
-            <span className="sr-only" role="status">Cargando encuesta...</span>
-            <Skeleton variant="list" count={3} hasActions={false} />
+            <Skeleton variant="list" count={3} hasActions={false} label="Cargando encuesta…" />
           </section>
         )}
 

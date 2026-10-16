@@ -1,11 +1,8 @@
 package com.formquid.registration.entity;
 
 import com.formquid.common.service.EmailNormalizer;
-import com.formquid.user.entity.UserGender;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,7 +24,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "gender in ('MALE', 'FEMALE', 'OTHER') and email = lower(btrim(email))")
+@Check(constraints = "email = lower(btrim(email))")
 @Table(
     name = "registration_requests",
     indexes = {
@@ -47,12 +44,11 @@ public class RegistrationRequest {
     @Column(nullable = false, length = 150)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private UserGender gender;
-
     @Column(nullable = false, length = 200)
     private String institution;
+
+    @Column(length = 100)
+    private String country;
 
     @Column(nullable = false, length = 1000)
     private String motivation;

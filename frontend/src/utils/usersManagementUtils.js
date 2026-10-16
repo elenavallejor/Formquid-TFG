@@ -16,7 +16,7 @@ export const USER_SEARCH_OPTIONS = [
   { value: 'NAME', label: 'Nombre' },
   { value: 'EMAIL', label: 'Correo' },
   { value: 'INSTITUTION', label: 'Institución' },
-  { value: 'GENDER', label: 'Género' },
+  { value: 'COUNTRY', label: 'País' },
   { value: 'ROLE', label: 'Rol' },
 ];
 
@@ -26,18 +26,8 @@ const ROLE_LABELS = {
   SUPERADMIN: 'SUPERADMINISTRADOR/A',
 };
 
-const GENDER_LABELS = {
-  MALE: 'Hombre',
-  FEMALE: 'Mujer',
-  OTHER: 'Otro',
-};
-
 export function getUserRoleLabel(role) {
   return ROLE_LABELS[role] ?? role ?? 'Sin rol';
-}
-
-export function getUserGenderLabel(gender) {
-  return GENDER_LABELS[gender] ?? 'No especificado';
 }
 
 export function getVisiblePages(currentPage, totalPages) {

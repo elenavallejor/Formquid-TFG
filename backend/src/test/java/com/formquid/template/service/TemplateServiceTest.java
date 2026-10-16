@@ -1,6 +1,7 @@
 package com.formquid.template.service;
 
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.block.service.BlockService;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
@@ -37,6 +38,8 @@ class TemplateServiceTest {
     private ContentService contentService;
     @Mock
     private QuestionService questionService;
+    @Mock
+    private CategoryCatalogService categoryCatalogService;
 
     @InjectMocks
     private TemplateService templateService;
@@ -44,7 +47,7 @@ class TemplateServiceTest {
     @Test
     void rejectsTitleLongerThanDatabaseLimit() {
         CreateTemplateRequestDto request = new CreateTemplateRequestDto(
-            "a".repeat(201), null, null, List.of()
+            "a".repeat(201), null, null, List.of(), null
         );
 
         assertThatThrownBy(() -> templateService.validateDraft(request))
@@ -65,7 +68,7 @@ class TemplateServiceTest {
         );
 
         CreateTemplateRequestDto request = new CreateTemplateRequestDto(
-            "Plantilla", null, null, List.of(text)
+            "Plantilla", null, null, List.of(text), null
         );
 
         assertThatThrownBy(() -> templateService.validateDraft(request))

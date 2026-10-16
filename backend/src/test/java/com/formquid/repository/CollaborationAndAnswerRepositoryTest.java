@@ -29,7 +29,6 @@ import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -213,7 +212,6 @@ class CollaborationAndAnswerRepositoryTest {
             .role(UserRole.EDITOR)
             .email(email)
             .name("Usuario")
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build());

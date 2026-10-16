@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaRegClipboard } from 'react-icons/fa';
 import { MdAdd, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, MdOutlineLightbulb, MdOutlinePersonAdd, MdOutlineRemoveRedEye, MdOutlineShield, MdOutlineWidgets, MdPeopleOutline } from 'react-icons/md';
@@ -11,6 +11,7 @@ import { PanelButton } from '../../../components/PanelButton/PanelButton.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
+import { SurveyOriginModal } from '../../../components/SurveyOriginModal/SurveyOriginModal.jsx';
 import { Table } from '../../../components/Table/Table.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
@@ -44,9 +45,9 @@ const ROLE_CONTENT = {
 const EDITOR_ACTIONS = [
   {
     title: 'Crear encuesta',
-    description: 'Crea una nueva encuesta desde cero o a partir de una plantilla.',
+    description: 'Crea una encuesta desde cero, usa el catálogo o importa un documento ODT.',
     icon: MdAdd,
-    to: '/encuestas/crear',
+    action: 'CREATE_SURVEY',
     buttonText: 'Crear encuesta',
   },
   {
@@ -103,9 +104,11 @@ const TABLE_HEADERS = [
 export function PanelPage() {
   const navigate = useNavigate();
   const { user, isInitializing } = useAuth();
+  const createSurveyTriggerRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [dataError, setDataError] = useState('');
+  const [isSurveyOriginOpen, setIsSurveyOriginOpen] = useState(false);
 
   const [catalogRequestsCount, setCatalogRequestsCount] = useState(null);
   const [registrationRequestsCount, setRegistrationRequestsCount] = useState(null);
@@ -379,9 +382,16 @@ export function PanelPage() {
                       </p>
 
                       <button
+                        ref={card.action === 'CREATE_SURVEY' ? createSurveyTriggerRef : undefined}
                         type="button"
                         className="action-card-btn"
-                        onClick={() => navigate(card.to)}
+                        onClick={() => {
+                          if (card.action === 'CREATE_SURVEY') {
+                            setIsSurveyOriginOpen(true);
+                            return;
+                          }
+                          navigate(card.to);
+                        }}
                       >
                         {card.buttonText}
                       </button>
@@ -621,6 +631,15 @@ export function PanelPage() {
                     theme="purple"
                     fullWidth
                   />
+                  <AdminPanelButton
+                    title="CATEGORÍAS"
+                    description="Crea categorías para clasificar encuestas y elementos del catálogo."
+                    icon={MdOutlineWidgets}
+                    to="/superadmin/categorias"
+                    buttonLabel="Ver categorías"
+                    theme="purple"
+                    fullWidth
+                  />
                 </div>
               </section>
             )}
@@ -694,6 +713,23 @@ export function PanelPage() {
             </section>
           </div>
         </section>
+      )}
+
+      {panelContent.type === 'EDITOR' && (
+        <SurveyOriginModal
+          isOpen={isSurveyOriginOpen}
+          selectedOrigin={null}
+          onClose={() => setIsSurveyOriginOpen(false)}
+          onImport={() => {
+            setIsSurveyOriginOpen(false);
+            navigate('/encuestas/importar');
+          }}
+          onSelect={(surveyOrigin) => {
+            setIsSurveyOriginOpen(false);
+            navigate('/encuestas/crear', { state: { surveyOrigin } });
+          }}
+          returnFocusRef={createSurveyTriggerRef}
+        />
       )}
     </main>
   );

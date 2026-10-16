@@ -3,6 +3,8 @@ package com.formquid.survey.service;
 import com.formquid.collaboration.entity.CollaborationPermission;
 import com.formquid.collaboration.repository.CollaborationRequestRepository;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.common.exception.ApiException;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.content.entity.ContentItem;
@@ -14,6 +16,7 @@ import com.formquid.participation.repository.ParticipationRepository;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
+import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.SurveyDirectorySummaryDto;
 import com.formquid.survey.dto.UpdateSurveyRequestDto;
 import com.formquid.survey.entity.SurveyAccessMode;
@@ -44,6 +47,9 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,9 +73,42 @@ class SurveyServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private CategoryCatalogService categoryCatalogService;
 
     @InjectMocks
     private SurveyService surveyService;
+
+    @Test
+    void surveyCannotUsePersonalDataCategory() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        CreateSurveyRequestDto request = new CreateSurveyRequestDto(
+            "Encuesta", null, null, null, null, null, null, List.of(), Category.DATOS_PERSONALES
+        );
+
+        assertThatThrownBy(() -> surveyService.create(request, owner))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("Una encuesta no puede ser de datos personales");
+        verify(surveyRepository, never()).save(any());
+    }
+
+    @Test
+    void surveyPersistsTechnologyCategory() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        CreateSurveyRequestDto request = new CreateSurveyRequestDto(
+            "Encuesta", null, null, null, null, null, null, List.of(), Category.TELEFONO_INTELIGENTE
+        );
+        when(surveyRepository.save(any(Survey.class))).thenAnswer(invocation -> {
+            Survey survey = invocation.getArgument(0);
+            survey.setId(11L);
+            return survey;
+        });
+        when(contentService.findSurveyContent(11L)).thenReturn(List.of());
+
+        var response = surveyService.create(request, owner);
+
+        assertThat(response.category()).isEqualTo(Category.TELEFONO_INTELIGENTE);
+    }
 
     @Test
     void mainPageCombinesNameAndTagBeforePagination() {
@@ -77,6 +116,7 @@ class SurveyServiceTest {
         when(surveyRepository.findListedOpenPageByTag(
             false,
             "PUBLIC",
+            "",
             "clima",
             "salud-mental",
             pageable
@@ -87,7 +127,8 @@ class SurveyServiceTest {
             " #Salud Mental ",
             SurveyAccessMode.PUBLIC,
             1,
-            3
+            3,
+            null
         );
 
         assertThat(response.content()).isEmpty();
@@ -108,12 +149,13 @@ class SurveyServiceTest {
             false,
             SurveyAccessMode.AUTHENTICATED,
             SurveyAccessMode.PUBLIC,
+            null,
             "",
             pageable
         )).thenReturn(Page.empty(pageable));
 
         PageResponseDto<PublicSurveySummaryDto> response = surveyService.findListedOpenPage(
-            null, null, SurveyAccessMode.PUBLIC, 0, 9
+            null, null, SurveyAccessMode.PUBLIC, 0, 9, null
         );
 
         assertThat(response.content()).isEmpty();
@@ -123,7 +165,7 @@ class SurveyServiceTest {
 
     @Test
     void mainPageRejectsUnboundedPageSize() {
-        assertThatThrownBy(() -> surveyService.findListedOpenPage(null, null, null, 0, 51))
+        assertThatThrownBy(() -> surveyService.findListedOpenPage(null, null, null, 0, 51, null))
             .isInstanceOf(ApiException.class)
             .hasMessage("Paginación de encuestas no válida");
     }
@@ -139,7 +181,8 @@ class SurveyServiceTest {
             SurveyAccessMode.PUBLIC,
             SurveyVisibility.LISTED,
             18L,
-            Instant.parse("2026-09-23T10:00:00Z")
+            Instant.parse("2026-09-23T10:00:00Z"),
+            null
         );
         PageRequest pageable = PageRequest.of(
             1,
@@ -281,7 +324,8 @@ class SurveyServiceTest {
             SurveyAccessMode.AUTHENTICATED,
             SurveyVisibility.UNLISTED,
             null,
-            List.of("colegio")
+            List.of("colegio"),
+            Category.PORTATIL
         );
 
         when(surveyRepository.findById(10L)).thenReturn(Optional.of(survey));
@@ -294,6 +338,7 @@ class SurveyServiceTest {
         assertThat(survey.getFontFamily()).isEqualTo(SurveyFontFamily.LEXEND);
         assertThat(survey.getAccessMode()).isEqualTo(SurveyAccessMode.PUBLIC);
         assertThat(survey.getVisibility()).isEqualTo(SurveyVisibility.LISTED);
+        assertThat(survey.getCategory()).isEqualTo(Category.PORTATIL);
     }
 
     @Test
@@ -319,7 +364,8 @@ class SurveyServiceTest {
             SurveyAccessMode.PUBLIC,
             SurveyVisibility.UNLISTED,
             null,
-            tags
+            tags,
+            null
         );
 
         when(surveyRepository.findById(10L)).thenReturn(Optional.of(survey));

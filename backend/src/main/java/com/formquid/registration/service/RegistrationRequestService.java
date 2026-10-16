@@ -44,8 +44,8 @@ public class RegistrationRequestService {
         RegistrationRequest entity = RegistrationRequest.builder()
             .email(email)
             .name(request.name().trim())
-            .gender(request.gender())
             .institution(request.institution().trim())
+            .country(request.country().trim())
             .motivation(request.motivation().trim())
             .passwordHash(passwordEncoder.encode(request.password()))
             .build();
@@ -71,8 +71,8 @@ public class RegistrationRequestService {
             .role(UserRole.EDITOR)
             .email(request.getEmail())
             .name(request.getName())
-            .gender(request.getGender())
             .institution(request.getInstitution())
+            .country(request.getCountry())
             .passwordHash(request.getPasswordHash())
             .build();
 
@@ -109,8 +109,8 @@ public class RegistrationRequestService {
             request.getId(),
             request.getEmail(),
             request.getName(),
-            request.getGender(),
             request.getInstitution(),
+            request.getCountry(),
             request.getMotivation(),
             request.getCreatedAt()
         );

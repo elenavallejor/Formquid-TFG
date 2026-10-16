@@ -1,5 +1,6 @@
 package com.formquid.survey.repository;
 
+import com.formquid.common.Category;
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.SurveyResultsSummaryDto;
 import com.formquid.survey.entity.Survey;
@@ -33,6 +34,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 and survey.visibility = :visibility
                 and (:includeAuthenticated = true or survey.accessMode <> :authenticatedAccessMode)
                 and (:accessMode is null or survey.accessMode = :accessMode)
+                and (:category is null or survey.category = :category)
                 and (
                     :search = ''
                     or lower(survey.title) like concat('%', :search, '%')
@@ -46,6 +48,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 and survey.visibility = :visibility
                 and (:includeAuthenticated = true or survey.accessMode <> :authenticatedAccessMode)
                 and (:accessMode is null or survey.accessMode = :accessMode)
+                and (:category is null or survey.category = :category)
                 and (
                     :search = ''
                     or lower(survey.title) like concat('%', :search, '%')
@@ -59,6 +62,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
         @Param("includeAuthenticated") boolean includeAuthenticated,
         @Param("authenticatedAccessMode") SurveyAccessMode authenticatedAccessMode,
         @Param("accessMode") SurveyAccessMode accessMode,
+        @Param("category") Category category,
         @Param("search") String search,
         Pageable pageable
     );
@@ -71,6 +75,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 and survey.visibility = 'LISTED'
                 and (:includeAuthenticated = true or survey.access_mode <> 'AUTHENTICATED')
                 and (:accessMode = '' or survey.access_mode = :accessMode)
+                and (:category = '' or survey.category = :category)
                 and (
                     :search = ''
                     or lower(survey.title) like concat('%', :search, '%')
@@ -90,6 +95,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 and survey.visibility = 'LISTED'
                 and (:includeAuthenticated = true or survey.access_mode <> 'AUTHENTICATED')
                 and (:accessMode = '' or survey.access_mode = :accessMode)
+                and (:category = '' or survey.category = :category)
                 and (
                     :search = ''
                     or lower(survey.title) like concat('%', :search, '%')
@@ -106,6 +112,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     Page<Survey> findListedOpenPageByTag(
         @Param("includeAuthenticated") boolean includeAuthenticated,
         @Param("accessMode") String accessMode,
+        @Param("category") String category,
         @Param("search") String search,
         @Param("tag") String tag,
         Pageable pageable
@@ -126,7 +133,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                     from Participation participation
                     where participation.survey = survey
                 ),
-                survey.updatedAt
+                survey.updatedAt,
+                survey.category
             )
             from Survey survey
             where (
@@ -165,7 +173,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 owner.name,
                 survey.lifecycleStatus,
                 count(participation.id),
-                survey.updatedAt
+                survey.updatedAt,
+                survey.category
             )
             from Participation participation
             join participation.survey survey
@@ -192,7 +201,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 survey.imageKey,
                 owner.name,
                 survey.lifecycleStatus,
-                survey.updatedAt
+                survey.updatedAt,
+                survey.category
             """,
         countQuery = """
             select count(distinct survey.id)

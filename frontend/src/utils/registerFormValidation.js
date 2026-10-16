@@ -2,8 +2,8 @@
 export const INITIAL_REGISTER_FORM_DATA = {
   name: '',
   email: '',
-  gender: '',
   institution: '',
+  country: '',
   motivation: '',
   password: '',
   confirmPassword: '',
@@ -13,12 +13,12 @@ export const REGISTER_FORM_LIMITS = {
   name: 150,
   email: 320,
   institution: 200,
+  country: 100,
   motivation: 1000,
   password: 120,
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const VALID_GENDERS = new Set(['FEMALE', 'MALE', 'OTHER']);
 
 /**
  * Centraliza los valores iniciales, límites, validación y 
@@ -29,6 +29,7 @@ export function validateRegisterForm(formData) {
   const name = formData.name.trim();
   const email = formData.email.trim();
   const institution = formData.institution.trim();
+  const country = formData.country.trim();
   const motivation = formData.motivation.trim();
 
   if (!name) errors.name = 'Introduce tu nombre completo.';
@@ -38,10 +39,11 @@ export function validateRegisterForm(formData) {
   else if (!EMAIL_PATTERN.test(email)) errors.email = 'Introduce un correo electrónico válido.';
   else if (email.length > REGISTER_FORM_LIMITS.email) errors.email = `El correo no puede superar los ${REGISTER_FORM_LIMITS.email} caracteres.`;
 
-  if (!VALID_GENDERS.has(formData.gender)) errors.gender = 'Selecciona una opción válida.';
-
   if (!institution) errors.institution = 'Introduce tu institución.';
   else if (institution.length > REGISTER_FORM_LIMITS.institution) errors.institution = `La institución no puede superar los ${REGISTER_FORM_LIMITS.institution} caracteres.`;
+
+  if (!country) errors.country = 'Introduce tu país.';
+  else if (country.length > REGISTER_FORM_LIMITS.country) errors.country = `El país no puede superar los ${REGISTER_FORM_LIMITS.country} caracteres.`;
 
   if (!motivation) errors.motivation = 'Escribe una breve motivación para solicitar el registro.';
   else if (motivation.length > REGISTER_FORM_LIMITS.motivation) errors.motivation = `La motivación no puede superar los ${REGISTER_FORM_LIMITS.motivation} caracteres.`;
@@ -64,8 +66,8 @@ export function createRegistrationRequestPayload(formData) {
   return {
     name: formData.name.trim(),
     email: formData.email.trim().toLowerCase(),
-    gender: formData.gender,
     institution: formData.institution.trim(),
+    country: formData.country.trim(),
     motivation: formData.motivation.trim(),
     password: formData.password,
   };

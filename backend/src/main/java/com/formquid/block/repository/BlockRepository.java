@@ -1,5 +1,6 @@
 package com.formquid.block.repository;
 
+import com.formquid.common.Category;
 import com.formquid.block.dto.BlockSummaryDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
@@ -29,12 +30,14 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
                     end
                 ), 0),
                 block.createdAt,
-                block.updatedAt
+                block.updatedAt,
+                block.category
             )
             from Block block
             left join block.createdBy creator
             left join block.contentItems item
             where block.scope = :scope
+                and (:category is null or block.category = :category)
                 and (
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
@@ -51,13 +54,15 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
                 block.description,
                 creator.name,
                 block.createdAt,
-                block.updatedAt
+                block.updatedAt,
+                block.category
             """,
         countQuery = """
             select count(block.id)
             from Block block
             left join block.createdBy creator
             where block.scope = :scope
+                and (:category is null or block.category = :category)
                 and (
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
@@ -78,6 +83,7 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
         @Param("searchTitle") boolean searchTitle,
         @Param("searchDescription") boolean searchDescription,
         @Param("searchCreator") boolean searchCreator,
+        @Param("category") Category category,
         Pageable pageable
     );
 
@@ -87,15 +93,18 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
             from Block block
             left join fetch block.createdBy
             where block.scope = :scope
+                and (:category is null or block.category = :category)
             """,
         countQuery = """
             select count(block.id)
             from Block block
             where block.scope = :scope
+                and (:category is null or block.category = :category)
             """
     )
     Page<Block> findCatalogBlocksWithDetails(
         @Param("scope") BlockScope scope,
+        @Param("category") Category category,
         Pageable pageable
     );
 
@@ -111,5 +120,4 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
         @Param("parentItemIds") Collection<Long> parentItemIds
     );
 
-    long countBySourceBlockId(Long sourceBlockId);
 }

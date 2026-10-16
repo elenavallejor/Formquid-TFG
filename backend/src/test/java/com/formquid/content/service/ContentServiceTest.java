@@ -1,5 +1,7 @@
 package com.formquid.content.service;
 
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
@@ -43,17 +45,18 @@ class ContentServiceTest {
     private BlockRepository blockRepository;
     @Mock
     private QuestionService questionService;
+    @Mock
+    private CategoryCatalogService categoryCatalogService;
 
     @InjectMocks
     private ContentService contentService;
 
     @Test
-    void copiedSnapshotReferencesCatalogRootInsteadOfIntermediateSnapshot() {
-        Block catalog = Block.builder().id(1L).scope(BlockScope.CATALOG).name("Catálogo").build();
+    void copiedSnapshotKeepsContentWithoutSourceReference() {
         Block templateSnapshot = Block.builder()
             .id(2L)
             .scope(BlockScope.SNAPSHOT)
-            .sourceBlock(catalog)
+            .category(Category.DATOS_PERSONALES)
             .name("Copia")
             .build();
         ContentItem surveyItem = ContentItem.builder().id(10L).itemType(ContentItemType.BLOCK).build();
@@ -63,7 +66,9 @@ class ContentServiceTest {
 
         Block copy = contentService.copyExistingBlock(templateSnapshot, surveyItem, null);
 
-        assertThat(copy.getSourceBlock()).isSameAs(catalog);
+        assertThat(copy.getScope()).isEqualTo(BlockScope.SNAPSHOT);
+        assertThat(copy.getName()).isEqualTo("Copia");
+        assertThat(copy.getCategory()).isEqualTo(Category.DATOS_PERSONALES);
     }
 
     @Test

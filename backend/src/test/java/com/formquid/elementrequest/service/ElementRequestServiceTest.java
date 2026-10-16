@@ -71,9 +71,9 @@ class ElementRequestServiceTest {
             .elementType(RequestedElementType.BLOCK)
             .requestPayload(Map.of("name", "Bloque"))
             .build();
-        var draft = new CreateBlockRequestDto("Bloque", null, java.util.List.of());
+        var draft = new CreateBlockRequestDto("Bloque", null, java.util.List.of(), null);
         var created = new BlockResponseDto(
-            33L, null, null, "Bloque", null, java.util.List.of(), 9L, "Admin", null, null, 0L
+            33L, null, "Bloque", null, java.util.List.of(), 9L, "Admin", null, null, null
         );
         when(elementRequestRepository.findById(12L)).thenReturn(Optional.of(pending));
         when(objectMapper.convertValue(pending.getRequestPayload(), CreateBlockRequestDto.class)).thenReturn(draft);

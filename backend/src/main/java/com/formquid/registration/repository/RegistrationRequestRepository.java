@@ -20,8 +20,8 @@ public interface RegistrationRequestRepository
             request.id,
             request.email,
             request.name,
-            request.gender,
             request.institution,
+            request.country,
             request.motivation,
             request.createdAt
         )

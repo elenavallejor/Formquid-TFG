@@ -7,6 +7,8 @@ import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.common.dto.CatalogSearchField;
 import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
@@ -42,6 +44,7 @@ public class BlockService {
 
     private final BlockRepository blockRepository;
     private final ContentService contentService;
+    private final CategoryCatalogService categoryCatalogService;
 
     @Transactional(readOnly = true)
     public PageResponseDto<BlockSummaryDto> findCatalogBlocks(
@@ -51,7 +54,8 @@ public class BlockService {
         boolean mine,
         String search,
         Set<CatalogSearchField> searchFields,
-        CatalogSortOrder sortOrder
+        CatalogSortOrder sortOrder,
+        Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
         Pageable pageable = catalogPageable(page, size, sortOrder);
@@ -63,6 +67,7 @@ public class BlockService {
             fields.contains(CatalogSearchField.TITLE),
             fields.contains(CatalogSearchField.DESCRIPTION),
             fields.contains(CatalogSearchField.CREATOR),
+            category,
             pageable
         );
         return new PageResponseDto<>(
@@ -75,9 +80,9 @@ public class BlockService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(int page, int size) {
+    public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(int page, int size, Category category) {
         Pageable pageable = builderPageable(page, size);
-        Page<Block> blocks = blockRepository.findCatalogBlocksWithDetails(BlockScope.CATALOG, pageable);
+        Page<Block> blocks = blockRepository.findCatalogBlocksWithDetails(BlockScope.CATALOG, category, pageable);
         Map<Long, List<ContentItemResponseDto>> contentByBlock = contentService
             .findBlocksContent(blocks.getContent());
         List<BlockResponseDto> responses = blocks.getContent().stream()
@@ -98,11 +103,7 @@ public class BlockService {
         if (block.getScope() != BlockScope.CATALOG) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
         }
-        return toResponse(
-            block,
-            contentService.findBlockContent(block),
-            blockRepository.countBySourceBlockId(blockId)
-        );
+        return toResponse(block, contentService.findBlockContent(block));
     }
 
     @Transactional
@@ -112,9 +113,6 @@ public class BlockService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Bloque de catálogo no encontrado");
         }
         requireManagementPermission(block.getCreatedBy(), user);
-        if (blockRepository.countBySourceBlockId(blockId) > 0) {
-            throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar un bloque que está siendo utilizado");
-        }
         contentService.deleteBlockContent(block);
         blockRepository.delete(block);
     }
@@ -130,9 +128,11 @@ public class BlockService {
     @Transactional
     public BlockResponseDto createCatalogBlock(CreateBlockRequestDto request, User creator) {
         validateDraft(request);
+        categoryCatalogService.requireExisting(request.category() == null ? Category.OTROS : request.category());
         Block block = blockRepository.save(Block.builder()
             .scope(BlockScope.CATALOG)
             .name(request.name().trim())
+            .category(request.category() == null ? Category.OTROS : request.category())
             .description(trimToNull(request.description()))
             .createdBy(creator)
             .build());
@@ -150,8 +150,10 @@ public class BlockService {
         }
         requireManagementPermission(block.getCreatedBy(), user);
         validateDraft(request);
+        if (request.category() != null) categoryCatalogService.requireExisting(request.category());
         contentService.deleteBlockContent(block);
         block.setName(request.name().trim());
+        if (request.category() != null) block.setCategory(request.category());
         block.setDescription(trimToNull(request.description()));
         block.setUpdatedAt(Instant.now());
         request.items().stream()
@@ -168,23 +170,14 @@ public class BlockService {
     }
 
     public BlockResponseDto toResponse(Block block) {
-        return toResponse(block, contentService.findBlockContent(block), null);
+        return toResponse(block, contentService.findBlockContent(block));
     }
 
     private BlockResponseDto toResponse(Block block, List<ContentItemResponseDto> contentItems) {
-        return toResponse(block, contentItems, null);
-    }
-
-    private BlockResponseDto toResponse(
-        Block block,
-        List<ContentItemResponseDto> contentItems,
-        Long usageCount
-    ) {
         User creator = block.getCreatedBy();
         return new BlockResponseDto(
             block.getId(),
             block.getScope(),
-            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
             contentItems,
@@ -192,7 +185,7 @@ public class BlockService {
             creator == null ? null : creator.getName(),
             block.getCreatedAt(),
             block.getUpdatedAt(),
-            usageCount
+            block.getCategory()
         );
     }
 

@@ -136,6 +136,22 @@ export function createSurveyFromTemplate(templateId, data) {
   });
 }
 
+export function previewSurveyImport(file) {
+  const body = new FormData();
+  body.append('file', file);
+  return apiClient('/surveys/import/preview', {
+    method: 'POST',
+    body,
+  });
+}
+
+export function createSurveyFromImport(survey, content) {
+  return apiClient('/surveys/from-import', {
+    method: 'POST',
+    body: { survey, content },
+  });
+}
+
 export function getSurveyById(surveyId) {
   return apiClient(`/surveys/${surveyId}`, { method: 'GET' });
 }

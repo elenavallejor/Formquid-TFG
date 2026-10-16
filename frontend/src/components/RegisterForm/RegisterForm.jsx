@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MdBusiness, MdCheckCircleOutline, MdEditNote, MdLockOutline, MdOutlineEmail, MdPersonOutline } from 'react-icons/md';
+import { MdBusiness, MdCheckCircleOutline, MdEditNote, MdLockOutline, MdOutlineEmail, MdPersonOutline, MdPublic } from 'react-icons/md';
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 import { createRegistrationRequest } from '../../api/registrationRequestsApi';
 import { INITIAL_REGISTER_FORM_DATA, REGISTER_FORM_LIMITS, createRegistrationRequestPayload, hasRegisterFormErrors, validateRegisterForm } from '../../utils/registerFormValidation';
-import { Dropdown } from '../Dropdown/Dropdown.jsx';
 
 import './RegisterForm.css';
 
@@ -135,28 +134,6 @@ export function RegisterForm() {
       </div>
 
       <div className="register-field">
-        <label htmlFor="register-gender">Género</label>
-        <div className="register-input-wrapper">
-          <Dropdown
-            id="register-gender"
-            name="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            aria-invalid={Boolean(errors.gender)}
-            aria-describedby={errors.gender ? 'register-gender-error' : undefined}
-          >
-            <option value="">Selecciona una opción</option>
-            <option value="FEMALE">Mujer</option>
-            <option value="MALE">Hombre</option>
-            <option value="OTHER">Otro / Prefiero no indicarlo</option>
-          </Dropdown>
-        </div>
-        <p id="register-gender-error" className="register-error-message">
-          {errors.gender || ''}
-        </p>
-      </div>
-
-      <div className="register-field">
         <label htmlFor="register-institution">
           Institución / Organización
         </label>
@@ -180,6 +157,25 @@ export function RegisterForm() {
         <p id="register-institution-error" className="register-error-message">
           {errors.institution || ''}
         </p>
+      </div>
+
+      <div className="register-field">
+        <label htmlFor="register-country">País</label>
+        <div className="register-input-wrapper">
+          <MdPublic className="register-input-icon" aria-hidden="true" />
+          <input
+            id="register-country"
+            name="country"
+            type="text"
+            value={formData.country}
+            onChange={handleChange}
+            maxLength={REGISTER_FORM_LIMITS.country}
+            autoComplete="country-name"
+            aria-invalid={Boolean(errors.country)}
+            aria-describedby={errors.country ? 'register-country-error' : undefined}
+          />
+        </div>
+        <p id="register-country-error" className="register-error-message">{errors.country || ''}</p>
       </div>
 
       <div className="register-field">

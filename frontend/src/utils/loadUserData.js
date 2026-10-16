@@ -11,7 +11,7 @@ export async function loadUserData() {
     personalData: {
       nombre: accountInfo?.name ?? '',
       institucion: accountInfo?.institution ?? '',
-      genero: accountInfo?.gender ?? 'MALE',
+      pais: accountInfo?.country ?? '',
     },
     email: accountInfo?.email ?? '',
     hasOwnedSurveys,

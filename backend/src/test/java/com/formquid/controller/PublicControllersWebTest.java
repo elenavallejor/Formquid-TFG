@@ -1,5 +1,6 @@
 package com.formquid.controller;
 
+import com.formquid.common.Category;
 import com.formquid.auth.controller.AuthController;
 import com.formquid.auth.dto.AuthUserResponseDto;
 import com.formquid.auth.dto.LoginResult;
@@ -21,7 +22,6 @@ import com.formquid.survey.controller.PublicSurveyController;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.service.SurveyService;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -102,16 +102,17 @@ class PublicControllersWebTest {
 
     @Test
     void publicSurveyList_bindsFiltersAndReturnsPageMetadata() throws Exception {
-        when(surveyService.findListedOpenPage("clima", "tecnologia", SurveyAccessMode.PUBLIC, 1, 3))
+        when(surveyService.findListedOpenPage("clima", "tecnologia", SurveyAccessMode.PUBLIC, 1, 3, Category.TELEFONO_INTELIGENTE))
             .thenReturn(new PageResponseDto<>(List.of(new PublicSurveySummaryDto(
                 "ABC123", "Encuesta", "Descripción", null, SurveyAccessMode.PUBLIC,
-                List.of("infancia", "tecnologia")
+                List.of("infancia", "tecnologia"), null
             )), 1, 3, 4, 2));
 
         mockMvc.perform(get("/api/v1/public/surveys/page")
                 .param("search", "clima")
                 .param("tag", "tecnologia")
                 .param("accessMode", "PUBLIC")
+                .param("category", "TELEFONO_INTELIGENTE")
                 .param("page", "1")
                 .param("size", "3"))
             .andExpect(status().isOk())
@@ -165,7 +166,7 @@ class PublicControllersWebTest {
     @Test
     void registrationRequest_acceptsValidPublicRequest() throws Exception {
         when(registrationRequestService.create(any())).thenReturn(new RegistrationRequestResponseDto(
-            4L, "person@example.com", "Persona", UserGender.OTHER, "Colegio", "Motivación",
+            4L, "person@example.com", "Persona", "Colegio", "España", "Motivación",
             Instant.parse("2026-01-01T10:00:00Z")
         ));
 
@@ -176,14 +177,16 @@ class PublicControllersWebTest {
                     {
                       "email":"person@example.com",
                       "name":"Persona",
-                      "gender":"OTHER",
                       "institution":"Colegio",
+                      "country":"España",
                       "motivation":"Motivación",
                       "password":"secret123"
                     }
                     """))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(4));
+            .andExpect(jsonPath("$.id").value(4))
+            .andExpect(jsonPath("$.country").value("España"))
+            .andExpect(jsonPath("$.gender").doesNotExist());
 
         verify(registrationRequestService).create(any());
     }
@@ -196,7 +199,6 @@ class PublicControllersWebTest {
                     {
                       "email":"person@example.com",
                       "name":"Persona",
-                      "gender":"OTHER",
                       "institution":"Colegio",
                       "motivation":"Motivación",
                       "password":"secret123"

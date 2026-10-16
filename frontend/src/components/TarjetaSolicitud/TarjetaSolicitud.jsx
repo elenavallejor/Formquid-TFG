@@ -1,14 +1,8 @@
-import { MdOutlineEmail, MdOutlineBusiness, MdOutlinePerson, MdOutlineEdit, MdOutlineCalendarToday, MdCheck, MdClose } from 'react-icons/md';
+import { MdOutlineEmail, MdOutlineBusiness, MdOutlineEdit, MdOutlineCalendarToday, MdCheck, MdClose, MdPublic } from 'react-icons/md';
 import './TarjetaSolicitud.css';
 
-const GENDER_TRANSLATIONS = {
-  FEMALE: 'Mujer',
-  MALE: 'Hombre',
-  OTHER: 'Otro',
-};
-
 export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
-  const { id, name, email, institution, gender, motivation, createdAt } = solicitud;
+  const { id, name, email, institution, country, motivation, createdAt } = solicitud;
 
   const formattedDate = createdAt ? new Date(createdAt).toLocaleString('es-ES', {
         day: '2-digit',
@@ -18,8 +12,6 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
         minute: '2-digit',
       })
     : '-';
-
-  const genderLabel = GENDER_TRANSLATIONS[gender] || gender || 'No especificado';
 
   return (
     <article className="solicitud-card" aria-labelledby={`applicant-name-${id}`}>
@@ -37,10 +29,7 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
             <MdOutlineBusiness className="solicitud-icon" aria-hidden="true" />
             <span>{institution}</span>
           </li>
-          <li>
-            <MdOutlinePerson className="solicitud-icon" aria-hidden="true" />
-            <span>{genderLabel}</span>
-          </li>
+          <li><MdPublic className="solicitud-icon" aria-hidden="true" /><span>{country || 'País no indicado'}</span></li>
         </ul>
       </div>
 

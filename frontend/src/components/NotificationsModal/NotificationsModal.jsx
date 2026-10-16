@@ -13,6 +13,7 @@ import {
   NOTIFICATION_TYPE_OPTIONS,
 } from '../../utils/notificationsModalUtils.js';
 import { Dropdown } from '../Dropdown/Dropdown.jsx';
+import { Skeleton } from '../Skeleton/Skeleton.jsx';
 import './NotificationsModal.css';
 
 export function NotificationsModal({ onClose }) {
@@ -137,10 +138,10 @@ export function NotificationsModal({ onClose }) {
       </section>
 
       {error && <p className="notifications-error" role="alert">{error}</p>}
-      <p className="sr-only" role="status">{loading ? 'Cargando notificaciones…' : status}</p>
+      {!loading && status && <p className="sr-only" role="status">{status}</p>}
       <div id="notifications-results"
         className={`notifications-modal-body${loading || !notifications.length ? ' notifications-modal-body-empty' : ''}`}>
-        {loading ? <p className="notifications-empty">Cargando notificaciones…</p> : !notifications.length ? (
+        {loading ? <Skeleton variant="compact" count={4} hasActions={false} label="Cargando notificaciones…" /> : !notifications.length ? (
           <p className="notifications-empty">No hay notificaciones que coincidan con los filtros.</p>
         ) : (
           <ul className="notifications-list" aria-busy={busy || loadingMore}>

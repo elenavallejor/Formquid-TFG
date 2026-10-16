@@ -1,5 +1,7 @@
 package com.formquid.repository;
 
+import com.formquid.common.Category;
+import com.formquid.common.CategoryDefinition;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
@@ -15,7 +17,6 @@ import com.formquid.question.repository.QuestionRepository;
 import com.formquid.template.entity.Template;
 import com.formquid.template.repository.TemplateRepository;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -37,17 +38,35 @@ class CatalogRepositoryTest {
     @Autowired private EntityManager entityManager;
 
     @Test
+    void catalogAcceptsCategoryCreatedAfterDeployment() {
+        Category custom = Category.of("TECNOLOGIA_ASISTIVA");
+        persist(new CategoryDefinition(custom.code(), "Tecnología asistiva"));
+        User creator = persistUser("category-owner@example.com", "Creadora");
+        persist(Block.builder()
+            .scope(BlockScope.CATALOG).name("Bloque asistivo")
+            .category(custom).createdBy(creator).build());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, creator.getId(), true, "", true, true, true, custom, catalogPage()
+        )).singleElement().satisfies(summary ->
+            assertThat(summary.category()).isEqualTo(custom));
+    }
+
+    @Test
     void catalogSummaries_filterByCreatorAndCountQuestions() {
         User creator = persistUser("catalog-owner@example.com", "Creadora");
         User other = persistUser("catalog-other@example.com", "Otra persona");
 
         Block block = persist(Block.builder()
-            .scope(BlockScope.CATALOG).name("Bloque propio").createdBy(creator).build());
+            .scope(BlockScope.CATALOG).name("Bloque propio").category(Category.DATOS_PERSONALES).createdBy(creator).build());
         persist(ContentItem.builder()
             .parentBlock(block).itemType(ContentItemType.QUESTION).position(1).required(true).build());
 
         persist(Question.builder()
             .scope(QuestionScope.CATALOG_FIXED)
+            .category(Category.DATOS_PERSONALES)
             .statement("Pregunta propia")
             .questionType(QuestionType.TEXT)
             .evaluationDirection(EvaluationDirection.NEUTRAL)
@@ -55,13 +74,13 @@ class CatalogRepositoryTest {
             .build());
 
         Template template = persist(Template.builder()
-            .title("Plantilla propia").createdBy(creator).build());
+            .title("Plantilla propia").category(Category.DATOS_PERSONALES).createdBy(creator).build());
         persist(ContentItem.builder()
             .template(template).itemType(ContentItemType.QUESTION).position(1).required(false).build());
         entityManager.flush();
 
         assertThat(blocks.findCatalogSummaries(
-            BlockScope.CATALOG, creator.getId(), true, "", true, true, true, catalogPage()
+            BlockScope.CATALOG, creator.getId(), true, "", true, true, true, null, catalogPage()
         ))
             .singleElement().satisfies(summary -> {
                 assertThat(summary.name()).isEqualTo("Bloque propio");
@@ -69,11 +88,11 @@ class CatalogRepositoryTest {
                 assertThat(summary.creatorName()).isEqualTo("Creadora");
             });
         assertThat(questions.findCatalogSummaries(
-            QuestionScope.CATALOG_FIXED, creator.getId(), true, "", true, true, true, catalogPage()
+            QuestionScope.CATALOG_FIXED, creator.getId(), true, "", true, true, true, null, catalogPage()
         ))
             .singleElement().extracting(summary -> summary.statement()).isEqualTo("Pregunta propia");
         assertThat(templates.findCatalogSummaries(
-            creator.getId(), true, "", true, true, true, catalogPage()
+            creator.getId(), true, "", true, true, true, null, catalogPage()
         ))
             .singleElement().satisfies(summary -> {
                 assertThat(summary.title()).isEqualTo("Plantilla propia");
@@ -81,16 +100,29 @@ class CatalogRepositoryTest {
             });
 
         assertThat(blocks.findCatalogSummaries(
-            BlockScope.CATALOG, other.getId(), false, "", true, true, true, catalogPage()
+            BlockScope.CATALOG, other.getId(), false, "", true, true, true, null, catalogPage()
         ))
             .extracting(summary -> summary.id()).contains(block.getId());
 
         assertThat(blocks.findCatalogSummaries(
-            BlockScope.CATALOG, creator.getId(), true, "creadora", false, false, true, catalogPage()
+            BlockScope.CATALOG, creator.getId(), true, "creadora", false, false, true, null, catalogPage()
         )).hasSize(1);
         assertThat(blocks.findCatalogSummaries(
-            BlockScope.CATALOG, creator.getId(), true, "creadora", true, false, false, catalogPage()
+            BlockScope.CATALOG, creator.getId(), true, "creadora", true, false, false, null, catalogPage()
         )).isEmpty();
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, creator.getId(), true, "", true, true, true, Category.DATOS_PERSONALES, catalogPage()
+        )).hasSize(1);
+        assertThat(blocks.findCatalogSummaries(
+            BlockScope.CATALOG, creator.getId(), true, "", true, true, true, Category.TELEFONO_INTELIGENTE, catalogPage()
+        )).isEmpty();
+        assertThat(questions.findCatalogSummaries(
+            QuestionScope.CATALOG_FIXED, creator.getId(), true, "", true, true, true,
+            Category.DATOS_PERSONALES, catalogPage()
+        )).hasSize(1);
+        assertThat(templates.findCatalogSummaries(
+            creator.getId(), true, "", true, true, true, Category.DATOS_PERSONALES, catalogPage()
+        )).hasSize(1);
     }
 
     @Test
@@ -115,7 +147,6 @@ class CatalogRepositoryTest {
             .role(UserRole.EDITOR)
             .email(email)
             .name(name)
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build());

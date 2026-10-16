@@ -1,5 +1,6 @@
 package com.formquid.survey.dto;
 
+import com.formquid.common.Category;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
@@ -18,6 +19,7 @@ public record AdminSurveySummaryDto(
     SurveyAccessMode accessMode,
     SurveyVisibility visibility,
     Long responses,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

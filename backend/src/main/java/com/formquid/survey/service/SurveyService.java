@@ -3,9 +3,11 @@ package com.formquid.survey.service;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.collaboration.repository.CollaborationRequestRepository;
 import com.formquid.collaboration.entity.CollaborationPermission;
+import com.formquid.common.Category;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
 import com.formquid.common.service.TagNormalizer;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.repository.ContentItemRepository;
 import com.formquid.content.service.ContentService;
@@ -77,6 +79,7 @@ public class SurveyService {
     private final TemplateService templateService;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final CategoryCatalogService categoryCatalogService;
 
     @Transactional(readOnly = true)
     public SurveyPageResponseDto findEditableByUser(User user, String search, SurveyLifecycle lifecycleStatus, Pageable pageable) {
@@ -150,7 +153,8 @@ public class SurveyService {
                 survey.getUpdatedAt(),
                 survey.getOwner().getId().equals(user.getId()),
                 collaboratingIds.contains(survey.getId()),
-                pendingRequestIds.contains(survey.getId())
+                pendingRequestIds.contains(survey.getId()),
+                survey.getCategory()
             ))
             .toList();
 
@@ -247,9 +251,10 @@ public class SurveyService {
         String tag,
         SurveyAccessMode accessMode,
         int page,
-        int size
+        int size,
+        Category category
     ) {
-        return findListedOpenPage(search, tag, accessMode, page, size, false);
+        return findListedOpenPage(search, tag, accessMode, page, size, category, false);
     }
 
     @Transactional(readOnly = true)
@@ -259,12 +264,13 @@ public class SurveyService {
         String tag,
         SurveyAccessMode accessMode,
         int page,
-        int size
+        int size,
+        Category category
     ) {
         if (user == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
         }
-        return findListedOpenPage(search, tag, accessMode, page, size, true);
+        return findListedOpenPage(search, tag, accessMode, page, size, category, true);
     }
 
     private PageResponseDto<PublicSurveySummaryDto> findListedOpenPage(
@@ -273,10 +279,14 @@ public class SurveyService {
         SurveyAccessMode accessMode,
         int page,
         int size,
+        Category category,
         boolean includeAuthenticated
     ) {
         if (page < 0 || size < 1 || size > 50) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
+        }
+        if (Category.DATOS_PERSONALES.equals(category)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una encuesta no puede ser de datos personales");
         }
 
         String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
@@ -292,6 +302,7 @@ public class SurveyService {
                 includeAuthenticated,
                 SurveyAccessMode.AUTHENTICATED,
                 accessMode,
+                category,
                 normalizedSearch,
                 PageRequest.of(
                     page,
@@ -303,6 +314,7 @@ public class SurveyService {
             surveys = surveyRepository.findListedOpenPageByTag(
                 includeAuthenticated,
                 accessMode == null ? "" : accessMode.name(),
+                category == null ? "" : category.code(),
                 normalizedSearch,
                 normalizedTag,
                 PageRequest.of(page, size)
@@ -395,6 +407,9 @@ public class SurveyService {
     public SurveyResponseDto createFromTemplate(Long templateId, CreateSurveyRequestDto request, User owner) {
         Template template = templateService.getTemplate(templateId);
         Survey saved = createDraft(request, owner);
+        if (request.category() == null && !Category.DATOS_PERSONALES.equals(template.getCategory())) {
+            saved.setCategory(template.getCategory());
+        }
         templateService.copyTemplateIntoSurvey(template, saved, owner);
         return toResponse(saved, owner);
     }
@@ -404,10 +419,12 @@ public class SurveyService {
         Survey survey = getSurvey(surveyId);
         SurveyAccess access = resolveAccess(survey, actor);
         ensureCanEdit(access);
+        Category category = request.category() == null ? survey.getCategory() : requireSurveyCategory(request.category());
         survey.setTitle(request.title().trim());
         survey.setDescription(trimToNull(request.description()));
         survey.setImageKey(trimToNull(request.imageKey()));
         survey.setFontFamily(fontFamilyOrDefault(request.fontFamily()));
+        survey.setCategory(category);
         saveTags(survey, request.tags());
         if (isOwner(survey, actor)) {
             SurveyAccessMode previousMode = survey.getAccessMode();
@@ -571,7 +588,8 @@ public class SurveyService {
             access.canEdit(),
             access.canPreview(),
             survey.getCreatedAt(),
-            survey.getUpdatedAt()
+            survey.getUpdatedAt(),
+            survey.getCategory()
         );
     }
 
@@ -579,6 +597,7 @@ public class SurveyService {
         Survey survey = Survey.builder()
             .owner(owner)
             .title(request.title().trim())
+            .category(requireSurveyCategory(request.category()))
             .description(trimToNull(request.description()))
             .imageKey(trimToNull(request.imageKey()))
             .fontFamily(fontFamilyOrDefault(request.fontFamily()))
@@ -641,6 +660,15 @@ public class SurveyService {
         return fontFamily == null ? SurveyFontFamily.TIMES_NEW_ROMAN : fontFamily;
     }
 
+    private Category requireSurveyCategory(Category category) {
+        Category resolved = category == null ? Category.OTROS : category;
+        if (Category.DATOS_PERSONALES.equals(resolved)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una encuesta no puede ser de datos personales");
+        }
+        categoryCatalogService.requireSurveyCategory(resolved);
+        return resolved;
+    }
+
     private boolean canViewPublicSurvey(Survey survey) {
         return survey.getLifecycleStatus() == SurveyLifecycle.OPEN && survey.getAccessMode() != SurveyAccessMode.AUTHENTICATED;
     }
@@ -657,7 +685,8 @@ public class SurveyService {
             survey.getImageKey(),
             survey.getLifecycleStatus(),
             tagsFrom(survey),
-            survey.getUpdatedAt()
+            survey.getUpdatedAt(),
+            survey.getCategory()
         );
     }
 
@@ -668,7 +697,8 @@ public class SurveyService {
             survey.getDescription(),
             survey.getImageKey(),
             survey.getAccessMode(),
-            tagsFrom(survey)
+            tagsFrom(survey),
+            survey.getCategory()
         );
     }
 

@@ -1,5 +1,6 @@
 package com.formquid.template.dto;
 
+import com.formquid.common.Category;
 import com.formquid.content.dto.ContentItemResponseDto;
 
 import java.time.Instant;
@@ -17,6 +18,7 @@ public record TemplateResponseDto(
     Long creatorId,
     String creatorName,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    Category category
 ) {
 }

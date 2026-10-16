@@ -144,8 +144,10 @@
 }
 
 .main-page-search svg {
-  flex: 0 0 auto;
-  font-size: 22px;
+  width: var(--search-icon-size);
+  height: var(--search-icon-size);
+  flex: 0 0 var(--search-icon-size);
+  font-size: var(--search-icon-size);
 }
 
 .main-page-search input {

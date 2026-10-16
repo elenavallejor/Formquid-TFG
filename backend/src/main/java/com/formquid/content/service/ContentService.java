@@ -7,6 +7,7 @@ import com.formquid.block.dto.CreateBlockItemRequestDto;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.content.dto.AddBlockItemRequestDto;
 import com.formquid.content.dto.AddFixedQuestionItemRequestDto;
 import com.formquid.content.dto.BlockContentItemRowDto;
@@ -52,6 +53,7 @@ public class ContentService {
     private final QuestionRepository questionRepository;
     private final BlockRepository blockRepository;
     private final QuestionService questionService;
+    private final CategoryCatalogService categoryCatalogService;
 
     @Transactional(readOnly = true)
     public List<ContentItemResponseDto> findSurveyContent(Long surveyId) {
@@ -115,7 +117,6 @@ public class ContentService {
         BlockResponseDto blockResponse = block == null ? null : new BlockResponseDto(
             block.getId(),
             block.getScope(),
-            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
             findBlockContent(block),
@@ -123,7 +124,7 @@ public class ContentService {
             block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
             block.getCreatedAt(),
             block.getUpdatedAt(),
-            null
+            block.getCategory()
         );
         return new ContentItemResponseDto(
             item.getId(),
@@ -245,6 +246,7 @@ public class ContentService {
         CreateBlockRequestDto dto,
         User creator
     ) {
+        if (dto.category() != null) categoryCatalogService.requireExisting(dto.category());
         makeRoomForSurveyItem(survey, position);
         ContentItem parentItem = contentItemRepository.save(
             baseSurveyItem(survey, ContentItemType.BLOCK, position)
@@ -253,6 +255,7 @@ public class ContentService {
             .parentItem(parentItem)
             .scope(BlockScope.SNAPSHOT)
             .name(dto.name().trim())
+            .category(dto.category() == null ? survey.getCategory() : dto.category())
             .description(dto.description() == null || dto.description().isBlank() ? null : dto.description().trim())
             .createdBy(creator)
             .build());
@@ -483,6 +486,7 @@ public class ContentService {
         CreateBlockRequestDto dto,
         User creator
     ) {
+        if (dto.category() != null) categoryCatalogService.requireExisting(dto.category());
         ContentItem parentItem = contentItemRepository.save(
             baseTemplateItem(template, ContentItemType.BLOCK, position)
         );
@@ -490,6 +494,7 @@ public class ContentService {
             .parentItem(parentItem)
             .scope(BlockScope.SNAPSHOT)
             .name(dto.name().trim())
+            .category(dto.category() == null ? template.getCategory() : dto.category())
             .description(dto.description() == null || dto.description().isBlank() ? null : dto.description().trim())
             .createdBy(creator)
             .build());
@@ -581,8 +586,8 @@ public class ContentService {
         Block copy = Block.builder()
             .parentItem(parentItem)
             .scope(BlockScope.SNAPSHOT)
-            .sourceBlock(resolveCatalogSource(source))
             .name(source.getName())
+            .category(source.getCategory())
             .description(source.getDescription())
             .createdBy(creator)
             .build();
@@ -614,18 +619,6 @@ public class ContentService {
             questionService.copyAsLocal(sourceQuestion, savedItem, creator);
         }
         return savedBlock;
-    }
-
-    private Block resolveCatalogSource(Block source) {
-        Block candidate = source;
-        Set<Long> visitedIds = new HashSet<>();
-        while (candidate != null && candidate.getScope() != BlockScope.CATALOG) {
-            if (candidate.getId() != null && !visitedIds.add(candidate.getId())) {
-                throw new ApiException(HttpStatus.CONFLICT, "La procedencia del bloque contiene un ciclo");
-            }
-            candidate = candidate.getSourceBlock();
-        }
-        return candidate;
     }
 
     @Transactional
@@ -788,7 +781,6 @@ public class ContentService {
         BlockResponseDto blockResponse = block == null || contentByBlock == null ? null : new BlockResponseDto(
             block.getId(),
             block.getScope(),
-            block.getSourceBlock() == null ? null : block.getSourceBlock().getId(),
             block.getName(),
             block.getDescription(),
             contentByBlock.getOrDefault(block.getId(), List.of()),
@@ -796,7 +788,7 @@ public class ContentService {
             block.getCreatedBy() == null ? null : block.getCreatedBy().getName(),
             block.getCreatedAt(),
             block.getUpdatedAt(),
-            null
+            block.getCategory()
         );
         return new ContentItemResponseDto(
             item.id(),

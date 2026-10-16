@@ -149,14 +149,12 @@ function PaginatedSurveySection({
       )}
 
       {isLoading ? (
-        <>
-          <span className="sr-only" role="status">Cargando encuestas...</span>
-          <Skeleton
-            variant="grid"
-            count={Math.min(itemsPerPage, DEFAULT_PAGE_SIZE)}
-            hasActions={false}
-          />
-        </>
+        <Skeleton
+          variant="grid"
+          count={Math.min(itemsPerPage, DEFAULT_PAGE_SIZE)}
+          hasActions={false}
+          label={`Cargando ${title.toLocaleLowerCase('es')}…`}
+        />
       ) : !errorMessage && surveys.length > 0 ? (
         <div className="main-page-survey-grid">
           {surveys.map((survey) => (

@@ -36,8 +36,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 user.role,
                 user.email,
                 user.name,
-                user.gender,
                 user.institution,
+                user.country,
                 user.createdAt,
                 user.updatedAt
             )
@@ -46,14 +46,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 or (:searchName = true and lower(user.name) like concat('%', :search, '%'))
                 or (:searchEmail = true and lower(user.email) like concat('%', :search, '%'))
                 or (:searchInstitution = true and lower(user.institution) like concat('%', :search, '%'))
-                or (
-                    :searchGender = true
-                    and lower(case
-                        when user.gender = com.formquid.user.entity.UserGender.MALE then 'hombre male'
-                        when user.gender = com.formquid.user.entity.UserGender.FEMALE then 'mujer female'
-                        else 'otro other'
-                    end) like concat('%', :search, '%')
-                )
+                or (:searchCountry = true and lower(user.country) like concat('%', :search, '%'))
                 or (
                     :searchRole = true
                     and lower(case
@@ -70,14 +63,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 or (:searchName = true and lower(user.name) like concat('%', :search, '%'))
                 or (:searchEmail = true and lower(user.email) like concat('%', :search, '%'))
                 or (:searchInstitution = true and lower(user.institution) like concat('%', :search, '%'))
-                or (
-                    :searchGender = true
-                    and lower(case
-                        when user.gender = com.formquid.user.entity.UserGender.MALE then 'hombre male'
-                        when user.gender = com.formquid.user.entity.UserGender.FEMALE then 'mujer female'
-                        else 'otro other'
-                    end) like concat('%', :search, '%')
-                )
+                or (:searchCountry = true and lower(user.country) like concat('%', :search, '%'))
                 or (
                     :searchRole = true
                     and lower(case
@@ -93,7 +79,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         @Param("searchName") boolean searchName,
         @Param("searchEmail") boolean searchEmail,
         @Param("searchInstitution") boolean searchInstitution,
-        @Param("searchGender") boolean searchGender,
+        @Param("searchCountry") boolean searchCountry,
         @Param("searchRole") boolean searchRole,
         Pageable pageable
     );
@@ -104,8 +90,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             user.role,
             user.email,
             user.name,
-            user.gender,
             user.institution,
+            user.country,
             user.createdAt,
             user.updatedAt
         )

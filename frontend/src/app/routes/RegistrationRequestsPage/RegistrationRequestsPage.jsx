@@ -5,6 +5,7 @@ import { TarjetaSolicitud } from '../../../components/TarjetaSolicitud/TarjetaSo
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
+import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { getPendingRegistrationRequests, approveRegistrationRequest, rejectRegistrationRequest } from '../../../api/registrationRequestsApi';
 
 import './RegistrationRequestsPage.css';
@@ -165,9 +166,9 @@ export function RegistrationRequestsPage() {
           onSortChange={(event) => setSortOrder(event.target.value)}
         />
 
-        <section className="requests-list" aria-label="Listado de solicitudes">
+        <section className="requests-list" aria-label="Listado de solicitudes" aria-busy={isLoading}>
           {isLoading ? (
-            <p className="requests-status-text">Cargando solicitudes...</p>
+            <Skeleton variant="list" count={4} label="Cargando solicitudes de registro…" />
           ) : errorMessage ? (
             <p className="requests-error-text" role="alert">{errorMessage}</p>
           ) : filteredRequests.length === 0 ? (

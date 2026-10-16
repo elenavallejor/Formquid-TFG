@@ -19,7 +19,6 @@ import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.user.entity.User;
-import com.formquid.user.entity.UserGender;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.dto.UserResponseDto;
 import com.formquid.user.repository.UserRepository;
@@ -50,6 +49,7 @@ class AdministrationRepositoryTest {
     @Test
     void administrationProjections_returnOnlyRequestedDataAndParticipationCount() {
         User owner = persistUser("owner-admin-view@example.com", "Propietaria", UserRole.EDITOR);
+        owner.setCountry("España");
         Survey survey = persistSurvey(owner, "ADMINVIEW012", "Encuesta visible");
         persist(Participation.builder().survey(survey).respondentTokenHash("a".repeat(64)).build());
         persist(Participation.builder().survey(survey).respondentTokenHash("b".repeat(64)).build());
@@ -62,6 +62,7 @@ class AdministrationRepositoryTest {
 
         assertThat(userProjection.email()).isEqualTo("owner-admin-view@example.com");
         assertThat(userProjection.name()).isEqualTo("Propietaria");
+        assertThat(userProjection.country()).isEqualTo("España");
         assertThat(users.findResponses(
             "propietaria",
             true,
@@ -70,6 +71,9 @@ class AdministrationRepositoryTest {
             false,
             false,
             PageRequest.of(0, 10, Sort.by("name"))
+        )).extracting(UserResponseDto::id).contains(owner.getId());
+        assertThat(users.findResponses(
+            "españa", false, false, false, true, false, PageRequest.of(0, 10)
         )).extracting(UserResponseDto::id).contains(owner.getId());
         assertThat(users.findResponses(
             "editor",
@@ -115,12 +119,13 @@ class AdministrationRepositoryTest {
     void requestProjectionsAndDashboardCounts_followPersistedState() {
         var before = dashboard.getCounts();
         User requester = persistUser("requester-repo@example.com", "Solicitante", UserRole.EDITOR);
+        requester.setCountry("España");
         persistSurvey(requester, "DASHBOARD001", "Encuesta dashboard");
         RegistrationRequest registration = persist(RegistrationRequest.builder()
             .email("pending-repo@example.com")
             .name("Pendiente")
-            .gender(UserGender.OTHER)
             .institution("Centro")
+            .country("España")
             .motivation("Crear encuestas")
             .passwordHash("hash")
             .build());
@@ -134,9 +139,12 @@ class AdministrationRepositoryTest {
 
         assertThat(registrationRequests.findAllResponses()).extracting(item -> item.id())
             .contains(registration.getId());
+        assertThat(registrationRequests.findAllResponses()).filteredOn(item -> item.id().equals(registration.getId()))
+            .singleElement().extracting(item -> item.country()).isEqualTo("España");
         assertThat(elementRequests.findAllResponses()).filteredOn(item -> item.id().equals(element.getId()))
             .singleElement().satisfies(item -> {
                 assertThat(item.requestedByUserId()).isEqualTo(requester.getId());
+                assertThat(item.requestedByCountry()).isEqualTo("España");
                 assertThat(item.requestPayload()).containsEntry("name", "Bloque");
             });
 
@@ -173,7 +181,6 @@ class AdministrationRepositoryTest {
             .role(role)
             .email(email)
             .name(name)
-            .gender(UserGender.OTHER)
             .institution("FormQuid")
             .passwordHash("not-used-in-tests")
             .build());

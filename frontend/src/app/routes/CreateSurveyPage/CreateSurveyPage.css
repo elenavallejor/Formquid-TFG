@@ -95,8 +95,7 @@
   font-size: 17.5px;
 }
 
-.create-survey-secondary-button,
-.survey-origin-back {
+.create-survey-secondary-button {
   padding: 10px 18px;
   border: 1px solid var(--color-primary);
   border-radius: 8px;
@@ -108,8 +107,7 @@
   cursor: pointer;
 }
 
-.create-survey-secondary-button:hover,
-.survey-origin-back:hover {
+.create-survey-secondary-button:hover {
   background: var(--color-accent-surface);
 }
 
@@ -353,244 +351,6 @@
   line-height: 1;
 }
 
-.survey-origin-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: grid;
-  padding: 24px;
-  place-items: center;
-  background: rgb(0 37 54 / 55%);
-}
-
-.survey-origin-modal {
-  display: flex;
-  flex-direction: column;
-  width: min(1200px, 100%);
-  height: clamp(600px, 72vh, 780px);
-  max-height: calc(100vh - 48px);
-  overflow: hidden;
-  border-radius: 18px;
-  background: var(--color-surface);
-  box-shadow: 0 22px 60px rgb(0 37 54 / 25%);
-}
-
-.survey-origin-modal-templates {
-  height: min(850px, calc(100vh - 48px));
-}
-
-.survey-origin-modal > header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 32px 38px 26px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.survey-origin-modal h2 {
-  margin: 0;
-  color: var(--color-header);
-  font-size: 30px;
-}
-
-.survey-origin-modal header p {
-  margin: 8px 0 0;
-  color: var(--color-text-muted);
-  font-size: 17.5px;
-}
-
-.survey-origin-close {
-  display: grid;
-  padding: 5px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 28.75px;
-  cursor: pointer;
-}
-
-.survey-origin-options {
-  display: grid;
-  flex: 1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px;
-  padding: 38px;
-}
-
-.survey-origin-options > button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 20px;
-  min-height: 340px;
-  padding: 38px;
-  border: 2px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 4px 14px rgb(5 47 69 / 8%);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.survey-origin-options > button:hover {
-  border-color: var(--color-primary);
-  background: var(--color-accent-surface);
-  box-shadow: 0 10px 24px rgb(0 118 111 / 16%);
-  transform: translateY(-3px);
-}
-
-.survey-origin-option-icon {
-  display: grid;
-  width: 88px;
-  height: 88px;
-  flex: 0 0 88px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
-  font-size: 50px;
-  box-shadow: 0 8px 18px rgb(0 118 111 / 22%);
-}
-
-.survey-origin-options > button > span:nth-child(2),
-.survey-template-option > span:nth-child(2) {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.survey-origin-options strong,
-.survey-template-option strong {
-  color: var(--color-header);
-}
-
-.survey-origin-options > button > span:nth-child(2) {
-  align-items: center;
-}
-
-.survey-origin-options strong {
-  font-size: 22.5px;
-}
-
-.survey-template-option strong {
-  font-size: 17.5px;
-}
-
-.survey-origin-options small,
-.survey-template-option small {
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--color-text-muted);
-  font-weight: 400;
-  line-height: 1.45;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.survey-origin-options small {
-  font-size: 17.5px;
-}
-
-.survey-template-option small {
-  font-size: 15px;
-}
-
-.survey-origin-option-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--color-primary);
-  font-size: 17.5px;
-  font-weight: 800;
-}
-
-.survey-origin-option-action svg {
-  font-size: 23.75px;
-  transition: transform 0.2s ease;
-}
-
-.survey-origin-options > button:hover .survey-origin-option-action svg {
-  transform: translateX(3px);
-}
-
-.survey-origin-modal .search-toolbar {
-  margin: 20px 26px 12px;
-}
-
-.survey-origin-modal .search-toolbar__search {
-  width: 100%;
-}
-
-.survey-template-list {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 9px;
-  min-height: 180px;
-  overflow-y: auto;
-  padding: 0 26px 20px;
-}
-
-.survey-template-option {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 11px;
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  text-align: left;
-  cursor: pointer;
-}
-
-.survey-template-option:hover {
-  border-color: var(--color-primary);
-}
-
-.survey-template-image {
-  display: grid;
-  width: 70px;
-  height: 48px;
-  flex: 0 0 70px;
-  overflow: hidden;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--color-surface-muted);
-  color: var(--color-primary);
-  font-size: 30px;
-}
-
-.survey-template-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.survey-template-status {
-  margin: auto;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
-.survey-template-status.error {
-  color: var(--color-error);
-}
-
-.survey-origin-modal > footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px 26px;
-  border-top: 1px solid var(--color-border);
-}
-
 @media only screen and (max-width: 760px) {
   .create-survey-page {
     padding: 24px 16px 40px;
@@ -611,38 +371,10 @@
     padding: 22px 18px;
   }
 
-  .survey-origin-overlay {
-    padding: 16px;
-  }
-
-  .survey-origin-modal,
-  .survey-origin-modal-templates {
-    width: 100%;
-    height: calc(100vh - 32px);
-    min-height: 0;
-    max-height: none;
-  }
-
-  .survey-origin-modal > header {
-    padding: 22px 20px 18px;
-  }
-
-  .survey-origin-options {
-    gap: 14px;
-    overflow-y: auto;
-    padding: 20px;
-  }
-
-  .survey-origin-options > button {
-    min-height: 250px;
-    padding: 26px 20px;
-  }
-
   .create-survey-grid,
   .create-survey-image-layout,
   .create-survey-choice-group,
-  .create-survey-choice-group:last-of-type,
-  .survey-origin-options {
+  .create-survey-choice-group:last-of-type {
     grid-template-columns: 1fr;
   }
 

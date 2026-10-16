@@ -74,6 +74,39 @@
 }
 .skeleton-content { flex: 1; margin: 16px 0; }
 
+.skeleton-compact-list {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-compact-row {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.skeleton-compact-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-box,
+  .skeleton-line {
+    animation: none;
+  }
+}
+
 /* Responsive */
 @media only screen and (max-width: 900px) {
   .skeleton-block-card { flex-direction: column; align-items: flex-start; gap: 16px; }

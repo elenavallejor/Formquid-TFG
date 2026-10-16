@@ -21,7 +21,7 @@ public interface ElementRequestRepository
             request.requestedBy.name,
             request.requestedBy.email,
             request.requestedBy.institution,
-            request.requestedBy.gender,
+            request.requestedBy.country,
             request.requestedBy.role,
             request.elementType,
             request.message,

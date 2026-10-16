@@ -19,6 +19,7 @@ export function SearchToolbar({
   selectedFilterValues,
   filterChoice,
   filterChoices,
+  showFilter = false,
   onFilterChange,
   onFilterReset,
   sortAriaLabel = 'Ordenar resultados',
@@ -41,7 +42,7 @@ export function SearchToolbar({
           />
         </label>
 
-        {(filterOptions?.length > 0 || filterChoice?.options?.length > 0 || filterChoices?.length > 0) && (
+        {(showFilter || filterOptions?.length > 0 || filterChoice?.options?.length > 0 || filterChoices?.length > 0) && (
           <Filter
             label={filterLabel}
             options={filterOptions}

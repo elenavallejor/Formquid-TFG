@@ -1,5 +1,6 @@
 package com.formquid.question.repository;
 
+import com.formquid.common.Category;
 import com.formquid.question.dto.FixedQuestionSummaryDto;
 import com.formquid.question.entity.Question;
 import com.formquid.question.entity.QuestionScope;
@@ -26,11 +27,13 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 question.questionType,
                 creator.name,
                 question.createdAt,
-                question.updatedAt
+                question.updatedAt,
+                question.category
             )
             from Question question
             left join question.createdBy creator
             where question.scope = :scope
+                and (:category is null or question.category = :category)
                 and (
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
@@ -47,6 +50,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             from Question question
             left join question.createdBy creator
             where question.scope = :scope
+                and (:category is null or question.category = :category)
                 and (
                     (:mine = true and creator.id = :userId)
                     or (:mine = false and (creator.id is null or creator.id <> :userId))
@@ -67,6 +71,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         @Param("searchTitle") boolean searchTitle,
         @Param("searchDescription") boolean searchDescription,
         @Param("searchCreator") boolean searchCreator,
+        @Param("category") Category category,
         Pageable pageable
     );
 
@@ -77,15 +82,18 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             left join fetch question.settings
             left join fetch question.createdBy
             where question.scope = :scope
+                and (:category is null or question.category = :category)
             """,
         countQuery = """
             select count(question.id)
             from Question question
             where question.scope = :scope
+                and (:category is null or question.category = :category)
             """
     )
     Page<Question> findCatalogQuestionsWithDetails(
         @Param("scope") QuestionScope scope,
+        @Param("category") Category category,
         Pageable pageable
     );
 
@@ -131,5 +139,4 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     Optional<Question> findByParentItemId(Long parentItemId);
 
-    long countBySourceFixedQuestionId(Long sourceFixedQuestionId);
 }

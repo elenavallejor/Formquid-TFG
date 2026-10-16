@@ -3,6 +3,8 @@ package com.formquid.template.service;
 import com.formquid.block.entity.Block;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.block.service.BlockService;
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.common.dto.CatalogSearchField;
 import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.common.dto.PageResponseDto;
@@ -50,6 +52,7 @@ public class TemplateService {
     private final BlockService blockService;
     private final ContentService contentService;
     private final QuestionService questionService;
+    private final CategoryCatalogService categoryCatalogService;
 
     @Transactional(readOnly = true)
     public PageResponseDto<TemplateSummaryDto> findAll(
@@ -59,7 +62,8 @@ public class TemplateService {
         boolean mine,
         String search,
         Set<CatalogSearchField> searchFields,
-        CatalogSortOrder sortOrder
+        CatalogSortOrder sortOrder,
+        Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
         Pageable pageable = catalogPageable(page, size, sortOrder);
@@ -70,6 +74,7 @@ public class TemplateService {
             fields.contains(CatalogSearchField.TITLE),
             fields.contains(CatalogSearchField.DESCRIPTION),
             fields.contains(CatalogSearchField.CREATOR),
+            category,
             pageable
         );
         return new PageResponseDto<>(
@@ -102,8 +107,10 @@ public class TemplateService {
     @Transactional
     public TemplateResponseDto create(CreateTemplateRequestDto request, User creator) {
         validateDraft(request);
+        categoryCatalogService.requireExisting(request.category() == null ? Category.OTROS : request.category());
         Template template = templateRepository.save(Template.builder()
             .title(request.title().trim())
+            .category(request.category() == null ? Category.OTROS : request.category())
             .description(trimToNull(request.description()))
             .imageKey(trimToNull(request.imageKey()))
             .createdBy(creator)
@@ -125,8 +132,10 @@ public class TemplateService {
         Template template = getTemplate(id);
         requireManagementPermission(template.getCreatedBy(), user);
         validateDraft(request);
+        if (request.category() != null) categoryCatalogService.requireExisting(request.category());
         contentService.deleteTemplateContent(template);
         template.setTitle(request.title().trim());
+        if (request.category() != null) template.setCategory(request.category());
         template.setDescription(trimToNull(request.description()));
         template.setImageKey(trimToNull(request.imageKey()));
         template.setUpdatedAt(Instant.now());
@@ -301,7 +310,8 @@ public class TemplateService {
             creator == null ? null : creator.getId(),
             creator == null ? null : creator.getName(),
             template.getCreatedAt(),
-            template.getUpdatedAt()
+            template.getUpdatedAt(),
+            template.getCategory()
         );
     }
 

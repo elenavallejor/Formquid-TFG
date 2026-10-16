@@ -189,10 +189,7 @@ export function CollaborationsPage() {
 
         <div className="collaborations-content" aria-busy={isLoading}>
           {isLoading ? (
-            <>
-              <span className="sr-only" role="status">Cargando colaboraciones</span>
-              <Skeleton variant="table" count={4} />
-            </>
+            <Skeleton variant="table" count={4} label="Cargando colaboraciones…" />
           ) : (
             <>
               <RequestSection

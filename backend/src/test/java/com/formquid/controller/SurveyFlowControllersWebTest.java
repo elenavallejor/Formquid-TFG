@@ -26,6 +26,7 @@ import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.service.SurveyService;
+import com.formquid.survey.service.SurveyOdtImportService;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
@@ -50,6 +51,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,6 +71,7 @@ class SurveyFlowControllersWebTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private SurveyService surveyService;
+    @MockitoBean private SurveyOdtImportService surveyOdtImportService;
     @MockitoBean private ContentService contentService;
     @MockitoBean private CollaborationService collaborationService;
     @MockitoBean private StatisticsService statisticsService;
@@ -84,6 +87,43 @@ class SurveyFlowControllersWebTest {
             .andExpect(status().isOk());
 
         verify(surveyService).getSurveyForUser(4L, editor);
+    }
+
+    @Test
+    void wordImportPreview_passesTheUploadedDocumentToService() throws Exception {
+        User editor = editor();
+
+        mockMvc.perform(multipart("/api/v1/surveys/import/preview")
+                .file("file", "documento".getBytes())
+                .with(authentication(tokenFor(editor)))
+                .with(csrf()))
+            .andExpect(status().isOk());
+
+        verify(surveyOdtImportService).preview(any());
+    }
+
+    @Test
+    void importedSurveyCreation_passesTheAuthenticatedEditorToService() throws Exception {
+        User editor = editor();
+
+        mockMvc.perform(post("/api/v1/surveys/from-import")
+                .contentType("application/json")
+                .content("""
+                    {
+                      "survey": {
+                        "title": "Encuesta importada",
+                        "accessMode": "PUBLIC",
+                        "visibility": "UNLISTED",
+                        "tags": []
+                      },
+                      "content": { "items": [] }
+                    }
+                    """)
+                .with(authentication(tokenFor(editor)))
+                .with(csrf()))
+            .andExpect(status().isCreated());
+
+        verify(surveyOdtImportService).createImported(any(), same(editor));
     }
 
     @Test
@@ -115,7 +155,7 @@ class SurveyFlowControllersWebTest {
                 "Editora",
                 SurveyLifecycle.CLOSED,
                 3,
-                Instant.parse("2026-10-06T10:00:00Z")
+                Instant.parse("2026-10-06T10:00:00Z"), null
             )), 1, 18, 20, 2));
 
         mockMvc.perform(get("/api/v1/surveys/results")
@@ -145,9 +185,9 @@ class SurveyFlowControllersWebTest {
     void registeredSurveyListPassesPaginationToService() throws Exception {
         User editor = editor();
         when(surveyService.findListedOpenForRegisteredPage(
-            editor, "clima", "educacion", SurveyAccessMode.AUTHENTICATED, 2, 9
+            editor, "clima", "educacion", SurveyAccessMode.AUTHENTICATED, 2, 9, null
         )).thenReturn(new PageResponseDto<>(List.of(new PublicSurveySummaryDto(
-            "ABC123", "Encuesta", null, null, SurveyAccessMode.AUTHENTICATED, List.of("educacion")
+            "ABC123", "Encuesta", null, null, SurveyAccessMode.AUTHENTICATED, List.of("educacion"), null
         )), 2, 9, 20, 3));
 
         mockMvc.perform(get("/api/v1/surveys/registered/page")

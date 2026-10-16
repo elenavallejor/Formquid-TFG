@@ -57,7 +57,7 @@ public class UserService {
             fields.contains(UserSearchField.NAME),
             fields.contains(UserSearchField.EMAIL),
             fields.contains(UserSearchField.INSTITUTION),
-            fields.contains(UserSearchField.GENDER),
+            fields.contains(UserSearchField.COUNTRY),
             fields.contains(UserSearchField.ROLE),
             createPageRequest(page, size, sortOrder)
         );
@@ -169,7 +169,7 @@ public class UserService {
     }
 
     public UserResponseDto toResponse(User user) {
-        return new UserResponseDto(user.getId(), user.getRole(), user.getEmail(), user.getName(), user.getGender(), user.getInstitution(), user.getCreatedAt(), user.getUpdatedAt());
+        return new UserResponseDto(user.getId(), user.getRole(), user.getEmail(), user.getName(), user.getInstitution(), user.getCountry(), user.getCreatedAt(), user.getUpdatedAt());
     }
 
     private PageRequest createPageRequest(int page, int size, UserSortOrder sortOrder) {
@@ -195,10 +195,7 @@ public class UserService {
     private boolean updateProfile(User user, UpdateAccountRequestDto.ProfileData profile) {
         String name = requireText(profile.name(), "Introduce tu nombre completo");
         String institution = requireText(profile.institution(), "Introduce tu institución");
-
-        if (profile.gender() == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Selecciona un género válido");
-        }
+        String country = requireText(profile.country(), "Introduce tu país");
 
         boolean changed = false;
 
@@ -210,8 +207,8 @@ public class UserService {
             user.setInstitution(institution);
             changed = true;
         }
-        if (profile.gender() != user.getGender()) {
-            user.setGender(profile.gender());
+        if (!country.equals(user.getCountry())) {
+            user.setCountry(country);
             changed = true;
         }
         return changed;
