@@ -54,6 +54,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -94,22 +95,51 @@ class CatalogAndAdminControllersWebTest {
     @Test
     void categoryCreation_requiresSuperadmin() throws Exception {
         when(categoryCatalogService.create(any(CreateCategoryRequestDto.class)))
-            .thenReturn(new CategoryResponseDto("TECNOLOGIA_ASISTIVA", "Tecnología asistiva", false));
+            .thenReturn(new CategoryResponseDto("TECNOLOGIA_ASISTIVA", "Tecnología asistiva", false, "BsRobot"));
 
         mockMvc.perform(post("/api/v1/categories")
                 .contentType("application/json")
-                .content("{\"name\":\"Tecnología asistiva\"}")
+                .content("{\"name\":\"Tecnología asistiva\",\"icon\":\"BsRobot\"}")
                 .with(csrf())
                 .with(authentication(tokenFor(user(2L, UserRole.ADMIN)))))
             .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/v1/categories")
                 .contentType("application/json")
-                .content("{\"name\":\"Tecnología asistiva\"}")
+                .content("{\"name\":\"Tecnología asistiva\",\"icon\":\"BsRobot\"}")
                 .with(csrf())
                 .with(authentication(tokenFor(user(3L, UserRole.SUPERADMIN)))))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.code").value("TECNOLOGIA_ASISTIVA"));
+            .andExpect(jsonPath("$.code").value("TECNOLOGIA_ASISTIVA"))
+            .andExpect(jsonPath("$.icon").value("BsRobot"));
+    }
+
+    @Test
+    void categoryIconUpdate_requiresSuperadminAndValidIcon() throws Exception {
+        when(categoryCatalogService.updateIcon("TECNOLOGIA_ASISTIVA", "BsCpu"))
+            .thenReturn(new CategoryResponseDto("TECNOLOGIA_ASISTIVA", "Tecnología asistiva", false, "BsCpu"));
+
+        mockMvc.perform(patch("/api/v1/categories/TECNOLOGIA_ASISTIVA/icon")
+                .contentType("application/json")
+                .content("{\"icon\":\"BsCpu\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(user(2L, UserRole.ADMIN)))))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/api/v1/categories/TECNOLOGIA_ASISTIVA/icon")
+                .contentType("application/json")
+                .content("{\"icon\":\"invalid\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(user(3L, UserRole.SUPERADMIN)))))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(patch("/api/v1/categories/TECNOLOGIA_ASISTIVA/icon")
+                .contentType("application/json")
+                .content("{\"icon\":\"BsCpu\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(user(3L, UserRole.SUPERADMIN)))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.icon").value("BsCpu"));
     }
 
     @Test
@@ -218,14 +248,14 @@ class CatalogAndAdminControllersWebTest {
         User editor = user(8L, UserRole.EDITOR);
         when(userService.getProfile(editor)).thenReturn(new UserResponseDto(
             8L, UserRole.EDITOR, "user8@example.com", "Usuario",
-            "Centro", "España", Instant.parse("2026-01-01T10:00:00Z"), Instant.parse("2026-01-01T10:00:00Z")
+            "Centro", "ES", Instant.parse("2026-01-01T10:00:00Z"), Instant.parse("2026-01-01T10:00:00Z")
         ));
 
         mockMvc.perform(get("/api/v1/users/me").with(authentication(tokenFor(editor))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(8))
             .andExpect(jsonPath("$.role").value("EDITOR"))
-            .andExpect(jsonPath("$.country").value("España"))
+            .andExpect(jsonPath("$.country").value("ES"))
             .andExpect(jsonPath("$.gender").doesNotExist());
     }
 

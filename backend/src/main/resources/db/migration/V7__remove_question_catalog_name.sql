@@ -1,3 +1,5 @@
+-- Retira el nombre interno de las preguntas del catálogo y ajusta sus reglas.
+
 BEGIN;
 
 DO $$

@@ -1,3 +1,5 @@
+-- Elimina el género de los usuarios y de las solicitudes de registro.
+
 ALTER TABLE users
     DROP CONSTRAINT ck_users_values,
     DROP COLUMN gender,

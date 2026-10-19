@@ -3,23 +3,12 @@ import { MdAdd, MdClose, MdHelpOutline, MdViewModule } from "react-icons/md";
 import { IoMdText } from "react-icons/io";
 
 import { useModalFocus } from "../../hooks/useModalFocus.js";
+import { CREATABLE_ELEMENT_TYPE, ELEMENT_CREATOR_CONTEXT } from "./createElementOptions.js";
 import "./CreateElementButton.css";
 
 /**
  * Muestra un botón reutilizable para elegir qué tipo de elemento crear en cada constructor.
  */
-export const ELEMENT_CREATOR_CONTEXT = {
-  BLOCK: "BLOCK",
-  TEMPLATE: "TEMPLATE",
-  SURVEY: "SURVEY",
-};
-
-export const CREATABLE_ELEMENT_TYPE = {
-  TEXT: "TEXT",
-  QUESTION: "QUESTION",
-  BLOCK: "BLOCK",
-};
-
 const BASE_OPTIONS = [
   {
     type: CREATABLE_ELEMENT_TYPE.TEXT,

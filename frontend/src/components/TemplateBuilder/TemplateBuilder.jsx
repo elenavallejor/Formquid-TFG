@@ -28,11 +28,8 @@ import {
 import { useModalFocus } from '../../hooks/useModalFocus.js';
 import { Block } from '../Block/Block.jsx';
 import { BlockBuilder } from '../BlockBuilder/BlockBuilder.jsx';
-import {
-  CREATABLE_ELEMENT_TYPE,
-  CreateElementButton,
-  ELEMENT_CREATOR_CONTEXT,
-} from '../CreateElementButton/CreateElementButton.jsx';
+import { CreateElementButton } from '../CreateElementButton/CreateElementButton.jsx';
+import { CREATABLE_ELEMENT_TYPE, ELEMENT_CREATOR_CONTEXT } from '../CreateElementButton/createElementOptions.js';
 import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
 import { Question } from '../Question/Question.jsx';
 import { QuestionBuilder } from '../QuestionBuilder/QuestionBuilder.jsx';

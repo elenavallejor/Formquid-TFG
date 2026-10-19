@@ -1,3 +1,5 @@
+-- Evita registrar participaciones duplicadas con el mismo usuario o identificador de participante.
+
 ALTER TABLE participations
     ADD COLUMN respondent_user_id bigint,
     ADD COLUMN respondent_token_hash varchar(64),

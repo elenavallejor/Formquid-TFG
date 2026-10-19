@@ -1,3 +1,5 @@
+-- Crea el superadministrador que necesitan las migraciones durante las pruebas.
+
 INSERT INTO users (
     role,
     email,

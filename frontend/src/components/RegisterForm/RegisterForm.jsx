@@ -4,6 +4,7 @@ import { MdBusiness, MdCheckCircleOutline, MdEditNote, MdLockOutline, MdOutlineE
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 import { createRegistrationRequest } from '../../api/registrationRequestsApi';
+import { CountrySelect } from '../CountrySelect/CountrySelect.jsx';
 import { INITIAL_REGISTER_FORM_DATA, REGISTER_FORM_LIMITS, createRegistrationRequestPayload, hasRegisterFormErrors, validateRegisterForm } from '../../utils/registerFormValidation';
 
 import './RegisterForm.css';
@@ -161,20 +162,15 @@ export function RegisterForm() {
 
       <div className="register-field">
         <label htmlFor="register-country">País</label>
-        <div className="register-input-wrapper">
-          <MdPublic className="register-input-icon" aria-hidden="true" />
-          <input
-            id="register-country"
-            name="country"
-            type="text"
-            value={formData.country}
-            onChange={handleChange}
-            maxLength={REGISTER_FORM_LIMITS.country}
-            autoComplete="country-name"
-            aria-invalid={Boolean(errors.country)}
-            aria-describedby={errors.country ? 'register-country-error' : undefined}
-          />
-        </div>
+        <CountrySelect
+          id="register-country"
+          name="country"
+          icon={MdPublic}
+          value={formData.country}
+          onChange={handleChange}
+          aria-invalid={Boolean(errors.country)}
+          aria-describedby={errors.country ? 'register-country-error' : undefined}
+        />
         <p id="register-country-error" className="register-error-message">{errors.country || ''}</p>
       </div>
 

@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
 import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CountrySelect } from '../../../components/CountrySelect/CountrySelect.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import { loadUserData } from '../../../utils/loadUserData.js';
 import { hasAccountFormErrors, hasFormChanges, hasPersonalChanges, validateEmailChange, validatePasswordChange, validatePersonalInfo } from '../../../utils/accountFormUtils.js';
 import './AccountPage.css';
@@ -267,7 +268,7 @@ export function AccountPage() {
               </div>
               <div className="input-field-group">
                 <label htmlFor="pais">País</label>
-                <input type="text" id="pais" name="pais" value={personalData.pais} onChange={handlePersonalChange} maxLength={100} autoComplete="country-name" />
+                <CountrySelect id="pais" name="pais" value={personalData.pais} onChange={handlePersonalChange} />
               </div>
             </div>
 

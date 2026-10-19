@@ -6,7 +6,7 @@ import { MdOutlineDashboard, MdOutlineKeyboardArrowDown, MdOutlineLogout, MdOutl
 import { getUnreadNotificationsCount } from '../../api/notificationsApi.js';
 import formQuidLogo from '../../assets/images/formquid-logo.png';
 import { NotificationsModal } from '../NotificationsModal/NotificationsModal.jsx';
-import { useAuth } from '../../context/AuthContext.jsx';
+import { useAuth } from '../../context/useAuth.js';
 import { getUserInitials } from '../../utils/getUserInitials.js';
 
 import './Header.css';

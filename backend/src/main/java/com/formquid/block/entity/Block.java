@@ -4,6 +4,7 @@ import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -28,7 +29,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Check;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,14 +40,14 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = """
-    scope in ('CATALOG', 'SNAPSHOT')
-    and (
-        (scope = 'CATALOG' and parent_item_id is null)
-        or (scope = 'SNAPSHOT' and parent_item_id is not null)
-    )""")
 @Table(
     name = "blocks",
+    check = @CheckConstraint(constraint = """
+        scope in ('CATALOG', 'SNAPSHOT')
+        and (
+            (scope = 'CATALOG' and parent_item_id is null)
+            or (scope = 'SNAPSHOT' and parent_item_id is not null)
+        )"""),
     uniqueConstraints = @UniqueConstraint(name = "uk_blocks_parent_item", columnNames = "parent_item_id"),
     indexes = {
         @Index(name = "idx_blocks_scope", columnList = "scope"),

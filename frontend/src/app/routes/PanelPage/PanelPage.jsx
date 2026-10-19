@@ -14,7 +14,7 @@ import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { SurveyOriginModal } from '../../../components/SurveyOriginModal/SurveyOriginModal.jsx';
 import { Table } from '../../../components/Table/Table.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './PanelPage.css';
 
@@ -638,7 +638,7 @@ export function PanelPage() {
                     icon={TbCategoryPlus}
                     to="/superadmin/categorias"
                     buttonLabel="Ver categorías"
-                    theme="purple"
+                    theme="teal"
                     fullWidth
                   />
                 </div>

@@ -23,7 +23,7 @@ import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility,
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
@@ -31,7 +31,7 @@ import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx'
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyBuilder } from '../../../components/SurveyBuilder/SurveyBuilder.jsx';
 import { SurveyPreviewModal } from '../../../components/SurveyPreviewModal/SurveyPreviewModal.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import { buildTemplateBlockFromCatalog, buildTemplateQuestionFromCatalog } from '../../../utils/templateBuilderUtils.js';
 import { INITIAL_SURVEY_STRUCTURE, buildSurveyStructurePayload, buildSurveyStructureState, getSurveyPublicationValidationError, getSurveyStructureValidationError } from '../../../utils/surveyBuilderUtils.js';
 import { formatDate } from '../../../utils/formatDate.js';
@@ -263,10 +263,8 @@ function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, on
       <section className="create-survey-card" aria-labelledby="edit-survey-appearance-title">
         <h2 id="edit-survey-appearance-title">APARIENCIA</h2>
         <div className="create-survey-grid edit-survey-appearance-layout">
-          <div className="create-survey-field">
-            <CategorySelect id="edit-survey-category" surveyOnly value={data.category}
-              onChange={(category) => onChange({ category })} />
-          </div>
+          <CategorySelect id="edit-survey-category" surveyOnly value={data.category}
+            onChange={(category) => onChange({ category })} />
           <div className="create-survey-field">
             <label htmlFor="edit-survey-font">Tipografía</label>
             <Dropdown id="edit-survey-font" value={data.fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value })}>

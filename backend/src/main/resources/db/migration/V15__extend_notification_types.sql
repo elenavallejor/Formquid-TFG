@@ -1,3 +1,5 @@
+-- Amplía las notificaciones para cubrir los cambios de cuenta, las colaboraciones y las encuestas.
+
 ALTER TABLE notifications DROP CONSTRAINT ck_notifications_values;
 
 ALTER TABLE notifications ADD CONSTRAINT ck_notifications_values CHECK (

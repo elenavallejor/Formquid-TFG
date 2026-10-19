@@ -1,6 +1,7 @@
 package com.formquid.elementrequest.entity;
 
 import com.formquid.user.entity.User;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -33,12 +33,9 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(
-    constraints =
-        "element_type in ('FIXED_QUESTION', 'BLOCK', 'TEMPLATE')"
-)
 @Table(
     name = "element_requests",
+    check = @CheckConstraint(constraint = "element_type in ('FIXED_QUESTION', 'BLOCK', 'TEMPLATE')"),
     indexes = {
         @Index(
             name = "idx_element_requests_created_at",

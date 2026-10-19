@@ -1,5 +1,6 @@
 package com.formquid.question.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,7 +17,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 
 import java.math.BigDecimal;
 
@@ -26,9 +26,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "position >= 1 and (evaluation_factor is null or evaluation_factor between 0 and 1)")
 @Table(
     name = "question_options",
+    check = @CheckConstraint(constraint = "position >= 1 and (evaluation_factor is null or evaluation_factor between 0 and 1)"),
     uniqueConstraints = @UniqueConstraint(name = "uk_question_options_position", columnNames = {"question_id", "position"}),
     indexes = @Index(name = "idx_question_options_question", columnList = "question_id, position")
 )

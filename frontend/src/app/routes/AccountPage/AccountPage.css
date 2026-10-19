@@ -10,25 +10,6 @@
   margin: 0 auto;
 }
 
-.breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-  color: var(--color-text-muted);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.breadcrumb-nav a {
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.breadcrumb-nav a:hover {
-  color: var(--color-primary);
-}
-
 .account-page-header {
   display: flex;
   align-items: center;
@@ -319,7 +300,6 @@
   font-size: 22.5px;
 }
 
-.breadcrumb-nav a:focus-visible,
 .btn-save-changes:focus-visible,
 .btn-toggle-eye:focus-visible,
 .btn-delete-account:focus-visible {

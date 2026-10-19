@@ -1,3 +1,5 @@
+-- Permite varios superadministradores y evita que se elimine el último.
+
 DROP INDEX IF EXISTS ux_users_single_superadmin;
 
 ALTER TABLE users

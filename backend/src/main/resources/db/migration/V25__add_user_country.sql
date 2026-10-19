@@ -1,3 +1,5 @@
+-- Añade el país a los usuarios y a las solicitudes de registro, con un índice para buscarlo.
+
 ALTER TABLE users ADD COLUMN country varchar(100);
 ALTER TABLE registration_requests ADD COLUMN country varchar(100);
 

@@ -1,4 +1,5 @@
--- Preserve existing rows and clients that do not yet send a category.
+-- Añade categorías a encuestas, plantillas, bloques y preguntas, con Otros como valor inicial.
+
 ALTER TABLE surveys ADD COLUMN category varchar(50) NOT NULL DEFAULT 'OTHER';
 ALTER TABLE templates ADD COLUMN category varchar(50) NOT NULL DEFAULT 'OTHER';
 ALTER TABLE blocks ADD COLUMN category varchar(50) NOT NULL DEFAULT 'OTHER';

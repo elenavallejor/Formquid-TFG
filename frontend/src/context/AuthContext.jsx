@@ -1,14 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '../api/authApi.js';
 import { ApiError, setUnauthorizedHandler } from '../api/apiClient.js';
+import { AuthContext } from './authContext.js';
 
 /**
  * Gestiona globalmente la autenticación, la restauración de sesión 
  * y el usuario autenticado.
  */
-const AuthContext = createContext(null);
-
 const AUTH_STATUS = {
   UNKNOWN: 'unknown',
   AUTHENTICATED: 'authenticated',
@@ -193,14 +192,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth debe utilizarse dentro de AuthProvider.');
-  }
-
-  return context;
 }

@@ -1,3 +1,5 @@
+-- Agiliza las búsquedas de texto en el catálogo y en los nombres de sus creadores.
+
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE INDEX idx_templates_title_search

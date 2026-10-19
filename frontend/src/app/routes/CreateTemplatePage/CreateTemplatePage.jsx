@@ -5,11 +5,11 @@ import { MdSave } from 'react-icons/md';
 import { createCatalogTemplate } from '../../../api/catalogApi.js';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import {
   INITIAL_TEMPLATE_STATE,
   buildCreateCatalogTemplatePayload,
@@ -85,9 +85,7 @@ export function CreateTemplatePage() {
             <div><h1>CREA TU PLANTILLA</h1><p className="page-main-subtitle">Crea y organiza los bloques y preguntas de tu nueva plantilla.</p></div>
             <button type="button" className="btn-create-submit" disabled={isSaving || isInitializing} onClick={handleSaveTemplate}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : 'Guardar plantilla'}</span></button>
           </header>
-          <div className="builder-field">
-            <CategorySelect id="template-category" value={category} onChange={setCategory} />
-          </div>
+          <CategorySelect id="template-category" value={category} onChange={setCategory} />
           {errorMsg && <div className="create-template-message"><ErrorMessage message={errorMsg} onClose={() => setErrorMsg('')} /></div>}
           {successMsg && <div className="account-success-banner" role="status"><span>{successMsg}</span></div>}
           {isInitializing ? <div className="builder-skeleton-wrapper"><Skeleton variant="list" count={3} hasActions={false} /></div> : <TemplateBuilder data={formData} onChange={setFormData} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} />}

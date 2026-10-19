@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaRegClipboard } from 'react-icons/fa';
 import {
   MdLockOutline,
@@ -13,7 +13,7 @@ import { Filter } from '../../../components/Filter/Filter.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './MainPage.css';
 
@@ -44,6 +44,8 @@ function PaginatedSurveySection({
   icon: Icon,
   id,
   isAuthLoading,
+  itemsPerPage,
+  onPageSizeChange,
   request,
   search,
   searchEmptyMessage,
@@ -53,23 +55,12 @@ function PaginatedSurveySection({
 }) {
   const [surveys, setSurveys] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [requestVersion, setRequestVersion] = useState(0);
-  const previousFilters = useRef({ search, tag });
-
   useEffect(() => {
-    if (previousFilters.current.search !== search || previousFilters.current.tag !== tag) {
-      previousFilters.current = { search, tag };
-      if (currentPage !== 0) {
-        setCurrentPage(0);
-        return undefined;
-      }
-    }
-
     if (!visible || isAuthLoading) return undefined;
 
     let isActive = true;
@@ -181,7 +172,7 @@ function PaginatedSurveySection({
           itemLabel="encuestas"
           onPageChange={setCurrentPage}
           onPageSizeChange={(size) => {
-            setItemsPerPage(size);
+            onPageSizeChange(size);
             setCurrentPage(0);
           }}
           pageSize={itemsPerPage}
@@ -208,6 +199,13 @@ export function MainPage() {
   const [selectedAccessModes, setSelectedAccessModes] = useState(
     () => ACCESS_OPTIONS.map((option) => option.value),
   );
+  const [pageSizes, setPageSizes] = useState(() => Object.fromEntries(
+    ACCESS_OPTIONS.map(({ value }) => [value, DEFAULT_PAGE_SIZE]),
+  ));
+
+  function updatePageSize(accessMode, size) {
+    setPageSizes((current) => ({ ...current, [accessMode]: size }));
+  }
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -286,11 +284,14 @@ export function MainPage() {
             </div>
           )}
           <PaginatedSurveySection
+            key={JSON.stringify([ACCESS_FILTERS.PUBLIC, debouncedSearch, tagFilter])}
             accessMode={ACCESS_FILTERS.PUBLIC}
             emptyMessage="No hay encuestas públicas disponibles."
             icon={MdPublic}
             id="public-surveys-title"
             isAuthLoading={isAuthLoading}
+            itemsPerPage={pageSizes[ACCESS_FILTERS.PUBLIC]}
+            onPageSizeChange={(size) => updatePageSize(ACCESS_FILTERS.PUBLIC, size)}
             request={request}
             search={debouncedSearch}
             searchEmptyMessage="No hay encuestas públicas que coincidan con tu búsqueda."
@@ -299,11 +300,14 @@ export function MainPage() {
             visible={showPublicSection}
           />
           <PaginatedSurveySection
+            key={JSON.stringify([ACCESS_FILTERS.PASSWORD, debouncedSearch, tagFilter])}
             accessMode={ACCESS_FILTERS.PASSWORD}
             emptyMessage="No hay encuestas con contraseña disponibles."
             icon={MdLockOutline}
             id="password-surveys-title"
             isAuthLoading={isAuthLoading}
+            itemsPerPage={pageSizes[ACCESS_FILTERS.PASSWORD]}
+            onPageSizeChange={(size) => updatePageSize(ACCESS_FILTERS.PASSWORD, size)}
             request={request}
             search={debouncedSearch}
             searchEmptyMessage="No hay encuestas con contraseña que coincidan con tu búsqueda."
@@ -313,11 +317,14 @@ export function MainPage() {
           />
           {isAuthenticated && (
             <PaginatedSurveySection
+              key={JSON.stringify([ACCESS_FILTERS.AUTHENTICATED, debouncedSearch, tagFilter])}
               accessMode={ACCESS_FILTERS.AUTHENTICATED}
               emptyMessage="No hay encuestas para usuarios registrados disponibles."
               icon={MdOutlinePerson}
               id="authenticated-surveys-title"
               isAuthLoading={isAuthLoading}
+              itemsPerPage={pageSizes[ACCESS_FILTERS.AUTHENTICATED]}
+              onPageSizeChange={(size) => updatePageSize(ACCESS_FILTERS.AUTHENTICATED, size)}
               request={request}
               search={debouncedSearch}
               searchEmptyMessage="No hay encuestas para usuarios registrados que coincidan con tu búsqueda."

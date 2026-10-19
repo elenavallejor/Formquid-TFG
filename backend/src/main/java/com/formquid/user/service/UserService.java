@@ -2,6 +2,7 @@ package com.formquid.user.service;
 
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.common.dto.PageResponseDto;
+import com.formquid.common.CountryCodes;
 import com.formquid.common.exception.ApiException;
 import com.formquid.common.service.EmailNormalizer;
 import com.formquid.notification.entity.NotificationType;
@@ -59,6 +60,7 @@ public class UserService {
             fields.contains(UserSearchField.INSTITUTION),
             fields.contains(UserSearchField.COUNTRY),
             fields.contains(UserSearchField.ROLE),
+            CountryCodes.matchingCodes(normalizeSearch(search)),
             createPageRequest(page, size, sortOrder)
         );
         return new PageResponseDto<>(users.getContent(), users.getNumber(), users.getSize(), users.getTotalElements(), users.getTotalPages());

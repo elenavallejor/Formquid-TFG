@@ -49,7 +49,7 @@ class AdministrationRepositoryTest {
     @Test
     void administrationProjections_returnOnlyRequestedDataAndParticipationCount() {
         User owner = persistUser("owner-admin-view@example.com", "Propietaria", UserRole.EDITOR);
-        owner.setCountry("España");
+        owner.setCountry("ES");
         Survey survey = persistSurvey(owner, "ADMINVIEW012", "Encuesta visible");
         persist(Participation.builder().survey(survey).respondentTokenHash("a".repeat(64)).build());
         persist(Participation.builder().survey(survey).respondentTokenHash("b".repeat(64)).build());
@@ -62,7 +62,7 @@ class AdministrationRepositoryTest {
 
         assertThat(userProjection.email()).isEqualTo("owner-admin-view@example.com");
         assertThat(userProjection.name()).isEqualTo("Propietaria");
-        assertThat(userProjection.country()).isEqualTo("España");
+        assertThat(userProjection.country()).isEqualTo("ES");
         assertThat(users.findResponses(
             "propietaria",
             true,
@@ -70,10 +70,11 @@ class AdministrationRepositoryTest {
             false,
             false,
             false,
+            java.util.List.of("ZZ"),
             PageRequest.of(0, 10, Sort.by("name"))
         )).extracting(UserResponseDto::id).contains(owner.getId());
         assertThat(users.findResponses(
-            "españa", false, false, false, true, false, PageRequest.of(0, 10)
+            "españa", false, false, false, true, false, java.util.List.of("ES"), PageRequest.of(0, 10)
         )).extracting(UserResponseDto::id).contains(owner.getId());
         assertThat(users.findResponses(
             "editor",
@@ -82,6 +83,7 @@ class AdministrationRepositoryTest {
             false,
             false,
             true,
+            java.util.List.of("ZZ"),
             PageRequest.of(0, 10, Sort.by("name"))
         )).extracting(UserResponseDto::id).contains(owner.getId());
         assertThat(surveyPage).singleElement().satisfies(summary -> {
@@ -119,13 +121,13 @@ class AdministrationRepositoryTest {
     void requestProjectionsAndDashboardCounts_followPersistedState() {
         var before = dashboard.getCounts();
         User requester = persistUser("requester-repo@example.com", "Solicitante", UserRole.EDITOR);
-        requester.setCountry("España");
+        requester.setCountry("ES");
         persistSurvey(requester, "DASHBOARD001", "Encuesta dashboard");
         RegistrationRequest registration = persist(RegistrationRequest.builder()
             .email("pending-repo@example.com")
             .name("Pendiente")
             .institution("Centro")
-            .country("España")
+            .country("ES")
             .motivation("Crear encuestas")
             .passwordHash("hash")
             .build());
@@ -140,11 +142,11 @@ class AdministrationRepositoryTest {
         assertThat(registrationRequests.findAllResponses()).extracting(item -> item.id())
             .contains(registration.getId());
         assertThat(registrationRequests.findAllResponses()).filteredOn(item -> item.id().equals(registration.getId()))
-            .singleElement().extracting(item -> item.country()).isEqualTo("España");
+            .singleElement().extracting(item -> item.country()).isEqualTo("ES");
         assertThat(elementRequests.findAllResponses()).filteredOn(item -> item.id().equals(element.getId()))
             .singleElement().satisfies(item -> {
                 assertThat(item.requestedByUserId()).isEqualTo(requester.getId());
-                assertThat(item.requestedByCountry()).isEqualTo("España");
+                assertThat(item.requestedByCountry()).isEqualTo("ES");
                 assertThat(item.requestPayload()).containsEntry("name", "Bloque");
             });
 

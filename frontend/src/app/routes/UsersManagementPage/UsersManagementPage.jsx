@@ -7,7 +7,8 @@ import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx'
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
+import { getCountryName } from '../../../utils/countries.js';
 import { DEFAULT_USERS_PAGE_SIZE, USER_SEARCH_OPTIONS, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserRoleLabel } from '../../../utils/usersManagementUtils.js';
 
 import './UsersManagementPage.css';
@@ -216,7 +217,7 @@ export function UsersManagementPage() {
                           <MdOutlineBusiness aria-hidden="true" />
                           {item.institution || 'Sin institución'}
                         </span>
-                        <span className="user-detail-item"><MdPublic aria-hidden="true" />{item.country || 'País no indicado'}</span>
+                        <span className="user-detail-item"><MdPublic aria-hidden="true" />{getCountryName(item.country)}</span>
                       </div>
                     </div>
                   </div>

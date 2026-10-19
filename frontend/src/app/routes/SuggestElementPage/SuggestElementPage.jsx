@@ -15,7 +15,7 @@ import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx'
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import {
   INITIAL_BLOCK_STATE,
   buildBlockQuestionFromCatalog,

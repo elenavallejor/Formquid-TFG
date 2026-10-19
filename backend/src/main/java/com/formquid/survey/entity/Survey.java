@@ -4,6 +4,7 @@ import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,7 +28,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Check;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -44,21 +44,21 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = """
-    lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
-    and access_mode in ('PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED')
-    and visibility in ('LISTED', 'UNLISTED')
-    and (lifecycle_status <> 'DRAFT' or visibility = 'UNLISTED')
-    and font_family in ('OPEN_DYSLEXIC', 'TIMES_NEW_ROMAN', 'LEXEND', 'ARIAL')
-    and (
-        (access_mode = 'PASSWORD_PROTECTED' and access_password_hash is not null)
-        or (access_mode <> 'PASSWORD_PROTECTED' and access_password_hash is null)
-    )
-    and cardinality(tags) <= 10
-    and category <> 'DATOS_PERSONALES'
-""")
 @Table(
     name = "surveys",
+    check = @CheckConstraint(constraint = """
+        lifecycle_status in ('DRAFT', 'OPEN', 'CLOSED')
+        and access_mode in ('PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED')
+        and visibility in ('LISTED', 'UNLISTED')
+        and (lifecycle_status <> 'DRAFT' or visibility = 'UNLISTED')
+        and font_family in ('OPEN_DYSLEXIC', 'TIMES_NEW_ROMAN', 'LEXEND', 'ARIAL')
+        and (
+            (access_mode = 'PASSWORD_PROTECTED' and access_password_hash is not null)
+            or (access_mode <> 'PASSWORD_PROTECTED' and access_password_hash is null)
+        )
+        and cardinality(tags) <= 10
+        and category <> 'DATOS_PERSONALES'
+    """),
     uniqueConstraints = @UniqueConstraint(name = "uk_surveys_public_code", columnNames = "public_code"),
     indexes = {
         @Index(name = "idx_surveys_owner", columnList = "owner_id"),

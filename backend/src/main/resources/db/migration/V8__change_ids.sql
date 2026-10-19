@@ -1,3 +1,5 @@
+-- Cambia los identificadores por números conservando las relaciones y añade códigos públicos a las encuestas.
+
 SET lock_timeout = '30s';
 
 ALTER TABLE registration_requests

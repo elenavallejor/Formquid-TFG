@@ -1,3 +1,5 @@
+-- Unifica las preguntas de texto y renombra la escala bipolar como escala.
+
 BEGIN;
 
 ALTER TABLE questions

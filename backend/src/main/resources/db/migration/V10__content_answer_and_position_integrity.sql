@@ -1,4 +1,5 @@
--- Normaliza la procedencia: una copia solo puede apuntar al elemento raíz de catálogo.
+-- Corrige el orden del contenido, valida las respuestas y protege las preguntas ya respondidas.
+
 WITH RECURSIVE block_ancestry AS (
     SELECT
         block.id AS descendant_id,
@@ -192,7 +193,6 @@ AFTER INSERT OR UPDATE ON questions
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION validate_catalog_source_reference();
 
--- Repara huecos históricos antes de exigir posiciones consecutivas.
 DROP INDEX IF EXISTS ux_content_items_survey_position;
 DROP INDEX IF EXISTS ux_content_items_template_position;
 DROP INDEX IF EXISTS ux_content_items_block_position;
@@ -377,7 +377,6 @@ AFTER INSERT OR UPDATE OR DELETE ON matrix_rows
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION matrix_row_position_constraint_trigger();
 
--- Garantiza la correspondencia exacta entre ContentItem y su subtipo.
 CREATE OR REPLACE FUNCTION validate_content_item_subtype(checked_item_id bigint)
 RETURNS void AS $$
 DECLARE
@@ -454,7 +453,6 @@ AFTER INSERT OR UPDATE OR DELETE ON blocks
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION subtype_parent_constraint_trigger();
 
--- Garantiza la pertenencia y la forma semantica de cada respuesta.
 CREATE OR REPLACE FUNCTION resolved_question_survey_id(checked_question_id bigint)
 RETURNS bigint AS $$
     SELECT coalesce(question_item.survey_id, block_parent_item.survey_id)

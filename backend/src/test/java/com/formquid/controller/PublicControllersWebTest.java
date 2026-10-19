@@ -166,7 +166,7 @@ class PublicControllersWebTest {
     @Test
     void registrationRequest_acceptsValidPublicRequest() throws Exception {
         when(registrationRequestService.create(any())).thenReturn(new RegistrationRequestResponseDto(
-            4L, "person@example.com", "Persona", "Colegio", "España", "Motivación",
+            4L, "person@example.com", "Persona", "Colegio", "ES", "Motivación",
             Instant.parse("2026-01-01T10:00:00Z")
         ));
 
@@ -178,14 +178,14 @@ class PublicControllersWebTest {
                       "email":"person@example.com",
                       "name":"Persona",
                       "institution":"Colegio",
-                      "country":"España",
+                      "country":"ES",
                       "motivation":"Motivación",
                       "password":"secret123"
                     }
                     """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(4))
-            .andExpect(jsonPath("$.country").value("España"))
+            .andExpect(jsonPath("$.country").value("ES"))
             .andExpect(jsonPath("$.gender").doesNotExist());
 
         verify(registrationRequestService).create(any());

@@ -2,13 +2,15 @@ import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { MdChevronRight } from 'react-icons/md';
 
+import './Breadcrumbs.css';
+
 export function Breadcrumbs({
   items = [],
-  className = 'breadcrumb-nav',
+  className = '',
   separator: Separator = MdChevronRight,
 }) {
   return (
-    <nav className={className} aria-label="Migas de pan">
+    <nav className={`breadcrumb-nav ${className}`.trim()} aria-label="Migas de pan">
       {items.map((item, index) => {
         const isCurrent = index === items.length - 1;
 

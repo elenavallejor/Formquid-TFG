@@ -2,6 +2,7 @@ package com.formquid.participation.entity;
 
 import com.formquid.question.entity.Question;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -20,7 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Check;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -32,9 +32,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "((text_value is not null)::int + (numeric_value is not null)::int + (boolean_value is not null)::int) <= 1")
 @Table(
     name = "answers",
+    check = @CheckConstraint(constraint = "((text_value is not null)::int + (numeric_value is not null)::int + (boolean_value is not null)::int) <= 1"),
     uniqueConstraints = @UniqueConstraint(name = "uk_answers_participation_question", columnNames = {"participation_id", "question_id"}),
     indexes = {
         @Index(name = "idx_answers_participation", columnList = "participation_id"),

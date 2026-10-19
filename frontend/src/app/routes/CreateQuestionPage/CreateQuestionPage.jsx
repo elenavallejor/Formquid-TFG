@@ -4,11 +4,11 @@ import { MdClose, MdSave } from 'react-icons/md';
 
 import { createCatalogQuestion } from '../../../api/catalogApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { buildCreateFixedQuestionPayload, getQuestionBuilderValidationError, INITIAL_QUESTION_STATE } from '../../../utils/questionBuilderUtils.js';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './CreateQuestionPage.css';
 
@@ -78,9 +78,7 @@ export function CreateQuestionPage() {
             <span>{isSaving ? 'Guardando...' : 'Crear pregunta'}</span>
           </button>
         </header>
-        <div className="builder-field">
-          <CategorySelect id="question-category" value={category} onChange={setCategory} />
-        </div>
+        <CategorySelect id="question-category" value={category} onChange={setCategory} />
 
         {errorMsg && (
           <div className="account-error-banner" role="alert">

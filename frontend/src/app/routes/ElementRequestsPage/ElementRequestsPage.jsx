@@ -14,6 +14,7 @@ import {
   MdOutlineWidgets,
   MdPublic,
 } from 'react-icons/md';
+import { getCountryName } from '../../../utils/countries.js';
 
 import {
   approveElementRequest,
@@ -222,7 +223,7 @@ function ElementRequestCard({ request, isCollapsed, onToggle, onAccept, onDeny }
         <ul className="element-request-user-data">
           <li><MdOutlineEmail aria-hidden="true" /><span>{request.requestedByEmail || '—'}</span></li>
           <li><MdOutlineBusiness aria-hidden="true" /><span>{request.requestedByInstitution || '—'}</span></li>
-          <li><MdPublic aria-hidden="true" /><span>{request.requestedByCountry || 'País no indicado'}</span></li>
+          <li><MdPublic aria-hidden="true" /><span>{getCountryName(request.requestedByCountry)}</span></li>
           <li>
             <MdOutlineCalendarToday aria-hidden="true" />
             <time dateTime={request.createdAt}>{formatDateTime(request.createdAt)}</time>

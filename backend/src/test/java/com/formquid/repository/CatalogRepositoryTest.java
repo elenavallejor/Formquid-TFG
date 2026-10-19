@@ -38,6 +38,23 @@ class CatalogRepositoryTest {
     @Autowired private EntityManager entityManager;
 
     @Test
+    void categoryIconCanBeChangedAndPersisted() {
+        persist(new CategoryDefinition("TECNOLOGIA_ASISTIVA", "Tecnología asistiva", "BsRobot"));
+        entityManager.flush();
+        entityManager.clear();
+
+        CategoryDefinition category = entityManager.find(CategoryDefinition.class, "TECNOLOGIA_ASISTIVA");
+        assertThat(category.getIcon()).isEqualTo("BsRobot");
+        category.changeIcon("BsCpu");
+        entityManager.flush();
+        entityManager.clear();
+
+        CategoryDefinition updated = entityManager.find(CategoryDefinition.class, "TECNOLOGIA_ASISTIVA");
+        assertThat(updated.getIcon()).isEqualTo("BsCpu");
+        assertThat(updated.getVersion()).isEqualTo(1L);
+    }
+
+    @Test
     void catalogAcceptsCategoryCreatedAfterDeployment() {
         Category custom = Category.of("TECNOLOGIA_ASISTIVA");
         persist(new CategoryDefinition(custom.code(), "Tecnología asistiva"));

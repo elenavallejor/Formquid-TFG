@@ -12,11 +12,11 @@ import {
 } from '../../../api/catalogApi.js';
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './CatalogPage.css';
 
@@ -363,13 +363,11 @@ export function CatalogPage() {
           }}
         />
 
-        <div className="create-survey-field">
-          <CategorySelect id="catalog-category" value={category} onChange={(value) => {
-            setCategory(value);
-            setOwnCurrentPage(0);
-            setPublicCurrentPage(0);
-          }} />
-        </div>
+        <CategorySelect id="catalog-category" value={category} onChange={(value) => {
+          setCategory(value);
+          setOwnCurrentPage(0);
+          setPublicCurrentPage(0);
+        }} />
 
         <div className="catalog-results">
           {canCreateCatalog && renderCatalogSection({

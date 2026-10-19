@@ -1,3 +1,5 @@
+-- Distingue los permisos de consulta y edición en las colaboraciones y sus solicitudes.
+
 ALTER TABLE survey_collaborators
     ADD COLUMN IF NOT EXISTS permission varchar(20) NOT NULL DEFAULT 'EDIT';
 

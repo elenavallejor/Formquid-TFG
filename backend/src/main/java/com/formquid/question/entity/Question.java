@@ -4,6 +4,7 @@ import com.formquid.common.Category;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.user.entity.User;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -28,7 +29,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Check;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -44,21 +44,21 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = """
-    scope in ('CATALOG_FIXED', 'LOCAL', 'FIXED_SNAPSHOT')
-    and question_type in ('TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BOOLEAN')
-    and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
-    and (
-        (scope = 'CATALOG_FIXED' and parent_item_id is null)
-        or (scope in ('LOCAL', 'FIXED_SNAPSHOT') and parent_item_id is not null)
-    )
-    and (
-        (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)
-        or (evaluation_direction in ('POSITIVE', 'NEGATIVE') and evaluation_weight > 0)
-    )
-""")
 @Table(
     name = "questions",
+    check = @CheckConstraint(constraint = """
+        scope in ('CATALOG_FIXED', 'LOCAL', 'FIXED_SNAPSHOT')
+        and question_type in ('TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BOOLEAN')
+        and evaluation_direction in ('POSITIVE', 'NEGATIVE', 'NEUTRAL')
+        and (
+            (scope = 'CATALOG_FIXED' and parent_item_id is null)
+            or (scope in ('LOCAL', 'FIXED_SNAPSHOT') and parent_item_id is not null)
+        )
+        and (
+            (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)
+            or (evaluation_direction in ('POSITIVE', 'NEGATIVE') and evaluation_weight > 0)
+        )
+    """),
     uniqueConstraints = @UniqueConstraint(name = "uk_questions_parent_item", columnNames = "parent_item_id"),
     indexes = {
         @Index(name = "idx_questions_scope", columnList = "scope"),

@@ -1,6 +1,7 @@
 package com.formquid.user.entity;
 
 import com.formquid.common.service.EmailNormalizer;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,7 +19,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,12 +36,12 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = """
-    role in ('EDITOR', 'ADMIN', 'SUPERADMIN')
-    and email = lower(btrim(email))
-""")
 @Table(
     name = "users",
+    check = @CheckConstraint(constraint = """
+        role in ('EDITOR', 'ADMIN', 'SUPERADMIN')
+        and email = lower(btrim(email))
+    """),
     uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
     indexes = {
         @Index(name = "idx_users_role", columnList = "role"),

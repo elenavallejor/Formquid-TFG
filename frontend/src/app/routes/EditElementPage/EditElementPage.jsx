@@ -12,14 +12,14 @@ import {
 } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import {
   buildBlockQuestionFromCatalog,
   buildCreateCatalogBlockPayload,
@@ -89,15 +89,27 @@ const ELEMENT_CONFIG = {
 };
 
 export function EditElementPage() {
+  const { elementType, elementId } = useParams();
+  const location = useLocation();
+  return <EditElementEditor key={`${elementType}:${elementId}:${location.key}`} />;
+}
+
+function EditElementEditor() {
   const location = useLocation();
   const navigate = useNavigate();
   const { elementType, elementId } = useParams();
   const { isInitializing } = useAuth();
   const config = ELEMENT_CONFIG[elementType];
+  const navigationState = location.state;
+  const reusableElement = config && navigationState?.element
+    && navigationState.elementType === elementType
+    && String(navigationState.elementId) === String(elementId)
+    ? navigationState.element
+    : null;
   const saveLockRef = useRef(false);
-  const [formData, setFormData] = useState(null);
-  const [category, setCategory] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [formData, setFormData] = useState(() => reusableElement ? config.toState(reusableElement) : null);
+  const [category, setCategory] = useState(() => reusableElement?.category || '');
+  const [isLoading, setIsLoading] = useState(!reusableElement);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -105,26 +117,9 @@ export function EditElementPage() {
   const navigationBlocker = useBlocker(hasUnsavedChanges);
 
   useEffect(() => {
-    if (!config) return undefined;
+    if (!config || reusableElement) return undefined;
 
     let isMounted = true;
-    setIsLoading(true);
-    setFormData(null);
-    setHasUnsavedChanges(false);
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    const navigationState = location.state;
-    const canReuseElement = navigationState?.element
-      && navigationState.elementType === elementType
-      && String(navigationState.elementId) === String(elementId);
-
-    if (canReuseElement) {
-      setFormData(config.toState(navigationState.element));
-      setCategory(navigationState.element.category || '');
-      setIsLoading(false);
-      return () => { isMounted = false; };
-    }
 
     config.load(elementId)
       .then((element) => {
@@ -140,7 +135,7 @@ export function EditElementPage() {
       });
 
     return () => { isMounted = false; };
-  }, [config, elementId, elementType, location.state]);
+  }, [config, elementId, reusableElement]);
 
   useEffect(() => {
     function handleBeforeUnload(event) {
@@ -272,10 +267,10 @@ export function EditElementPage() {
         </button>
       </header>
 
-      {!isLoading && formData && <div className="builder-field">
+      {!isLoading && formData && (
         <CategorySelect id="edit-element-category" value={category}
           onChange={(value) => { setCategory(value); setHasUnsavedChanges(true); }} />
-      </div>}
+      )}
 
       {errorMsg && (
         <div className="edit-element-message">

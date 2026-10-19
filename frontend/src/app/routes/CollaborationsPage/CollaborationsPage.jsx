@@ -10,7 +10,7 @@ import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx'
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Table } from '../../../components/Table/Table.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './CollaborationsPage.css';
 

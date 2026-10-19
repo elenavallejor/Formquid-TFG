@@ -2,6 +2,7 @@ package com.formquid.collaboration.entity;
 
 import com.formquid.survey.entity.Survey;
 import com.formquid.user.entity.User;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -20,7 +21,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 
 import java.time.Instant;
 
@@ -30,12 +30,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(
-    constraints =
-        "request_type in ('INVITATION', 'ACCESS_REQUEST')"
-)
 @Table(
     name = "collaboration_requests",
+    check = @CheckConstraint(constraint = "request_type in ('INVITATION', 'ACCESS_REQUEST')"),
     indexes = {
         @Index(
             name = "idx_collaboration_requests_survey",

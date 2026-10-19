@@ -96,6 +96,21 @@ class CategoryMigrationTest {
             Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration", "classpath:db/testmigration")
+                .target("30")
+                .load()
+                .migrate();
+
+            try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+                 Statement statement = connection.createStatement()) {
+                statement.executeUpdate("""
+                    INSERT INTO categories (code, name, icon)
+                    VALUES ('GAFAS_INTELIGENTES', 'Gafas inteligentes', 'BsTag')
+                    """);
+            }
+
+            Flyway.configure()
+                .dataSource(jdbcUrl, username, password)
+                .locations("classpath:db/migration", "classpath:db/testmigration")
                 .load()
                 .migrate();
 
@@ -116,6 +131,26 @@ class CategoryMigrationTest {
                 assertThat(rows.getString(4)).isEqualTo("DATOS_PERSONALES");
                 assertThat(rows.getString(5)).isEqualTo("TELEFONO_INTELIGENTE");
                 assertThat(rows.getString(6)).isEqualTo("TELEFONO_INTELIGENTE");
+            }
+
+            try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+                 Statement statement = connection.createStatement();
+                 ResultSet rows = statement.executeQuery("""
+                     SELECT code, icon, version FROM categories
+                     WHERE code IN ('PORTATIL', 'DATOS_PERSONALES', 'GAFAS_INTELIGENTES') ORDER BY code
+                     """)) {
+                assertThat(rows.next()).isTrue();
+                assertThat(rows.getString("code")).isEqualTo("DATOS_PERSONALES");
+                assertThat(rows.getString("icon")).isEqualTo("BsPersonVcard");
+                assertThat(rows.getLong("version")).isZero();
+                assertThat(rows.next()).isTrue();
+                assertThat(rows.getString("code")).isEqualTo("GAFAS_INTELIGENTES");
+                assertThat(rows.getString("icon")).isEqualTo("BsEyeglasses");
+                assertThat(rows.getLong("version")).isEqualTo(1);
+                assertThat(rows.next()).isTrue();
+                assertThat(rows.getString("code")).isEqualTo("PORTATIL");
+                assertThat(rows.getString("icon")).isEqualTo("BsLaptop");
+                assertThat(rows.next()).isFalse();
             }
 
             try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);

@@ -1,5 +1,6 @@
 package com.formquid.question.entity;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,7 +17,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 
 
 @Getter
@@ -25,9 +25,9 @@ import org.hibernate.annotations.Check;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "position >= 1")
 @Table(
     name = "matrix_rows",
+    check = @CheckConstraint(constraint = "position >= 1"),
     uniqueConstraints = @UniqueConstraint(name = "uk_matrix_rows_position", columnNames = {"question_id", "position"}),
     indexes = @Index(name = "idx_matrix_rows_question", columnList = "question_id, position")
 )

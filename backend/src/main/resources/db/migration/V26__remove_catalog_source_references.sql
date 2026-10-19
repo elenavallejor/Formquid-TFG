@@ -1,3 +1,5 @@
+-- Desvincula las copias de bloques y preguntas de los elementos originales del catálogo.
+
 DROP TRIGGER trg_blocks_catalog_source ON blocks;
 DROP TRIGGER trg_questions_catalog_source ON questions;
 DROP FUNCTION validate_catalog_source_reference();

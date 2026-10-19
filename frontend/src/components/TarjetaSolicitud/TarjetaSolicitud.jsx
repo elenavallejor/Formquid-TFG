@@ -1,4 +1,5 @@
 import { MdOutlineEmail, MdOutlineBusiness, MdOutlineEdit, MdOutlineCalendarToday, MdCheck, MdClose, MdPublic } from 'react-icons/md';
+import { getCountryName } from '../../utils/countries.js';
 import './TarjetaSolicitud.css';
 
 export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
@@ -29,7 +30,7 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
             <MdOutlineBusiness className="solicitud-icon" aria-hidden="true" />
             <span>{institution}</span>
           </li>
-          <li><MdPublic className="solicitud-icon" aria-hidden="true" /><span>{country || 'País no indicado'}</span></li>
+          <li><MdPublic className="solicitud-icon" aria-hidden="true" /><span>{getCountryName(country)}</span></li>
         </ul>
       </div>
 

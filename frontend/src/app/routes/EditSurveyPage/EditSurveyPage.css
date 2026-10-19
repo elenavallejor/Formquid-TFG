@@ -348,6 +348,7 @@
 }
 
 .edit-survey-appearance-layout {
+  --category-select-margin-bottom: 0px;
   align-items: start;
 }
 

@@ -1,6 +1,7 @@
 package com.formquid.registration.entity;
 
 import com.formquid.common.service.EmailNormalizer;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,7 +15,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 
 import java.time.Instant;
 
@@ -24,9 +24,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = "email = lower(btrim(email))")
 @Table(
     name = "registration_requests",
+    check = @CheckConstraint(constraint = "email = lower(btrim(email))"),
     indexes = {
         @Index(name = "idx_registration_requests_email", columnList = "email"),
         @Index(name = "idx_registration_requests_created_at", columnList = "created_at")

@@ -5,10 +5,10 @@ import { MdClose, MdSave } from 'react-icons/md';
 import { createCatalogBlock } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import { INITIAL_BLOCK_STATE, buildBlockQuestionFromCatalog, buildCreateCatalogBlockPayload, getBlockItems, getBlockBuilderValidationError } from "../../../utils/blockBuilderUtils.js";
 import './CreateBlockPage.css';
 
@@ -110,9 +110,7 @@ export function CreateBlockPage() {
               <span>{isSaving ? "Guardando..." : "Crear bloque"}</span>
             </button>
           </header>
-          <div className="builder-field">
-            <CategorySelect id="block-category" value={category} onChange={setCategory} />
-          </div>
+          <CategorySelect id="block-category" value={category} onChange={setCategory} />
 
           {errorMsg && (
             <div className="account-error-banner" role="alert">

@@ -1,3 +1,5 @@
+-- Permite asignar hasta diez etiquetas a una encuesta.
+
 ALTER TABLE surveys DROP CONSTRAINT IF EXISTS ck_surveys_values;
 
 ALTER TABLE surveys

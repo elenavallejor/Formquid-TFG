@@ -9,7 +9,7 @@ import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './SurveyListPage.css';
 
@@ -33,6 +33,11 @@ export function SurveyListPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  function startLoading() {
+    setIsLoading(true);
+    setErrorMessage('');
+  }
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setCurrentPage(0);
@@ -44,9 +49,6 @@ export function SurveyListPage() {
 
   useEffect(() => {
     let isActive = true;
-
-    setIsLoading(true);
-    setErrorMessage('');
 
     getSurveyDirectory({
       search: debouncedSearch,
@@ -117,7 +119,10 @@ export function SurveyListPage() {
           searchLabel="Buscar encuestas"
           searchPlaceholder="Buscar"
           searchValue={search}
-          onSearchChange={(event) => setSearch(event.target.value)}
+          onSearchChange={(event) => {
+            if (event.target.value.trim() !== debouncedSearch || currentPage !== 0) startLoading();
+            setSearch(event.target.value);
+          }}
           filterChoices={[{
             label: 'Estado de la encuesta',
             options: [
@@ -130,10 +135,12 @@ export function SurveyListPage() {
             resetValue: 'ALL',
           }]}
           onFilterChange={(_values, _text, selectedChoices) => {
+            if (selectedChoices[0] !== lifecycle || currentPage !== 0) startLoading();
             setLifecycle(selectedChoices[0]);
             setCurrentPage(0);
           }}
           onFilterReset={() => {
+            if (search || debouncedSearch || currentPage !== 0) startLoading();
             setSearch('');
             setDebouncedSearch('');
             setCurrentPage(0);
@@ -145,6 +152,7 @@ export function SurveyListPage() {
           ]}
           sortValue={sortOrder}
           onSortChange={(event) => {
+            if (event.target.value !== sortOrder || currentPage !== 0) startLoading();
             setSortOrder(event.target.value);
             setCurrentPage(0);
           }}
@@ -182,8 +190,12 @@ export function SurveyListPage() {
             ariaLabel="Paginación de encuestas"
             currentPage={currentPage}
             itemLabel="encuestas"
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => {
+              if (page !== currentPage) startLoading();
+              setCurrentPage(page);
+            }}
             onPageSizeChange={(size) => {
+              if (size !== itemsPerPage || currentPage !== 0) startLoading();
               setItemsPerPage(size);
               setCurrentPage(0);
             }}

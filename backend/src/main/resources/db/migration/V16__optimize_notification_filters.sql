@@ -1,3 +1,5 @@
+-- Agiliza el filtrado de notificaciones por usuario, tipo y estado de lectura.
+
 CREATE INDEX idx_notifications_recipient_unread_created
     ON notifications (recipient_user_id, created_at DESC, id DESC)
     WHERE read_at IS NULL;

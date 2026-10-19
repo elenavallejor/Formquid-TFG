@@ -1,0 +1,40 @@
+-- Añade un icono y una versión a cada categoría para detectar actualizaciones simultáneas.
+
+ALTER TABLE categories
+    ADD COLUMN icon varchar(64) NOT NULL DEFAULT 'BsTag',
+    ADD COLUMN version bigint NOT NULL DEFAULT 0;
+
+UPDATE categories SET icon = CASE code
+    WHEN 'ORDENADOR_SOBREMESA' THEN 'BsPcDisplay'
+    WHEN 'PORTATIL' THEN 'BsLaptop'
+    WHEN 'TABLETA' THEN 'BsTablet'
+    WHEN 'TELEFONO_INTELIGENTE' THEN 'BsPhone'
+    WHEN 'RELOJ_INTELIGENTE' THEN 'BsSmartwatch'
+    WHEN 'TELEVISION_INTELIGENTE' THEN 'BsTv'
+    WHEN 'CONSOLA_VIDEOJUEGOS' THEN 'BsController'
+    WHEN 'LECTOR_LIBROS_ELECTRONICOS' THEN 'BsBookHalf'
+    WHEN 'PIZARRA_INTERACTIVA' THEN 'BsEasel'
+    WHEN 'PROYECTOR_DIGITAL' THEN 'BsProjector'
+    WHEN 'PLATAFORMA_APRENDIZAJE' THEN 'BsMortarboard'
+    WHEN 'APLICACIONES_EDUCATIVAS' THEN 'BsApp'
+    WHEN 'LIBROS_TEXTO_DIGITALES' THEN 'BsBookshelf'
+    WHEN 'ROBOTICA_EDUCATIVA' THEN 'BsRobot'
+    WHEN 'IMPRESION_3D' THEN 'BsBoxSeam'
+    WHEN 'INTELIGENCIA_ARTIFICIAL' THEN 'BsCpu'
+    WHEN 'IA_GENERATIVA' THEN 'BsStars'
+    WHEN 'BOTS_CONVERSACION' THEN 'BsChatDots'
+    WHEN 'ASISTENTES_VOZ' THEN 'BsMic'
+    WHEN 'REALIDAD_VIRTUAL' THEN 'BsHeadsetVr'
+    WHEN 'REALIDAD_AUMENTADA' THEN 'BsBadgeAr'
+    WHEN 'REDES_SOCIALES' THEN 'BsPeople'
+    WHEN 'MENSAJERIA_INSTANTANEA' THEN 'BsChatText'
+    WHEN 'VIDEOCONFERENCIAS' THEN 'BsCameraVideo'
+    WHEN 'VIDEOJUEGOS' THEN 'BsJoystick'
+    WHEN 'PLATAFORMAS_TRANSMISION' THEN 'BsPlayCircle'
+    WHEN 'OTROS' THEN 'BsThreeDots'
+    WHEN 'DATOS_PERSONALES' THEN 'BsPersonVcard'
+    ELSE icon
+END;
+
+ALTER TABLE categories ADD CONSTRAINT ck_categories_icon
+    CHECK (icon ~ '^Bs[A-Za-z0-9]{2,62}$');

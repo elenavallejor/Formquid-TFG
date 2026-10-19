@@ -1,3 +1,5 @@
+-- Mantiene ocultas las encuestas mientras están en borrador.
+
 UPDATE surveys
 SET visibility = 'UNLISTED'
 WHERE lifecycle_status = 'DRAFT';

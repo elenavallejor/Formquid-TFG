@@ -1,0 +1,11 @@
+export const ELEMENT_CREATOR_CONTEXT = {
+  BLOCK: "BLOCK",
+  TEMPLATE: "TEMPLATE",
+  SURVEY: "SURVEY",
+};
+
+export const CREATABLE_ELEMENT_TYPE = {
+  TEXT: "TEXT",
+  QUESTION: "QUESTION",
+  BLOCK: "BLOCK",
+};

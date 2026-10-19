@@ -46,7 +46,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 or (:searchName = true and lower(user.name) like concat('%', :search, '%'))
                 or (:searchEmail = true and lower(user.email) like concat('%', :search, '%'))
                 or (:searchInstitution = true and lower(user.institution) like concat('%', :search, '%'))
-                or (:searchCountry = true and lower(user.country) like concat('%', :search, '%'))
+                or (:searchCountry = true and (lower(user.country) like concat('%', :search, '%') or user.country in :countryCodes))
                 or (
                     :searchRole = true
                     and lower(case
@@ -63,7 +63,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 or (:searchName = true and lower(user.name) like concat('%', :search, '%'))
                 or (:searchEmail = true and lower(user.email) like concat('%', :search, '%'))
                 or (:searchInstitution = true and lower(user.institution) like concat('%', :search, '%'))
-                or (:searchCountry = true and lower(user.country) like concat('%', :search, '%'))
+                or (:searchCountry = true and (lower(user.country) like concat('%', :search, '%') or user.country in :countryCodes))
                 or (
                     :searchRole = true
                     and lower(case
@@ -81,6 +81,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         @Param("searchInstitution") boolean searchInstitution,
         @Param("searchCountry") boolean searchCountry,
         @Param("searchRole") boolean searchRole,
+        @Param("countryCodes") Collection<String> countryCodes,
         Pageable pageable
     );
 

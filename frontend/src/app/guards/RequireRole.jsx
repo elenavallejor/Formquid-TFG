@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 
 import { Skeleton } from '../../components/Skeleton/Skeleton.jsx';
-import { useAuth } from '../../context/AuthContext.jsx';
+import { useAuth } from '../../context/useAuth.js';
 
 /**
  * Restringe el acceso a una ruta según los roles permitidos para el usuario autenticado.

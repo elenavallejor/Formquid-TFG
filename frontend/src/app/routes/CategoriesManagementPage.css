@@ -10,26 +10,6 @@
   margin: 0 auto;
 }
 
-.categories-page .breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-  color: var(--color-text-muted);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-
-.categories-page .breadcrumb-nav a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.categories-page .breadcrumb-nav a:hover {
-  color: var(--color-primary);
-}
-
 .categories-page-header {
   margin-bottom: 28px;
 }
@@ -62,13 +42,12 @@
   margin-bottom: 24px;
 }
 
-.categories-create-icon,
-.categories-list-icon {
+.categories-create-icon {
   display: grid;
   flex: none;
   place-items: center;
-  color: var(--color-super);
-  background: var(--color-super-surface);
+  color: var(--color-primary);
+  background: var(--color-accent-surface);
 }
 
 .categories-create-icon {
@@ -103,15 +82,29 @@
 }
 
 .categories-form-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px auto;
+  align-items: end;
   gap: 12px;
+}
+
+.categories-form-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.categories-form-label {
+  color: var(--color-header);
+  font-size: 16.25px;
+  font-weight: 700;
 }
 
 .categories-form input {
   width: 100%;
   min-width: 0;
   min-height: 48px;
-  flex: 1;
   padding: 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -123,31 +116,31 @@
   color: var(--color-text-muted);
 }
 
-.categories-form button {
+.categories-form-submit {
   display: inline-flex;
   min-height: 48px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border: 1px solid var(--color-super);
+  border: 1px solid var(--color-primary);
   border-radius: 8px;
-  background: var(--color-super);
+  background: var(--color-primary);
   color: var(--color-text-on-dark);
   font-size: 16.25px;
   font-weight: 700;
   white-space: nowrap;
 }
 
-.categories-form button:hover:not(:disabled) {
-  background: #68367b;
+.categories-form-submit:hover:not(:disabled) {
+  background: var(--color-primary-hover);
 }
 
-.categories-form button:disabled {
+.categories-form-submit:disabled {
   opacity: 0.55;
 }
 
-.categories-form button svg {
+.categories-form-submit svg {
   font-size: 22px;
 }
 
@@ -214,8 +207,9 @@
 .categories-list li {
   display: flex;
   min-width: 0;
-  min-height: 76px;
+  min-height: 80px;
   align-items: center;
+  flex-wrap: wrap;
   gap: 14px;
   padding: 14px 18px;
   border: 1px solid var(--color-border);
@@ -225,10 +219,19 @@
 }
 
 .categories-list-icon {
-  width: 42px;
-  height: 42px;
+  display: grid;
+  width: 52px;
+  min-height: 48px;
+  flex: none;
+  place-items: center;
   border-radius: 10px;
+  background: var(--color-accent-surface);
+  color: var(--color-primary);
   font-size: 24px;
+}
+
+.categories-available .pagination {
+  margin-top: 24px;
 }
 
 .categories-list-name {
@@ -244,11 +247,23 @@
   flex: none;
   padding: 5px 9px;
   border-radius: 999px;
-  background: var(--color-super-surface);
-  color: var(--color-super);
+  background: var(--color-accent-surface);
+  color: var(--color-primary);
   font-size: 13.75px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.categories-update-feedback {
+  flex-basis: 100%;
+  padding-left: 66px;
+  color: var(--color-success);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.categories-update-feedback--error {
+  color: var(--color-error);
 }
 
 .categories-empty {
@@ -268,6 +283,17 @@
   }
 }
 
+@media (max-width: 900px) {
+  .categories-form-controls {
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
+  .categories-form-submit {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
 @media (max-width: 700px) {
   .categories-page {
     padding: 24px 16px 48px;
@@ -278,10 +304,11 @@
   }
 
   .categories-form-controls {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
-  .categories-form button {
+  .categories-form-submit {
+    grid-column: auto;
     width: 100%;
   }
 

@@ -29,6 +29,11 @@ export function AdminSurveysPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  function startLoading() {
+    setIsLoading(true);
+    setErrorMessage('');
+  }
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setCurrentPage(0);
@@ -40,9 +45,6 @@ export function AdminSurveysPage() {
 
   useEffect(() => {
     let isActive = true;
-
-    setIsLoading(true);
-    setErrorMessage('');
 
     getAdminSurveys({
       search: debouncedSearch,
@@ -87,7 +89,10 @@ export function AdminSurveysPage() {
           searchLabel="Buscar encuestas supervisadas"
           searchPlaceholder="Buscar"
           searchValue={search}
-          onSearchChange={(event) => setSearch(event.target.value)}
+          onSearchChange={(event) => {
+            if (event.target.value.trim() !== debouncedSearch || currentPage !== 0) startLoading();
+            setSearch(event.target.value);
+          }}
           filterChoices={[
             {
               label: 'Estado de la encuesta',
@@ -112,11 +117,13 @@ export function AdminSurveysPage() {
             },
           ]}
           onFilterChange={(_values, _text, selectedChoices) => {
+            if (selectedChoices[0] !== lifecycle || selectedChoices[1] !== visibility || currentPage !== 0) startLoading();
             setLifecycle(selectedChoices[0]);
             setVisibility(selectedChoices[1]);
             setCurrentPage(0);
           }}
           onFilterReset={() => {
+            if (search || debouncedSearch || currentPage !== 0) startLoading();
             setSearch('');
             setDebouncedSearch('');
             setCurrentPage(0);
@@ -153,8 +160,12 @@ export function AdminSurveysPage() {
             ariaLabel="Paginación de encuestas"
             currentPage={currentPage}
             itemLabel="encuestas"
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => {
+              if (page !== currentPage) startLoading();
+              setCurrentPage(page);
+            }}
             onPageSizeChange={(size) => {
+              if (size !== itemsPerPage || currentPage !== 0) startLoading();
               setItemsPerPage(size);
               setCurrentPage(0);
             }}

@@ -21,7 +21,7 @@ import happyFormImage from '../../../assets/images/happy-form-white.png';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Survey } from '../../../components/Survey/Survey.jsx';
 import { SURVEY_MODES } from '../../../components/Survey/SurveyModes.js';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 
 import './PublicSurveyPage.css';
 

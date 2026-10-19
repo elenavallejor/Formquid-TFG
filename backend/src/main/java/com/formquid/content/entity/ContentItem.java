@@ -4,6 +4,7 @@ import com.formquid.block.entity.Block;
 import com.formquid.question.entity.Question;
 import com.formquid.survey.entity.Survey;
 import com.formquid.template.entity.Template;
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,7 +24,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
 
 
 @Getter
@@ -32,22 +32,22 @@ import org.hibernate.annotations.Check;
 @AllArgsConstructor
 @Builder
 @Entity
-@Check(constraints = """
-    item_type in ('QUESTION', 'BLOCK', 'TEXT')
-    and position >= 1
-    and (
-        (survey_id is not null)::int
-        + (template_id is not null)::int
-        + (parent_block_id is not null)::int
-    ) = 1
-    and (
-        (item_type = 'QUESTION' and is_required is not null and text_body is null)
-        or (item_type = 'BLOCK' and is_required is null and text_body is null)
-        or (item_type = 'TEXT' and is_required is null and text_body is not null)
-    )
-""")
 @Table(
     name = "content_items",
+    check = @CheckConstraint(constraint = """
+        item_type in ('QUESTION', 'BLOCK', 'TEXT')
+        and position >= 1
+        and (
+            (survey_id is not null)::int
+            + (template_id is not null)::int
+            + (parent_block_id is not null)::int
+        ) = 1
+        and (
+            (item_type = 'QUESTION' and is_required is not null and text_body is null)
+            or (item_type = 'BLOCK' and is_required is null and text_body is null)
+            or (item_type = 'TEXT' and is_required is null and text_body is not null)
+        )
+    """),
     indexes = {
         @Index(name = "idx_content_items_survey", columnList = "survey_id, position"),
         @Index(name = "idx_content_items_template", columnList = "template_id, position"),

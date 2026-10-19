@@ -11,6 +11,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,14 +25,28 @@ class CategoryCatalogServiceTest {
     @InjectMocks private CategoryCatalogService service;
 
     @Test
+    void listsOtrosAfterEveryOtherCategory() {
+        when(repository.findAllByOrderByNameAsc()).thenReturn(List.of(
+            new CategoryDefinition("OTROS", "Otros"),
+            new CategoryDefinition("PORTATIL", "Portátil"),
+            new CategoryDefinition("TECNOLOGIA_ASISTIVA", "Tecnología asistiva")
+        ));
+
+        assertThat(service.findAll(false))
+            .extracting(category -> category.code())
+            .containsExactly("PORTATIL", "TECNOLOGIA_ASISTIVA", "OTROS");
+    }
+
+    @Test
     void createsSpanishCodeAndRejectsDuplicate() {
         when(repository.saveAndFlush(any(CategoryDefinition.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var created = service.create(new CreateCategoryRequestDto(" Tecnología   asistiva "));
+        var created = service.create(new CreateCategoryRequestDto(" Tecnología   asistiva ", "BsRobot"));
         assertThat(created.code()).isEqualTo("TECNOLOGIA_ASISTIVA");
         assertThat(created.name()).isEqualTo("Tecnología asistiva");
         assertThat(created.personalData()).isFalse();
+        assertThat(created.icon()).isEqualTo("BsRobot");
 
         when(repository.existsById("TECNOLOGIA_ASISTIVA")).thenReturn(true);
         assertThatThrownBy(() -> service.create(new CreateCategoryRequestDto("Tecnología asistiva")))
@@ -42,5 +59,37 @@ class CategoryCatalogServiceTest {
         assertThatThrownBy(() -> service.create(new CreateCategoryRequestDto("!!!")))
             .isInstanceOf(ApiException.class)
             .hasMessage("El nombre no genera un código de categoría válido");
+    }
+
+    @Test
+    void updatesExistingCategoryIconAndRejectsInvalidIcon() {
+        var category = new CategoryDefinition("TECNOLOGIA_ASISTIVA", "Tecnología asistiva");
+        when(repository.findById(category.getCode())).thenReturn(Optional.of(category));
+        when(repository.saveAndFlush(category)).thenReturn(category);
+
+        var updated = service.updateIcon(category.getCode(), "BsEyeglasses");
+        assertThat(updated.icon()).isEqualTo("BsEyeglasses");
+
+        assertThatThrownBy(() -> service.updateIcon(category.getCode(), "invalid"))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("El icono indicado no es válido");
+    }
+
+    @Test
+    void rejectsIconUpdateForMissingCategory() {
+        assertThatThrownBy(() -> service.updateIcon("INEXISTENTE", "BsTag"))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("La categoría indicada no existe");
+    }
+
+    @Test
+    void rejectsIconUpdateForInitialCategory() {
+        var category = new CategoryDefinition("GAFAS_INTELIGENTES", "Gafas inteligentes", "BsEyeglasses");
+        when(repository.findById(category.getCode())).thenReturn(Optional.of(category));
+
+        assertThatThrownBy(() -> service.updateIcon(category.getCode(), "BsCpu"))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("No se puede modificar el icono de una categoría inicial");
+        assertThat(category.getIcon()).isEqualTo("BsEyeglasses");
     }
 }

@@ -1,6 +1,7 @@
 package com.formquid.config.initializer;
 
 import com.formquid.common.service.EmailNormalizer;
+import com.formquid.common.CountryCodes;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
@@ -45,7 +46,7 @@ public class SuperadminInitializer implements CommandLineRunner {
                 .email(EmailNormalizer.normalize(email))
                 .name(name)
                 .institution(institution)
-                .country(country.isBlank() ? null : country.trim())
+                .country(country.isBlank() ? null : CountryCodes.normalizeConfigured(country))
                 .passwordHash(passwordEncoder.encode(password))
                 .build());
             return;

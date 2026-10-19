@@ -10,7 +10,7 @@ import {
 
 import { createSurvey, createSurveyFromImport, createSurveyFromTemplate } from '../../../api/surveysApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { SurveyOriginModal } from '../../../components/SurveyOriginModal/SurveyOriginModal.jsx';
@@ -269,10 +269,8 @@ export function CreateSurveyPage() {
         <section className="create-survey-card" aria-labelledby="survey-appearance-title">
           <h2 id="survey-appearance-title">APARIENCIA Y CLASIFICACIÓN</h2>
           <div className="create-survey-grid">
-            <div className="create-survey-field">
-              <CategorySelect id="survey-category" surveyOnly defaultLabel="Heredar la plantilla u Otros" value={formData.category}
-                onChange={(category) => updateForm({ category })} />
-            </div>
+            <CategorySelect id="survey-category" surveyOnly defaultLabel="Heredar la plantilla u Otros" value={formData.category}
+              onChange={(category) => updateForm({ category })} />
             <div className="create-survey-field">
               <label htmlFor="survey-font">Tipografía</label>
               <Dropdown id="survey-font" value={formData.fontFamily} onChange={(event) => updateForm({ fontFamily: event.target.value })}>

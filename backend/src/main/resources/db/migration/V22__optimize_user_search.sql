@@ -1,3 +1,5 @@
+-- Acelera las búsquedas de usuarios por correo e institución.
+
 CREATE INDEX idx_users_email_search
     ON users USING gin (lower(email) gin_trgm_ops);
 

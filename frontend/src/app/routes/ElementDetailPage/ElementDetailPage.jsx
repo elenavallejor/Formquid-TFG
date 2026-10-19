@@ -24,7 +24,7 @@ import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx'
 import { Question } from '../../../components/Question/Question.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TextContent, TextContentIcon } from '../../../components/TextContent/TextContent.jsx';
-import { useAuth } from '../../../context/AuthContext.jsx';
+import { useAuth } from '../../../context/useAuth.js';
 import { buildBlockQuestionFromCatalog, getBlockItems } from '../../../utils/blockBuilderUtils.js';
 import { formatDate } from '../../../utils/formatDate.js';
 import { QUESTION_TYPES } from '../../../utils/questionBuilderUtils.js';
@@ -146,8 +146,6 @@ function CatalogBlockContent({ element }) {
   const items = Array.isArray(element.contentItems)
     ? element.contentItems
     : getBlockItems(element);
-  let questionNumber = 0;
-
   return (
     <div className="block-questions-list catalog-detail-block-items">
       {items.map((item, index) => {
@@ -162,8 +160,9 @@ function CatalogBlockContent({ element }) {
           ? null
           : QUESTION_TYPES.find((type) => type.id === questionData.questionType);
         const TypeIcon = typeConfig?.icon;
-
-        if (!isText) questionNumber += 1;
+        const questionNumber = isText
+          ? null
+          : items.slice(0, index + 1).filter((entry) => entry.itemType !== 'TEXT').length;
 
         return (
           <div key={item.id || index} className="block-question-item catalog-detail-builder-item">
@@ -285,6 +284,11 @@ function CatalogElementContent({ elementType, element }) {
 }
 
 export function ElementDetailPage() {
+  const { elementType, elementId } = useParams();
+  return <ElementDetailContent key={`${elementType}:${elementId}`} />;
+}
+
+function ElementDetailContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { elementType, elementId } = useParams();
@@ -304,24 +308,9 @@ export function ElementDetailPage() {
   const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
-    if (!config) return undefined;
-
-    const navigationState = location.state;
-    const canReuseElement = navigationState?.element
-      && navigationState.elementType === elementType
-      && String(navigationState.elementId) === String(elementId);
-
-    if (canReuseElement) {
-      setElement(navigationState.element);
-      setIsLoading(false);
-      setLoadError('');
-      return undefined;
-    }
+    if (!config || initialElement) return undefined;
 
     let isMounted = true;
-    setElement(null);
-    setIsLoading(true);
-    setLoadError('');
 
     config.load(elementId)
       .then((response) => {
@@ -330,7 +319,7 @@ export function ElementDetailPage() {
         navigate(location.pathname, {
           replace: true,
           state: {
-            ...navigationState,
+            ...location.state,
             element: response,
             elementId,
             elementType,
@@ -349,7 +338,7 @@ export function ElementDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [config, elementId, elementType, location.pathname, location.state, navigate]);
+  }, [config, elementId, elementType, initialElement, location.pathname, location.state, navigate]);
 
   if (!config) return <Navigate to="/catalogo" replace />;
 

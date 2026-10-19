@@ -1,3 +1,5 @@
+-- Centraliza la tipografía en cada encuesta y retira las opciones visuales de las preguntas.
+
 ALTER TABLE question_settings DROP CONSTRAINT IF EXISTS ck_question_settings_values;
 
 ALTER TABLE question_settings

@@ -63,6 +63,9 @@ export function CatalogSidebar({
     const allowedTypes = new Set(allowedQuestionTypes);
     return QUESTION_TYPES.filter((type) => allowedTypes.has(type.id));
   }, [allowedQuestionTypes]);
+  const activeTypeFilter = availableQuestionTypes.some((type) => type.id === typeFilter) ? typeFilter : '';
+  const isInitialQuestionLoad = showQuestions && !hasLoadedQuestions && !questionError;
+  const isInitialBlockLoad = showBlocks && !hasLoadedBlocks && !blockError;
 
   const createRequestController = useCallback(() => {
     const controller = new AbortController();
@@ -84,9 +87,6 @@ export function CatalogSidebar({
     if (questionRequestRef.current && !questionRequestRef.current.signal.aborted) return;
     const controller = createRequestController();
     questionRequestRef.current = controller;
-    setIsLoadingQuestions(true);
-    setQuestionError('');
-
     try {
       const response = await getCatalogQuestionsForBuilder({ page, size: 10, signal: controller.signal });
       if (controller.signal.aborted) return;
@@ -110,9 +110,6 @@ export function CatalogSidebar({
     if (blockRequestRef.current && !blockRequestRef.current.signal.aborted) return;
     const controller = createRequestController();
     blockRequestRef.current = controller;
-    setIsLoadingBlocks(true);
-    setBlockError('');
-
     try {
       const response = await getCatalogBlocksForBuilder({ page, size: 10, signal: controller.signal });
       if (controller.signal.aborted) return;
@@ -133,16 +130,80 @@ export function CatalogSidebar({
   }, [createRequestController]);
 
   useEffect(() => {
-    if (showQuestions && !hasLoadedQuestions && !isLoadingQuestions && !questionError) loadQuestions();
-  }, [showQuestions, hasLoadedQuestions, isLoadingQuestions, questionError, loadQuestions]);
+    if (!showQuestions || hasLoadedQuestions || questionError || questionRequestRef.current) return undefined;
+    const controller = createRequestController();
+    const controllers = requestControllersRef.current;
+    questionRequestRef.current = controller;
+
+    getCatalogQuestionsForBuilder({ page: 0, size: 10, signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const items = Array.isArray(response) ? response : response?.content ?? [];
+        setQuestions(items);
+        setQuestionTotal(response?.totalElements ?? items.length);
+        setQuestionPage(0);
+        setHasLoadedQuestions(true);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted && error?.name !== 'AbortError') {
+          setQuestionError(error?.message || 'No se han podido cargar las preguntas del catálogo.');
+        }
+      })
+      .finally(() => {
+        controllers.delete(controller);
+        if (questionRequestRef.current === controller) questionRequestRef.current = null;
+      });
+
+    return () => {
+      controller.abort();
+      controllers.delete(controller);
+      if (questionRequestRef.current === controller) questionRequestRef.current = null;
+    };
+  }, [showQuestions, hasLoadedQuestions, questionError, createRequestController]);
 
   useEffect(() => {
-    if (showBlocks && !hasLoadedBlocks && !isLoadingBlocks && !blockError) loadBlocks();
-  }, [showBlocks, hasLoadedBlocks, isLoadingBlocks, blockError, loadBlocks]);
+    if (!showBlocks || hasLoadedBlocks || blockError || blockRequestRef.current) return undefined;
+    const controller = createRequestController();
+    const controllers = requestControllersRef.current;
+    blockRequestRef.current = controller;
 
-  useEffect(() => {
-    if (typeFilter && !availableQuestionTypes.some((type) => type.id === typeFilter)) setTypeFilter('');
-  }, [availableQuestionTypes, typeFilter]);
+    getCatalogBlocksForBuilder({ page: 0, size: 10, signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const items = Array.isArray(response) ? response : response?.content ?? [];
+        setBlocks(items);
+        setBlockTotal(response?.totalElements ?? items.length);
+        setBlockPage(0);
+        setHasLoadedBlocks(true);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted && error?.name !== 'AbortError') {
+          setBlockError(error?.message || 'No se han podido cargar los bloques del catálogo.');
+        }
+      })
+      .finally(() => {
+        controllers.delete(controller);
+        if (blockRequestRef.current === controller) blockRequestRef.current = null;
+      });
+
+    return () => {
+      controller.abort();
+      controllers.delete(controller);
+      if (blockRequestRef.current === controller) blockRequestRef.current = null;
+    };
+  }, [showBlocks, hasLoadedBlocks, blockError, createRequestController]);
+
+  function requestQuestions(page = 0) {
+    setIsLoadingQuestions(true);
+    setQuestionError('');
+    void loadQuestions(page);
+  }
+
+  function requestBlocks(page = 0) {
+    setIsLoadingBlocks(true);
+    setBlockError('');
+    void loadBlocks(page);
+  }
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 700px)');
@@ -236,9 +297,9 @@ export function CatalogSidebar({
     const visibleTypes = new Set(availableQuestionTypes.map((type) => type.id));
     return questions.filter((question) => {
       const text = question.statement || '';
-      return visibleTypes.has(question.questionType) && (!search || text.toLocaleLowerCase('es').includes(search)) && (!typeFilter || question.questionType === typeFilter);
+      return visibleTypes.has(question.questionType) && (!search || text.toLocaleLowerCase('es').includes(search)) && (!activeTypeFilter || question.questionType === activeTypeFilter);
     });
-  }, [availableQuestionTypes, questionSearch, questions, typeFilter]);
+  }, [activeTypeFilter, availableQuestionTypes, questionSearch, questions]);
 
   const filteredBlocks = useMemo(() => {
     const search = blockSearch.trim().toLocaleLowerCase('es');
@@ -277,12 +338,12 @@ export function CatalogSidebar({
   }
 
   function renderQuestionList() {
-    if (isLoadingQuestions && questions.length === 0) return <Skeleton variant="list" count={4} hasActions={false} />;
+    if ((isLoadingQuestions || isInitialQuestionLoad) && questions.length === 0) return <Skeleton variant="list" count={4} hasActions={false} />;
     if (questionError && questions.length === 0) {
       return (
         <div className="catalog-error" role="alert">
           <p>{questionError}</p>
-          <button type="button" onClick={() => loadQuestions()}>Reintentar</button>
+          <button type="button" onClick={() => requestQuestions()}>Reintentar</button>
         </div>
       );
     }
@@ -313,12 +374,12 @@ export function CatalogSidebar({
   }
 
   function renderBlockList() {
-    if (isLoadingBlocks && blocks.length === 0) return <Skeleton variant="list" count={2} hasActions={false} />;
+    if ((isLoadingBlocks || isInitialBlockLoad) && blocks.length === 0) return <Skeleton variant="list" count={2} hasActions={false} />;
     if (blockError && blocks.length === 0) {
       return (
         <div className="catalog-error" role="alert">
           <p>{blockError}</p>
-          <button type="button" onClick={() => loadBlocks()}>Reintentar</button>
+          <button type="button" onClick={() => requestBlocks()}>Reintentar</button>
         </div>
       );
     }
@@ -380,7 +441,7 @@ export function CatalogSidebar({
               <div className="catalog-filters">
                 <div className="catalog-search"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar preguntas fijas" placeholder="Buscar preguntas..." value={questionSearch} onChange={(event) => setQuestionSearch(event.target.value)} /></div>
                 <div className="catalog-select">
-                  <Dropdown aria-label="Filtrar preguntas por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                  <Dropdown aria-label="Filtrar preguntas por tipo" value={activeTypeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
                     <option value="">Filtrar por tipo</option>
                     {availableQuestionTypes.map((type) => <option key={type.id} value={type.id}>{type.title}</option>)}
                   </Dropdown>
@@ -388,7 +449,7 @@ export function CatalogSidebar({
               </div>
               {renderQuestionList()}
               {questionError && questions.length > 0 && <p className="catalog-action-error" role="alert">{questionError}</p>}
-              {questions.length < questionTotal && <button type="button" className="catalog-more" disabled={isLoadingQuestions} aria-busy={isLoadingQuestions} onClick={() => loadQuestions(questionPage + 1)}><span>{isLoadingQuestions ? 'Cargando...' : 'Ver más preguntas'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
+              {questions.length < questionTotal && <button type="button" className="catalog-more" disabled={isLoadingQuestions} aria-busy={isLoadingQuestions} onClick={() => requestQuestions(questionPage + 1)}><span>{isLoadingQuestions ? 'Cargando...' : 'Ver más preguntas'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
 
@@ -398,7 +459,7 @@ export function CatalogSidebar({
               <div className="catalog-search catalog-search-full"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar bloques de preguntas" placeholder="Buscar bloques..." value={blockSearch} onChange={(event) => setBlockSearch(event.target.value)} /></div>
               {renderBlockList()}
               {blockError && blocks.length > 0 && <p className="catalog-action-error" role="alert">{blockError}</p>}
-              {blocks.length < blockTotal && <button type="button" className="catalog-more" disabled={isLoadingBlocks} aria-busy={isLoadingBlocks} onClick={() => loadBlocks(blockPage + 1)}><span>{isLoadingBlocks ? 'Cargando...' : 'Ver más bloques'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
+              {blocks.length < blockTotal && <button type="button" className="catalog-more" disabled={isLoadingBlocks} aria-busy={isLoadingBlocks} onClick={() => requestBlocks(blockPage + 1)}><span>{isLoadingBlocks ? 'Cargando...' : 'Ver más bloques'}</span><MdKeyboardArrowDown aria-hidden="true" /></button>}
             </section>
           )}
           </div>

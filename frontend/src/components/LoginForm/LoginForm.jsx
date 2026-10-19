@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md';
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
-import { useAuth } from '../../context/AuthContext.jsx';
+import { useAuth } from '../../context/useAuth.js';
 import { createLoginCredentials, hasLoginFormErrors, validateLoginForm } from '../../utils/loginFormValidation.js';
 
 import './LoginForm.css';

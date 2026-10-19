@@ -1,3 +1,5 @@
+-- Simplifica la protección que impide quedarse sin superadministradores.
+
 DROP TRIGGER IF EXISTS trg_users_reassign_superadmin_guard ON users;
 DROP FUNCTION IF EXISTS reassign_superadmin_guard();
 DROP TABLE IF EXISTS superadmin_guard;

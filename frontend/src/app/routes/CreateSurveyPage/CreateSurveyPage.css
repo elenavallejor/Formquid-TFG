@@ -1,4 +1,5 @@
 .create-survey-page {
+  --breadcrumbs-margin-bottom: 14px;
   min-height: calc(100vh - 70px);
   padding: 32px 24px 56px;
   background: var(--color-background);
@@ -8,26 +9,6 @@
 .create-survey-container {
   width: min(1500px, 100%);
   margin: 0 auto;
-}
-
-.create-survey-page .breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 14px;
-  color: var(--color-text-muted);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-
-.create-survey-page .breadcrumb-nav a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.create-survey-page .breadcrumb-nav a:hover {
-  color: var(--color-primary);
 }
 
 .create-survey-header {

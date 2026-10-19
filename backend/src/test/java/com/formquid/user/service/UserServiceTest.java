@@ -66,10 +66,10 @@ class UserServiceTest {
         when(passwordEncoder.matches("current", "hash")).thenReturn(true);
 
         userService.updateMyAccount(7L, new UpdateAccountRequestDto(
-            new UpdateAccountRequestDto.ProfileData("Ana", "Asociación", "España"), null, null, "current"
+            new UpdateAccountRequestDto.ProfileData("Ana", "Asociación", "ES"), null, null, "current"
         ));
 
-        assertThat(user.getCountry()).isEqualTo("España");
+        assertThat(user.getCountry()).isEqualTo("ES");
     }
 
     @Test

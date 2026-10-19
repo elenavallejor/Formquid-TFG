@@ -1,3 +1,5 @@
+-- Crea las tablas iniciales de usuarios, encuestas, catálogo, respuestas y notificaciones.
+
 create sequence if not exists survey_id_sequence;
 create sequence if not exists block_id_sequence;
 create sequence if not exists question_id_sequence;

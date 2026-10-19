@@ -1,3 +1,4 @@
+-- Convierte las categorías en un catálogo editable y adapta los códigos existentes al español.
 
 CREATE TABLE categories (
     code varchar(64) PRIMARY KEY,
