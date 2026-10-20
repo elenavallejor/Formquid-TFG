@@ -280,7 +280,7 @@ export function parseIntegerValue(value) {
   return Number.isNaN(number) ? '' : number;
 }
 
-export function getNumberValue(value, fallback) {
+function getNumberValue(value, fallback) {
   const number = toNumberOrNull(value);
 
   return number === null ? fallback : number;

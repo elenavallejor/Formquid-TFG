@@ -55,7 +55,7 @@ public class UserController {
         UpdateAccountResult result = userService.updateMyAccount(user.getId(), request);
         ResponseEntity.BodyBuilder response = ResponseEntity.ok();
 
-        if (result.emailChanged()) {
+        if (result.tokenRenewalRequired()) {
             String token = jwtService.generateToken(result.user());
             response.header(HttpHeaders.SET_COOKIE, jwtCookieService.createCookie(token).toString());
         }

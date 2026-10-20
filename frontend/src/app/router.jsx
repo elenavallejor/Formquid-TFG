@@ -58,7 +58,17 @@ export const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
+        path: '403',
+        element: <ErrorPage code={403} />,
+      },
+      {
         path: ':publicCode',
+        loader: ({ params }) => {
+          if (!/^[A-Z0-9]{12}$/i.test(params.publicCode ?? '')) {
+            throw new Response(null, { status: 404 });
+          }
+          return null;
+        },
         element: <PublicSurveyPage />,
       },
       {

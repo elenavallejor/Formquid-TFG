@@ -176,7 +176,7 @@ export function buildCreateCatalogTemplatePayload(data, { includeEvaluation = fa
   };
 }
 
-export function getTemplateBlockQuestionCount(block) {
+function getTemplateBlockQuestionCount(block) {
   const items = Array.isArray(block?.contentItems)
     ? block.contentItems
     : getBlockItems(block);

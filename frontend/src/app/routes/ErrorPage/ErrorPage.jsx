@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useLocation, useRouteError } from 'react-router-dom';
 
 import errorBg from '../../../assets/images/error-page-background.png';
@@ -39,6 +40,10 @@ export function ErrorPage({ code, title, message }) {
     message ||
     defaultMessages[errorCode] ||
     'Se ha producido un error inesperado.';
+
+  useEffect(() => {
+    document.title = `${errorTitle} | FormQuid`;
+  }, [errorTitle]);
 
   return (
     <main className="error-page">

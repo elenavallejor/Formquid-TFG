@@ -62,14 +62,32 @@ class UserServiceTest {
     @Test
     void updateAccountStoresCountryForExistingUser() {
         User user = User.builder().id(7L).name("Ana").institution("Asociación").passwordHash("hash").build();
-        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("current", "hash")).thenReturn(true);
 
-        userService.updateMyAccount(7L, new UpdateAccountRequestDto(
+        var result = userService.updateMyAccount(7L, new UpdateAccountRequestDto(
             new UpdateAccountRequestDto.ProfileData("Ana", "Asociación", "ES"), null, null, "current"
         ));
 
         assertThat(user.getCountry()).isEqualTo("ES");
+        assertThat(result.tokenRenewalRequired()).isFalse();
+    }
+
+    @Test
+    void updateAccountRenewsTokenAfterPasswordChange() {
+        User user = User.builder().id(7L).email("ana@example.com")
+            .passwordHash("old-hash").build();
+        when(userRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("current", "old-hash")).thenReturn(true);
+        when(passwordEncoder.matches("new-secret", "old-hash")).thenReturn(false);
+        when(passwordEncoder.encode("new-secret")).thenReturn("new-hash");
+
+        var result = userService.updateMyAccount(7L, new UpdateAccountRequestDto(
+            null, null, new UpdateAccountRequestDto.PasswordData("new-secret"), "current"
+        ));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+        assertThat(result.tokenRenewalRequired()).isTrue();
     }
 
     @Test

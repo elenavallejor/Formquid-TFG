@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MdBusiness, MdCheckCircleOutline, MdEditNote, MdLockOutline, MdOutlineEmail, MdPersonOutline, MdPublic } from 'react-icons/md';
 import { LuEye, LuEyeClosed } from 'react-icons/lu';
@@ -14,6 +14,8 @@ import './RegisterForm.css';
  * su validación y el envío de los datos al servidor.
  */
 export function RegisterForm() {
+  const formRef = useRef(null);
+  const fieldToFocusRef = useRef(null);
   const [formData, setFormData] = useState(INITIAL_REGISTER_FORM_DATA);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -21,6 +23,13 @@ export function RegisterForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    if (!fieldToFocusRef.current) return;
+
+    formRef.current?.elements.namedItem(fieldToFocusRef.current)?.focus();
+    fieldToFocusRef.current = null;
+  }, [errors]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -45,6 +54,7 @@ export function RegisterForm() {
     if (isSubmitting) return;
 
     const validationErrors = validateRegisterForm(formData);
+    fieldToFocusRef.current = Object.keys(validationErrors)[0] || null;
     setErrors(validationErrors);
     setSubmitError('');
 
@@ -89,7 +99,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form className="register-form" onSubmit={handleSubmit} noValidate>
+    <form ref={formRef} className="register-form" onSubmit={handleSubmit} noValidate>
       <div className="register-field">
         <label htmlFor="register-name">Nombre completo</label>
         <div className="register-input-wrapper">
@@ -208,14 +218,13 @@ export function RegisterForm() {
             id="register-password"
             name="password"
             type={showPassword ? 'text' : 'password'}
+            placeholder="Escribe tu contraseña…"
             value={formData.password}
             onChange={handleChange}
             maxLength={REGISTER_FORM_LIMITS.password}
             autoComplete="new-password"
             aria-invalid={Boolean(errors.password)}
-            aria-describedby={
-              errors.password ? 'register-password-error' : undefined
-            }
+            aria-describedby={`register-password-hint${errors.password ? ' register-password-error' : ''}`}
           />
           <button
             type="button"
@@ -224,13 +233,12 @@ export function RegisterForm() {
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             aria-pressed={showPassword}
           >
-            {showPassword ? (
-              <LuEyeClosed aria-hidden="true" />
-            ) : (
-              <LuEye aria-hidden="true" />
-            )}
+            {showPassword ? <LuEye aria-hidden="true" /> : <LuEyeClosed aria-hidden="true" />}
           </button>
         </div>
+        <p id="register-password-hint" className="register-field-hint">
+          Al menos 8 caracteres.
+        </p>
         <p id="register-password-error" className="register-error-message">
           {errors.password || ''}
         </p>
@@ -244,6 +252,7 @@ export function RegisterForm() {
             id="register-confirm-password"
             name="confirmPassword"
             type={showConfirmPassword ? 'text' : 'password'}
+            placeholder="Repite tu contraseña…"
             value={formData.confirmPassword}
             onChange={handleChange}
             maxLength={REGISTER_FORM_LIMITS.password}
@@ -266,11 +275,7 @@ export function RegisterForm() {
             }
             aria-pressed={showConfirmPassword}
           >
-            {showConfirmPassword ? (
-              <LuEyeClosed aria-hidden="true" />
-            ) : (
-              <LuEye aria-hidden="true" />
-            )}
+            {showConfirmPassword ? <LuEye aria-hidden="true" /> : <LuEyeClosed aria-hidden="true" />}
           </button>
         </div>
         <p

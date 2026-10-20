@@ -25,7 +25,10 @@ LIMIT 1;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM superadmin_guard) THEN
+    -- Una base nueva todavía no tiene usuarios: el inicializador creará el primero
+    -- cuando Flyway haya terminado. Si ya hay usuarios, exigir un superadministrador.
+    IF EXISTS (SELECT 1 FROM users)
+       AND NOT EXISTS (SELECT 1 FROM superadmin_guard) THEN
         RAISE EXCEPTION 'Debe existir al menos un superadministrador antes de aplicar la migracion';
     END IF;
 END;

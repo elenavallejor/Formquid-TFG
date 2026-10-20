@@ -17,12 +17,14 @@ import {
   getPublicSurveyById,
   getRegisteredSurveyByCode,
 } from '../../../api/surveysApi.js';
+import errorImage from '../../../assets/images/error-page-background.png';
 import happyFormImage from '../../../assets/images/happy-form-white.png';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Survey } from '../../../components/Survey/Survey.jsx';
 import { SURVEY_MODES } from '../../../components/Survey/SurveyModes.js';
 import { useAuth } from '../../../context/useAuth.js';
 
+import '../ErrorPage/ErrorPage.css';
 import './PublicSurveyPage.css';
 
 const ALREADY_SUBMITTED_CODE = 'PARTICIPATION_ALREADY_SUBMITTED';
@@ -197,12 +199,22 @@ export function PublicSurveyPage() {
         )}
 
         {!isLoading && loadError && (
-          <section className="public-survey-message public-survey-message--error" role="alert">
-            <h1>No hemos podido abrir la encuesta</h1>
-            <p>{loadError}</p>
-            <button type="button" onClick={() => setRequestVersion((version) => version + 1)}>
-              Reintentar
-            </button>
+          <section className="error-page-container public-survey-load-error" role="alert">
+            <div className="error-page-text">
+              <p className="error-page-logo" aria-hidden="true">FormQuid</p>
+              <h1 className="error-page-status">No hemos podido abrir la encuesta</h1>
+              <p className="error-page-description">{loadError}</p>
+              <button
+                className="public-survey-retry"
+                type="button"
+                onClick={() => setRequestVersion((version) => version + 1)}
+              >
+                Reintentar
+              </button>
+            </div>
+            <div className="error-page-illustration">
+              <img className="error-page-image" src={errorImage} alt="" aria-hidden="true" />
+            </div>
           </section>
         )}
 

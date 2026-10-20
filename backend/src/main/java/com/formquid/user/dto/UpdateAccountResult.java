@@ -7,6 +7,6 @@ import com.formquid.user.entity.User;
  */
 public record UpdateAccountResult(
     User user,
-    boolean emailChanged
+    boolean tokenRenewalRequired
 ) {
 }

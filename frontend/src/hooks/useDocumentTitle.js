@@ -5,6 +5,7 @@ const PAGE_TITLES = [
   { pattern: /^\/$/, title: 'Inicio' },
   { pattern: /^\/inicia-sesion\/?$/, title: 'Iniciar sesión' },
   { pattern: /^\/solicita-cuenta\/?$/, title: 'Solicitar cuenta' },
+  { pattern: /^\/403\/?$/, title: 'Acceso no permitido' },
   { pattern: /^\/perfil\/?$/, title: 'Mi cuenta' },
   { pattern: /^\/panel\/?$/, title: 'Panel' },
   { pattern: /^\/colaboraciones\/?$/, title: 'Gestión de colaboraciones' },
@@ -25,7 +26,7 @@ const PAGE_TITLES = [
   { pattern: /^\/admin\/solicitudes-registro\/?$/, title: 'Solicitudes de registro' },
   { pattern: /^\/admin\/solicitudes-catalogo\/?$/, title: 'Solicitudes del catálogo' },
   { pattern: /^\/superadmin\/usuarios\/?$/, title: 'Gestión de usuarios' },
-  { pattern: /^\/[A-HJ-NP-Z2-9]{12}\/?$/i, title: 'Responder encuesta' },
+  { pattern: /^\/[A-Z0-9]{12}\/?$/i, title: 'Responder encuesta' },
 ];
 
 function getPageTitle(pathname) {

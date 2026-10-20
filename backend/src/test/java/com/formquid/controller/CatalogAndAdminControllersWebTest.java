@@ -30,6 +30,7 @@ import com.formquid.survey.service.SurveyService;
 import com.formquid.template.controller.TemplateController;
 import com.formquid.template.service.TemplateService;
 import com.formquid.user.controller.UserController;
+import com.formquid.user.dto.UpdateAccountResult;
 import com.formquid.user.dto.UserResponseDto;
 import com.formquid.user.dto.UserSearchField;
 import com.formquid.user.dto.UserSortOrder;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -49,6 +51,7 @@ import java.time.Instant;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -57,6 +60,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {
@@ -257,6 +261,23 @@ class CatalogAndAdminControllersWebTest {
             .andExpect(jsonPath("$.role").value("EDITOR"))
             .andExpect(jsonPath("$.country").value("ES"))
             .andExpect(jsonPath("$.gender").doesNotExist());
+    }
+
+    @Test
+    void updateMyAccount_withNewPassword_renewsAuthenticationCookie() throws Exception {
+        User editor = user(8L, UserRole.EDITOR);
+        when(userService.updateMyAccount(eq(8L), any())).thenReturn(new UpdateAccountResult(editor, true));
+        when(jwtService.generateToken(editor)).thenReturn("renewed-token");
+        when(jwtCookieService.createCookie("renewed-token"))
+            .thenReturn(ResponseCookie.from("access_token", "renewed-token").httpOnly(true).build());
+
+        mockMvc.perform(patch("/api/v1/users/me/account")
+                .contentType("application/json")
+                .content("{\"password\":{\"newPassword\":\"new-secret\"},\"currentPassword\":\"current\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(editor))))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("access_token=renewed-token")));
     }
 
     @Test

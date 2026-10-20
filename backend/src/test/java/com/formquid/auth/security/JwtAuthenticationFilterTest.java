@@ -43,7 +43,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void doFilter_authenticatesValidCookieWithoutLoadingUserFromDatabase() throws Exception {
+    void doFilter_authenticatesValidCookieWithCurrentUser() throws Exception {
         var request = new MockHttpServletRequest();
         var response = new MockHttpServletResponse();
         request.setCookies(new Cookie("access_token", "valid-token"));

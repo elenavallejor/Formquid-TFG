@@ -20,8 +20,7 @@ import java.io.IOException;
 /**
  * Filtro de autenticación JWT.
  *
- * Valida el JWT y construye el principal a partir de sus claims. No carga el
- * usuario desde PostgreSQL para cada petición protegida.
+ * Valida el JWT y autentica al usuario con sus permisos actuales.
  */
 @Component
 @RequiredArgsConstructor

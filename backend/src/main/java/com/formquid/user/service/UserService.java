@@ -79,18 +79,21 @@ public class UserService {
 
     @Transactional
     public UpdateAccountResult updateMyAccount(Long id, UpdateAccountRequestDto request) {
-        User user = getById(id);
+        User user = userRepository.findByIdForUpdate(id)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
         ensureCurrentPassword(user, request.currentPassword());
 
         boolean changed = false;
         boolean emailChanged = false;
+        boolean passwordChanged = false;
         String previousEmail = user.getEmail();
 
         if (request.profile() != null) {
             changed = updateProfile(user, request.profile()) || changed;
         }
         if (request.password() != null) {
-            changed = updatePassword(user, request.password()) || changed;
+            passwordChanged = updatePassword(user, request.password());
+            changed = passwordChanged || changed;
         }
         if (request.email() != null) {
             emailChanged = updateEmail(user, request.email());
@@ -99,14 +102,14 @@ public class UserService {
         if (!changed) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "No se ha detectado ningún cambio en la cuenta");
         }
-        if (request.password() != null || emailChanged) {
+        if (passwordChanged || emailChanged) {
             notificationService.createUserNotification(user, NotificationType.ACCOUNT_SECURITY_CHANGED,
                 "Cambio de seguridad en tu cuenta",
                 "Se ha actualizado " + (emailChanged ? "el correo de acceso" : "la contraseña")
                     + " de tu cuenta de FormQuid. Si no has realizado este cambio, contacta con la administración.",
                 user, emailChanged ? previousEmail : user.getEmail());
         }
-        return new UpdateAccountResult(user, emailChanged);
+        return new UpdateAccountResult(user, passwordChanged || emailChanged);
     }
 
     @Transactional

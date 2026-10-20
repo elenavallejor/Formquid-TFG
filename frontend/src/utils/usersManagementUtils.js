@@ -38,18 +38,7 @@ export function getVisiblePages(currentPage, totalPages) {
   return Array.from({ length: 5 }, (_, index) => firstPage + index);
 }
 
-export function getPaginationRange(currentPage, pageSize, totalItems) {
-  if (totalItems <= 0) {
-    return { startItem: 0, endItem: 0 };
-  }
-
-  return {
-    startItem: currentPage * pageSize + 1,
-    endItem: Math.min((currentPage + 1) * pageSize, totalItems),
-  };
-}
-
-export function isCurrentUser(user, currentUser) {
+function isCurrentUser(user, currentUser) {
   return Boolean(user?.id && currentUser?.id && user.id === currentUser.id);
 }
 

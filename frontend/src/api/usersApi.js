@@ -1,8 +1,6 @@
 import { apiClient } from './apiClient.js';
 
-/**
- * Gestiona las operaciones sobre usuarios, cuenta propia, roles y transferencia de propiedad.
- */
+/** Gestiona las operaciones sobre usuarios, cuenta propia y roles. */
 export function getMe() {
   return apiClient('/users/me', { method: 'GET' });
 }
@@ -48,11 +46,4 @@ export function updateUserRole(userId, role) {
 
 export function deleteUser(userId) {
   return apiClient(`/users/${userId}`, { method: 'DELETE' });
-}
-
-export function transferSurveyOwnership(surveyId, newOwnerId) {
-  return apiClient(`/users/surveys/${surveyId}/transfer-ownership`, {
-    method: 'POST',
-    body: { newOwnerId },
-  });
 }

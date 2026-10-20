@@ -18,7 +18,7 @@ export function RequireRole({ allowedRoles, children }) {
   }
 
   if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/403" replace />; // TODO 
+    return <Navigate to="/403" replace />;
   }
 
   return children;

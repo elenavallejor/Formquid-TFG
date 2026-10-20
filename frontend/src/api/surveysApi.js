@@ -174,10 +174,6 @@ export function updateSurveyLifecycle(surveyId, lifecycleStatus) {
   });
 }
 
-export function deleteSurvey(surveyId) {
-  return apiClient(`/surveys/${surveyId}`, { method: 'DELETE' });
-}
-
 export function getAdminSurveys({
   search = '',
   lifecycleStatus = 'ALL',
@@ -213,8 +209,4 @@ export function updateAdminSurveyVisibility(surveyId, visibility) {
     method: 'PATCH',
     body: { visibility },
   });
-}
-
-export function deleteAdminSurvey(surveyId) {
-  return apiClient(`/admin/surveys/${surveyId}`, { method: 'DELETE' });
 }

@@ -66,12 +66,27 @@
   box-shadow: var(--focus-shadow);
 }
 
-.password-toggle {
+.register-input-wrapper :is(input, textarea)[aria-invalid='true'],
+.register-field .country-select[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.register-field-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 15px;
+}
+
+.register-form .password-toggle {
   position: absolute;
-  right: 12px;
+  right: 4px;
   display: flex;
   align-items: center;
-  padding: 4px;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 6px;
   background: none;
   border: none;
   color: var(--color-text-muted);
@@ -79,7 +94,11 @@
   cursor: pointer;
 }
 
-.password-toggle:focus-visible,
+.register-form .password-toggle:hover {
+  color: var(--color-primary);
+}
+
+.register-form .password-toggle:focus-visible,
 .register-submit:focus-visible,
 .register-login-link:focus-visible {
   outline: var(--focus-outline);
