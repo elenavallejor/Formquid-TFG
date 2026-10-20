@@ -9,9 +9,11 @@ import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.repository.NotificationRepository;
 import com.formquid.user.entity.User;
 import com.formquid.user.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -29,7 +31,7 @@ import static org.mockito.Mockito.*;
 class NotificationServiceTest {
     @Mock NotificationRepository repository;
     @Mock UserRepository users;
-    @Mock NotificationEmailDispatcher emailDispatcher;
+    @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks NotificationService service;
 
     @Test
@@ -64,7 +66,9 @@ class NotificationServiceTest {
         assertThat(result.getChannel()).isEqualTo(NotificationChannel.EMAIL);
         assertThat(result.getRecipientUser()).isSameAs(user);
         verify(repository, times(1)).save(any());
-        verify(emailDispatcher).send("editor@example.com", "Revocada", "Encuesta A");
+        var email = ArgumentCaptor.forClass(EmailRequested.class);
+        verify(eventPublisher).publishEvent(email.capture());
+        assertThat(email.getValue()).isEqualTo(new EmailRequested("editor@example.com", "Revocada", "Encuesta A"));
     }
 
     @Test
@@ -73,14 +77,16 @@ class NotificationServiceTest {
         var result = service.createInternal(User.builder().id(1L).build(),
             NotificationType.COLLABORATION_INVITATION, "Invitación", "Encuesta A");
         assertThat(result.getChannel()).isEqualTo(NotificationChannel.INTERNAL);
-        verifyNoInteractions(emailDispatcher);
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
     void registrationEmailDoesNotRequireAnAccount() {
         service.sendPriorityEmail("PERSON@example.com", NotificationType.REGISTRATION_REJECTED, "Alta", "Rechazada");
 
-        verify(emailDispatcher).send("person@example.com", "Alta", "Rechazada");
+        var email = ArgumentCaptor.forClass(EmailRequested.class);
+        verify(eventPublisher).publishEvent(email.capture());
+        assertThat(email.getValue()).isEqualTo(new EmailRequested("person@example.com", "Alta", "Rechazada"));
         verifyNoInteractions(repository);
         assertThatThrownBy(() -> service.sendPriorityEmail("person@example.com", NotificationType.GENERAL, "Aviso", "Mensaje"))
             .isInstanceOf(IllegalArgumentException.class);

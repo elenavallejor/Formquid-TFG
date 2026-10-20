@@ -18,6 +18,7 @@ import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -38,7 +39,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final NotificationEmailDispatcher emailDispatcher;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public PageResponseDto<NotificationResponseDto> findForUser(
@@ -72,7 +73,7 @@ public class NotificationService {
         if (!type.requiresEmail()) {
             throw new IllegalArgumentException("El correo requiere un evento de alta prioridad");
         }
-        emailDispatcher.send(EmailNormalizer.normalize(email), title, message);
+        eventPublisher.publishEvent(new EmailRequested(EmailNormalizer.normalize(email), title, message));
     }
 
     public Notification createSurveyNotification(User recipient, NotificationType type, String title, String message, Survey survey) {
@@ -168,7 +169,7 @@ public class NotificationService {
             .build();
         Notification saved = notificationRepository.save(notification);
         if (type.requiresEmail()) {
-            emailDispatcher.send(EmailNormalizer.normalize(emailRecipient), title, message);
+            eventPublisher.publishEvent(new EmailRequested(EmailNormalizer.normalize(emailRecipient), title, message));
         }
         return saved;
     }
