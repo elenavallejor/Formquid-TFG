@@ -1,6 +1,7 @@
 package com.formquid.auth.security;
 
 import com.formquid.config.SecurityConfig;
+import com.formquid.config.CorsProperties;
 import com.formquid.user.entity.User;
 import com.formquid.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 class SecurityConfigTest {
 
-    private final SecurityConfig config = new SecurityConfig();
+    private final SecurityConfig config = new SecurityConfig(new CorsProperties(List.of("http://localhost:5173")));
 
     @Test
     void userDetailsService_normalizesEmailBeforeLookup() {
@@ -49,5 +51,16 @@ class SecurityConfigTest {
         assertThat(configuration.getAllowedMethods()).contains("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
         assertThat(configuration.getAllowedHeaders()).contains("Content-Type", "X-XSRF-TOKEN");
         assertThat(configuration.getAllowCredentials()).isTrue();
+    }
+
+    @Test
+    void cors_usesConfiguredProductionOrigin() {
+        var productionConfig = new SecurityConfig(new CorsProperties(List.of("https://formquid.example")));
+        var request = new MockHttpServletRequest("GET", "/api/v1/public/surveys/page");
+
+        var configuration = productionConfig.corsConfigurationSource().getCorsConfiguration(request);
+
+        assertThat(configuration.checkOrigin("https://formquid.example")).isEqualTo("https://formquid.example");
+        assertThat(configuration.checkOrigin("http://localhost:5173")).isNull();
     }
 }

@@ -35,6 +35,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByRoleAndIdNot(UserRole role, Long id);
 
+    @Query(value = "select user_id from superadmin_guard where singleton for update", nativeQuery = true)
+    Long lockSuperadminGuard();
+
     @Query(
         value = """
             select new com.formquid.user.dto.UserResponseDto(

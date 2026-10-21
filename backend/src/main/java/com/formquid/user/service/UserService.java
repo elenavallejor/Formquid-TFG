@@ -114,6 +114,7 @@ public class UserService {
 
     @Transactional
     public void deleteMyAccount(Long id, DeleteOwnAccountRequestDto request) {
+        userRepository.lockSuperadminGuard();
         User user = getById(id);
         ensureCurrentPassword(user, request.currentPassword());
 
@@ -128,6 +129,7 @@ public class UserService {
 
     @Transactional
     public UserResponseDto updateRole(Long id, UserRole newRole) {
+        userRepository.lockSuperadminGuard();
         User user = getById(id);
 
         if (user.getRole() == UserRole.SUPERADMIN && newRole != UserRole.SUPERADMIN) {
@@ -139,6 +141,7 @@ public class UserService {
 
     @Transactional
     public void delete(Long id) {
+        userRepository.lockSuperadminGuard();
         User user = getById(id);
 
         if (surveyRepository.countByOwnerId(id) > 0) {

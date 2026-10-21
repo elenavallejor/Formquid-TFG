@@ -3,9 +3,11 @@ package com.formquid.config;
 import com.formquid.auth.security.JwtAuthenticationFilter;
 import com.formquid.common.service.EmailNormalizer;
 import com.formquid.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -60,7 +62,11 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableConfigurationProperties(CorsProperties.class)
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final CorsProperties corsProperties;
 
 
     /**
@@ -163,9 +169,6 @@ public class SecurityConfig {
     }
 
 
-    /**
-      * TODO CAMBIA RUTAS EN DESPLIEGUE
-      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
@@ -177,7 +180,7 @@ public class SecurityConfig {
          * Solo se permite el frontend conocido.
          */
         configuration.setAllowedOrigins(
-            List.of("http://localhost:5173")
+            corsProperties.allowedOrigins()
         );
 
 

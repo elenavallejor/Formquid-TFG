@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parent
@@ -13,6 +14,7 @@ REQUIRED = (
     "SUPERADMIN_PASSWORD",
     "SUPERADMIN_NAME",
     "SUPERADMIN_INSTITUTION",
+    "FRONTEND_ORIGIN",
 )
 
 
@@ -54,6 +56,14 @@ def main() -> int:
         return 1
     if environment.get("SPRING_PROFILES_ACTIVE") != "prod":
         print("El backend debe usar el perfil prod", file=sys.stderr)
+        return 1
+    origin = environment["FRONTEND_ORIGIN"].strip()
+    parsed_origin = urlsplit(origin)
+    if (parsed_origin.scheme != "https" or not parsed_origin.hostname
+            or parsed_origin.hostname in ("localhost", "127.0.0.1")
+            or parsed_origin.path or parsed_origin.query or parsed_origin.fragment
+            or parsed_origin.username or parsed_origin.password or "*" in origin):
+        print("FRONTEND_ORIGIN debe ser un origen HTTPS exacto", file=sys.stderr)
         return 1
 
     print("Configuración de producción verificada sin mostrar sus valores")
