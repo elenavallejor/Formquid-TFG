@@ -75,9 +75,73 @@ class SurveyServiceTest {
     private NotificationService notificationService;
     @Mock
     private CategoryCatalogService categoryCatalogService;
+    @Mock
+    private SurveyCoverStorage surveyCoverStorage;
 
     @InjectMocks
     private SurveyService surveyService;
+
+    @Test
+    void getCover_whenSurveyIsDraft_requiresSurveyAccess() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        String filename = "123e4567-e89b-12d3-a456-426614174000.png";
+        Survey survey = Survey.builder().id(12L).owner(owner)
+            .imageKey("/api/v1/public/surveys/12/cover/" + filename)
+            .lifecycleStatus(SurveyLifecycle.DRAFT).accessMode(SurveyAccessMode.PUBLIC).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+
+        assertThatThrownBy(() -> surveyService.getCover(12L, filename, null))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> assertThat(((ApiException) exception).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(surveyCoverStorage, never()).read(filename);
+
+        surveyService.getCover(12L, filename, owner);
+        verify(surveyCoverStorage).read(filename);
+    }
+
+    @Test
+    void getCover_whenSurveyIsOpenAndPublic_allowsAnonymousReader() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        String filename = "123e4567-e89b-12d3-a456-426614174000.jpg";
+        Survey survey = Survey.builder().id(12L).owner(owner)
+            .imageKey("/api/v1/public/surveys/12/cover/" + filename)
+            .lifecycleStatus(SurveyLifecycle.OPEN).accessMode(SurveyAccessMode.PUBLIC).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+
+        surveyService.getCover(12L, filename, null);
+        verify(surveyCoverStorage).read(filename);
+    }
+
+    @Test
+    void getCover_whenSurveyIsPasswordProtected_deniesAnonymousReader() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        String filename = "123e4567-e89b-12d3-a456-426614174000.jpg";
+        Survey survey = Survey.builder().id(12L).owner(owner)
+            .imageKey("/api/v1/public/surveys/12/cover/" + filename)
+            .lifecycleStatus(SurveyLifecycle.OPEN).accessMode(SurveyAccessMode.PASSWORD_PROTECTED).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+
+        assertThatThrownBy(() -> surveyService.getCover(12L, filename, null))
+            .isInstanceOf(ApiException.class)
+            .satisfies(exception -> assertThat(((ApiException) exception).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(surveyCoverStorage, never()).read(filename);
+    }
+
+    @Test
+    void getPasswordProtectedPublicSurvey_afterValidPassword_inlinesLocalCover() {
+        Survey survey = passwordProtectedSurvey();
+        String imageKey = "/api/v1/public/surveys/40/cover/123e4567-e89b-12d3-a456-426614174000.png";
+        survey.setImageKey(imageKey);
+        when(surveyRepository.findByPublicCode("ABC123")).thenReturn(Optional.of(survey));
+        when(passwordEncoder.matches("clave-correcta", "hash-seguro")).thenReturn(true);
+        when(surveyCoverStorage.inlineForAuthorizedRespondent(40L, imageKey))
+            .thenReturn("data:image/png;base64,aW1hZ2Vu");
+        when(contentService.findSurveyContent(40L)).thenReturn(List.of());
+
+        var response = surveyService.getPasswordProtectedPublicSurvey("abc123", "clave-correcta");
+
+        assertThat(response.imageKey()).isEqualTo("data:image/png;base64,aW1hZ2Vu");
+    }
 
     @Test
     void surveyCannotUsePersonalDataCategory() {

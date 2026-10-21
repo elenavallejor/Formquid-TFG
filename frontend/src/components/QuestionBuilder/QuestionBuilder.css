@@ -34,6 +34,17 @@
   position: relative;
 }
 
+.builder-general-info-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.builder-general-info-fields > .builder-field,
+.builder-general-info-fields > .category-select {
+  margin-bottom: 0;
+}
+
 .builder-field label {
   font-size: 16.875px;
   font-weight: 700;

@@ -10,6 +10,7 @@ import './QuestionBuilder.css';
 export function QuestionBuilder({
   data,
   onChange,
+  afterPrimaryField,
   isCatalog = true,
   isModal = false,
   onClose,
@@ -130,30 +131,34 @@ export function QuestionBuilder({
       <section className="builder-card">
         <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
 
-        <div className="builder-field">
-          <label htmlFor="statement">Enunciado <span>*</span></label>
-          <input
-            id="statement"
-            type="text"
-            placeholder="Texto que verá el encuestado."
-            maxLength={300}
-            value={data.statement || ''}
-            onChange={(event) => handleField('statement', event.target.value)}
-          />
-          <span className="field-counter">{(data.statement || '').length}/300</span>
-        </div>
+        <div className="builder-general-info-fields">
+          <div className="builder-field">
+            <label htmlFor="statement">Enunciado <span>*</span></label>
+            <input
+              id="statement"
+              type="text"
+              placeholder="Texto que verá el encuestado."
+              maxLength={300}
+              value={data.statement || ''}
+              onChange={(event) => handleField('statement', event.target.value)}
+            />
+            <span className="field-counter">{(data.statement || '').length}/300</span>
+          </div>
 
-        <div className="builder-field">
-          <label htmlFor="annotation">Nota (opcional)</label>
-          <textarea
-            id="annotation"
-            placeholder="Agrega una nota o contexto adicional para la pregunta..."
-            maxLength={300}
-            rows={3}
-            value={data.annotation || ''}
-            onChange={(event) => handleField('annotation', event.target.value)}
-          />
-          <span className="field-counter">{(data.annotation || '').length}/300</span>
+          {afterPrimaryField}
+
+          <div className="builder-field">
+            <label htmlFor="annotation">Nota (opcional)</label>
+            <textarea
+              id="annotation"
+              placeholder="Agrega una nota o contexto adicional para la pregunta..."
+              maxLength={300}
+              rows={3}
+              value={data.annotation || ''}
+              onChange={(event) => handleField('annotation', event.target.value)}
+            />
+            <span className="field-counter">{(data.annotation || '').length}/300</span>
+          </div>
         </div>
       </section>
 

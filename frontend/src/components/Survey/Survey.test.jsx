@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -117,6 +117,7 @@ describe('Survey', () => {
     await user.click(screen.getByRole('radio', { name: 'Otro' }));
     await user.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Especifica la respuesta «Otro».');
+    await waitFor(() => expect(screen.getByRole('group', { name: /Origen/ })).toHaveFocus());
     await user.type(screen.getByRole('textbox', { name: 'Especifica la respuesta «Otro»' }), 'Centro de salud');
     await user.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
     expect(onSubmit).toHaveBeenCalledWith([{ questionId: 11, selectedOptions: [{ optionId: 31, otherText: 'Centro de salud' }] }]);

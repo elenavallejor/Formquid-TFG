@@ -85,10 +85,9 @@ export function CreateTemplatePage() {
             <div><h1>CREA TU PLANTILLA</h1><p className="page-main-subtitle">Crea y organiza los bloques y preguntas de tu nueva plantilla.</p></div>
             <button type="button" className="btn-create-submit" disabled={isSaving || isInitializing} onClick={handleSaveTemplate}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : 'Guardar plantilla'}</span></button>
           </header>
-          <CategorySelect id="template-category" value={category} onChange={setCategory} />
           {errorMsg && <div className="create-template-message"><ErrorMessage message={errorMsg} onClose={() => setErrorMsg('')} /></div>}
           {successMsg && <div className="account-success-banner" role="status"><span>{successMsg}</span></div>}
-          {isInitializing ? <div className="builder-skeleton-wrapper"><Skeleton variant="list" count={3} hasActions={false} /></div> : <TemplateBuilder data={formData} onChange={setFormData} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} />}
+          {isInitializing ? <div className="builder-skeleton-wrapper"><Skeleton variant="list" count={3} hasActions={false} /></div> : <TemplateBuilder data={formData} onChange={setFormData} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} afterPrimaryField={<CategorySelect id="template-category" value={category} onChange={setCategory} placeholder="Selecciona la categoría de tu plantilla" />} />}
         </div>
       </main>
     </div>

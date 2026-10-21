@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import '@fontsource/lexend/400.css';
-import '@fontsource/opendyslexic/400.css';
+import '../../assets/styles/opendyslexic.css';
+import { resolveSurveyImageUrl } from '../../api/apiClient.js';
 
 import { buildBlockQuestionFromCatalog, getBlockItems } from '../../utils/blockBuilderUtils.js';
 import { getOptionAnswerValue } from '../../utils/questionBuilderUtils.js';
@@ -426,7 +427,7 @@ export function Survey({
     >
       {isPreview && <div className="survey-preview-notice" role="status">Estás previsualizando la encuesta. Las respuestas introducidas no se guardarán.</div>}
       <section className="survey-response-introduction" aria-labelledby="survey-response-title">
-        {data?.imageKey && <img className="survey-response-cover" src={data.imageKey} alt="" />}
+        {data?.imageKey && <img className="survey-response-cover" src={resolveSurveyImageUrl(data.imageKey)} alt="" />}
         <header className="survey-response-header">
           <h1 id="survey-response-title">{data?.title || 'Encuesta sin título'}</h1>
           {data?.description && <p>{data.description}</p>}

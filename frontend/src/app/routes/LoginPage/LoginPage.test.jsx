@@ -1,24 +1,40 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthContext } from '../../../context/authContext.js';
 import { LoginPage } from './LoginPage.jsx';
+import { RequireAuth } from '../../guards/RequireAuth.jsx';
+import { RequireRole } from '../../guards/RequireRole.jsx';
 
 const login = vi.fn();
 
+function LoginTestAuth({ children }) {
+  const [user, setUser] = useState(null);
+  async function authenticate(credentials) {
+    const authenticatedUser = await login(credentials);
+    setUser(authenticatedUser);
+    return authenticatedUser;
+  }
+  return <AuthContext.Provider value={{ login: authenticate, user, isAuthenticated: Boolean(user), isInitializing: false }}>{children}</AuthContext.Provider>;
+}
+
 function renderLogin(from) {
   render(
-    <AuthContext.Provider value={{ login }}>
+    <LoginTestAuth>
       <MemoryRouter initialEntries={[{ pathname: '/inicia-sesion', state: from ? { from } : null }]}>
         <Routes>
           <Route path="/inicia-sesion" element={<LoginPage />} />
           <Route path="/panel" element={<h1>Panel de usuario</h1>} />
           <Route path="/perfil" element={<h1>Mi perfil</h1>} />
+          <Route path="/encuestas/crear" element={<RequireAuth><RequireRole allowedRoles={['EDITOR']}><h1>Crear encuesta</h1></RequireRole></RequireAuth>} />
+          <Route path="/superadmin/usuarios" element={<RequireAuth><RequireRole allowedRoles={['SUPERADMIN']}><h1>Gestión de usuarios</h1></RequireRole></RequireAuth>} />
+          <Route path="/403" element={<h1>Acceso no permitido</h1>} />
         </Routes>
       </MemoryRouter>
-    </AuthContext.Provider>,
+    </LoginTestAuth>,
   );
 }
 
@@ -54,5 +70,33 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido iniciar sesión');
     expect(screen.getByRole('button', { name: 'Iniciar sesión' })).toBeEnabled();
+  });
+
+  it.each(['ADMIN', 'SUPERADMIN'])('abre el panel al iniciar sesión como %s desde una ruta exclusiva de editores', async (role) => {
+    const user = userEvent.setup();
+    login.mockResolvedValue({ id: 1, role });
+    renderLogin({ pathname: '/encuestas/crear' });
+    await user.type(screen.getByRole('textbox', { name: 'Correo electrónico' }), 'usuario@example.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'pass123456');
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }));
+
+    expect(await screen.findByRole('heading', { name: 'Panel de usuario' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Acceso no permitido' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Crear encuesta' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['EDITOR', '/encuestas/crear', 'Crear encuesta'],
+    ['SUPERADMIN', '/superadmin/usuarios', 'Gestión de usuarios'],
+    ['SUPERADMIN', undefined, 'Panel de usuario'],
+  ])('mantiene el destino permitido para %s al volver a %s', async (role, pathname, heading) => {
+    const user = userEvent.setup();
+    login.mockResolvedValue({ id: 1, role });
+    renderLogin(pathname ? { pathname } : undefined);
+    await user.type(screen.getByRole('textbox', { name: 'Correo electrónico' }), 'usuario@example.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'pass123456');
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }));
+
+    expect(await screen.findByRole('heading', { name: heading })).toBeVisible();
   });
 });

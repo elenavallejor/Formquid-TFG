@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CatalogSidebar } from './CatalogSidebar.jsx';
-import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
+import { getCatalogBlockById, getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 
 vi.mock('../../api/catalogApi.js', () => ({
+  getCatalogBlockById: vi.fn(),
   getCatalogBlocksForBuilder: vi.fn(),
   getCatalogQuestionsForBuilder: vi.fn(),
 }));
@@ -23,6 +25,7 @@ describe('CatalogSidebar', () => {
     vi.resetAllMocks();
     getCatalogQuestionsForBuilder.mockResolvedValue({ content: [question], totalElements: 1 });
     getCatalogBlocksForBuilder.mockResolvedValue({ content: [block], totalElements: 1 });
+    getCatalogBlockById.mockResolvedValue({ ...block, description: 'Descripción del bloque', creatorName: 'Ana', contentItems: [{ itemType: 'TEXT', textBody: 'Introducción' }] });
   });
 
   it('carga preguntas y bloques y los añade al constructor', async () => {
@@ -36,6 +39,88 @@ describe('CatalogSidebar', () => {
     await user.click(screen.getByRole('button', { name: 'Añadir bloque: Hábitos' }));
     expect(onAddQuestion).toHaveBeenCalledWith(question);
     expect(onAddBlock).toHaveBeenCalledWith(block);
+  });
+
+  it('desplaza la vista hasta cada elemento añadido con el botón', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+
+    function BuilderWithSidebar() {
+      const [items, setItems] = useState([]);
+      const addItem = (item) => setItems((current) => [...current, item]);
+      return (
+        <MemoryRouter>
+          <CatalogSidebar embedded onAddQuestion={addItem} onAddBlock={addItem} />
+          <div className="block-questions-list">
+            {items.map((item) => <div key={item.id} className="block-question-item">{item.statement || item.name}</div>)}
+          </div>
+        </MemoryRouter>
+      );
+    }
+
+    render(<BuilderWithSidebar />);
+    await user.click(await screen.findByRole('button', { name: 'Añadir pregunta: ¿Cómo estás?' }));
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    expect(scrollIntoView.mock.contexts[0]).toHaveTextContent('¿Cómo estás?');
+
+    await user.click(screen.getByRole('button', { name: 'Añadir bloque: Hábitos' }));
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(2));
+    expect(scrollIntoView.mock.contexts[1]).toHaveTextContent('Hábitos');
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  });
+
+  it('abre los detalles de un bloque sin salir del formulario ni perder cambios', async () => {
+    const user = userEvent.setup();
+
+    function EditorWithSidebar() {
+      const [title, setTitle] = useState('');
+      const location = useLocation();
+      return (
+        <>
+          <span data-testid="current-path">{location.pathname}</span>
+          <input aria-label="Título sin guardar" value={title} onChange={(event) => setTitle(event.target.value)} />
+          <CatalogSidebar embedded showQuestions={false} />
+        </>
+      );
+    }
+
+    render(<MemoryRouter initialEntries={['/catalogo/crear/plantilla']}><EditorWithSidebar /></MemoryRouter>);
+    await user.type(screen.getByRole('textbox', { name: 'Título sin guardar' }), 'Mi plantilla');
+    await user.click(await screen.findByRole('button', { name: 'Ver detalles del bloque: Hábitos' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'DETALLES DEL BLOQUE' });
+    expect(await screen.findByText('Introducción')).toBeVisible();
+    expect(dialog).toHaveTextContent('Descripción del bloque');
+    expect(getCatalogBlockById).toHaveBeenCalledWith(7);
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/catalogo/crear/plantilla');
+    expect(screen.getByRole('textbox', { name: 'Título sin guardar' })).toHaveValue('Mi plantilla');
+
+    await user.click(screen.getByRole('button', { name: 'Cerrar detalles del bloque' }));
+    expect(screen.queryByRole('dialog', { name: 'DETALLES DEL BLOQUE' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Título sin guardar' })).toHaveValue('Mi plantilla');
+  });
+
+  it('permite reintentar la carga de detalles sin cambiar de página', async () => {
+    const user = userEvent.setup();
+    getCatalogBlockById.mockRejectedValueOnce(new Error('Bloque no disponible'));
+    renderSidebar({ showQuestions: false });
+
+    await user.click(await screen.findByRole('button', { name: 'Ver detalles del bloque: Hábitos' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bloque no disponible');
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Introducción')).toBeVisible();
+    expect(getCatalogBlockById).toHaveBeenCalledTimes(2);
+  });
+
+  it('cierra el modal con Escape y mantiene abierto el catálogo lateral', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><CatalogSidebar showQuestions={false} defaultOpen /></MemoryRouter>);
+
+    await user.click(await screen.findByRole('button', { name: 'Ver detalles del bloque: Hábitos' }));
+    expect(await screen.findByRole('dialog', { name: 'DETALLES DEL BLOQUE' })).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'DETALLES DEL BLOQUE' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cerrar catálogo de elementos' })).toBeVisible();
   });
 
   it('filtra los elementos cargados por su texto', async () => {

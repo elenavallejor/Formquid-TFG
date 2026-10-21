@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 import { Skeleton } from '../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../context/useAuth.js';
@@ -8,6 +8,7 @@ import { useAuth } from '../../context/useAuth.js';
  */
 export function RequireRole({ allowedRoles, children }) {
   const { user, isInitializing } = useAuth();
+  const location = useLocation();
 
   if (isInitializing) {
     return (
@@ -18,7 +19,7 @@ export function RequireRole({ allowedRoles, children }) {
   }
 
   if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/403" replace />;
+    return <Navigate to={location.state?.returningFromLogin ? '/panel' : '/403'} replace />;
   }
 
   return children;

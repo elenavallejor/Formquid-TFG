@@ -167,6 +167,12 @@ export function updateSurvey(surveyId, data) {
   });
 }
 
+export function uploadSurveyCover(surveyId, file) {
+  const body = new FormData();
+  body.append('file', file);
+  return apiClient(`/surveys/${surveyId}/cover`, { method: 'POST', body });
+}
+
 export function updateSurveyLifecycle(surveyId, lifecycleStatus) {
   return apiClient(`/surveys/${surveyId}/lifecycle`, {
     method: 'PATCH',

@@ -7,10 +7,13 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      SURVEY_COVER_STORAGE_PATH: /app/data/survey-covers
     depends_on:
       - mailhog
     ports:
       - "8080:8080"
+    volumes:
+      - survey-covers:/app/data/survey-covers
     restart: unless-stopped
 
   mailhog:
@@ -31,3 +34,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
     restart: unless-stopped
+
+volumes:
+  survey-covers:

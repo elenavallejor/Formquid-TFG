@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, apiClient, setUnauthorizedHandler } from './apiClient.js';
+import { ApiError, apiClient, resolveSurveyImageUrl, setUnauthorizedHandler } from './apiClient.js';
 
 function jsonResponse(data, status = 200) {
   return {
@@ -12,6 +12,12 @@ function jsonResponse(data, status = 200) {
 }
 
 describe('apiClient', () => {
+  it('resuelve la portada subida respecto a la URL del backend', () => {
+    expect(resolveSurveyImageUrl('/api/v1/public/surveys/12/cover/imagen.png'))
+      .toBe('http://localhost:8080/api/v1/public/surveys/12/cover/imagen.png');
+    expect(resolveSurveyImageUrl('https://example.test/imagen.png')).toBe('https://example.test/imagen.png');
+  });
+
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
     document.cookie = 'XSRF-TOKEN=token-de-prueba';

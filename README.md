@@ -14,6 +14,12 @@ Para preparar el backend con el perfil `prod`, combina `docker-compose.yml` con 
 
 El perfil `prod` exige estas variables y rechaza valores vacíos o solo espacios al arrancar. `SuperadminInitializer` conserva su comportamiento: solo crea la cuenta cuando no existen usuarios. Cambiar `.env` después no actualiza la contraseña de una cuenta ya creada.
 
+## Portadas de encuestas
+
+Las portadas subidas desde un dispositivo se guardan en `/app/data/survey-covers` dentro del backend. `docker-compose.yml` monta ahí el volumen persistente `survey-covers`; el perfil de producción reutiliza ese montaje al combinar ambos archivos Compose. Incluye el volumen en las copias de seguridad junto con la base de datos. Al retirar el contenedor, conserva el volumen (evita `docker compose down -v`).
+
+Si el backend se despliega sin Docker Compose, monta almacenamiento persistente y configura `SURVEY_COVER_STORAGE_PATH` con la ruta montada. Se admiten imágenes PNG y JPEG de hasta 2 MB y 4000 píxeles por lado. Las portadas de borradores y encuestas con acceso restringido requieren autorización para leerse.
+
 ## Migraciones de bases existentes
 
 La migración `V9__allow_multiple_superadmins.sql` se modificó anteriormente para admitir una base sin usuarios. Antes de actualizar una base existente, realiza una copia de seguridad y comprueba su historial:

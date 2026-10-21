@@ -1,7 +1,9 @@
 import { MdArrowForward, MdBarChart, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
 import { Link } from 'react-router-dom';
+import { resolveSurveyImageUrl } from '../../api/apiClient.js';
 
 import { formatDate } from '../../utils/formatDate.js';
+import { getSurveyAccessBadge } from '../../utils/surveyAccess.js';
 
 import '../Table/Table.css';
 import './SurveyCard.css';
@@ -13,12 +15,6 @@ const LIFECYCLE_LABELS = {
   DRAFT: 'BORRADOR',
   OPEN: 'ABIERTA',
   CLOSED: 'CERRADA',
-};
-
-const ACCESS_LABELS = {
-  PUBLIC: 'PÚBLICO',
-  PASSWORD_PROTECTED: 'CON CONTRASEÑA',
-  AUTHENTICATED: 'USUARIOS AUTENTICADOS',
 };
 
 const VISIBILITY_LABELS = {
@@ -41,6 +37,7 @@ export function SurveyCard({
   const Heading = `h${normalizedHeadingLevel}`;
   const { id, title = 'Sin título', lifecycleStatus, tags, imageKey } = survey;
   const normalizedLifecycle = LIFECYCLE_LABELS[lifecycleStatus] ? lifecycleStatus : 'DRAFT';
+  const accessBadge = getSurveyAccessBadge(normalizedLifecycle, survey.accessMode);
   const surveyTags = Array.isArray(tags) ? tags : [];
   const isAdminCard = variant === 'admin';
   const isDirectoryCard = variant === 'directory';
@@ -60,7 +57,7 @@ export function SurveyCard({
     <article className={cardClassName}>
       <div className="survey-card-image-wrapper">
         {imageKey
-          ? <img src={imageKey} alt="" className="survey-card-image" loading="lazy" decoding="async" />
+          ? <img src={resolveSurveyImageUrl(imageKey)} alt="" className="survey-card-image" loading="lazy" decoding="async" />
           : <div className="survey-card-placeholder" aria-hidden="true" />}
       </div>
 
@@ -91,7 +88,7 @@ export function SurveyCard({
 
         {(isAdminCard || isDirectoryCard || (isResultsCard && hasResultsDetails)) && <dl className="survey-card-admin-details">
           {(!isResultsCard || survey.editorName) && <div><dt>Editor</dt><dd>{survey.editorName || 'Sin propietario'}</dd></div>}
-          {isAdminCard && <div><dt>Acceso</dt><dd><span className={`table-badge table-badge-${String(survey.accessMode || 'PUBLIC').toLowerCase()}`}>{ACCESS_LABELS[survey.accessMode] || survey.accessMode || '—'}</span></dd></div>}
+          {isAdminCard && <div><dt>Acceso</dt><dd><span className={`table-badge table-badge-${accessBadge.variant}`}>{accessBadge.label}</span></dd></div>}
           {(isAdminCard || isResultsCard) && survey.responses !== undefined && <div><dt>Respuestas</dt><dd>{survey.responses ?? 0}</dd></div>}
           {!isResultsCard && <div><dt>Actualizada</dt><dd>{formatDate(survey.updatedAt)}</dd></div>}
         </dl>}

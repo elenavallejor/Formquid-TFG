@@ -5,6 +5,11 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1'
 ).replace(/\/$/, '');
 
+export function resolveSurveyImageUrl(imageKey) {
+  if (!imageKey?.startsWith('/api/v1/public/surveys/')) return imageKey;
+  return new URL(`${API_BASE_URL}${imageKey.slice('/api/v1'.length)}`, window.location.origin).href;
+}
+
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'TRACE']);
 const pendingGetRequests = new Map();
 

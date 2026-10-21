@@ -45,6 +45,17 @@ describe('AdminSurveysPage', () => {
     expect(screen.getByRole('heading', { name: 'Edición de encuesta' })).toBeVisible();
   });
 
+  it.each(['PUBLIC', 'PASSWORD_PROTECTED', 'AUTHENTICATED'])('muestra un borrador sin publicar aunque su acceso configurado sea %s', async (accessMode) => {
+    getAdminSurveys.mockResolvedValue({ content: [{ ...survey, lifecycleStatus: 'DRAFT', visibility: 'UNLISTED', accessMode }], totalElements: 1, totalPages: 1 });
+    renderWithRouter(<AdminSurveysPage />);
+
+    expect(await screen.findByText('SIN PUBLICAR')).toHaveClass('table-badge-draft');
+    expect(screen.getByText('BORRADOR')).toBeVisible();
+    expect(screen.queryByText('PÚBLICO')).not.toBeInTheDocument();
+    expect(screen.queryByText('CON CONTRASEÑA')).not.toBeInTheDocument();
+    expect(screen.queryByText('USUARIOS AUTENTICADOS')).not.toBeInTheDocument();
+  });
+
   it('informa del error de carga y permite descartarlo', async () => {
     const user = userEvent.setup();
     getAdminSurveys.mockRejectedValueOnce(new Error('Servicio no disponible'));

@@ -47,7 +47,10 @@ export function LoginForm() {
         ? `${previousLocation.pathname}${previousLocation.search || ''}${previousLocation.hash || ''}`
         : '/panel';
 
-      navigate(destination, { replace: true });
+      navigate(destination, {
+        replace: true,
+        state: previousLocation ? { returningFromLogin: true } : null,
+      });
     } catch {
       setLoginError(LOGIN_ERROR_MESSAGE);
     } finally {

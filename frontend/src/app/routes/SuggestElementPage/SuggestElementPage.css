@@ -79,6 +79,10 @@
   font-weight: 700;
 }
 
+.suggest-element-card label span {
+  color: var(--color-error);
+}
+
 .suggest-element-card textarea {
   width: 100%;
   min-height: 96px;

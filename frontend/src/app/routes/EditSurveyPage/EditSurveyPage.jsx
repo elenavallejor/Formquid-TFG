@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBlocker, useParams, useSearchParams } from 'react-router-dom';
 import '@fontsource/lexend/400.css';
-import '@fontsource/opendyslexic/400.css';
+import '../../../assets/styles/opendyslexic.css';
 import { FaRegClipboard } from 'react-icons/fa';
 import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdGroups, MdImage, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdVisibilityOff } from 'react-icons/md';
 
@@ -19,7 +19,8 @@ import {
   updateCollaboratorPermission,
 } from '../../../api/collaborationsApi.js';
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
-import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle } from '../../../api/surveysApi.js';
+import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle, uploadSurveyCover } from '../../../api/surveysApi.js';
+import { resolveSurveyImageUrl } from '../../../api/apiClient.js';
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
@@ -31,10 +32,13 @@ import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx'
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyBuilder } from '../../../components/SurveyBuilder/SurveyBuilder.jsx';
 import { SurveyPreviewModal } from '../../../components/SurveyPreviewModal/SurveyPreviewModal.jsx';
+import { SurveyCoverInput } from '../../../components/SurveyCoverInput.jsx';
+import { SurveyFontPreview } from '../../../components/SurveyFontPreview.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 import { buildTemplateBlockFromCatalog, buildTemplateQuestionFromCatalog } from '../../../utils/templateBuilderUtils.js';
 import { INITIAL_SURVEY_STRUCTURE, buildSurveyStructurePayload, buildSurveyStructureState, getSurveyPublicationValidationError, getSurveyStructureValidationError } from '../../../utils/surveyBuilderUtils.js';
 import { formatDate } from '../../../utils/formatDate.js';
+import { getSurveyAccessBadge } from '../../../utils/surveyAccess.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
 import '../CreateSurveyPage/CreateSurveyPage.css';
@@ -56,7 +60,6 @@ const FONT_OPTIONS = [
 ];
 
 const LIFECYCLE_LABELS = { DRAFT: 'BORRADOR', OPEN: 'ABIERTA', CLOSED: 'CERRADA' };
-const ACCESS_MODE_LABELS = { PUBLIC: 'PÚBLICO', PASSWORD_PROTECTED: 'CON CONTRASEÑA', AUTHENTICATED: 'USUARIOS AUTENTICADOS' };
 const VISIBILITY_LABELS = { LISTED: 'LISTADA', UNLISTED: 'OCULTA' };
 
 function formatDateTime(value) {
@@ -66,6 +69,7 @@ function formatDateTime(value) {
 
 function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHasError, onImageError }) {
   const lifecycle = survey?.lifecycleStatus || 'DRAFT';
+  const accessBadge = getSurveyAccessBadge(lifecycle, survey?.accessMode);
   const tags = Array.isArray(survey?.tags) ? survey.tags : [];
 
   return (
@@ -108,7 +112,7 @@ function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHa
             <div className="catalog-detail-body">
               <div className="survey-detail-cover">
                 {survey.imageKey && !imageHasError
-                  ? <img src={survey.imageKey} alt={`Portada de ${survey.title || 'la encuesta'}`} onError={onImageError} />
+                  ? <img src={resolveSurveyImageUrl(survey.imageKey)} alt={`Portada de ${survey.title || 'la encuesta'}`} onError={onImageError} />
                   : <MdImage aria-hidden="true" />}
               </div>
 
@@ -116,7 +120,7 @@ function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHa
 
               <dl className="catalog-detail-metadata survey-detail-metadata">
                 <div><dt>ESTADO</dt><dd><span className={`table-badge table-badge-${lifecycle.toLocaleLowerCase()}`}>{LIFECYCLE_LABELS[lifecycle] || lifecycle}</span></dd></div>
-                <div><dt>ACCESO</dt><dd><span className={`table-badge table-badge-${String(survey.accessMode || 'PUBLIC').toLocaleLowerCase()}`}>{ACCESS_MODE_LABELS[survey.accessMode] || survey.accessMode || '—'}</span></dd></div>
+                <div><dt>ACCESO</dt><dd><span className={`table-badge table-badge-${accessBadge.variant}`}>{accessBadge.label}</span></dd></div>
                 <div><dt>VISIBILIDAD</dt><dd><span className={`table-badge table-badge-${String(survey.visibility || 'UNLISTED').toLocaleLowerCase()}`}>{VISIBILITY_LABELS[survey.visibility] || survey.visibility || '—'}</span></dd></div>
                 <div><dt>CREADA</dt><dd>{formatDateTime(survey.createdAt)}</dd></div>
                 <div><dt>ÚLTIMA ACTUALIZACIÓN</dt><dd>{formatDateTime(survey.updatedAt)}</dd></div>
@@ -227,7 +231,7 @@ function SurveyTagsEditor({ tags, readOnly, onChange }) {
   );
 }
 
-function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, onChange, showPolicySettings }) {
+function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onImageError, onChange, onFileChange, onError, showPolicySettings }) {
   const selectedFont = FONT_OPTIONS.find((font) => font.value === data.fontFamily) || FONT_OPTIONS[0];
 
   return (
@@ -248,16 +252,9 @@ function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, on
 
       <section className="create-survey-card" aria-labelledby="edit-survey-image-title">
         <h2 id="edit-survey-image-title">IMAGEN</h2>
-        <div className="create-survey-image-layout">
-          <div className="create-survey-image-preview">
-            {data.imageKey && !imageHasError ? <img src={data.imageKey} alt="Vista previa de la encuesta" onError={onImageError} /> : <MdImage aria-hidden="true" />}
-          </div>
-          <div className="create-survey-field">
-            <label htmlFor="edit-survey-image">URL de la imagen</label>
-            <input id="edit-survey-image" type="url" value={data.imageKey} placeholder="https://ejemplo.com/imagen.jpg" onChange={(event) => onChange({ imageKey: event.target.value }, true)} />
-            <p>Se utilizará como portada de la encuesta.</p>
-          </div>
-        </div>
+        <SurveyCoverInput id="edit-survey-image" imageKey={data.imageKey} file={coverFile} imageHasError={imageHasError}
+          onImageError={onImageError} onUrlChange={(imageKey) => onChange({ imageKey }, true)}
+          onFileChange={onFileChange} onError={onError} />
       </section>
 
       <section className="create-survey-card" aria-labelledby="edit-survey-appearance-title">
@@ -271,11 +268,7 @@ function SurveySettings({ data, imageHasError, lifecycleStatus, onImageError, on
               {FONT_OPTIONS.map((font) => <option key={font.value} value={font.value} style={{ fontFamily: font.fontFamily, fontSize: font.value === 'OPEN_DYSLEXIC' ? '16.9px' : undefined }}>{font.label}</option>)}
             </Dropdown>
           </div>
-          <div className={`edit-survey-font-preview ${data.fontFamily === 'OPEN_DYSLEXIC' ? 'is-open-dyslexic' : ''}`} style={{ fontFamily: selectedFont.fontFamily }} aria-live="polite">
-            <span>Vista previa</span>
-            <label htmlFor="edit-survey-preview-answer">¿Cómo utilizas la tecnología en tu día a día? <strong>*</strong></label>
-            <input id="edit-survey-preview-answer" type="text" placeholder="Escribe tu respuesta" disabled />
-          </div>
+          <SurveyFontPreview fontFamily={selectedFont.fontFamily} isOpenDyslexic={data.fontFamily === 'OPEN_DYSLEXIC'} inputId="edit-survey-preview-answer" />
         </div>
       </section>
 
@@ -474,6 +467,7 @@ export function EditSurveyPage() {
   const [visibilityConfirmation, setVisibilityConfirmation] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [imageHasError, setImageHasError] = useState(false);
+  const [coverFile, setCoverFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const isOwner = Boolean(user && survey && Number(user.id) === Number(survey.ownerId));
@@ -607,7 +601,9 @@ export function EditSurveyPage() {
     if (saveLockRef.current) return;
     saveLockRef.current = true; setIsSaving(true); clearMessages();
     try {
-      const response = await updateSurvey(surveyId, { title: settings.title.trim(), description: settings.description.trim() || null, imageKey: settings.imageKey.trim() || null, fontFamily: settings.fontFamily, accessMode: settings.accessMode, visibility: settings.visibility, accessPassword: settings.accessMode === 'PASSWORD_PROTECTED' ? settings.accessPassword || null : null, tags: settings.tags, category: settings.category });
+      let response = await updateSurvey(surveyId, { title: settings.title.trim(), description: settings.description.trim() || null, imageKey: settings.imageKey.trim() || null, fontFamily: settings.fontFamily, accessMode: settings.accessMode, visibility: settings.visibility, accessPassword: settings.accessMode === 'PASSWORD_PROTECTED' ? settings.accessPassword || null : null, tags: settings.tags, category: settings.category });
+      if (coverFile) response = await uploadSurveyCover(surveyId, coverFile);
+      setCoverFile(null);
       setSurvey(response); setSettings(settingsFromSurvey(response)); setHasTagChanges(false); setHasSettingsChanges(false); setSuccessMessage('Configuración guardada correctamente.');
     } catch (error) {
       setErrorMessage(error.message || 'No se ha podido guardar la configuración.');
@@ -772,7 +768,7 @@ export function EditSurveyPage() {
           </section>}
           {activeTab === 'SETTINGS' && <section id="survey-panel-settings" role="tabpanel" aria-labelledby="survey-tab-settings">
             {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={4} hasActions={false} /></div> : survey && <>
-              {!isSupervising && <SurveySettings data={settings} imageHasError={imageHasError} lifecycleStatus={survey.lifecycleStatus} onImageError={() => setImageHasError(true)} onChange={(changes, resetImageError = false) => { if (resetImageError) setImageHasError(false); setSettings((current) => ({ ...current, ...changes })); setHasSettingsChanges(true); clearMessages(); }} showPolicySettings={isOwner} />}
+              {!isSupervising && <SurveySettings data={settings} coverFile={coverFile} imageHasError={imageHasError} lifecycleStatus={survey.lifecycleStatus} onImageError={() => setImageHasError(true)} onChange={(changes, resetImageError = false) => { if (resetImageError) setImageHasError(false); setSettings((current) => ({ ...current, ...changes })); setHasSettingsChanges(true); clearMessages(); }} onFileChange={(file) => { setImageHasError(false); setCoverFile(file); setHasSettingsChanges(true); clearMessages(); }} onError={setErrorMessage} showPolicySettings={isOwner} />}
               {isOwner && <section className="edit-survey-panel-card edit-survey-lifecycle-card">
                 <div className="edit-survey-lifecycle-copy">
                   <h2>CICLO DE VIDA</h2>

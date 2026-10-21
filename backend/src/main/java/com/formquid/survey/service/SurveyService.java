@@ -44,6 +44,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.SecureRandom;
 import java.text.Normalizer;
@@ -80,6 +81,7 @@ public class SurveyService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
     private final CategoryCatalogService categoryCatalogService;
+    private final SurveyCoverStorage surveyCoverStorage;
 
     @Transactional(readOnly = true)
     public SurveyPageResponseDto findEditableByUser(User user, String search, SurveyLifecycle lifecycleStatus, Pageable pageable) {
@@ -389,7 +391,8 @@ public class SurveyService {
         if (accessPassword == null || !passwordEncoder.matches(accessPassword, survey.getAccessPasswordHash())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "La contraseña no es correcta");
         }
-        return toResponse(survey);
+        return toResponse(survey, NO_ACCESS,
+            surveyCoverStorage.inlineForAuthorizedRespondent(survey.getId(), survey.getImageKey()));
     }
 
     public Survey getSurvey(Long surveyId) {
@@ -422,7 +425,11 @@ public class SurveyService {
         Category category = request.category() == null ? survey.getCategory() : requireSurveyCategory(request.category());
         survey.setTitle(request.title().trim());
         survey.setDescription(trimToNull(request.description()));
+        String previousImageKey = survey.getImageKey();
         survey.setImageKey(trimToNull(request.imageKey()));
+        if (!java.util.Objects.equals(previousImageKey, survey.getImageKey())) {
+            surveyCoverStorage.deleteAfterCommit(surveyId, previousImageKey);
+        }
         survey.setFontFamily(fontFamilyOrDefault(request.fontFamily()));
         survey.setCategory(category);
         saveTags(survey, request.tags());
@@ -464,6 +471,7 @@ public class SurveyService {
         Survey survey = getSurvey(surveyId);
         ensureOwner(survey, actor);
         ensureClosedForDelete(survey);
+        surveyCoverStorage.deleteAfterCommit(surveyId, survey.getImageKey());
         surveyRepository.delete(survey);
     }
 
@@ -507,7 +515,35 @@ public class SurveyService {
         }
         Survey survey = getSurvey(surveyId);
         ensureClosedForDelete(survey);
+        surveyCoverStorage.deleteAfterCommit(surveyId, survey.getImageKey());
         surveyRepository.delete(survey);
+    }
+
+    @Transactional
+    public SurveyResponseDto uploadCover(Long surveyId, User actor, MultipartFile file) {
+        Survey survey = getSurvey(surveyId);
+        SurveyAccess access = resolveAccess(survey, actor);
+        ensureCanEdit(access);
+        String previousImageKey = survey.getImageKey();
+        survey.setImageKey(surveyCoverStorage.save(surveyId, file));
+        surveyCoverStorage.deleteAfterCommit(surveyId, previousImageKey);
+        return toResponse(survey, access);
+    }
+
+    @Transactional(readOnly = true)
+    public SurveyCoverStorage.StoredCover getCover(Long surveyId, String filename, User user) {
+        Survey survey = getSurvey(surveyId);
+        String expectedKey = "/api/v1/public/surveys/" + surveyId + "/cover/" + filename;
+        if (!expectedKey.equals(survey.getImageKey())) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Portada no encontrada");
+        }
+        boolean canViewAsRespondent = survey.getLifecycleStatus() == SurveyLifecycle.OPEN
+            && (survey.getAccessMode() == SurveyAccessMode.PUBLIC
+                || (survey.getAccessMode() == SurveyAccessMode.AUTHENTICATED && user != null));
+        if (!canViewAsRespondent && !isAdmin(user) && !resolveAccess(survey, user).canPreview()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No puedes consultar esta portada");
+        }
+        return surveyCoverStorage.read(filename);
     }
 
     public void ensureCanViewSurvey(Survey survey, User user) {
@@ -569,6 +605,10 @@ public class SurveyService {
     }
 
     private SurveyResponseDto toResponse(Survey survey, SurveyAccess access) {
+        return toResponse(survey, access, survey.getImageKey());
+    }
+
+    private SurveyResponseDto toResponse(Survey survey, SurveyAccess access, String imageKey) {
         List<ContentItemResponseDto> content = contentService.findSurveyContent(survey.getId()).stream()
             .sorted(Comparator.comparing(ContentItemResponseDto::position))
             .toList();
@@ -578,7 +618,7 @@ public class SurveyService {
             survey.getOwner().getId(),
             survey.getTitle(),
             survey.getDescription(),
-            survey.getImageKey(),
+            imageKey,
             survey.getFontFamily(),
             survey.getLifecycleStatus(),
             survey.getAccessMode(),
@@ -695,7 +735,10 @@ public class SurveyService {
             survey.getPublicCode(),
             survey.getTitle(),
             survey.getDescription(),
-            survey.getImageKey(),
+            survey.getAccessMode() == SurveyAccessMode.PASSWORD_PROTECTED
+                && survey.getImageKey() != null
+                && survey.getImageKey().startsWith("/api/v1/public/surveys/")
+                ? null : survey.getImageKey(),
             survey.getAccessMode(),
             tagsFrom(survey),
             survey.getCategory()

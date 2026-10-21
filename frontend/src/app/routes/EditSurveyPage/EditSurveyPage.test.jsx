@@ -14,6 +14,7 @@ import {
   updateAdminSurveyVisibility,
   updateSurvey,
   updateSurveyLifecycle,
+  uploadSurveyCover,
 } from '../../../api/surveysApi.js';
 import { EditSurveyPage } from './EditSurveyPage.jsx';
 import { renderWithDataRouter } from '../../../testing/render.jsx';
@@ -24,6 +25,7 @@ vi.mock('../../../api/surveysApi.js', () => ({
   updateAdminSurveyVisibility: vi.fn(),
   updateSurvey: vi.fn(),
   updateSurveyLifecycle: vi.fn(),
+  uploadSurveyCover: vi.fn(),
 }));
 vi.mock('../../../api/surveyContentApi.js', () => ({ replaceSurveyContent: vi.fn() }));
 vi.mock('../../../api/collaborationsApi.js', () => ({
@@ -68,6 +70,8 @@ function renderPage(route = '/encuestas/12/editar', user = { id: 7, role: 'EDITO
 describe('EditSurveyPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:cover-preview') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
     getSurveyById.mockResolvedValue(survey);
     updateSurvey.mockResolvedValue(survey);
     replaceSurveyContent.mockResolvedValue(null);
@@ -76,11 +80,26 @@ describe('EditSurveyPage', () => {
     getPublicationRequests.mockResolvedValue([]);
   });
 
+  it('sube y guarda una portada local desde configuración', async () => {
+    const user = userEvent.setup();
+    const file = new File(['imagen'], 'portada.jpg', { type: 'image/jpeg' });
+    uploadSurveyCover.mockResolvedValue({ ...survey, imageKey: '/api/v1/public/surveys/12/cover/imagen.jpg' });
+    renderPage('/encuestas/12/editar?seccion=configuracion');
+
+    await user.upload(await screen.findByLabelText('Imagen del dispositivo'), file);
+    await user.click(screen.getByRole('button', { name: 'Actualizar configuración' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Configuración guardada correctamente.');
+    expect(uploadSurveyCover).toHaveBeenCalledWith('12', file);
+  });
+
   it('muestra la vista de detalles para supervisión administrativa', async () => {
     renderPage('/encuestas/12/editar?vista=detalles', { id: 1, role: 'ADMIN' });
     expect(await screen.findByRole('heading', { name: 'VER ENCUESTA' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Hábitos digitales' })).toBeVisible();
     expect(screen.getByText('Estructura con 0 elementos')).toBeVisible();
+    expect(screen.getByText('SIN PUBLICAR')).toHaveClass('table-badge-draft');
+    expect(screen.queryByText('PÚBLICO')).not.toBeInTheDocument();
   });
 
   it('guarda la estructura y las etiquetas de una encuesta propia', async () => {

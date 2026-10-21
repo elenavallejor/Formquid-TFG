@@ -48,4 +48,25 @@ describe('Dropdown', () => {
     await user.click(trigger);
     expect(screen.queryByRole('group', { name: 'Ordenar' })).not.toBeInTheDocument();
   });
+
+  it('salta el marcador vacío y las opciones deshabilitadas al usar el teclado', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Dropdown aria-label="Categoría" value="" onChange={onChange}>
+      <option value="" disabled>Selecciona una categoría</option>
+      <option value="a">Primera</option>
+      <option value="b" disabled>No disponible</option>
+      <option value="c">Última</option>
+    </Dropdown>);
+    const trigger = screen.getByRole('button', { name: 'Categoría: Selecciona una categoría' });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('button', { name: 'Primera' })).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('button', { name: 'Última' })).toHaveFocus();
+    await user.keyboard('{Home}');
+    expect(screen.getByRole('button', { name: 'Primera' })).toHaveFocus();
+    await user.keyboard('{ArrowUp}{Enter}');
+    expect(onChange).toHaveBeenCalledWith({ target: { name: undefined, value: 'c' } });
+  });
 });

@@ -110,8 +110,6 @@ export function CreateBlockPage() {
               <span>{isSaving ? "Guardando..." : "Crear bloque"}</span>
             </button>
           </header>
-          <CategorySelect id="block-category" value={category} onChange={setCategory} />
-
           {errorMsg && (
             <div className="account-error-banner" role="alert">
               <span>{errorMsg}</span>
@@ -141,6 +139,7 @@ export function CreateBlockPage() {
             <BlockBuilder
               data={formData}
               onChange={setFormData}
+              afterPrimaryField={<CategorySelect id="block-category" value={category} onChange={setCategory} placeholder="Selecciona la categoría de tu bloque" />}
               onDropQuestionFromSidebar={handleAddQuestionFromSidebar}
             />
           )}

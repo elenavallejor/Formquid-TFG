@@ -48,6 +48,8 @@ function DropdownPopover({ ariaDescribedBy, ariaInvalid, ariaLabel, className, d
   const menuId = `${id}-menu`;
   const selectedIndex = options.findIndex((option) => String(option.props.value) === String(value));
   const selectedOption = options[selectedIndex] ?? options[0];
+  const enabledIndexes = options.flatMap((option, index) => option.props.disabled ? [] : [index]);
+  const focusIndex = enabledIndexes.includes(selectedIndex) ? selectedIndex : enabledIndexes[0];
 
   useEffect(() => {
     if (!open) return undefined;
@@ -62,10 +64,10 @@ function DropdownPopover({ ariaDescribedBy, ariaInvalid, ariaLabel, className, d
 
   useEffect(() => {
     if (open && focusOptionOnOpen.current) {
-      optionRefs.current[Math.max(selectedIndex, 0)]?.focus();
+      optionRefs.current[focusIndex]?.focus();
       focusOptionOnOpen.current = false;
     }
-  }, [open, selectedIndex]);
+  }, [open, focusIndex]);
 
   function openMenu() {
     const bounds = wrapperRef.current?.getBoundingClientRect();
@@ -90,7 +92,7 @@ function DropdownPopover({ ariaDescribedBy, ariaInvalid, ariaLabel, className, d
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
     event.preventDefault();
     if (open) {
-      optionRefs.current[Math.max(selectedIndex, 0)]?.focus();
+      optionRefs.current[focusIndex]?.focus();
     } else {
       focusOptionOnOpen.current = true;
       openMenu();
@@ -100,11 +102,12 @@ function DropdownPopover({ ariaDescribedBy, ariaInvalid, ariaLabel, className, d
   function handleOptionKeyDown(event, index) {
     if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
-      optionRefs.current[event.key === 'Home' ? 0 : options.length - 1]?.focus();
+      optionRefs.current[event.key === 'Home' ? enabledIndexes[0] : enabledIndexes.at(-1)]?.focus();
     } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       const direction = event.key === 'ArrowDown' ? 1 : -1;
-      optionRefs.current[(index + direction + options.length) % options.length]?.focus();
+      const nextIndex = (enabledIndexes.indexOf(index) + direction + enabledIndexes.length) % enabledIndexes.length;
+      optionRefs.current[enabledIndexes[nextIndex]]?.focus();
     }
   }
 

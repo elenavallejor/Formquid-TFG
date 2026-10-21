@@ -20,6 +20,7 @@ import "./BlockBuilder.css";
 export function BlockBuilder({
   data = INITIAL_BLOCK_STATE,
   onChange = () => {},
+  afterPrimaryField,
   onDropQuestionFromSidebar,
   isModal = false,
   isOpen = true,
@@ -245,32 +246,36 @@ export function BlockBuilder({
       <section className="builder-card" onDragOverCapture={preventDrop} onDropCapture={preventDrop}>
         <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
 
-        <div className="builder-field">
-          <label htmlFor="block-name">
-            Nombre del bloque <span>*</span>
-          </label>
-          <input
-            id="block-name"
-            type="text"
-            placeholder="Introduce un nombre descriptivo para el bloque..."
-            maxLength={150}
-            value={data.name || ""}
-            onChange={(event) => updateData({ name: event.target.value })}
-          />
-          <span className="field-counter">{(data.name || "").length}/150</span>
-        </div>
+        <div className="builder-general-info-fields">
+          <div className="builder-field">
+            <label htmlFor="block-name">
+              Nombre del bloque <span>*</span>
+            </label>
+            <input
+              id="block-name"
+              type="text"
+              placeholder="Introduce un nombre descriptivo para el bloque..."
+              maxLength={150}
+              value={data.name || ""}
+              onChange={(event) => updateData({ name: event.target.value })}
+            />
+            <span className="field-counter">{(data.name || "").length}/150</span>
+          </div>
 
-        <div className="builder-field">
-          <label htmlFor="block-description">Descripción</label>
-          <textarea
-            id="block-description"
-            rows={4}
-            placeholder="Añade detalles o contexto sobre el propósito de este bloque..."
-            maxLength={500}
-            value={data.description || ""}
-            onChange={(event) => updateData({ description: event.target.value })}
-          />
-          <span className="field-counter">{(data.description || "").length}/500</span>
+          {afterPrimaryField}
+
+          <div className="builder-field">
+            <label htmlFor="block-description">Descripción</label>
+            <textarea
+              id="block-description"
+              rows={4}
+              placeholder="Añade detalles o contexto sobre el propósito de este bloque..."
+              maxLength={500}
+              value={data.description || ""}
+              onChange={(event) => updateData({ description: event.target.value })}
+            />
+            <span className="field-counter">{(data.description || "").length}/500</span>
+          </div>
         </div>
       </section>
 

@@ -78,8 +78,6 @@ export function CreateQuestionPage() {
             <span>{isSaving ? 'Guardando...' : 'Crear pregunta'}</span>
           </button>
         </header>
-        <CategorySelect id="question-category" value={category} onChange={setCategory} />
-
         {errorMsg && (
           <div className="account-error-banner" role="alert">
             <span>{errorMsg}</span>
@@ -105,7 +103,8 @@ export function CreateQuestionPage() {
             <Skeleton variant="list" count={3} hasActions={false} />
           </div>
         ) : (
-          <QuestionBuilder data={formData} onChange={setFormData} isCatalog />
+          <QuestionBuilder data={formData} onChange={setFormData} isCatalog
+            afterPrimaryField={<CategorySelect id="question-category" value={category} onChange={setCategory} placeholder="Selecciona la categoría de tu pregunta fija" />} />
         )}
       </div>
     </main>

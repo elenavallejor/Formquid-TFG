@@ -45,3 +45,6 @@ Thumbs.db
 # Local documentation generated with the backend project
 /backend/HELP.md
 /backend/MAILHOG.md
+
+# Portadas almacenadas al ejecutar el backend sin Docker
+/backend/data/

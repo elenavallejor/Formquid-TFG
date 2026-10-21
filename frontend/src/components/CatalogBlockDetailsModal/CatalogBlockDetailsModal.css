@@ -1,0 +1,113 @@
+.catalog-block-details-overlay {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgb(15 23 42 / 64%);
+}
+
+.catalog-block-details-modal {
+  display: flex;
+  width: min(1100px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 24%);
+}
+
+.catalog-block-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.catalog-block-details-header span {
+  color: var(--color-text-muted);
+  font-size: 13.75px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.catalog-block-details-header h2 {
+  margin: 3px 0 0;
+  color: var(--color-header);
+  font-size: 21.25px;
+}
+
+.catalog-block-details-header button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 28.75px;
+}
+
+.catalog-block-details-header button:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-header);
+}
+
+.catalog-block-details-body {
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.catalog-block-details-metadata {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.catalog-block-details-metadata div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.catalog-block-details-metadata dt {
+  color: var(--color-text-muted);
+  font-size: 13.75px;
+  font-weight: 800;
+}
+
+.catalog-block-details-metadata dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.catalog-block-details-error p {
+  color: var(--color-error);
+}
+
+.catalog-block-details-error button {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+@media only screen and (max-width: 640px) {
+  .catalog-block-details-overlay { padding: 0; }
+  .catalog-block-details-modal { width: 100%; max-height: 100dvh; border-radius: 0; }
+  .catalog-block-details-body { padding: 18px; }
+  .catalog-block-details-metadata { grid-template-columns: 1fr; }
+}

@@ -37,6 +37,16 @@ describe('SurveyCard', () => {
   });
 
   it.each([
+    ['PUBLIC', 'PÚBLICO'],
+    ['PASSWORD_PROTECTED', 'CON CONTRASEÑA'],
+    ['AUTHENTICATED', 'USUARIOS AUTENTICADOS'],
+  ])('muestra el acceso %s cuando la encuesta está publicada', (accessMode, label) => {
+    renderCard({ variant: 'admin', survey: { ...survey, accessMode } });
+    expect(screen.getByText(label)).toBeVisible();
+    expect(screen.queryByText('SIN PUBLICAR')).not.toBeInTheDocument();
+  });
+
+  it.each([
     ['ownedByCurrentUser', 'Tu encuesta'],
     ['collaborating', 'Ya colaboras'],
     ['collaborationRequestPending', 'Solicitud pendiente'],

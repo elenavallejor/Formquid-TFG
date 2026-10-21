@@ -58,6 +58,7 @@ export function TemplateBuilder({
   onDropQuestionFromSidebar,
   onDropBlockFromSidebar,
   showGeneralInfo = true,
+  afterPrimaryField,
   structureTitle = 'ESTRUCTURA DE LA PLANTILLA',
   structureDescription = 'Combina preguntas, textos y bloques, y ordénalos como aparecerán.',
   containerLabel = 'plantilla',
@@ -477,15 +478,18 @@ export function TemplateBuilder({
       {showGeneralInfo && (
         <section className="builder-card" onDragOverCapture={preventDrop} onDropCapture={preventDrop}>
           <h2 className="builder-section-title">INFORMACIÓN GENERAL</h2>
-          <div className="builder-field">
-            <label htmlFor="template-title">Título de la plantilla <span>*</span></label>
-            <input id="template-title" type="text" placeholder="Introduce un título para la plantilla..." maxLength={200} value={data.title || ''} onChange={(event) => updateData({ title: event.target.value })} />
-            <span className="field-counter">{(data.title || '').length}/200</span>
-          </div>
-          <div className="builder-field">
-            <label htmlFor="template-description">Descripción</label>
-            <textarea id="template-description" rows={4} placeholder="Añade detalles o contexto sobre el propósito de esta plantilla..." maxLength={500} value={data.description || ''} onChange={(event) => updateData({ description: event.target.value })} />
-            <span className="field-counter">{(data.description || '').length}/500</span>
+          <div className="builder-general-info-fields">
+            <div className="builder-field">
+              <label htmlFor="template-title">Título de la plantilla <span>*</span></label>
+              <input id="template-title" type="text" placeholder="Introduce un título para la plantilla..." maxLength={200} value={data.title || ''} onChange={(event) => updateData({ title: event.target.value })} />
+              <span className="field-counter">{(data.title || '').length}/200</span>
+            </div>
+            {afterPrimaryField}
+            <div className="builder-field">
+              <label htmlFor="template-description">Descripción</label>
+              <textarea id="template-description" rows={4} placeholder="Añade detalles o contexto sobre el propósito de esta plantilla..." maxLength={500} value={data.description || ''} onChange={(event) => updateData({ description: event.target.value })} />
+              <span className="field-counter">{(data.description || '').length}/500</span>
+            </div>
           </div>
         </section>
       )}

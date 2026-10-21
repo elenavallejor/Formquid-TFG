@@ -11,6 +11,7 @@ import {
   getSurveyDirectory,
   previewSurveyImport,
   updateSurveyLifecycle,
+  uploadSurveyCover,
 } from './surveysApi.js';
 
 vi.mock('./apiClient.js', () => ({ apiClient: vi.fn() }));
@@ -70,6 +71,15 @@ describe('surveysApi', () => {
     expect(url.pathname).toBe('/surveys/import/preview');
     expect(options.method).toBe('POST');
     expect(options.body).toBeInstanceOf(FormData);
+    expect(options.body.get('file')).toBe(file);
+  });
+
+  it('sube una portada como formulario multipart', () => {
+    const file = new File(['imagen'], 'portada.png', { type: 'image/png' });
+    uploadSurveyCover(12, file);
+    const { url, options } = lastRequest();
+    expect(url.pathname).toBe('/surveys/12/cover');
+    expect(options.method).toBe('POST');
     expect(options.body.get('file')).toBe(file);
   });
 

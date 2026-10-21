@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, MdOutlineVisibility, MdSearch } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
 
 import { createPortal } from 'react-dom';
 
 import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
+import { CatalogBlockDetailsModal } from '../CatalogBlockDetailsModal/CatalogBlockDetailsModal.jsx';
 import { Dropdown } from '../Dropdown/Dropdown.jsx';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
 
@@ -24,7 +24,6 @@ export function CatalogSidebar({
   headerSelector = '#main-header',
   embedded = false,
 }) {
-  const navigate = useNavigate();
   const sidebarId = `catalog-sidebar-${useId().replaceAll(':', '')}`;
   const questionsTitleId = `${sidebarId}-questions-title`;
   const blocksTitleId = `${sidebarId}-blocks-title`;
@@ -57,6 +56,7 @@ export function CatalogSidebar({
   const [blockTotal, setBlockTotal] = useState(0);
   const [pendingAction, setPendingAction] = useState('');
   const [actionError, setActionError] = useState('');
+  const [selectedBlock, setSelectedBlock] = useState(null);
 
   const availableQuestionTypes = useMemo(() => {
     if (!allowedQuestionTypes) return QUESTION_TYPES;
@@ -263,7 +263,7 @@ export function CatalogSidebar({
   }, [embedded, isOpen]);
 
   useEffect(() => {
-    if (embedded || !isOpen) return undefined;
+    if (embedded || !isOpen || selectedBlock) return undefined;
 
     function handleKeyDown(event) {
       if (event.defaultPrevented) return;
@@ -290,7 +290,7 @@ export function CatalogSidebar({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeSidebar, embedded, isMobile, isOpen]);
+  }, [closeSidebar, embedded, isMobile, isOpen, selectedBlock]);
 
   const filteredQuestions = useMemo(() => {
     const search = questionSearch.trim().toLocaleLowerCase('es');
@@ -321,6 +321,7 @@ export function CatalogSidebar({
   async function handleAdd(type, item) {
     const callback = type === 'QUESTION' ? onAddQuestion : onAddBlock;
     if (!callback || pendingActionRef.current) return;
+    const existingItems = new Set(document.querySelectorAll('.block-questions-list > .block-question-item'));
     pendingActionRef.current = true;
     const actionId = `${type}-${item.id}`;
     setPendingAction(actionId);
@@ -329,6 +330,12 @@ export function CatalogSidebar({
     try {
       await callback(item);
       if (isMobile && !embedded) closeSidebar();
+      window.requestAnimationFrame(() => {
+        const addedItem = [...document.querySelectorAll('.block-questions-list > .block-question-item')]
+          .find((element) => !existingItems.has(element));
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        addedItem?.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
+      });
     } catch (error) {
       setActionError(error?.message || 'No se ha podido añadir el elemento.');
     } finally {
@@ -405,13 +412,7 @@ export function CatalogSidebar({
                   type="button"
                   className="catalog-action"
                   aria-label={`Ver detalles del bloque: ${blockName}`}
-                  onClick={() => navigate(`/catalogo/detalles/bloque/${block.id}`, {
-                    state: {
-                      element: block,
-                      elementId: block.id,
-                      elementType: 'bloque',
-                    },
-                  })}
+                  onClick={() => setSelectedBlock(block)}
                 >
                   <MdOutlineVisibility aria-hidden="true" />
                 </button>
@@ -425,7 +426,7 @@ export function CatalogSidebar({
   }
 
   const sidebar = (
-      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''} ${embedded ? 'catalog-sidebar-embedded' : ''}`} aria-label="Catálogo de elementos" aria-hidden={embedded ? undefined : !isOpen} inert={embedded ? undefined : !isOpen} aria-modal={!embedded && isMobile && isOpen ? 'true' : undefined} role={!embedded && isMobile ? 'dialog' : undefined}>
+      <aside ref={sidebarRef} id={sidebarId} className={`catalog-sidebar ${isOpen ? 'open' : ''} ${embedded ? 'catalog-sidebar-embedded' : ''}`} aria-label="Catálogo de elementos" aria-hidden={selectedBlock ? true : embedded ? undefined : !isOpen} inert={selectedBlock || (!embedded && !isOpen) ? true : undefined} aria-modal={!selectedBlock && !embedded && isMobile && isOpen ? 'true' : undefined} role={!embedded && isMobile ? 'dialog' : undefined}>
         <header className="catalog-header">
           <h2>{embedded ? 'CATÁLOGO DE PREGUNTAS' : 'CATÁLOGO DE ELEMENTOS'}</h2>
           {!embedded && <button ref={closeRef} type="button" className="catalog-close" aria-label="Cerrar catálogo de elementos" aria-controls={sidebarId} onClick={closeSidebar}><MdChevronLeft aria-hidden="true" /></button>}
@@ -466,7 +467,11 @@ export function CatalogSidebar({
       </aside>
   );
 
-  if (embedded) return <div className="catalog-embedded-root">{sidebar}</div>;
+  const detailsModal = selectedBlock && (
+    <CatalogBlockDetailsModal block={selectedBlock} onClose={() => setSelectedBlock(null)} />
+  );
+
+  if (embedded) return <><div className="catalog-embedded-root">{sidebar}</div>{detailsModal}</>;
 
   return (
     <>
@@ -483,6 +488,7 @@ export function CatalogSidebar({
         </div>,
         document.body,
       )}
+      {detailsModal}
     </>
   );
 }

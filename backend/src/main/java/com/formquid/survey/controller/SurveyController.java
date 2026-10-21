@@ -190,6 +190,15 @@ public class SurveyController {
         return surveyService.update(surveyId, request, user);
     }
 
+    @PostMapping(value = "/{surveyId}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public SurveyResponseDto uploadCover(
+        @PathVariable Long surveyId,
+        @AuthenticationPrincipal User user,
+        @RequestPart("file") MultipartFile file
+    ) {
+        return surveyService.uploadCover(surveyId, user, file);
+    }
+
     @PatchMapping("/{surveyId}/lifecycle")
     public SurveyResponseDto changeLifecycle(
         @PathVariable Long surveyId,
