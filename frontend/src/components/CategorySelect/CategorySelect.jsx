@@ -31,7 +31,7 @@ export function CategorySelect({ id, value, onChange, surveyOnly = false, defaul
   return (
     <div className="category-select">
       <label className="category-select-label" htmlFor={id}>Categoría{required && <> <span className="category-select-required" aria-hidden="true">*</span><span className="sr-only"> (obligatoria)</span></>}</label>
-      <Dropdown id={id} value={value} onChange={(event) => onChange(event.target.value)}
+      <Dropdown id={id} value={value} onChange={(event) => onChange(event.target.value, categories.find((category) => category.code === event.target.value) ?? null)}
         className={placeholder && !value ? 'category-select--placeholder' : ''}
         aria-invalid={validationError ? true : undefined} aria-describedby={errorMessage ? `${id}-error` : undefined}>
         {placeholder

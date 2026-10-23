@@ -22,6 +22,8 @@ export function BlockBuilder({
   onChange = () => {},
   afterPrimaryField,
   onDropQuestionFromSidebar,
+  categoryFilter = null,
+  categoryDetails = null,
   isModal = false,
   isOpen = true,
   onClose,
@@ -94,9 +96,9 @@ export function BlockBuilder({
   }
 
   function handleCatalogQuestion(question, targetIndex) {
+    if (categoryFilter !== null && (!categoryFilter || question.category !== categoryFilter)) return false;
     if (onDropQuestionFromSidebar) {
-      onDropQuestionFromSidebar(question, targetIndex);
-      return;
+      return onDropQuestionFromSidebar(question, targetIndex);
     }
 
     const updated = [...items];
@@ -105,6 +107,7 @@ export function BlockBuilder({
       : updated.length;
     updated.splice(insertionIndex, 0, buildBlockQuestionFromCatalog(question));
     updateItems(updated);
+    return true;
   }
 
   function moveItem(fromIndex, toIndex) {
@@ -555,6 +558,8 @@ export function BlockBuilder({
             embedded
             showQuestions
             showBlocks={false}
+            categoryFilter={categoryFilter}
+            categoryDetails={categoryDetails}
             onAddQuestion={handleCatalogQuestion}
           />
           <div className="block-builder-modal-content">

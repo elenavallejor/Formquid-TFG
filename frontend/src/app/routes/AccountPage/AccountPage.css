@@ -77,11 +77,6 @@
   flex: 1;
 }
 
-.error-banner-icon {
-  flex-shrink: 0;
-  font-size: 27.5px;
-}
-
 .account-success-banner {
   padding: 14px 20px;
   margin-bottom: 24px;
@@ -118,10 +113,6 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-}
-
-.margin-top-field {
-  margin-top: 20px;
 }
 
 .margin-bottom-field {

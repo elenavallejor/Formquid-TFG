@@ -23,6 +23,17 @@ describe('editores compartidos', () => {
     expect(screen.queryByRole('group', { name: 'Iconos disponibles' })).not.toBeInTheDocument();
   });
 
+  it('ofrece los iconos nuevos al crear una categoría', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<CategoryIconPicker label="Icono" value={DEFAULT_CATEGORY_ICON} onChange={onChange} />);
+    await user.click(screen.getByRole('button', { name: /^Icono:/ }));
+    const menu = screen.getByRole('group', { name: 'Iconos disponibles' });
+    expect(within(menu).getByRole('button', { name: 'Internet' })).toBeVisible();
+    await user.click(within(menu).getByRole('button', { name: 'Ideas' }));
+    expect(onChange).toHaveBeenCalledWith('BsLightbulb');
+  });
+
   it('previsualiza la encuesta y permite salir', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();

@@ -8,6 +8,7 @@ import com.formquid.auth.security.JwtAuthenticationFilter;
 import com.formquid.auth.security.JwtCookieService;
 import com.formquid.auth.security.JwtService;
 import com.formquid.auth.service.AuthService;
+import com.formquid.auth.service.PasswordResetService;
 import com.formquid.config.SecurityConfig;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
@@ -60,6 +61,7 @@ class PublicControllersWebTest {
     private MockMvc mockMvc;
 
     @MockitoBean private AuthService authService;
+    @MockitoBean private PasswordResetService passwordResetService;
     @MockitoBean private JwtCookieService jwtCookieService;
     @MockitoBean private JwtService jwtService;
     @MockitoBean private SurveyService surveyService;
@@ -67,6 +69,29 @@ class PublicControllersWebTest {
     @MockitoBean private AnonymousRespondentService anonymousRespondentService;
     @MockitoBean private RegistrationRequestService registrationRequestService;
     @MockitoBean private UserRepository userRepository;
+
+    @Test
+    void passwordResetRequest_isPublicAndUsesGenericResponse() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/password-reset/request")
+                .with(csrf())
+                .contentType("application/json")
+                .content("""
+                    {"email":"editor@example.com"}
+                    """))
+            .andExpect(status().isNoContent());
+        verify(passwordResetService).request("editor@example.com");
+    }
+
+    @Test
+    void passwordResetConfirm_rejectsInvalidForm() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/password-reset/confirm")
+                .with(csrf())
+                .contentType("application/json")
+                .content("""
+                    {"token":"invalid","password":"short"}
+                    """))
+            .andExpect(status().isBadRequest());
+    }
 
     @Test
     void login_returnsUserAndSecureCookie() throws Exception {

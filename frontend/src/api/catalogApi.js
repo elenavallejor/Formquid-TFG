@@ -126,12 +126,14 @@ export function getCatalogQuestionsForBuilder(options = {}) {
     signal,
     page = 0,
     size = 10,
+    category,
     refresh = false,
   } = options;
 
   const path = buildPaginatedPath('/catalog/questions/builder', {
     page,
     size,
+    category,
   });
 
   return getCachedPage(
@@ -217,12 +219,14 @@ export function getCatalogBlocksForBuilder(options = {}) {
     signal,
     page = 0,
     size = 10,
+    category,
     refresh = false,
   } = options;
 
   const path = buildPaginatedPath('/catalog/blocks/builder', {
     page,
     size,
+    category,
   });
 
   return getCachedPage(

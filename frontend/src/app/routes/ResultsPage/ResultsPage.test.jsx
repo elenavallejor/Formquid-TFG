@@ -43,5 +43,17 @@ describe('ResultsPage', () => {
     getResultSurveys.mockRejectedValueOnce(new Error('No se pudo consultar'));
     renderWithRouter(<ResultsPage />);
     expect(await screen.findByText('No se pudo consultar')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'No se han podido cargar las encuestas' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'No hay encuestas con respuestas' })).not.toBeInTheDocument();
+  });
+
+  it('permite reintentar la carga después de un error', async () => {
+    const user = userEvent.setup();
+    getResultSurveys.mockRejectedValueOnce(new Error('No se pudo consultar'));
+    renderWithRouter(<ResultsPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByRole('heading', { name: 'No hay encuestas con respuestas' })).toBeVisible();
+    expect(getResultSurveys).toHaveBeenCalledTimes(2);
   });
 });

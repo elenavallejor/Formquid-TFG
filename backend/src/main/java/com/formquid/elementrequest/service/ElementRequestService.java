@@ -3,7 +3,9 @@ package com.formquid.elementrequest.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.service.BlockService;
+import com.formquid.common.Category;
 import com.formquid.common.exception.ApiException;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.elementrequest.dto.ApproveElementRequestResponseDto;
 import com.formquid.elementrequest.dto.CreateElementRequestDto;
@@ -37,6 +39,7 @@ public class ElementRequestService {
     private final BlockService blockService;
     private final TemplateService templateService;
     private final NotificationService notificationService;
+    private final CategoryCatalogService categoryCatalogService;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -139,6 +142,7 @@ public class ElementRequestService {
             request.requestPayload(),
             CreateFixedQuestionRequestDto.class
         );
+        requireCategory(dto.category());
         questionService.validateQuestionDraft(dto.question());
     }
 
@@ -148,6 +152,7 @@ public class ElementRequestService {
     }
 
     private void validateBlock(CreateBlockRequestDto dto) {
+        requireCategory(dto.category());
         blockService.validateDraft(dto);
         dto.items().stream()
             .filter(item -> item.itemType() == ContentItemType.QUESTION)
@@ -156,7 +161,15 @@ public class ElementRequestService {
 
     private void validateTemplate(CreateElementRequestDto request) {
         CreateTemplateRequestDto dto = objectMapper.convertValue(request.requestPayload(), CreateTemplateRequestDto.class);
+        requireCategory(dto.category());
         templateService.validateDraft(dto);
+    }
+
+    private void requireCategory(Category category) {
+        if (category == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Selecciona una categoría para el elemento sugerido");
+        }
+        categoryCatalogService.requireExisting(category);
     }
 
     private ElementRequestResponseDto toResponse(ElementRequest request) {

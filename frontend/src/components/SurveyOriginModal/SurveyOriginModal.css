@@ -20,14 +20,6 @@
   box-shadow: 0 22px 60px rgb(0 37 54 / 25%);
 }
 
-.survey-origin-modal-templates {
-  height: min(850px, calc(100vh - 48px));
-}
-
-.survey-origin-modal-choice {
-  height: min(650px, calc(100vh - 48px));
-}
-
 .survey-origin-modal > header {
   display: flex;
   align-items: flex-start;

@@ -1,4 +1,5 @@
 import { INITIAL_QUESTION_STATE, buildQuestionDraftPayload, getQuestionBuilderValidationError } from './questionBuilderUtils.js';
+import { createLocalId } from './createLocalId.js';
 
 /**
  * Define el estado inicial, la validación y las transformaciones utilizadas por el constructor de bloques.
@@ -60,6 +61,7 @@ export function buildBlockQuestionFromCatalog(question) {
     ...INITIAL_QUESTION_STATE,
     itemType: 'QUESTION',
     fixedQuestionId: question.scope === 'CATALOG_FIXED' ? question.id : undefined,
+    catalogCategory: question.category,
     statement: question.statement || '',
     annotation: question.annotation || '',
     questionType: question.questionType,
@@ -95,7 +97,7 @@ export function buildBlockQuestionFromCatalog(question) {
 export function buildBlockTextItem(textBody = '') {
   return {
     itemType: 'TEXT',
-    localId: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    localId: createLocalId('text'),
     textBody,
   };
 }

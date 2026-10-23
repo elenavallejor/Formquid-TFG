@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 const PAGE_TITLES = [
   { pattern: /^\/$/, title: 'Inicio' },
   { pattern: /^\/inicia-sesion\/?$/, title: 'Iniciar sesión' },
+  { pattern: /^\/recover-password\/?$/, title: 'Recuperar contraseña' },
+  { pattern: /^\/restablecer-contrasena\/?$/, title: 'Restablecer contraseña' },
   { pattern: /^\/solicita-cuenta\/?$/, title: 'Solicitar cuenta' },
   { pattern: /^\/403\/?$/, title: 'Acceso no permitido' },
   { pattern: /^\/perfil\/?$/, title: 'Mi cuenta' },

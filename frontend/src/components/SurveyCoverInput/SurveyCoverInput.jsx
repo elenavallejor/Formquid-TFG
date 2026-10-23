@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { MdClose, MdImage, MdUploadFile } from 'react-icons/md';
 
-import { resolveSurveyImageUrl } from '../api/apiClient.js';
+import { resolveSurveyImageUrl } from '../../api/apiClient.js';
+
+import './SurveyCoverInput.css';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 

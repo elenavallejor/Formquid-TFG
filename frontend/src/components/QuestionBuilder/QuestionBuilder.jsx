@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { MdClose, MdAdd, MdDeleteOutline, MdOutlineThumbDown, MdOutlineThumbUp } from 'react-icons/md';
 import { useModalFocus } from '../../hooks/useModalFocus.js';
 import { CHOICE_QUESTION_TYPES, QUESTION_TYPES, RANGE_QUESTION_TYPES, SCALE_DISPLAY_OPTIONS, getMatrixRowText, getOptionFactor, getOptionText, getQuestionBuilderValidationError, getScaleDisplayValue, parseIntegerValue, parseNumberValue } from '../../utils/questionBuilderUtils.js';
@@ -19,9 +19,11 @@ export function QuestionBuilder({
   includeEvaluation = false,
 }) {
   const [modalError, setModalError] = useState('');
+  const weightInputId = useId();
   const modalRef = useRef(null);
   const modalTitleRef = useRef(null);
   const isTextQuestion = data.questionType === 'TEXT';
+  const isNegativeWeight = data.evaluationDirection === 'NEGATIVE';
   const scaleDisplayType = getScaleDisplayValue(data);
   const isFixedVisualScale = scaleDisplayType === 'STARS' || scaleDisplayType === 'FACES';
   const totalAvailable = (data.options || []).length + (data.hasOtherOption ? 1 : 0);
@@ -69,7 +71,10 @@ export function QuestionBuilder({
     if (evaluationDirection === 'NEUTRAL') {
       nextData.evaluationWeight = null;
     } else {
-      nextData.evaluationWeight = data.evaluationWeight || 1;
+      const previousWeight = parseNumberValue(data.evaluationWeight);
+      nextData.evaluationWeight = data.evaluationDirection === 'NEUTRAL' || previousWeight === ''
+        ? null
+        : Math.abs(previousWeight) * (evaluationDirection === 'NEGATIVE' ? -1 : 1);
       nextData.options = (data.options || []).map((option, index) => ({
         ...option,
         evaluationFactor: getOptionFactor(option) === '' ? (index === 0 ? 1 : 0) : getOptionFactor(option),
@@ -257,17 +262,27 @@ export function QuestionBuilder({
 
             {data.evaluationDirection !== 'NEUTRAL' && (
               <div className="config-grid-row">
-                <div className="config-label-cell">Peso de la pregunta:</div>
+                <div className="config-label-cell weight-label-cell">
+                  <label htmlFor={weightInputId}>Peso de la pregunta:</label>
+                  <details className="weight-help">
+                    <summary aria-label="¿Qué significa el peso de la pregunta?">?</summary>
+                    <p>El peso indica cuánto influye esta pregunta en las métricas de la investigación. Las preguntas positivas tienen un peso de +1 a +5 y las negativas, de −1 a −5. Cuanto mayor sea el valor absoluto, mayor será su influencia. Las preguntas neutrales no tienen peso.</p>
+                  </details>
+                </div>
                 <div className="config-interactive-cell">
                   <input
-                    type="number"
-                    step="0.1"
-                    placeholder="Ej. 1,5"
+                    id={weightInputId}
+                    className="weight-input"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder={isNegativeWeight ? '−5 a −1' : '1 a 5'}
                     value={data.evaluationWeight ?? ''}
-                    onChange={(event) => handleField('evaluationWeight', parseNumberValue(event.target.value))}
+                    aria-describedby={`${weightInputId}-hint`}
+                    onChange={(event) => handleField('evaluationWeight', event.target.value)}
                   />
+                  <span className="weight-input-hint" id={`${weightInputId}-hint`}>Introduce un peso {isNegativeWeight ? 'entre −5 y −1' : 'entre 1 y 5'}.</span>
                 </div>
-                <div className="config-help-cell">Indica la importancia de esta pregunta dentro del cálculo de resultados del estudio.</div>
+                <div className="config-help-cell">Cuanto más se aleja el peso de cero, más influye esta pregunta en el resultado global.</div>
               </div>
             )}
           </>

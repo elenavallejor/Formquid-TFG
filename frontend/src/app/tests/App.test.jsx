@@ -42,6 +42,8 @@ describe('navegación de la aplicación', () => {
     const routes = root.children;
     expect(root.errorElement).toBeTruthy();
     expect(routes.find(({ path }) => path === 'inicia-sesion')).toBeTruthy();
+    expect(routes.find(({ path }) => path === 'recover-password')).toBeTruthy();
+    expect(routes.find(({ path }) => path === 'restablecer-contrasena')).toBeTruthy();
     expect(routes.find(({ path }) => path === 'perfil')).toBeTruthy();
     expect(routes.find(({ path }) => path === 'admin/encuestas')).toBeTruthy();
     const publicSurvey = routes.find(({ path }) => path === ':publicCode');

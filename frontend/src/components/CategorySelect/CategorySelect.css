@@ -12,8 +12,18 @@
   font-weight: 700;
 }
 
+.category-select .custom-dropdown-trigger {
+  padding: 11px 40px 11px 14px;
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.category-select .custom-dropdown-trigger:hover:not(:disabled) {
+  background-color: var(--color-surface);
+}
+
 .category-select--placeholder .custom-dropdown-trigger {
-  color: var(--color-text-muted);
+  color: var(--builder-placeholder-color, var(--color-text-muted));
 }
 
 .category-select-option {

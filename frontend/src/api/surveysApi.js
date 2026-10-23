@@ -167,6 +167,10 @@ export function updateSurvey(surveyId, data) {
   });
 }
 
+export function deleteSurvey(surveyId) {
+  return apiClient(`/surveys/${surveyId}`, { method: 'DELETE' });
+}
+
 export function uploadSurveyCover(surveyId, file) {
   const body = new FormData();
   body.append('file', file);

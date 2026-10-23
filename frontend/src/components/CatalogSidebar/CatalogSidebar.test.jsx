@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -39,6 +39,85 @@ describe('CatalogSidebar', () => {
     await user.click(screen.getByRole('button', { name: 'Añadir bloque: Hábitos' }));
     expect(onAddQuestion).toHaveBeenCalledWith(question);
     expect(onAddBlock).toHaveBeenCalledWith(block);
+  });
+
+  it('espera a la categoría y muestra solo elementos de la categoría seleccionada', async () => {
+    getCatalogQuestionsForBuilder.mockResolvedValue({
+      content: [
+        { ...question, category: 'SALUD' },
+        { id: 8, statement: '¿Usas tecnología?', questionType: 'TEXT', category: 'TECNOLOGIA' },
+      ],
+      totalElements: 2,
+    });
+    getCatalogBlocksForBuilder.mockResolvedValue({
+      content: [
+        { ...block, category: 'SALUD' },
+        { id: 9, name: 'Tecnología', category: 'TECNOLOGIA', questionCount: 1 },
+      ],
+      totalElements: 2,
+    });
+    const props = { embedded: true, categoryFilter: '', onAddQuestion: vi.fn(), onAddBlock: vi.fn() };
+    const { rerender } = render(<MemoryRouter><CatalogSidebar {...props} /></MemoryRouter>);
+
+    expect(screen.getByText('Selecciona una categoría para ver las preguntas disponibles.')).toBeVisible();
+    expect(getCatalogQuestionsForBuilder).not.toHaveBeenCalled();
+    expect(getCatalogBlocksForBuilder).not.toHaveBeenCalled();
+
+    rerender(<MemoryRouter><CatalogSidebar {...props} categoryFilter="SALUD" /></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: '¿Cómo estás?' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'HÁBITOS' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: '¿Usas tecnología?' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'TECNOLOGÍA' })).not.toBeInTheDocument();
+    expect(getCatalogQuestionsForBuilder).toHaveBeenCalledWith(expect.objectContaining({ category: 'SALUD', page: 0 }));
+    expect(getCatalogBlocksForBuilder).toHaveBeenCalledWith(expect.objectContaining({ category: 'SALUD', page: 0 }));
+
+    rerender(<MemoryRouter><CatalogSidebar {...props} categoryFilter="TECNOLOGIA" /></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: '¿Usas tecnología?' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'TECNOLOGÍA' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: '¿Cómo estás?' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'HÁBITOS' })).not.toBeInTheDocument();
+    expect(getCatalogQuestionsForBuilder).toHaveBeenCalledWith(expect.objectContaining({ category: 'TECNOLOGIA', page: 0 }));
+    expect(getCatalogBlocksForBuilder).toHaveBeenCalledWith(expect.objectContaining({ category: 'TECNOLOGIA', page: 0 }));
+  });
+
+  it('descarta una respuesta antigua al cambiar de categoría durante la carga', async () => {
+    let resolveSalud;
+    getCatalogQuestionsForBuilder
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSalud = resolve; }))
+      .mockResolvedValueOnce({ content: [{ id: 8, statement: '¿Usas tecnología?', questionType: 'TEXT', category: 'TECNOLOGIA' }], totalElements: 1 });
+    const { rerender } = render(<MemoryRouter><CatalogSidebar embedded showBlocks={false} categoryFilter="SALUD" /></MemoryRouter>);
+    await waitFor(() => expect(getCatalogQuestionsForBuilder).toHaveBeenCalledTimes(1));
+
+    rerender(<MemoryRouter><CatalogSidebar embedded showBlocks={false} categoryFilter="TECNOLOGIA" /></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: '¿Usas tecnología?' })).toBeVisible();
+    await act(async () => resolveSalud({ content: [{ ...question, category: 'SALUD' }], totalElements: 1 }));
+
+    expect(screen.getByRole('heading', { name: '¿Usas tecnología?' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: '¿Cómo estás?' })).not.toBeInTheDocument();
+  });
+
+  it('indica qué elementos faltan en la categoría seleccionada', async () => {
+    getCatalogQuestionsForBuilder.mockResolvedValue({ content: [], totalElements: 0 });
+    getCatalogBlocksForBuilder.mockResolvedValue({ content: [], totalElements: 0 });
+    renderSidebar({ categoryFilter: 'SALUD', categoryDetails: { code: 'SALUD', name: 'Salud', icon: 'BsPeople' } });
+
+    const questionMessage = await screen.findByText(/No hay preguntas disponibles para la categoría/);
+    const blockMessage = await screen.findByText(/No hay bloques disponibles para la categoría/);
+    for (const message of [questionMessage, blockMessage]) {
+      expect(message).toHaveTextContent(/categoría Salud\./);
+      expect(message.querySelector('.catalog-empty-category svg')).toBeInTheDocument();
+    }
+  });
+
+  it('mantiene el mensaje de búsqueda cuando sí hay elementos en la categoría', async () => {
+    const user = userEvent.setup();
+    getCatalogQuestionsForBuilder.mockResolvedValue({ content: [{ ...question, category: 'SALUD' }], totalElements: 1 });
+    renderSidebar({ categoryFilter: 'SALUD', showBlocks: false });
+
+    await screen.findByRole('heading', { name: '¿Cómo estás?' });
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar preguntas fijas' }), 'inexistente');
+    expect(screen.getByText(/No se han encontrado preguntas/)).toBeVisible();
+    expect(screen.queryByText(/No hay preguntas disponibles para la categoría/)).not.toBeInTheDocument();
   });
 
   it('desplaza la vista hasta cada elemento añadido con el botón', async () => {
@@ -90,6 +169,12 @@ describe('CatalogSidebar', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'DETALLES DEL BLOQUE' });
     expect(await screen.findByText('Introducción')).toBeVisible();
+    expect(dialog).toContainElement(screen.getByRole('heading', { name: 'VER DETALLES:' }));
+    expect(dialog.querySelector('.catalog-detail-card')).toBeInTheDocument();
+    expect(dialog.querySelector('.catalog-detail-title-bar')).toHaveTextContent('HÁBITOS');
+    expect(dialog.querySelector('.catalog-detail-metadata')).toHaveTextContent('Ana');
+    expect(dialog.querySelector('.catalog-detail-structure--block')).toHaveTextContent('ESTRUCTURA DEL BLOQUE');
+    expect(dialog.querySelector('.catalog-detail-builder-item')).toHaveTextContent('Introducción');
     expect(dialog).toHaveTextContent('Descripción del bloque');
     expect(getCatalogBlockById).toHaveBeenCalledWith(7);
     expect(screen.getByTestId('current-path')).toHaveTextContent('/catalogo/crear/plantilla');
@@ -179,8 +264,11 @@ describe('CatalogSidebar', () => {
     getCatalogQuestionsForBuilder.mockResolvedValue({ content: [question, { id: 5, statement: '¿Edad?', questionType: 'NUMBER' }], totalElements: 2 });
     renderSidebar({ allowedQuestionTypes: ['TEXT', 'NUMBER'], showBlocks: false });
     await screen.findByRole('heading', { name: '¿Edad?' });
-    await user.click(screen.getByRole('button', { name: /Filtrar preguntas por tipo:/ }));
+    const filter = screen.getByRole('button', { name: 'Filtrar preguntas por tipo: Filtrar' });
+    expect(filter).toHaveTextContent(/^Filtrar$/);
+    await user.click(filter);
     fireEvent.click(screen.getByRole('button', { name: 'Numérica' }));
+    expect(filter).toHaveTextContent(/^Numérica$/);
     expect(screen.getByRole('heading', { name: '¿Edad?' })).toBeVisible();
     expect(screen.queryByRole('heading', { name: '¿Cómo estás?' })).not.toBeInTheDocument();
   });

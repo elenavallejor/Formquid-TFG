@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdSave, MdOutlineVisibility, MdOutlineVisibilityOff, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
+import { MdSave, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
 import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CountrySelect } from '../../../components/CountrySelect/CountrySelect.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
+import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 import { loadUserData } from '../../../utils/loadUserData.js';
@@ -282,8 +283,8 @@ export function AccountPage() {
                 <label htmlFor="newPassword">Nueva contraseña</label>
                 <div className="password-input-wrapper">
                   <input type={showPassword.new ? 'text' : 'password'} id="newPassword" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} autoComplete="new-password" />
-                  <button type="button" className="btn-toggle-eye" onClick={() => togglePasswordVisibility('new')} aria-label={showPassword.new ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'}>
-                    {showPassword.new ? <MdOutlineVisibilityOff aria-hidden="true" /> : <MdOutlineVisibility aria-hidden="true" />}
+                  <button type="button" className="btn-toggle-eye" onClick={() => togglePasswordVisibility('new')} aria-label={showPassword.new ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'} aria-pressed={showPassword.new}>
+                    <PasswordVisibilityIcon visible={showPassword.new} />
                   </button>
                 </div>
               </div>
@@ -292,8 +293,8 @@ export function AccountPage() {
                 <label htmlFor="confirmPassword">Confirmar nueva contraseña</label>
                 <div className="password-input-wrapper">
                   <input type={showPassword.confirm ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} autoComplete="new-password" />
-                  <button type="button" className="btn-toggle-eye" onClick={() => togglePasswordVisibility('confirm')} aria-label={showPassword.confirm ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}>
-                    {showPassword.confirm ? <MdOutlineVisibilityOff aria-hidden="true" /> : <MdOutlineVisibility aria-hidden="true" />}
+                  <button type="button" className="btn-toggle-eye" onClick={() => togglePasswordVisibility('confirm')} aria-label={showPassword.confirm ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'} aria-pressed={showPassword.confirm}>
+                    <PasswordVisibilityIcon visible={showPassword.confirm} />
                   </button>
                 </div>
               </div>

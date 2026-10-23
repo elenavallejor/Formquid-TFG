@@ -38,6 +38,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  --builder-placeholder-color: #758992;
 }
 
 .builder-general-info-fields > .builder-field,
@@ -66,6 +67,12 @@
   color: var(--color-text);
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.builder-general-info-fields .builder-field input::placeholder,
+.builder-general-info-fields .builder-field textarea::placeholder {
+  color: var(--builder-placeholder-color);
+  opacity: 1;
 }
 
 .builder-field input:focus,
@@ -185,6 +192,68 @@
   color: var(--color-text-muted);
   line-height: 1.4;
   padding-top: 10px;
+}
+
+.weight-label-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weight-help {
+  font-weight: 400;
+}
+
+.weight-help summary {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--color-primary);
+  border-radius: 50%;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.weight-help summary::-webkit-details-marker {
+  display: none;
+}
+
+.weight-help summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.weight-help p {
+  position: absolute;
+  z-index: 2;
+  top: 100%;
+  left: 0;
+  width: min(320px, calc(100vw - 48px));
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.weight-input {
+  max-width: 150px;
+}
+
+.weight-input-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 14px;
 }
 
 .config-interactive-cell input {
@@ -487,11 +556,9 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

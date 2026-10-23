@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createCatalogTemplate } from '../../../api/catalogApi.js';
 import { CreateTemplatePage } from './CreateTemplatePage.jsx';
-import { renderWithRouter } from '../../../testing/render.jsx';
+import { renderWithDataRouter } from '../../../testing/render.jsx';
 
 vi.mock('../../../api/catalogApi.js', () => ({ createCatalogTemplate: vi.fn() }));
 vi.mock('../../../api/categoriesApi.js', () => ({
@@ -18,11 +18,11 @@ describe('CreateTemplatePage', () => {
   it('muestra la categoría debajo del título y la incluye al guardar', async () => {
     const user = userEvent.setup();
     createCatalogTemplate.mockResolvedValue({ id: 9 });
-    renderWithRouter(<CreateTemplatePage />);
+    renderWithDataRouter([{ path: '/', element: <CreateTemplatePage /> }]);
 
     const generalInfo = screen.getByRole('heading', { name: 'INFORMACIÓN GENERAL' }).closest('section');
     const title = within(generalInfo).getByRole('textbox', { name: /Título de la plantilla/ });
-    const category = within(generalInfo).getByRole('button', { name: 'Categoría' });
+    const category = within(generalInfo).getByRole('button', { name: 'Categoría (obligatoria)' });
     const description = within(generalInfo).getByRole('textbox', { name: 'Descripción' });
     expect(category).toHaveTextContent('Selecciona la categoría de tu plantilla');
     expect(title.compareDocumentPosition(category) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

@@ -12,9 +12,11 @@ import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
+import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { SurveyOriginModal } from '../../../components/SurveyOriginModal/SurveyOriginModal.jsx';
-import { SurveyCoverInput } from '../../../components/SurveyCoverInput.jsx';
-import { SurveyFontPreview } from '../../../components/SurveyFontPreview.jsx';
+import { SurveyCoverInput } from '../../../components/SurveyCoverInput/SurveyCoverInput.jsx';
+import { SurveyFontPreview } from '../../../components/SurveyFontPreview/SurveyFontPreview.jsx';
+import { normalizeTag } from '../../../utils/surveyTagUtils.js';
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
@@ -55,12 +57,6 @@ const FONT_OPTIONS = [
   },
 ];
 
-function normalizeTag(value) {
-  let normalized = value.trim().toLocaleLowerCase('es');
-  if (normalized.startsWith('#')) normalized = normalized.slice(1);
-  return normalized.normalize('NFKC').replace(/\s+/g, '-');
-}
-
 export function CreateSurveyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,6 +82,7 @@ export function CreateSurveyPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [categoryError, setCategoryError] = useState('');
+  const [isAccessPasswordVisible, setIsAccessPasswordVisible] = useState(false);
 
   function updateForm(changes) {
     setFormData((current) => ({ ...current, ...changes }));
@@ -330,7 +327,12 @@ export function CreateSurveyPage() {
           {formData.accessMode === 'PASSWORD_PROTECTED' && (
             <div className="create-survey-field create-survey-password">
               <label htmlFor="survey-password">Contraseña de acceso <span>*</span></label>
-              <input id="survey-password" type="password" value={formData.accessPassword} autoComplete="new-password" onChange={(event) => updateForm({ accessPassword: event.target.value })} />
+              <div className="password-visibility-field">
+                <input id="survey-password" type={isAccessPasswordVisible ? 'text' : 'password'} value={formData.accessPassword} autoComplete="new-password" onChange={(event) => updateForm({ accessPassword: event.target.value })} />
+                <button type="button" className="password-visibility-toggle" aria-label={isAccessPasswordVisible ? 'Ocultar contraseña de acceso' : 'Mostrar contraseña de acceso'} aria-pressed={isAccessPasswordVisible} onClick={() => setIsAccessPasswordVisible((visible) => !visible)}>
+                  <PasswordVisibilityIcon visible={isAccessPasswordVisible} />
+                </button>
+              </div>
             </div>
           )}
 

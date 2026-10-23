@@ -278,7 +278,6 @@
   color: var(--color-text-muted);
 }
 
-.catalog-status-text,
 .catalog-error-text {
   flex: 1;
   display: flex;

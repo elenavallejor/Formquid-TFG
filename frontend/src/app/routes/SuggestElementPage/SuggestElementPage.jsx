@@ -10,12 +10,14 @@ import {
 import { createElementRequest } from '../../../api/elementRequestsApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
 import { useAuth } from '../../../context/useAuth.js';
+import { containsCatalogItem } from '../../../utils/catalogCategoryUtils.js';
 import {
   INITIAL_BLOCK_STATE,
   buildBlockQuestionFromCatalog,
@@ -42,6 +44,8 @@ import './SuggestElementPage.css';
 const ELEMENT_TYPES = {
   FIXED_QUESTION: {
     label: 'Pregunta fija',
+    categoryName: 'pregunta fija',
+    categoryTarget: 'la pregunta fija',
     description: 'Propón una nueva pregunta para el catálogo.',
     icon: MdOutlineHelpOutline,
     initialState: INITIAL_QUESTION_STATE,
@@ -50,6 +54,8 @@ const ELEMENT_TYPES = {
   },
   BLOCK: {
     label: 'Bloque',
+    categoryName: 'bloque',
+    categoryTarget: 'el bloque',
     description: 'Agrupa preguntas y textos reutilizables.',
     icon: MdOutlineWidgets,
     initialState: INITIAL_BLOCK_STATE,
@@ -58,6 +64,8 @@ const ELEMENT_TYPES = {
   },
   TEMPLATE: {
     label: 'Plantilla',
+    categoryName: 'plantilla',
+    categoryTarget: 'la plantilla',
     description: 'Combina preguntas, bloques y textos.',
     icon: MdOutlineDescription,
     initialState: INITIAL_TEMPLATE_STATE,
@@ -72,6 +80,9 @@ export function SuggestElementPage() {
   const saveLockRef = useRef(false);
   const [elementType, setElementType] = useState('');
   const [formData, setFormData] = useState(null);
+  const [category, setCategory] = useState('');
+  const [categoryDetails, setCategoryDetails] = useState(null);
+  const [categoryError, setCategoryError] = useState('');
   const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -81,8 +92,23 @@ export function SuggestElementPage() {
   function selectElementType(nextType) {
     setElementType(nextType);
     setFormData(structuredClone(ELEMENT_TYPES[nextType].initialState));
+    setCategory('');
+    setCategoryDetails(null);
+    setCategoryError('');
     setErrorMsg('');
     setSuccessMsg('');
+  }
+
+  function handleCategoryChange(value, details) {
+    const items = elementType === 'BLOCK' ? getBlockItems(formData) : formData?.items || [];
+    if (value !== category && containsCatalogItem(items)) {
+      setErrorMsg(`Quita primero los elementos añadidos del catálogo para cambiar la categoría de ${config.categoryTarget}.`);
+      return;
+    }
+    setCategory(value);
+    setCategoryDetails(details);
+    setCategoryError('');
+    setErrorMsg('');
   }
 
   function addItem(item, targetIndex) {
@@ -99,14 +125,24 @@ export function SuggestElementPage() {
   }
 
   function addQuestion(question, targetIndex) {
+    if (!category || question.category !== category) {
+      setErrorMsg('Solo puedes añadir preguntas del catálogo de la categoría seleccionada.');
+      return false;
+    }
     const item = elementType === 'BLOCK'
       ? buildBlockQuestionFromCatalog(question)
       : buildTemplateQuestionFromCatalog(question);
     addItem(item, targetIndex);
+    return true;
   }
 
   function addBlock(block, targetIndex) {
+    if (!category || block.category !== category) {
+      setErrorMsg('Solo puedes añadir bloques del catálogo de la categoría seleccionada.');
+      return false;
+    }
     addItem(buildTemplateBlockFromCatalog(block), targetIndex);
+    return true;
   }
 
   async function handleSubmit() {
@@ -127,6 +163,11 @@ export function SuggestElementPage() {
       setErrorMsg(validationError);
       return;
     }
+    if (!category) {
+      setCategoryError(`Selecciona una categoría para ${config.categoryTarget}.`);
+      document.getElementById('suggest-element-category')?.focus();
+      return;
+    }
     if (saveLockRef.current) return;
     saveLockRef.current = true;
 
@@ -135,7 +176,7 @@ export function SuggestElementPage() {
       await createElementRequest({
         elementType,
         message: message.trim(),
-        requestPayload: config.toPayload(formData),
+        requestPayload: { ...config.toPayload(formData), category },
       });
       setSuccessMsg('Solicitud enviada con éxito. Redirigiendo...');
       window.setTimeout(() => navigate('/panel'), 1200);
@@ -149,13 +190,16 @@ export function SuggestElementPage() {
 
   function renderBuilder() {
     if (elementType === 'FIXED_QUESTION') {
-      return <QuestionBuilder data={formData} onChange={setFormData} isCatalog />;
+      return <QuestionBuilder data={formData} onChange={setFormData} isCatalog afterPrimaryField={renderCategorySelect()} />;
     }
     if (elementType === 'BLOCK') {
       return (
         <BlockBuilder
           data={formData}
           onChange={setFormData}
+          categoryFilter={category}
+          categoryDetails={categoryDetails}
+          afterPrimaryField={renderCategorySelect()}
           onDropQuestionFromSidebar={addQuestion}
         />
       );
@@ -164,10 +208,17 @@ export function SuggestElementPage() {
       <TemplateBuilder
         data={formData}
         onChange={setFormData}
+        categoryFilter={category}
+        categoryDetails={categoryDetails}
+        afterPrimaryField={renderCategorySelect()}
         onDropQuestionFromSidebar={addQuestion}
         onDropBlockFromSidebar={addBlock}
       />
     );
+  }
+
+  function renderCategorySelect() {
+    return <CategorySelect id="suggest-element-category" value={category} onChange={handleCategoryChange} placeholder={`Selecciona la categoría de tu ${config.categoryName}`} required validationError={categoryError} />;
   }
 
   return (
@@ -176,6 +227,8 @@ export function SuggestElementPage() {
         <CatalogSidebar
           showQuestions
           showBlocks={elementType === 'TEMPLATE'}
+          categoryFilter={category}
+          categoryDetails={categoryDetails}
           defaultOpen={false}
           onAddQuestion={addQuestion}
           onAddBlock={elementType === 'TEMPLATE' ? addBlock : undefined}

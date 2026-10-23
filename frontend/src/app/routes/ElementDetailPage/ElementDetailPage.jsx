@@ -3,7 +3,6 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import {
   MdDeleteOutline,
   MdEdit,
-  MdLayers,
   MdOutlineDescription,
   MdOutlineHelpOutline,
   MdOutlineWidgets,
@@ -18,15 +17,15 @@ import {
   getCatalogTemplateById,
 } from '../../../api/catalogApi.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
-import { Block } from '../../../components/Block/Block.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
+import { CatalogBlockContent } from '../../../components/CatalogBlockDetailsModal/CatalogBlockContent.jsx';
+import { CatalogContentItem } from '../../../components/CatalogBlockDetailsModal/CatalogContentItem.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Question } from '../../../components/Question/Question.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
-import { TextContent, TextContentIcon } from '../../../components/TextContent/TextContent.jsx';
 import { useAuth } from '../../../context/useAuth.js';
-import { buildBlockQuestionFromCatalog, getBlockItems } from '../../../utils/blockBuilderUtils.js';
-import { formatDate } from '../../../utils/formatDate.js';
+import { buildBlockQuestionFromCatalog } from '../../../utils/blockBuilderUtils.js';
+import { formatDateTime } from '../../../utils/formatDate.js';
 import { QUESTION_TYPES } from '../../../utils/questionBuilderUtils.js';
 import { getTemplateItemNumbering } from '../../../utils/templateBuilderUtils.js';
 
@@ -74,11 +73,6 @@ const SCALE_DISPLAY_LABELS = {
   STARS: 'Estrellas',
   FACES: 'Caras',
 };
-
-function formatDateTime(value) {
-  const formatted = formatDate(value, { includeTime: true });
-  return formatted.time ? `${formatted.date}, ${formatted.time}` : formatted.date;
-}
 
 function getQuestionSettingRows(question) {
   const settings = question.settings || {};
@@ -142,63 +136,6 @@ function QuestionSettings({ question }) {
   );
 }
 
-function CatalogBlockContent({ element }) {
-  const items = Array.isArray(element.contentItems)
-    ? element.contentItems
-    : getBlockItems(element);
-  return (
-    <div className="block-questions-list catalog-detail-block-items">
-      {items.map((item, index) => {
-        const isText = item.itemType === 'TEXT';
-        const questionData = isText
-          ? null
-          : {
-              ...buildBlockQuestionFromCatalog(item.question || item),
-              isRequired: Boolean(item.required ?? item.isRequired),
-            };
-        const typeConfig = isText
-          ? null
-          : QUESTION_TYPES.find((type) => type.id === questionData.questionType);
-        const TypeIcon = typeConfig?.icon;
-        const questionNumber = isText
-          ? null
-          : items.slice(0, index + 1).filter((entry) => entry.itemType !== 'TEXT').length;
-
-        return (
-          <div key={item.id || index} className="block-question-item catalog-detail-builder-item">
-            <div className="question-item-left">
-              {isText ? (
-                <TextContentIcon />
-              ) : TypeIcon ? (
-                <span
-                  className="question-type-badge"
-                  style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
-                  title={typeConfig.title}
-                >
-                  <TypeIcon aria-hidden="true" />
-                </span>
-              ) : null}
-            </div>
-
-            <div className="question-item-preview">
-              {isText ? (
-                <TextContent data={item} />
-              ) : (
-                <Question
-                  questionNumber={`${questionNumber}`}
-                  headingLevel={4}
-                  data={questionData}
-                  interactive={false}
-                />
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function CatalogElementContent({ elementType, element }) {
   if (elementType === 'pregunta') {
     return (
@@ -223,62 +160,13 @@ function CatalogElementContent({ elementType, element }) {
 
   return (
     <div className="block-questions-list catalog-detail-template-items">
-      {items.map((item, index) => {
-        const isText = item.itemType === 'TEXT';
-        const isBlock = item.itemType === 'BLOCK';
-        const typeConfig = !isText && !isBlock
-          ? QUESTION_TYPES.find((type) => type.id === item.question?.questionType)
-          : null;
-        const TypeIcon = typeConfig?.icon;
-
-        return (
-          <div
-            key={item.id || index}
-            className={`block-question-item catalog-detail-builder-item ${isBlock ? 'template-block-item' : ''}`}
-          >
-            <div className="question-item-left">
-              {isText ? (
-                <TextContentIcon />
-              ) : isBlock ? (
-                <span className="question-type-badge template-block-badge" title="Bloque de preguntas">
-                  <MdLayers aria-hidden="true" />
-                </span>
-              ) : TypeIcon ? (
-                <span
-                  className="question-type-badge"
-                  style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
-                  title={typeConfig.title}
-                >
-                  <TypeIcon aria-hidden="true" />
-                </span>
-              ) : null}
-            </div>
-
-            <div className="question-item-preview">
-              {isText ? (
-                <TextContent data={item} />
-              ) : isBlock ? (
-                <Block
-                  data={item.block}
-                  blockLabel={itemNumbering[index].blockLabel}
-                  headingLevel={4}
-                  questionNumberStart={itemNumbering[index].questionNumberStart}
-                />
-              ) : (
-                <Question
-                  questionNumber={`${itemNumbering[index].questionNumber}`}
-                  headingLevel={4}
-                  data={{
-                    ...buildBlockQuestionFromCatalog(item.question),
-                    isRequired: Boolean(item.required),
-                  }}
-                  interactive={false}
-                />
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {items.map((item, index) => (
+        <CatalogContentItem
+          key={item.id || index}
+          item={item}
+          numbering={itemNumbering[index]}
+        />
+      ))}
     </div>
   );
 }

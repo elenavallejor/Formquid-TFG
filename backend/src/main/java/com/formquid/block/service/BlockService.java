@@ -7,6 +7,7 @@ import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.CatalogPagination;
 import com.formquid.common.Category;
 import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.common.dto.CatalogSearchField;
@@ -23,9 +24,7 @@ import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +57,7 @@ public class BlockService {
         Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
-        Pageable pageable = catalogPageable(page, size, sortOrder);
+        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder);
         Page<BlockSummaryDto> blocks = blockRepository.findCatalogSummaries(
             BlockScope.CATALOG,
             user.getId(),
@@ -81,7 +80,7 @@ public class BlockService {
 
     @Transactional(readOnly = true)
     public PageResponseDto<BlockResponseDto> findCatalogBlocksForBuilder(int page, int size, Category category) {
-        Pageable pageable = builderPageable(page, size);
+        Pageable pageable = CatalogPagination.builderPageable(page, size);
         Page<Block> blocks = blockRepository.findCatalogBlocksWithDetails(BlockScope.CATALOG, category, pageable);
         Map<Long, List<ContentItemResponseDto>> contentByBlock = contentService
             .findBlocksContent(blocks.getContent());
@@ -187,28 +186,6 @@ public class BlockService {
             block.getUpdatedAt(),
             block.getCategory()
         );
-    }
-
-    private Pageable catalogPageable(int page, int size, CatalogSortOrder sortOrder) {
-        validatePage(page, size);
-        Sort.Direction direction = sortOrder == CatalogSortOrder.OLDEST
-            ? Sort.Direction.ASC
-            : Sort.Direction.DESC;
-        return PageRequest.of(page, size, Sort.by(direction, "updatedAt").and(Sort.by(direction, "id")));
-    }
-
-    private Pageable builderPageable(int page, int size) {
-        validatePage(page, size);
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
-    }
-
-    private void validatePage(int page, int size) {
-        if (page < 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
-        }
-        if (size < 1 || size > 100) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y 100");
-        }
     }
 
     private String normalizeSearch(String search) {

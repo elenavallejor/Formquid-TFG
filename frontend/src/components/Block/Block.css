@@ -116,15 +116,6 @@
   cursor: grabbing;
 }
 
-.block-content-delete {
-  margin: 0;
-}
-
-.block-content-delete:hover {
-  background: var(--color-error-surface);
-  color: var(--color-error);
-}
-
 .block-content-item-actions {
   position: relative;
   display: flex;

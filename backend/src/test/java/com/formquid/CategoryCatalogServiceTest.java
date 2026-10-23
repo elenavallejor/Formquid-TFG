@@ -55,6 +55,17 @@ class CategoryCatalogServiceTest {
     }
 
     @Test
+    void acceptsTheTwoNewReactIcons() {
+        when(repository.saveAndFlush(any(CategoryDefinition.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThat(service.create(new CreateCategoryRequestDto("Internet escolar", "BsGlobe2")).icon())
+            .isEqualTo("BsGlobe2");
+        assertThat(service.create(new CreateCategoryRequestDto("Ideas", "BsLightbulb")).icon())
+            .isEqualTo("BsLightbulb");
+    }
+
+    @Test
     void rejectsNameThatCannotBecomeValidCode() {
         assertThatThrownBy(() -> service.create(new CreateCategoryRequestDto("!!!")))
             .isInstanceOf(ApiException.class)

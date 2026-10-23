@@ -4,6 +4,7 @@ import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, Md
 import { createPortal } from 'react-dom';
 
 import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
+import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../utils/categoryIconOptions.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import { CatalogBlockDetailsModal } from '../CatalogBlockDetailsModal/CatalogBlockDetailsModal.jsx';
 import { Dropdown } from '../Dropdown/Dropdown.jsx';
@@ -14,10 +15,27 @@ import './CatalogSidebar.css';
 /**
  * Muestra los elementos habilitados del catálogo y permite añadirlos o arrastrarlos hacia un constructor.
  */
-export function CatalogSidebar({
+export function CatalogSidebar(props) {
+  const categoryKey = props.categoryFilter == null ? 'all' : `category:${props.categoryFilter}`;
+  return <CatalogSidebarContent key={categoryKey} {...props} />;
+}
+
+function EmptyCategoryMessage({ itemType, category }) {
+  const Icon = CATEGORY_ICON_COMPONENTS[getCategoryIconName(category)];
+  return (
+    <p className="catalog-empty" role="status">
+      No hay {itemType} disponibles para la categoría{' '}
+      <span className="catalog-empty-category"><Icon aria-hidden="true" /><span>{category.name}</span></span>.
+    </p>
+  );
+}
+
+function CatalogSidebarContent({
   showQuestions = true,
   showBlocks = true,
   allowedQuestionTypes,
+  categoryFilter = null,
+  categoryDetails = null,
   onAddQuestion,
   onAddBlock,
   defaultOpen,
@@ -64,6 +82,11 @@ export function CatalogSidebar({
     return QUESTION_TYPES.filter((type) => allowedTypes.has(type.id));
   }, [allowedQuestionTypes]);
   const activeTypeFilter = availableQuestionTypes.some((type) => type.id === typeFilter) ? typeFilter : '';
+  const requiresCategory = categoryFilter !== null;
+  const canLoadCatalog = !requiresCategory || Boolean(categoryFilter);
+  const selectedCategory = categoryDetails?.code === categoryFilter
+    ? categoryDetails
+    : { code: categoryFilter, name: categoryFilter?.replaceAll('_', ' ').toLocaleLowerCase('es').replace(/^./, (letter) => letter.toLocaleUpperCase('es')) };
   const isInitialQuestionLoad = showQuestions && !hasLoadedQuestions && !questionError;
   const isInitialBlockLoad = showBlocks && !hasLoadedBlocks && !blockError;
 
@@ -84,11 +107,12 @@ export function CatalogSidebar({
   }, []);
 
   const loadQuestions = useCallback(async (page = 0) => {
+    if (!canLoadCatalog) return;
     if (questionRequestRef.current && !questionRequestRef.current.signal.aborted) return;
     const controller = createRequestController();
     questionRequestRef.current = controller;
     try {
-      const response = await getCatalogQuestionsForBuilder({ page, size: 10, signal: controller.signal });
+      const response = await getCatalogQuestionsForBuilder({ page, size: 10, category: categoryFilter || undefined, signal: controller.signal });
       if (controller.signal.aborted) return;
       const items = Array.isArray(response) ? response : response?.content ?? [];
       setQuestions((current) => page === 0 ? items : [...current, ...items]);
@@ -104,14 +128,15 @@ export function CatalogSidebar({
         setIsLoadingQuestions(false);
       }
     }
-  }, [createRequestController]);
+  }, [canLoadCatalog, categoryFilter, createRequestController]);
 
   const loadBlocks = useCallback(async (page = 0) => {
+    if (!canLoadCatalog) return;
     if (blockRequestRef.current && !blockRequestRef.current.signal.aborted) return;
     const controller = createRequestController();
     blockRequestRef.current = controller;
     try {
-      const response = await getCatalogBlocksForBuilder({ page, size: 10, signal: controller.signal });
+      const response = await getCatalogBlocksForBuilder({ page, size: 10, category: categoryFilter || undefined, signal: controller.signal });
       if (controller.signal.aborted) return;
       const items = Array.isArray(response) ? response : response?.content ?? [];
       setBlocks((current) => page === 0 ? items : [...current, ...items]);
@@ -127,15 +152,15 @@ export function CatalogSidebar({
         setIsLoadingBlocks(false);
       }
     }
-  }, [createRequestController]);
+  }, [canLoadCatalog, categoryFilter, createRequestController]);
 
   useEffect(() => {
-    if (!showQuestions || hasLoadedQuestions || questionError || questionRequestRef.current) return undefined;
+    if (!canLoadCatalog || !showQuestions || hasLoadedQuestions || questionError || questionRequestRef.current) return undefined;
     const controller = createRequestController();
     const controllers = requestControllersRef.current;
     questionRequestRef.current = controller;
 
-    getCatalogQuestionsForBuilder({ page: 0, size: 10, signal: controller.signal })
+    getCatalogQuestionsForBuilder({ page: 0, size: 10, category: categoryFilter || undefined, signal: controller.signal })
       .then((response) => {
         if (controller.signal.aborted) return;
         const items = Array.isArray(response) ? response : response?.content ?? [];
@@ -159,15 +184,15 @@ export function CatalogSidebar({
       controllers.delete(controller);
       if (questionRequestRef.current === controller) questionRequestRef.current = null;
     };
-  }, [showQuestions, hasLoadedQuestions, questionError, createRequestController]);
+  }, [canLoadCatalog, categoryFilter, showQuestions, hasLoadedQuestions, questionError, createRequestController]);
 
   useEffect(() => {
-    if (!showBlocks || hasLoadedBlocks || blockError || blockRequestRef.current) return undefined;
+    if (!canLoadCatalog || !showBlocks || hasLoadedBlocks || blockError || blockRequestRef.current) return undefined;
     const controller = createRequestController();
     const controllers = requestControllersRef.current;
     blockRequestRef.current = controller;
 
-    getCatalogBlocksForBuilder({ page: 0, size: 10, signal: controller.signal })
+    getCatalogBlocksForBuilder({ page: 0, size: 10, category: categoryFilter || undefined, signal: controller.signal })
       .then((response) => {
         if (controller.signal.aborted) return;
         const items = Array.isArray(response) ? response : response?.content ?? [];
@@ -191,7 +216,7 @@ export function CatalogSidebar({
       controllers.delete(controller);
       if (blockRequestRef.current === controller) blockRequestRef.current = null;
     };
-  }, [showBlocks, hasLoadedBlocks, blockError, createRequestController]);
+  }, [canLoadCatalog, categoryFilter, showBlocks, hasLoadedBlocks, blockError, createRequestController]);
 
   function requestQuestions(page = 0) {
     setIsLoadingQuestions(true);
@@ -297,16 +322,24 @@ export function CatalogSidebar({
     const visibleTypes = new Set(availableQuestionTypes.map((type) => type.id));
     return questions.filter((question) => {
       const text = question.statement || '';
-      return visibleTypes.has(question.questionType) && (!search || text.toLocaleLowerCase('es').includes(search)) && (!activeTypeFilter || question.questionType === activeTypeFilter);
+      return (!requiresCategory || question.category === categoryFilter)
+        && visibleTypes.has(question.questionType)
+        && (!search || text.toLocaleLowerCase('es').includes(search))
+        && (!activeTypeFilter || question.questionType === activeTypeFilter);
     });
-  }, [activeTypeFilter, availableQuestionTypes, questionSearch, questions]);
+  }, [activeTypeFilter, availableQuestionTypes, categoryFilter, questionSearch, questions, requiresCategory]);
 
   const filteredBlocks = useMemo(() => {
     const search = blockSearch.trim().toLocaleLowerCase('es');
-    return blocks.filter((block) => !search || (block.name || block.title || '').toLocaleLowerCase('es').includes(search));
-  }, [blockSearch, blocks]);
+    return blocks.filter((block) => (!requiresCategory || block.category === categoryFilter)
+      && (!search || (block.name || block.title || '').toLocaleLowerCase('es').includes(search)));
+  }, [blockSearch, blocks, categoryFilter, requiresCategory]);
 
   function handleDragStart(event, type, item) {
+    if (requiresCategory && item.category !== categoryFilter) {
+      event.preventDefault();
+      return;
+    }
     const payload = JSON.stringify(type === 'QUESTION' ? { type: 'CATALOG_QUESTION', question: item } : { type: 'CATALOG_BLOCK', block: item });
     event.dataTransfer.setData(
       type === 'QUESTION' ? 'application/x-formquid-question' : 'application/x-formquid-block',
@@ -321,6 +354,7 @@ export function CatalogSidebar({
   async function handleAdd(type, item) {
     const callback = type === 'QUESTION' ? onAddQuestion : onAddBlock;
     if (!callback || pendingActionRef.current) return;
+    if (requiresCategory && (!categoryFilter || item.category !== categoryFilter)) return;
     const existingItems = new Set(document.querySelectorAll('.block-questions-list > .block-question-item'));
     pendingActionRef.current = true;
     const actionId = `${type}-${item.id}`;
@@ -328,7 +362,8 @@ export function CatalogSidebar({
     setActionError('');
 
     try {
-      await callback(item);
+      const added = await callback(item);
+      if (added === false) return;
       if (isMobile && !embedded) closeSidebar();
       window.requestAnimationFrame(() => {
         const addedItem = [...document.querySelectorAll('.block-questions-list > .block-question-item')]
@@ -345,6 +380,7 @@ export function CatalogSidebar({
   }
 
   function renderQuestionList() {
+    if (!canLoadCatalog) return <p className="catalog-empty" role="status">Selecciona una categoría para ver las preguntas disponibles.</p>;
     if ((isLoadingQuestions || isInitialQuestionLoad) && questions.length === 0) return <Skeleton variant="list" count={4} hasActions={false} />;
     if (questionError && questions.length === 0) {
       return (
@@ -353,6 +389,9 @@ export function CatalogSidebar({
           <button type="button" onClick={() => requestQuestions()}>Reintentar</button>
         </div>
       );
+    }
+    if (categoryFilter && !questions.some((question) => question.category === categoryFilter)) {
+      return <EmptyCategoryMessage itemType="preguntas" category={selectedCategory} />;
     }
     if (filteredQuestions.length === 0) return <p className="catalog-empty" role="status">No se han encontrado preguntas que coincidan con la búsqueda o el filtro seleccionado.</p>;
 
@@ -381,6 +420,7 @@ export function CatalogSidebar({
   }
 
   function renderBlockList() {
+    if (!canLoadCatalog) return <p className="catalog-empty" role="status">Selecciona una categoría para ver los bloques disponibles.</p>;
     if ((isLoadingBlocks || isInitialBlockLoad) && blocks.length === 0) return <Skeleton variant="list" count={2} hasActions={false} />;
     if (blockError && blocks.length === 0) {
       return (
@@ -389,6 +429,9 @@ export function CatalogSidebar({
           <button type="button" onClick={() => requestBlocks()}>Reintentar</button>
         </div>
       );
+    }
+    if (categoryFilter && !blocks.some((block) => block.category === categoryFilter)) {
+      return <EmptyCategoryMessage itemType="bloques" category={selectedCategory} />;
     }
     if (filteredBlocks.length === 0) return <p className="catalog-empty" role="status">No se han encontrado bloques que coincidan con la búsqueda.</p>;
 
@@ -442,8 +485,8 @@ export function CatalogSidebar({
               <div className="catalog-filters">
                 <div className="catalog-search"><MdSearch aria-hidden="true" /><input type="search" aria-label="Buscar preguntas fijas" placeholder="Buscar preguntas..." value={questionSearch} onChange={(event) => setQuestionSearch(event.target.value)} /></div>
                 <div className="catalog-select">
-                  <Dropdown aria-label="Filtrar preguntas por tipo" value={activeTypeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-                    <option value="">Filtrar por tipo</option>
+                  <Dropdown aria-label="Filtrar preguntas por tipo" className={activeTypeFilter ? '' : 'catalog-filter-placeholder'} value={activeTypeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                    <option value="">Filtrar</option>
                     {availableQuestionTypes.map((type) => <option key={type.id} value={type.id}>{type.title}</option>)}
                   </Dropdown>
                 </div>
@@ -478,7 +521,7 @@ export function CatalogSidebar({
       <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
       {typeof document !== 'undefined' && createPortal(
         <div ref={overlayRef} className="catalog-overlay-root">
-      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'catalog-toggle-hidden' : ''}`} aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
+      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'catalog-toggle-hidden' : ''}`} aria-label="Abrir catálogo de elementos" title="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
         <MdLayers aria-hidden="true" /><span>CATÁLOGO</span><MdChevronRight aria-hidden="true" />
       </button>
 

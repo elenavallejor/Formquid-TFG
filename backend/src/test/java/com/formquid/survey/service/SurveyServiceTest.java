@@ -28,6 +28,8 @@ import com.formquid.template.service.TemplateService;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -80,6 +82,34 @@ class SurveyServiceTest {
 
     @InjectMocks
     private SurveyService surveyService;
+
+    @ParameterizedTest
+    @EnumSource(SurveyLifecycle.class)
+    void delete_whenActorIsOwner_allowsAnyLifecycle(SurveyLifecycle lifecycle) {
+        User owner = User.builder().id(7L).role(UserRole.EDITOR).build();
+        Survey survey = Survey.builder().id(12L).owner(owner).lifecycleStatus(lifecycle).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+
+        surveyService.delete(12L, owner);
+
+        verify(participationRepository).deleteBySurveyId(12L);
+        verify(surveyRepository).deleteSurveyById(12L);
+        verify(surveyCoverStorage).deleteAfterCommit(12L, survey.getImageKey());
+    }
+
+    @Test
+    void delete_whenActorIsNotOwner_rejectsDeletion() {
+        User owner = User.builder().id(7L).role(UserRole.EDITOR).build();
+        User collaborator = User.builder().id(8L).role(UserRole.EDITOR).build();
+        Survey survey = Survey.builder().id(12L).owner(owner).lifecycleStatus(SurveyLifecycle.CLOSED).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+
+        assertThatThrownBy(() -> surveyService.delete(12L, collaborator))
+            .isInstanceOf(ApiException.class)
+            .satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(participationRepository, never()).deleteBySurveyId(12L);
+        verify(surveyRepository, never()).deleteSurveyById(12L);
+    }
 
     @Test
     void getCover_whenSurveyIsDraft_requiresSurveyAccess() {

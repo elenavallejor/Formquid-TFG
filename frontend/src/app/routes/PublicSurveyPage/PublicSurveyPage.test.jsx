@@ -62,6 +62,19 @@ describe('PublicSurveyPage', () => {
     expect(screen.getByText('Escribe la contraseña de la encuesta.')).toBeVisible();
   });
 
+  it('permite mostrar y volver a ocultar la contraseña de la encuesta', async () => {
+    const user = userEvent.setup();
+    getPublicSurveyById.mockResolvedValue({ accessMode: 'PASSWORD_PROTECTED' });
+    renderSurvey();
+
+    const password = await screen.findByLabelText('Contraseña de la encuesta');
+    expect(password).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('button', { name: 'Mostrar contraseña de la encuesta' }));
+    expect(password).toHaveAttribute('type', 'text');
+    await user.click(screen.getByRole('button', { name: 'Ocultar contraseña de la encuesta' }));
+    expect(password).toHaveAttribute('type', 'password');
+  });
+
   it('elige la petición para personas autenticadas', async () => {
     getRegisteredSurveyByCode.mockRejectedValue(new Error('Red no disponible'));
     renderSurvey({ isAuthenticated: true, isAuthLoading: false });

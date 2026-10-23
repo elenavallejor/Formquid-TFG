@@ -7,12 +7,14 @@
 .main-page-hero {
   position: relative;
   width: 100%;
-  min-height: clamp(300px, 24vw, 460px);
   overflow: hidden;
-  background-color: #2d9996;
+  background-color: #2a9794;
   color: var(--color-text-on-dark);
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+  padding-inline: max(16px, calc((100% - 1500px) / 2));
 }
 
 .main-page-hero::after {
@@ -25,28 +27,24 @@
 }
 
 .main-page-hero-picture {
-  position: absolute;
-  width: min(1500px, 100%);
-  margin: 0 auto;
-  inset: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
+  grid-column: 2;
+  grid-row: 1;
+  width: min(100%, clamp(330px, 36vw, 520px));
+  justify-self: end;
 }
 
 .main-page-hero-picture img {
-  width: clamp(430px, 34vw, 560px);
-  height: auto;
   display: block;
-  object-fit: contain;
-  transform: translateY(-11%);
+  width: 100%;
+  height: auto;
 }
 
 .main-page-hero-content {
   position: relative;
   z-index: 2;
-  width: min(1500px, 100%);
-  margin: 0 auto;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
   padding: 34px 0;
 }
 
@@ -266,10 +264,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .main-page-hero-content h1,
-  .main-page-hero-content p {
-    max-width: 52%;
-  }
 }
 
 @media only screen and (max-width: 900px) {
@@ -294,25 +288,22 @@
 
 @media only screen and (max-width: 700px) {
   .main-page-hero {
-    min-height: 410px;
-    align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 
   .main-page-hero-picture {
-    top: auto;
-    bottom: 0;
-    height: auto;
-  }
-
-  .main-page-hero-picture img {
-    width: min(50vw, 320px);
-    height: auto;
-    transform: none;
+    grid-column: 1;
+    grid-row: 2;
+    width: min(100%, 420px);
+    justify-self: center;
   }
 
   .main-page-hero-content {
+    grid-column: 1;
+    grid-row: 1;
     padding-top: 28px;
-    padding-bottom: 210px;
+    padding-bottom: 0;
   }
 
   .main-page-hero-content h1,
@@ -342,8 +333,6 @@
 }
 
 @media only screen and (max-width: 650px) {
-  .main-page-hero-picture,
-  .main-page-hero-content,
   .main-page-surveys {
     padding-right: 16px;
     padding-left: 16px;
@@ -367,16 +356,6 @@
 }
 
 @media only screen and (max-width: 380px) {
-  .main-page-hero {
-    min-height: 340px;
-  }
-
-  .main-page-hero-content {
-    padding-right: 16px;
-    padding-bottom: 190px;
-    padding-left: 16px;
-  }
-
   .main-page-hero-content h1 {
     font-size: 34px;
   }

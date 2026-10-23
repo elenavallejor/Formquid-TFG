@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useBlocker, useParams, useSearchParams } from 'react-router-dom';
+import { useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import '@fontsource/lexend/400.css';
 import '../../../assets/styles/opendyslexic.css';
 import { FaRegClipboard } from 'react-icons/fa';
@@ -19,7 +19,7 @@ import {
   updateCollaboratorPermission,
 } from '../../../api/collaborationsApi.js';
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
-import { getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle, uploadSurveyCover } from '../../../api/surveysApi.js';
+import { deleteSurvey, getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle, uploadSurveyCover } from '../../../api/surveysApi.js';
 import { resolveSurveyImageUrl } from '../../../api/apiClient.js';
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
@@ -29,16 +29,18 @@ import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSideba
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
+import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyBuilder } from '../../../components/SurveyBuilder/SurveyBuilder.jsx';
 import { SurveyPreviewModal } from '../../../components/SurveyPreviewModal/SurveyPreviewModal.jsx';
-import { SurveyCoverInput } from '../../../components/SurveyCoverInput.jsx';
-import { SurveyFontPreview } from '../../../components/SurveyFontPreview.jsx';
+import { SurveyCoverInput } from '../../../components/SurveyCoverInput/SurveyCoverInput.jsx';
+import { SurveyFontPreview } from '../../../components/SurveyFontPreview/SurveyFontPreview.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 import { buildTemplateBlockFromCatalog, buildTemplateQuestionFromCatalog } from '../../../utils/templateBuilderUtils.js';
 import { INITIAL_SURVEY_STRUCTURE, buildSurveyStructurePayload, buildSurveyStructureState, getSurveyPublicationValidationError, getSurveyStructureValidationError } from '../../../utils/surveyBuilderUtils.js';
-import { formatDate } from '../../../utils/formatDate.js';
+import { formatDate, formatDateTime } from '../../../utils/formatDate.js';
 import { getSurveyAccessBadge } from '../../../utils/surveyAccess.js';
+import { normalizeTag } from '../../../utils/surveyTagUtils.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
 import '../CreateSurveyPage/CreateSurveyPage.css';
@@ -61,11 +63,6 @@ const FONT_OPTIONS = [
 
 const LIFECYCLE_LABELS = { DRAFT: 'BORRADOR', OPEN: 'ABIERTA', CLOSED: 'CERRADA' };
 const VISIBILITY_LABELS = { LISTED: 'LISTADA', UNLISTED: 'OCULTA' };
-
-function formatDateTime(value) {
-  const formatted = formatDate(value, { includeTime: true });
-  return formatted.time ? `${formatted.date}, ${formatted.time}` : formatted.date;
-}
 
 function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHasError, onImageError }) {
   const lifecycle = survey?.lifecycleStatus || 'DRAFT';
@@ -149,12 +146,6 @@ function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHa
   );
 }
 
-function normalizeTag(value) {
-  let normalized = value.trim().toLocaleLowerCase('es');
-  if (normalized.startsWith('#')) normalized = normalized.slice(1);
-  return normalized.normalize('NFKC').replace(/\s+/g, '-');
-}
-
 function settingsFromSurvey(survey) {
   return {
     title: survey?.title || '',
@@ -232,7 +223,12 @@ function SurveyTagsEditor({ tags, readOnly, onChange }) {
 }
 
 function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onImageError, onChange, onFileChange, onError, showPolicySettings }) {
+  const [isAccessPasswordVisible, setIsAccessPasswordVisible] = useState(false);
   const selectedFont = FONT_OPTIONS.find((font) => font.value === data.fontFamily) || FONT_OPTIONS[0];
+  const accessNotes = [
+    lifecycleStatus === 'DRAFT' ? 'Los borradores permanecen no listados. Al publicar la encuesta pasará a estar listada y podrás cambiar después su visibilidad.' : null,
+    data.visibility === 'UNLISTED' ? 'Una encuesta oculta no es privada. Utiliza contraseña o acceso autenticado si necesitas confidencialidad.' : null,
+  ].filter(Boolean);
 
   return (
     <div className="edit-survey-settings-stack">
@@ -274,20 +270,29 @@ function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onIma
 
       {showPolicySettings && <section className="create-survey-card" aria-labelledby="edit-survey-access-title">
         <h2 id="edit-survey-access-title">ACCESO Y VISIBILIDAD</h2>
+        {accessNotes.length > 0 && <div className="edit-survey-access-notes">
+          {accessNotes.map((note) => <p key={note} className="create-survey-access-description">{note}</p>)}
+        </div>}
         <fieldset className="create-survey-choice-group">
           <legend>Modo de acceso</legend>
           <label><input type="radio" name="edit-access-mode" value="PUBLIC" checked={data.accessMode === 'PUBLIC'} onChange={(event) => onChange({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>PÚBLICO</strong><small>Cualquier persona con acceso puede responder.</small></span></label>
           <label><input type="radio" name="edit-access-mode" value="PASSWORD_PROTECTED" checked={data.accessMode === 'PASSWORD_PROTECTED'} onChange={(event) => onChange({ accessMode: event.target.value })} /><span><strong>PROTEGIDO CON CONTRASEÑA</strong><small>Se solicitará una contraseña antes de responder.</small></span></label>
           <label><input type="radio" name="edit-access-mode" value="AUTHENTICATED" checked={data.accessMode === 'AUTHENTICATED'} onChange={(event) => onChange({ accessMode: event.target.value, accessPassword: '' })} /><span><strong>RESTRINGIDO A USUARIOS AUTENTICADOS</strong><small>Solo podrán responder usuarios con una cuenta.</small></span></label>
         </fieldset>
-        {data.accessMode === 'PASSWORD_PROTECTED' && <div className="create-survey-field create-survey-password"><label htmlFor="edit-survey-password">Nueva contraseña de acceso</label><input id="edit-survey-password" type="password" value={data.accessPassword} autoComplete="new-password" placeholder="Déjala vacía para conservar la actual" onChange={(event) => onChange({ accessPassword: event.target.value })} /></div>}
+        {data.accessMode === 'PASSWORD_PROTECTED' && <div className="create-survey-field create-survey-password">
+          <label htmlFor="edit-survey-password">Nueva contraseña de acceso</label>
+          <div className="password-visibility-field">
+            <input id="edit-survey-password" type={isAccessPasswordVisible ? 'text' : 'password'} value={data.accessPassword} autoComplete="new-password" placeholder="Déjala vacía para conservar la actual" onChange={(event) => onChange({ accessPassword: event.target.value })} />
+            <button type="button" className="password-visibility-toggle" aria-label={isAccessPasswordVisible ? 'Ocultar nueva contraseña de acceso' : 'Mostrar nueva contraseña de acceso'} aria-pressed={isAccessPasswordVisible} onClick={() => setIsAccessPasswordVisible((visible) => !visible)}>
+              <PasswordVisibilityIcon visible={isAccessPasswordVisible} />
+            </button>
+          </div>
+        </div>}
         <fieldset className="create-survey-choice-group" disabled={lifecycleStatus === 'DRAFT'}>
           <legend>Visibilidad</legend>
           <label><input type="radio" name="edit-visibility" value="LISTED" checked={data.visibility === 'LISTED'} onChange={(event) => onChange({ visibility: event.target.value })} /><span><strong>LISTADA</strong><small>Aparecerá en los listados cuando se publique.</small></span></label>
           <label><input type="radio" name="edit-visibility" value="UNLISTED" checked={data.visibility === 'UNLISTED'} onChange={(event) => onChange({ visibility: event.target.value })} /><span><strong>OCULTA</strong><small>No aparecerá en listados, pero podrá abrirse mediante su enlace directo.</small></span></label>
         </fieldset>
-        {lifecycleStatus === 'DRAFT' && <p className="create-survey-security-note">Los borradores permanecen no listados. Al publicar la encuesta pasará a estar listada y podrás cambiar después su visibilidad.</p>}
-        {data.visibility === 'UNLISTED' && <p className="create-survey-security-note">Una encuesta oculta no es privada. Utiliza contraseña o acceso autenticado si necesitas confidencialidad.</p>}
       </section>}
     </div>
   );
@@ -446,6 +451,7 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
 
 export function EditSurveyPage() {
   const { surveyId } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isInitializing } = useAuth();
   const saveLockRef = useRef(false);
@@ -465,6 +471,10 @@ export function EditSurveyPage() {
   const [hasSettingsChanges, setHasSettingsChanges] = useState(false);
   const [lifecycleConfirmation, setLifecycleConfirmation] = useState(null);
   const [visibilityConfirmation, setVisibilityConfirmation] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [imageHasError, setImageHasError] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
@@ -477,8 +487,12 @@ export function EditSurveyPage() {
   const isSupervising = isAdministrativeView && !isViewingDetails;
   const canEditSurvey = !isAdministrativeView && (isOwner || Boolean(survey?.canEdit));
   const canPreviewSurvey = !isAdministrativeView && (isOwner || Boolean(survey?.canPreview));
-  const hasUnsavedChanges = hasStructureChanges || hasTagChanges || hasSettingsChanges;
+  const hasUnsavedChanges = !isDeleted && (hasStructureChanges || hasTagChanges || hasSettingsChanges);
   const navigationBlocker = useBlocker(hasUnsavedChanges);
+
+  useEffect(() => {
+    if (isDeleted) navigate('/encuestas', { replace: true });
+  }, [isDeleted, navigate]);
 
   async function loadCollaborations() {
     const [nextCollaborators, nextRequests, nextPublicationRequests] = await Promise.all([getCollaborators(surveyId), getCollaborationRequests(surveyId), getPublicationRequests(surveyId)]);
@@ -667,6 +681,22 @@ export function EditSurveyPage() {
     }
   }
 
+  async function confirmDelete() {
+    if (!isOwner || saveLockRef.current) return;
+    saveLockRef.current = true;
+    setIsDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteSurvey(surveyId);
+      setIsDeleted(true);
+    } catch (error) {
+      setDeleteError(error.message || 'No se ha podido eliminar la encuesta.');
+    } finally {
+      saveLockRef.current = false;
+      setIsDeleting(false);
+    }
+  }
+
   const primaryActionLabel = activeTab === 'SURVEY'
     ? canEditSurvey ? 'Guardar cambios' : ''
     : activeTab === 'SETTINGS' && canEditSurvey ? 'Actualizar configuración' : '';
@@ -784,6 +814,13 @@ export function EditSurveyPage() {
                   ? <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving} onClick={() => requestLifecycleChange('CLOSED')}><MdClose aria-hidden="true" />Cerrar encuesta</button>
                   : <button type="button" className="edit-survey-publish-button" disabled={isSaving} onClick={() => requestLifecycleChange('OPEN')}><MdPublish aria-hidden="true" />Publicar encuesta</button>}
               </section>}
+              {isOwner && <section className="edit-survey-panel-card edit-survey-delete-card">
+                <div>
+                  <h2>ELIMINAR ENCUESTA</h2>
+                  <p>Se eliminarán de forma permanente la encuesta y sus respuestas.</p>
+                </div>
+                <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving || isDeleting} onClick={() => { clearMessages(); setDeleteError(''); setDeleteConfirmation(true); }}><MdDeleteOutline aria-hidden="true" />Eliminar encuesta</button>
+              </section>}
               {isSupervising && <div className="edit-survey-supervision-stack">
                 <section className="edit-survey-panel-card edit-survey-lifecycle-card">
                   <div className="edit-survey-lifecycle-copy">
@@ -849,6 +886,17 @@ export function EditSurveyPage() {
         variant="danger"
         isProcessing={isSaving}
         errorMessage={errorMessage}
+      />
+      <ConfirmModal
+        isOpen={deleteConfirmation}
+        onClose={() => { setDeleteConfirmation(false); setDeleteError(''); }}
+        onConfirm={confirmDelete}
+        title="Eliminar encuesta"
+        message={`¿Confirmas que deseas eliminar “${survey?.title || 'esta encuesta'}”? Se perderán su contenido y sus respuestas. Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar encuesta"
+        variant="danger"
+        isProcessing={isDeleting}
+        errorMessage={deleteError}
       />
     </div>
   );

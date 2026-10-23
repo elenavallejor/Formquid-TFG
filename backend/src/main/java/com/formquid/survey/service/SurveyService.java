@@ -14,6 +14,7 @@ import com.formquid.content.service.ContentService;
 import com.formquid.notification.entity.NotificationType;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.participation.repository.ParticipationRepository;
+import com.formquid.survey.SurveyPublicCode;
 import com.formquid.survey.dto.AdminSurveySummaryDto;
 import com.formquid.survey.dto.CreateSurveyRequestDto;
 import com.formquid.survey.dto.PublicSurveySummaryDto;
@@ -354,7 +355,7 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public SurveyResponseDto getPublicSurvey(String publicCode) {
-        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
+        Survey survey = surveyRepository.findByPublicCode(SurveyPublicCode.normalize(publicCode))
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         if (!canViewPublicSurvey(survey)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no disponible públicamente");
@@ -367,7 +368,7 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public SurveyResponseDto getOpenSurveyForRespondent(String publicCode, User user) {
-        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
+        Survey survey = surveyRepository.findByPublicCode(SurveyPublicCode.normalize(publicCode))
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         if (!canViewOpenSurvey(survey, user)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no disponible");
@@ -380,7 +381,7 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public SurveyResponseDto getPasswordProtectedPublicSurvey(String publicCode, String accessPassword) {
-        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
+        Survey survey = surveyRepository.findByPublicCode(SurveyPublicCode.normalize(publicCode))
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         if (!canViewPublicSurvey(survey)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no disponible públicamente");
@@ -470,9 +471,9 @@ public class SurveyService {
     public void delete(Long surveyId, User actor) {
         Survey survey = getSurvey(surveyId);
         ensureOwner(survey, actor);
-        ensureClosedForDelete(survey);
         surveyCoverStorage.deleteAfterCommit(surveyId, survey.getImageKey());
-        surveyRepository.delete(survey);
+        participationRepository.deleteBySurveyId(surveyId);
+        surveyRepository.deleteSurveyById(surveyId);
     }
 
     @Transactional
@@ -516,7 +517,8 @@ public class SurveyService {
         Survey survey = getSurvey(surveyId);
         ensureClosedForDelete(survey);
         surveyCoverStorage.deleteAfterCommit(surveyId, survey.getImageKey());
-        surveyRepository.delete(survey);
+        participationRepository.deleteBySurveyId(surveyId);
+        surveyRepository.deleteSurveyById(surveyId);
     }
 
     @Transactional
@@ -687,13 +689,6 @@ public class SurveyService {
             }
         }
         throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar el código público de la encuesta");
-    }
-
-    private String normalizePublicCode(String publicCode) {
-        if (publicCode == null || publicCode.isBlank()) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada");
-        }
-        return publicCode.trim().toUpperCase(Locale.ROOT);
     }
 
     private SurveyFontFamily fontFamilyOrDefault(SurveyFontFamily fontFamily) {

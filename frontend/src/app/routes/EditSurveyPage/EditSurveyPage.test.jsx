@@ -9,6 +9,7 @@ import {
   removeCollaborator, requestPublication, updateCollaboratorPermission,
 } from '../../../api/collaborationsApi.js';
 import {
+  deleteSurvey,
   getSurveyById,
   updateAdminSurveyLifecycle,
   updateAdminSurveyVisibility,
@@ -20,6 +21,7 @@ import { EditSurveyPage } from './EditSurveyPage.jsx';
 import { renderWithDataRouter } from '../../../testing/render.jsx';
 
 vi.mock('../../../api/surveysApi.js', () => ({
+  deleteSurvey: vi.fn(),
   getSurveyById: vi.fn(),
   updateAdminSurveyLifecycle: vi.fn(),
   updateAdminSurveyVisibility: vi.fn(),
@@ -73,6 +75,7 @@ describe('EditSurveyPage', () => {
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:cover-preview') });
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
     getSurveyById.mockResolvedValue(survey);
+    deleteSurvey.mockResolvedValue(undefined);
     updateSurvey.mockResolvedValue(survey);
     replaceSurveyContent.mockResolvedValue(null);
     getCollaborators.mockResolvedValue([]);
@@ -91,6 +94,18 @@ describe('EditSurveyPage', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Configuración guardada correctamente.');
     expect(uploadSurveyCover).toHaveBeenCalledWith('12', file);
+  });
+
+  it('muestra los avisos como subtítulo bajo Acceso y visibilidad', async () => {
+    renderPage('/encuestas/12/editar?seccion=configuracion');
+    const heading = await screen.findByRole('heading', { name: 'ACCESO Y VISIBILIDAD' });
+    const subtitles = heading.nextElementSibling;
+
+    expect(subtitles).toHaveClass('edit-survey-access-notes');
+    expect(subtitles.querySelectorAll('p')).toHaveLength(2);
+    expect(subtitles.querySelectorAll('p')[0]).toHaveTextContent('Los borradores permanecen no listados.');
+    expect(subtitles.querySelectorAll('p')[1]).toHaveTextContent('Una encuesta oculta no es privada.');
+    expect(heading.closest('section').querySelector('.create-survey-security-note')).not.toBeInTheDocument();
   });
 
   it('muestra la vista de detalles para supervisión administrativa', async () => {
@@ -220,6 +235,66 @@ describe('EditSurveyPage', () => {
     await user.click(within(screen.getByRole('dialog', { name: 'Cerrar encuesta' })).getByRole('button', { name: 'Cerrar encuesta' }));
     expect(await screen.findByRole('status')).toHaveTextContent('La encuesta ahora está cerrada.');
     expect(updateSurveyLifecycle).toHaveBeenCalledWith('12', 'CLOSED');
+  });
+
+  it('confirma el borrado de una encuesta cerrada y vuelve al listado aunque haya cambios sin guardar', async () => {
+    const user = userEvent.setup();
+    getSurveyById.mockResolvedValue({ ...survey, lifecycleStatus: 'CLOSED' });
+    renderWithDataRouter([
+      { path: '/encuestas/:surveyId/editar', element: <EditSurveyPage /> },
+      { path: '/encuestas', element: <h1>Listado de encuestas</h1> },
+    ], { route: '/encuestas/12/editar?seccion=configuracion', auth: { user: { id: 7, role: 'EDITOR' } } });
+
+    const deleteButton = await screen.findByRole('button', { name: 'Eliminar encuesta' });
+    const lifecycleCard = screen.getByRole('heading', { name: 'CICLO DE VIDA' }).closest('section');
+    const deleteCard = screen.getByRole('heading', { name: 'ELIMINAR ENCUESTA' }).closest('section');
+    expect(lifecycleCard.compareDocumentPosition(deleteCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(deleteButton);
+    let dialog = screen.getByRole('dialog', { name: 'Eliminar encuesta' });
+    expect(dialog).toHaveTextContent('Esta acción no se puede deshacer.');
+    expect(deleteSurvey).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    expect(deleteSurvey).not.toHaveBeenCalled();
+
+    await user.type(screen.getByRole('textbox', { name: /Título de la encuesta/ }), ' editada');
+    await user.click(deleteButton);
+    dialog = screen.getByRole('dialog', { name: 'Eliminar encuesta' });
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar encuesta' }));
+    expect(deleteSurvey).toHaveBeenCalledWith('12');
+    expect(await screen.findByRole('heading', { name: 'Listado de encuestas' })).toBeVisible();
+    expect(screen.queryByRole('dialog', { name: 'Salir sin guardar' })).not.toBeInTheDocument();
+  });
+
+  it.each(['DRAFT', 'OPEN'])('permite al propietario solicitar el borrado en estado %s', async (lifecycleStatus) => {
+    const user = userEvent.setup();
+    getSurveyById.mockResolvedValue({ ...survey, lifecycleStatus });
+    renderPage('/encuestas/12/editar?seccion=configuracion');
+    const button = await screen.findByRole('button', { name: 'Eliminar encuesta' });
+    expect(button).toBeEnabled();
+    await user.click(button);
+    await user.click(within(screen.getByRole('dialog', { name: 'Eliminar encuesta' })).getByRole('button', { name: 'Eliminar encuesta' }));
+    expect(deleteSurvey).toHaveBeenCalledWith('12');
+  });
+
+  it('no ofrece el borrado a colaboradores', async () => {
+    getSurveyById.mockResolvedValue({ ...survey, ownerId: 99, canEdit: true });
+    renderPage('/encuestas/12/editar?seccion=configuracion', { id: 7, role: 'EDITOR' });
+    await screen.findByRole('textbox', { name: /Título de la encuesta/ });
+    expect(screen.queryByRole('heading', { name: 'ELIMINAR ENCUESTA' })).not.toBeInTheDocument();
+  });
+
+  it('mantiene abierto el modal si falla la eliminación', async () => {
+    const user = userEvent.setup();
+    getSurveyById.mockResolvedValue({ ...survey, lifecycleStatus: 'CLOSED' });
+    deleteSurvey.mockRejectedValue(new Error('No se pudo eliminar'));
+    renderPage('/encuestas/12/editar?seccion=configuracion');
+
+    await user.click(await screen.findByRole('button', { name: 'Eliminar encuesta' }));
+    const dialog = screen.getByRole('dialog', { name: 'Eliminar encuesta' });
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar encuesta' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('No se pudo eliminar');
+    expect(dialog).toBeVisible();
   });
 
   it('gestiona solicitudes y permisos de colaboradores', async () => {

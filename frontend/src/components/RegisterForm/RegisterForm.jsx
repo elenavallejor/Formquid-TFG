@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MdBusiness, MdCheckCircleOutline, MdEditNote, MdLockOutline, MdOutlineEmail, MdPersonOutline, MdPublic } from 'react-icons/md';
-import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 import { createRegistrationRequest } from '../../api/registrationRequestsApi';
 import { CountrySelect } from '../CountrySelect/CountrySelect.jsx';
+import { PasswordVisibilityIcon } from '../PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { INITIAL_REGISTER_FORM_DATA, REGISTER_FORM_LIMITS, createRegistrationRequestPayload, hasRegisterFormErrors, validateRegisterForm } from '../../utils/registerFormValidation';
 
 import './RegisterForm.css';
@@ -233,7 +233,7 @@ export function RegisterForm() {
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             aria-pressed={showPassword}
           >
-            {showPassword ? <LuEye aria-hidden="true" /> : <LuEyeClosed aria-hidden="true" />}
+            <PasswordVisibilityIcon visible={showPassword} />
           </button>
         </div>
         <p id="register-password-hint" className="register-field-hint">
@@ -275,7 +275,7 @@ export function RegisterForm() {
             }
             aria-pressed={showConfirmPassword}
           >
-            {showConfirmPassword ? <LuEye aria-hidden="true" /> : <LuEyeClosed aria-hidden="true" />}
+            <PasswordVisibilityIcon visible={showConfirmPassword} />
           </button>
         </div>
         <p

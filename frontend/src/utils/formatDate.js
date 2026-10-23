@@ -33,3 +33,8 @@ export function formatDate(value, options = {}) {
     }),
   };
 }
+
+export function formatDateTime(value) {
+  const { date, time } = formatDate(value, { includeTime: true });
+  return time ? `${date}, ${time}` : date;
+}

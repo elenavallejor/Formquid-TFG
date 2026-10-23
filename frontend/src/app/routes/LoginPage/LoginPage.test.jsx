@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { LuEye, LuEyeClosed } from 'react-icons/lu';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthContext } from '../../../context/authContext.js';
@@ -40,6 +42,22 @@ function renderLogin(from) {
 
 describe('LoginPage', () => {
   beforeEach(() => login.mockReset());
+
+  it('muestra el ojo abierto para revelar la contraseña y el cerrado para ocultarla', async () => {
+    const user = userEvent.setup();
+    renderLogin();
+    const password = screen.getByLabelText('Contraseña');
+    const showButton = screen.getByRole('button', { name: 'Mostrar contraseña' });
+
+    expect(password).toHaveAttribute('type', 'password');
+    expect(showButton.querySelector('svg').outerHTML).toBe(renderToStaticMarkup(<LuEye aria-hidden="true" />));
+
+    await user.click(showButton);
+
+    const hideButton = screen.getByRole('button', { name: 'Ocultar contraseña' });
+    expect(password).toHaveAttribute('type', 'text');
+    expect(hideButton.querySelector('svg').outerHTML).toBe(renderToStaticMarkup(<LuEyeClosed aria-hidden="true" />));
+  });
 
   it('valida los campos antes de intentar iniciar sesión', async () => {
     const user = userEvent.setup();

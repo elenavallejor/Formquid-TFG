@@ -10,6 +10,7 @@ import com.formquid.survey.entity.SurveyVisibility;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,6 +20,10 @@ import java.util.Optional;
  * Accede a las encuestas y concentra las consultas optimizadas de listados y administración.
  */
 public interface SurveyRepository extends JpaRepository<Survey, Long> {
+
+    @Modifying
+    @Query("delete from Survey survey where survey.id = :surveyId")
+    void deleteSurveyById(@Param("surveyId") Long surveyId);
 
     long countByOwnerId(Long ownerId);
 
@@ -176,8 +181,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 survey.updatedAt,
                 survey.category
             )
-            from Participation participation
-            join participation.survey survey
+            from Survey survey
+            join Participation participation on participation.survey = survey
             join survey.owner owner
             where (
                 :administrator = true
@@ -206,8 +211,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
             """,
         countQuery = """
             select count(distinct survey.id)
-            from Participation participation
-            join participation.survey survey
+            from Survey survey
+            join Participation participation on participation.survey = survey
             join survey.owner owner
             where (
                 :administrator = true

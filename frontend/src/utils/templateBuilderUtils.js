@@ -5,16 +5,13 @@ import {
   getBlockItems,
 } from './blockBuilderUtils.js';
 import { buildQuestionDraftPayload, getQuestionBuilderValidationError } from './questionBuilderUtils.js';
+import { createLocalId } from './createLocalId.js';
 
 export const INITIAL_TEMPLATE_STATE = {
   title: '',
   description: '',
   items: [],
 };
-
-function createLocalId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
 
 export function buildTemplateQuestionFromCatalog(question) {
   return {

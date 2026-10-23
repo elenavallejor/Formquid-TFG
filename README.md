@@ -8,6 +8,12 @@ Al cambiar `JWT_SECRET`, todos los tokens de sesión existentes dejan de ser vá
 
 Al cambiar la contraseña de una cuenta, sus tokens anteriores dejan de ser válidos; la respuesta entrega una cookie nueva para conservar la sesión que hizo el cambio. Los tokens emitidos antes de esta protección también requieren iniciar sesión de nuevo una vez.
 
+## Recuperación de contraseña
+
+El enlace «¿Has olvidado tu contraseña?» solicita un correo de recuperación. El enlace recibido contiene un token de un solo uso que caduca a los 30 minutos. Solo se guarda su hash en la base de datos; una nueva solicitud invalida el enlace anterior. El formulario muestra la misma confirmación tanto si existe la cuenta como si no.
+
+Para enviar estos correos, configura `MAIL_ENABLED=true` y los parámetros SMTP existentes. El enlace utiliza `FRONTEND_ORIGIN` o, si se necesita una URL distinta, `PASSWORD_RESET_BASE_URL`. En desarrollo, el valor predeterminado es `http://localhost:5173`. MailHog muestra los mensajes locales en `http://localhost:8025`.
+
 ## Configuración previa al despliegue
 
 Para preparar el backend con el perfil `prod`, combina `docker-compose.yml` con `docker-compose.prod.yml`. Antes de iniciarlo, configura en `.env` `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`, `SUPERADMIN_NAME`, `SUPERADMIN_INSTITUTION` y `FRONTEND_ORIGIN` (por ejemplo, `https://app.ejemplo.com`), y ejecuta `python3 check-prod-env.py`. La comprobación no muestra los valores de estas variables.

@@ -39,7 +39,21 @@ describe('questionBuilderUtils', () => {
     expect(getQuestionBuilderValidationError(draft({ questionType: 'MULTIPLE_CHOICE', minSelections: 3, maxSelections: 2 }))).toMatch(/límites de selección/);
     expect(getQuestionBuilderValidationError(draft({ questionType: 'MULTIPLE_CHOICE', minSelections: 1, maxSelections: 2 }))).toBe('');
     expect(getQuestionBuilderValidationError(draft({ questionType: 'BOOLEAN', trueLabel: '' }))).toMatch(/dos etiquetas/);
-    expect(getQuestionBuilderValidationError(draft({ questionType: 'BOOLEAN', evaluationDirection: 'POSITIVE', trueFactor: '', falseFactor: 0 }), { includeEvaluation: true })).toMatch(/necesitan sus factores/);
+    expect(getQuestionBuilderValidationError(draft({ questionType: 'BOOLEAN', evaluationDirection: 'POSITIVE', evaluationWeight: 1, trueFactor: '', falseFactor: 0 }), { includeEvaluation: true })).toMatch(/necesitan sus factores/);
+  });
+
+  it('limita el peso de las preguntas evaluables a la escala de 1 a 5', () => {
+    const evaluable = { questionType: 'BOOLEAN', evaluationDirection: 'POSITIVE' };
+    expect(getQuestionBuilderValidationError(draft(evaluable), { includeEvaluation: true })).toBe('El peso positivo debe estar entre 1 y 5.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationDirection: 'NEGATIVE' }), { includeEvaluation: true })).toBe('El peso negativo debe estar entre -5 y -1.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationWeight: 0.5 }), { includeEvaluation: true })).toBe('El peso positivo debe estar entre 1 y 5.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationWeight: 5.5 }), { includeEvaluation: true })).toBe('El peso positivo debe estar entre 1 y 5.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationWeight: '8,5' }), { includeEvaluation: true })).toBe('El peso positivo debe estar entre 1 y 5.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationDirection: 'NEGATIVE', evaluationWeight: 2 }), { includeEvaluation: true })).toBe('El peso negativo debe estar entre -5 y -1.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationDirection: 'NEGATIVE', evaluationWeight: -5.5 }), { includeEvaluation: true })).toBe('El peso negativo debe estar entre -5 y -1.');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationDirection: 'NEGATIVE', evaluationWeight: -3.5 }), { includeEvaluation: true })).toBe('');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationWeight: 1 }), { includeEvaluation: true })).toBe('');
+    expect(getQuestionBuilderValidationError(draft({ ...evaluable, evaluationWeight: 5 }), { includeEvaluation: true })).toBe('');
   });
 
   it('normaliza texto y números al crear preguntas y opciones', () => {
@@ -51,6 +65,10 @@ describe('questionBuilderUtils', () => {
       hasOtherOption: true, options: [{ label: '  Primera  ', evaluationFactor: '1,5' }, { label: 'Segunda', evaluationFactor: 0 }],
     }), { includeEvaluation: true });
     expect(choices.evaluationWeight).toBe(2.5);
+    const negative = buildQuestionDraftPayload(draft({
+      questionType: 'BOOLEAN', evaluationDirection: 'NEGATIVE', evaluationWeight: -4.5,
+    }), { includeEvaluation: true });
+    expect(negative).toMatchObject({ evaluationDirection: 'NEGATIVE', evaluationWeight: -4.5 });
     expect(choices.options).toEqual([
       { label: '  Primera  ', position: 1, other: false, evaluationFactor: 1.5 },
       { label: 'Segunda', position: 2, other: false, evaluationFactor: 0 },
@@ -65,7 +83,7 @@ describe('questionBuilderUtils', () => {
     const matrix = buildQuestionDraftPayload(draft({ questionType: 'MATRIX_SCALE', matrixRows: [{ label: 'Rapidez' }, { label: '  ' }], scaleDisplayType: 'FACES' }));
     expect(matrix.matrixRows).toEqual([{ label: 'Rapidez', position: 1 }]);
     expect(matrix.settings.scaleDisplayType).toBe('FACES');
-    const boolean = buildQuestionDraftPayload(draft({ questionType: 'BOOLEAN', evaluationDirection: 'POSITIVE', trueFactor: '1', falseFactor: '0' }), { includeEvaluation: true });
+    const boolean = buildQuestionDraftPayload(draft({ questionType: 'BOOLEAN', evaluationDirection: 'POSITIVE', evaluationWeight: 1, trueFactor: '1', falseFactor: '0' }), { includeEvaluation: true });
     expect(boolean.settings).toMatchObject({ trueLabel: 'Sí', falseLabel: 'No', trueEvaluationFactor: 1, falseEvaluationFactor: 0 });
     expect(parseNumberValue('1,5')).toBe(1.5);
     expect(parseIntegerValue('5.8')).toBe(5);

@@ -4,15 +4,19 @@
  */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export function validateEmail(email) {
+  const normalizedEmail = email.trim();
+  if (!normalizedEmail) return 'Introduce tu correo electrónico.';
+  if (!EMAIL_PATTERN.test(normalizedEmail) || normalizedEmail.length > 320) {
+    return 'Introduce un correo electrónico válido.';
+  }
+  return '';
+}
+
 export function validateLoginForm({ email, password }) {
   const errors = {};
-  const normalizedEmail = email.trim();
-
-  if (!normalizedEmail) {
-    errors.email = 'Introduce tu correo electrónico.';
-  } else if (!EMAIL_PATTERN.test(normalizedEmail)) {
-    errors.email = 'Introduce un correo electrónico válido.';
-  }
+  const emailError = validateEmail(email);
+  if (emailError) errors.email = emailError;
 
   if (!password) {
     errors.password = 'Introduce tu contraseña.';

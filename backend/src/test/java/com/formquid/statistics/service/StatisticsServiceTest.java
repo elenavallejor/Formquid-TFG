@@ -104,6 +104,45 @@ class StatisticsServiceTest {
     }
 
     @Test
+    void getSurveyStatistics_usesNegativeWeightMagnitudeWithoutReversingScoreTwice() {
+        User user = User.builder().id(4L).build();
+        Survey survey = Survey.builder().id(1L).build();
+        ContentItem item = ContentItem.builder()
+            .id(10L).itemType(ContentItemType.QUESTION).position(1).required(false).build();
+        Question question = Question.builder()
+            .id(20L)
+            .parentItem(item)
+            .statement("Uso excesivo")
+            .questionType(QuestionType.NUMBER)
+            .evaluationDirection(EvaluationDirection.NEGATIVE)
+            .evaluationWeight(new BigDecimal("-3"))
+            .build();
+        question.setSettings(QuestionSettings.builder()
+            .minValue(BigDecimal.ZERO)
+            .maxValue(BigDecimal.TEN)
+            .build());
+
+        when(surveyRepository.findById(1L)).thenReturn(Optional.of(survey));
+        when(statisticsQueryRepository.summarizeParticipations(1L))
+            .thenReturn(new ParticipationSummary(1, null, null));
+        when(contentItemRepository.findSurveyContentRows(1L)).thenReturn(List.of(
+            new ContentItemRowDto(10L, ContentItemType.QUESTION, 1, false, null)
+        ));
+        when(questionRepository.findByParentItemIdsForStatistics(List.of(10L))).thenReturn(List.of(question));
+        when(statisticsQueryRepository.summarizeQuestions(List.of(20L))).thenReturn(List.of(
+            new QuestionAggregate(20L, 1L, 10.0, BigDecimal.TEN, BigDecimal.TEN,
+                10.0, 0.0, 0L, 0L, 100.0)
+        ));
+
+        var response = statisticsService.getSurveyStatistics(1L, user);
+
+        assertThat(response.questions()).singleElement().satisfies(statistics ->
+            assertThat(statistics.evaluationScore()).isEqualTo(-100.0)
+        );
+        assertThat(response.globalEvaluationScore()).isEqualTo(-100.0);
+    }
+
+    @Test
     void getSurveyStatistics_calculatesScaleValuePercentagesFromGroupedCounts() {
         User user = User.builder().id(4L).build();
         Survey survey = Survey.builder().id(1L).build();

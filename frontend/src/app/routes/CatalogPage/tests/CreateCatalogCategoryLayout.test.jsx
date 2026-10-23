@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CreateBlockPage } from '../../CreateBlockPage/CreateBlockPage.jsx';
 import { CreateQuestionPage } from '../../CreateQuestionPage/CreateQuestionPage.jsx';
 import { CreateTemplatePage } from '../../CreateTemplatePage/CreateTemplatePage.jsx';
-import { renderWithRouter } from '../../../../testing/render.jsx';
+import { renderWithDataRouter } from '../../../../testing/render.jsx';
 
 vi.mock('../../../../api/categoriesApi.js', () => ({
   getCategories: vi.fn(() => Promise.resolve([{ code: 'SALUD', name: 'Salud' }])),
@@ -17,15 +17,16 @@ describe('información general de los elementos del catálogo', () => {
     ['bloque', CreateBlockPage, /Nombre del bloque/, 'Descripción'],
     ['plantilla', CreateTemplatePage, /Título de la plantilla/, 'Descripción'],
   ])('sitúa la categoría entre los campos en %s', async (element, Page, primaryLabel, finalLabel) => {
-    renderWithRouter(<Page />);
+    renderWithDataRouter([{ path: '/', element: <Page /> }]);
 
     const generalInfo = screen.getByRole('heading', { name: 'INFORMACIÓN GENERAL' }).closest('section');
     const fields = generalInfo.querySelector('.builder-general-info-fields');
     const primary = within(fields).getByRole('textbox', { name: primaryLabel });
-    const category = within(fields).getByRole('button', { name: 'Categoría' });
+    const category = within(fields).getByRole('button', { name: 'Categoría (obligatoria)' });
     const final = within(fields).getByRole('textbox', { name: finalLabel });
 
     expect(fields.children).toHaveLength(3);
+    expect(fields.querySelector('.category-select-required')).toHaveTextContent('*');
     expect(category).toHaveTextContent(`Selecciona la categoría de tu ${element}`);
     expect(primary.compareDocumentPosition(category) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(category.compareDocumentPosition(final) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

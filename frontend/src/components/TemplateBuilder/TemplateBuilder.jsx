@@ -18,6 +18,7 @@ import {
   getBlockBuilderValidationError,
 } from '../../utils/blockBuilderUtils.js';
 import { getDragData, getDropIndex, reorderItems } from '../../utils/builderDragUtils.js';
+import { createLocalId } from '../../utils/createLocalId.js';
 import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import {
   INITIAL_TEMPLATE_STATE,
@@ -39,10 +40,6 @@ import { TextContent, TextContentIcon } from '../TextContent/TextContent.jsx';
 import '../BlockBuilder/BlockBuilder.css';
 import './TemplateBuilder.css';
 
-function createLocalId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 function getItemLabel(item) {
   if (item.itemType === 'TEXT') return 'texto';
   if (item.itemType === 'BLOCK') return 'bloque';
@@ -57,6 +54,8 @@ export function TemplateBuilder({
   onChange = () => {},
   onDropQuestionFromSidebar,
   onDropBlockFromSidebar,
+  categoryFilter = null,
+  categoryDetails = null,
   showGeneralInfo = true,
   afterPrimaryField,
   structureTitle = 'ESTRUCTURA DE LA PLANTILLA',
@@ -614,6 +613,8 @@ export function TemplateBuilder({
         <BlockBuilder
           data={editingBlock}
           onChange={(nextBlock) => { setEditingBlock(nextBlock); setModalError(''); }}
+          categoryFilter={categoryFilter}
+          categoryDetails={categoryDetails}
           includeEvaluation={includeEvaluation}
           isModal
           modalTitle={modalMode === 'CREATE_BLOCK' ? 'CREAR BLOQUE' : 'EDITAR BLOQUE'}

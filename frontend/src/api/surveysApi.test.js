@@ -4,6 +4,7 @@ import { apiClient } from './apiClient.js';
 import {
   accessPasswordProtectedSurvey,
   createSurveyFromImport,
+  deleteSurvey,
   getAdminSurveys,
   getMySurveys,
   getPublicSurveys,
@@ -96,5 +97,10 @@ describe('surveysApi', () => {
     expect(apiClient).toHaveBeenLastCalledWith('/surveys/12/lifecycle', {
       method: 'PATCH', body: { lifecycleStatus: 'CLOSED' },
     });
+  });
+
+  it('envía la eliminación de encuesta al endpoint del propietario', () => {
+    deleteSurvey(12);
+    expect(apiClient).toHaveBeenLastCalledWith('/surveys/12', { method: 'DELETE' });
   });
 });

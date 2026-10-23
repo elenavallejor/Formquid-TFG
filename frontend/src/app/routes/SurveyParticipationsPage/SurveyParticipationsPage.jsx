@@ -9,7 +9,7 @@ import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
-import { formatDate } from '../../../utils/formatDate.js';
+import { formatDateTime } from '../../../utils/formatDate.js';
 
 import '../ElementDetailPage/ElementDetailPage.css';
 import './SurveyParticipationsPage.css';
@@ -26,11 +26,6 @@ const QUESTION_TYPE_LABELS = {
   MULTIPLE_CHOICE: 'Selección múltiple',
   MATRIX_SCALE: 'Matriz de escala',
 };
-
-function formatDateTime(value) {
-  const formatted = formatDate(value, { includeTime: true });
-  return formatted.time ? `${formatted.date}, ${formatted.time}` : formatted.date;
-}
 
 function ScalarAnswer({ answer }) {
   if (answer.textValue != null) return <p className="participation-text-answer">{answer.textValue}</p>;

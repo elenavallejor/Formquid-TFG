@@ -45,6 +45,8 @@ export function ResultsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -72,6 +74,7 @@ export function ResultsPage() {
         if (isActive) {
           setIsLoading(true);
           setErrorMessage('');
+          setLoadFailed(false);
         }
         return request;
       })
@@ -80,6 +83,7 @@ export function ResultsPage() {
         setSurveys(Array.isArray(response?.content) ? response.content : []);
         setTotalItems(Number(response?.totalElements ?? 0));
         setTotalPages(Number(response?.totalPages ?? 0));
+        setLoadFailed(false);
       })
       .catch((error) => {
         if (!isActive || error.name === 'AbortError') return;
@@ -87,6 +91,7 @@ export function ResultsPage() {
         setTotalItems(0);
         setTotalPages(0);
         setErrorMessage(error.message || 'No se han podido cargar las encuestas.');
+        setLoadFailed(true);
       })
       .finally(() => {
         if (isActive) setIsLoading(false);
@@ -96,7 +101,7 @@ export function ResultsPage() {
       isActive = false;
       abortController.abort();
     };
-  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, selectedSearchFields, sortOrder]);
+  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, retryCount, selectedSearchFields, sortOrder]);
 
   return (
     <main className="results-page">
@@ -145,6 +150,11 @@ export function ResultsPage() {
         <section className="results-page-content" aria-busy={isLoading} aria-live="polite">
           {isLoading ? (
             <Skeleton variant="grid" count={6} />
+          ) : loadFailed ? (
+            <div className="results-page-empty" role="status">
+              <h2>No se han podido cargar las encuestas</h2>
+              <button type="button" className="results-page-retry" onClick={() => setRetryCount((count) => count + 1)}>Reintentar</button>
+            </div>
           ) : surveys.length === 0 ? (
             <div className="results-page-empty" role="status">
               <FaRegClipboard aria-hidden="true" />

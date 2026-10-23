@@ -6,12 +6,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { QuestionBuilder } from './QuestionBuilder.jsx';
 import { INITIAL_QUESTION_STATE } from '../../utils/questionBuilderUtils.js';
 
-function Harness({ initial = INITIAL_QUESTION_STATE, isModal = false, onSave = vi.fn(), includeEvaluation = false }) {
+function Harness({ initial = INITIAL_QUESTION_STATE, isModal = false, onSave = vi.fn(), onDataChange, includeEvaluation = false }) {
   const [data, setData] = useState(initial);
   return (
     <QuestionBuilder
       data={data}
-      onChange={setData}
+      onChange={(nextData) => { setData(nextData); onDataChange?.(nextData); }}
       isCatalog={false}
       isModal={isModal}
       onClose={vi.fn()}
@@ -72,5 +72,28 @@ describe('QuestionBuilder', () => {
     await user.clear(screen.getByPlaceholderText('Etiqueta afirmativa'));
     await user.type(screen.getByPlaceholderText('Etiqueta afirmativa'), 'De acuerdo');
     expect(screen.getByDisplayValue('De acuerdo')).toBeVisible();
+  });
+
+  it('permite introducir el peso manualmente y muestra el signo de la dirección', async () => {
+    const user = userEvent.setup();
+    const onDataChange = vi.fn();
+    render(<Harness includeEvaluation onDataChange={onDataChange} />);
+    await user.click(screen.getByRole('button', { name: /Dos opciones/ }));
+    await user.click(screen.getByRole('button', { name: 'Positiva' }));
+    const weight = screen.getByRole('textbox', { name: 'Peso de la pregunta:' });
+    expect(weight).toHaveValue('');
+    fireEvent.change(weight, { target: { value: '3.5' } });
+    expect(weight).toHaveValue('3.5');
+    await user.click(screen.getByText('?', { selector: 'summary' }));
+    expect(screen.getByText(/métricas de la investigación/)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Negativa' }));
+    expect(weight).toHaveValue('-3.5');
+    expect(onDataChange.mock.lastCall[0].evaluationWeight).toBe(-3.5);
+    fireEvent.change(weight, { target: { value: '-4.5' } });
+    expect(weight).toHaveValue('-4.5');
+    expect(onDataChange.mock.lastCall[0].evaluationWeight).toBe('-4.5');
+    await user.click(screen.getByRole('button', { name: 'Positiva' }));
+    expect(weight).toHaveValue('4.5');
+    expect(onDataChange.mock.lastCall[0].evaluationWeight).toBe(4.5);
   });
 });

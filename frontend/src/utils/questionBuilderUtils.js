@@ -74,7 +74,7 @@ export const INITIAL_QUESTION_STATE = {
   annotation: '',
   questionType: 'TEXT',
   evaluationDirection: 'NEUTRAL',
-  evaluationWeight: 1,
+  evaluationWeight: null,
   maxLength: 300,
   minValue: 1,
   maxValue: 5,
@@ -123,12 +123,21 @@ export function getQuestionBuilderValidationError(data, { includeEvaluation = fa
     return 'Las preguntas de texto deben ser neutrales.';
   }
 
+  const evaluationWeight = toNumberOrNull(data.evaluationWeight);
   if (
     includeEvaluation
-    && data.evaluationDirection !== 'NEUTRAL'
-    && !isPositiveNumber(data.evaluationWeight)
+    && data.evaluationDirection === 'POSITIVE'
+    && (evaluationWeight === null || evaluationWeight < 1 || evaluationWeight > 5)
   ) {
-    return 'El peso debe ser mayor que cero.';
+    return 'El peso positivo debe estar entre 1 y 5.';
+  }
+
+  if (
+    includeEvaluation
+    && data.evaluationDirection === 'NEGATIVE'
+    && (evaluationWeight === null || evaluationWeight < -5 || evaluationWeight > -1)
+  ) {
+    return 'El peso negativo debe estar entre -5 y -1.';
   }
 
   if (
@@ -557,12 +566,6 @@ function toIntegerOrNull(value) {
 
 function isValidNumber(value) {
   return toNumberOrNull(value) !== null;
-}
-
-function isPositiveNumber(value) {
-  const number = toNumberOrNull(value);
-
-  return number !== null && number > 0;
 }
 
 function isPositiveInteger(value) {

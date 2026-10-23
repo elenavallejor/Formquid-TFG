@@ -3,8 +3,11 @@ package com.formquid.auth.controller;
 import com.formquid.auth.dto.LoginRequestDto;
 import com.formquid.auth.dto.LoginResponseDto;
 import com.formquid.auth.dto.LoginResult;
+import com.formquid.auth.dto.PasswordResetConfirmDto;
+import com.formquid.auth.dto.PasswordResetRequestDto;
 import com.formquid.auth.security.JwtCookieService;
 import com.formquid.auth.service.AuthService;
+import com.formquid.auth.service.PasswordResetService;
 
 import jakarta.validation.Valid;
 
@@ -29,6 +32,19 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtCookieService jwtCookieService;
+    private final PasswordResetService passwordResetService;
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDto request) {
+        passwordResetService.request(request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<Void> confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmDto request) {
+        passwordResetService.confirm(request);
+        return ResponseEntity.noContent().build();
+    }
 
 
     /**

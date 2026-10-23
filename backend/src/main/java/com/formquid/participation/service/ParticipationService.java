@@ -35,6 +35,7 @@ import com.formquid.question.entity.QuestionType;
 import com.formquid.question.repository.MatrixRowRepository;
 import com.formquid.question.repository.QuestionOptionRepository;
 import com.formquid.question.repository.QuestionRepository;
+import com.formquid.survey.SurveyPublicCode;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.entity.SurveyAccessMode;
 import com.formquid.survey.entity.SurveyLifecycle;
@@ -55,7 +56,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -90,7 +90,7 @@ public class ParticipationService {
         User authenticatedUser,
         String respondentTokenHash
     ) {
-        Survey survey = surveyRepository.findByPublicCode(normalizePublicCode(publicCode))
+        Survey survey = surveyRepository.findByPublicCode(SurveyPublicCode.normalize(publicCode))
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
         validateSurveyAccess(survey, request.accessPassword(), authenticatedUser);
         validateRespondent(survey.getId(), authenticatedUser, respondentTokenHash);
@@ -542,12 +542,5 @@ public class ParticipationService {
 
     private List<MatrixAnswerRequestDto> safeMatrixValues(List<MatrixAnswerRequestDto> values) {
         return values == null ? List.of() : values;
-    }
-
-    private String normalizePublicCode(String publicCode) {
-        if (publicCode == null || publicCode.isBlank()) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada");
-        }
-        return publicCode.trim().toUpperCase(Locale.ROOT);
     }
 }

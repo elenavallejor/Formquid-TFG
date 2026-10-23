@@ -15,7 +15,7 @@ import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx'
 import { Question } from '../../../components/Question/Question.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { buildBlockQuestionFromCatalog } from '../../../utils/blockBuilderUtils.js';
-import { formatDate } from '../../../utils/formatDate.js';
+import { formatDateTime } from '../../../utils/formatDate.js';
 import { QUESTION_TYPES } from '../../../utils/questionBuilderUtils.js';
 
 import '../ElementDetailPage/ElementDetailPage.css';
@@ -35,11 +35,6 @@ function formatNumber(value, maximumFractionDigits = 1) {
 
 function formatPercentage(value) {
   return `${formatNumber(value, 1)} %`;
-}
-
-function formatDateTime(value) {
-  const formatted = formatDate(value, { includeTime: true });
-  return formatted.time ? `${formatted.date}, ${formatted.time}` : formatted.date;
 }
 
 function collectQuestionSettings(contentItems = []) {
@@ -110,7 +105,7 @@ function EvaluationBadge({ score, question }) {
   if (score === null || score === undefined || !question) return null;
   return (
     <div className="question-evaluation" aria-label="Configuración de evaluación">
-      <span>Peso <strong>{formatNumber(question.evaluationWeight, 2)}</strong></span>
+      <span>Peso <strong>{question.evaluationWeight > 0 ? '+' : ''}{formatNumber(question.evaluationWeight, 2)}</strong></span>
       <span>Dirección <strong>{DIRECTION_LABELS[question.evaluationDirection] || question.evaluationDirection}</strong></span>
       <span>Índice <strong>{formatNumber(score, 1)}</strong></span>
     </div>

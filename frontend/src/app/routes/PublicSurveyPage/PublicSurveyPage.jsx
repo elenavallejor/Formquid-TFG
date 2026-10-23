@@ -19,6 +19,7 @@ import {
 } from '../../../api/surveysApi.js';
 import errorImage from '../../../assets/images/error-page-background.png';
 import happyFormImage from '../../../assets/images/happy-form-white.png';
+import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Survey } from '../../../components/Survey/Survey.jsx';
 import { SURVEY_MODES } from '../../../components/Survey/SurveyModes.js';
@@ -43,6 +44,7 @@ export function PublicSurveyPage() {
   const [survey, setSurvey] = useState(null);
   const [requiresPassword, setRequiresPassword] = useState(false);
   const [accessPassword, setAccessPassword] = useState('');
+  const [isAccessPasswordVisible, setIsAccessPasswordVisible] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -226,19 +228,24 @@ export function PublicSurveyPage() {
             </h1>
             <p>Escribe la contraseña para acceder a las preguntas.</p>
             <label htmlFor="public-survey-password">Contraseña de la encuesta</label>
-            <input
-              ref={passwordInputRef}
-              id="public-survey-password"
-              type="password"
-              value={accessPassword}
-              autoComplete="current-password"
-              aria-describedby={passwordError ? 'public-survey-password-error' : 'public-survey-password-help'}
-              aria-invalid={passwordError ? 'true' : undefined}
-              onChange={(event) => {
-                setAccessPassword(event.target.value);
-                if (passwordError) setPasswordError('');
-              }}
-            />
+            <div className="password-visibility-field">
+              <input
+                ref={passwordInputRef}
+                id="public-survey-password"
+                type={isAccessPasswordVisible ? 'text' : 'password'}
+                value={accessPassword}
+                autoComplete="current-password"
+                aria-describedby={passwordError ? 'public-survey-password-error' : 'public-survey-password-help'}
+                aria-invalid={passwordError ? 'true' : undefined}
+                onChange={(event) => {
+                  setAccessPassword(event.target.value);
+                  if (passwordError) setPasswordError('');
+                }}
+              />
+              <button type="button" className="password-visibility-toggle" aria-label={isAccessPasswordVisible ? 'Ocultar contraseña de la encuesta' : 'Mostrar contraseña de la encuesta'} aria-pressed={isAccessPasswordVisible} onClick={() => setIsAccessPasswordVisible((visible) => !visible)}>
+                <PasswordVisibilityIcon visible={isAccessPasswordVisible} />
+              </button>
+            </div>
             <p id="public-survey-password-help">Solicítala a la persona que te compartió la encuesta.</p>
             {passwordError && (
               <p id="public-survey-password-error" className="public-survey-field-error" role="alert">

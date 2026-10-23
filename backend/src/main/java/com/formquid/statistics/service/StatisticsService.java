@@ -356,7 +356,7 @@ public class StatisticsService {
             if (question == null || stat.evaluationScore() == null || question.getEvaluationWeight() == null) {
                 continue;
             }
-            double weight = question.getEvaluationWeight().doubleValue();
+            double weight = question.getEvaluationWeight().abs().doubleValue();
             weighted += stat.evaluationScore() * weight;
             totalWeight += weight;
         }

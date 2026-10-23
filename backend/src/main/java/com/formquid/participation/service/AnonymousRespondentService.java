@@ -1,5 +1,6 @@
 package com.formquid.participation.service;
 
+import com.formquid.survey.SurveyPublicCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,6 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
-import java.util.Locale;
 
 @Service
 public class AnonymousRespondentService {
@@ -51,7 +51,7 @@ public class AnonymousRespondentService {
 
     private String hash(String token, String publicCode) {
         try {
-            String scopedToken = publicCode.trim().toUpperCase(Locale.ROOT) + ':' + token;
+            String scopedToken = SurveyPublicCode.normalize(publicCode) + ':' + token;
             byte[] digest = MessageDigest.getInstance("SHA-256")
                 .digest(scopedToken.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);

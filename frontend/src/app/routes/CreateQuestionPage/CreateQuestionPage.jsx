@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdClose, MdSave } from 'react-icons/md';
+import { MdSave } from 'react-icons/md';
 
 import { createCatalogQuestion } from '../../../api/catalogApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
+import { UnsavedElementGuard } from '../../../components/ConfirmModal/UnsavedElementGuard.jsx';
+import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBuilder.jsx';
 import { buildCreateFixedQuestionPayload, getQuestionBuilderValidationError, INITIAL_QUESTION_STATE } from '../../../utils/questionBuilderUtils.js';
 import { useAuth } from '../../../context/useAuth.js';
 
+import '../CreateBlockPage/CreateBlockPage.css';
 import './CreateQuestionPage.css';
 
 /**
@@ -21,6 +24,8 @@ export function CreateQuestionPage() {
 
   const [formData, setFormData] = useState(INITIAL_QUESTION_STATE);
   const [category, setCategory] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -36,11 +41,18 @@ export function CreateQuestionPage() {
       return;
     }
 
+    if (!category) {
+      setCategoryError('Selecciona una categoría para la pregunta fija.');
+      document.getElementById('question-category')?.focus();
+      return;
+    }
+
     try {
       setIsSaving(true);
       const payload = buildCreateFixedQuestionPayload(formData);
-      if (category) payload.category = category;
+      payload.category = category;
       await createCatalogQuestion(payload);
+      setHasUnsavedChanges(false);
       setSuccessMsg('Pregunta fija creada con éxito. Redirigiendo...');
 
       window.setTimeout(() => {
@@ -79,17 +91,7 @@ export function CreateQuestionPage() {
           </button>
         </header>
         {errorMsg && (
-          <div className="account-error-banner" role="alert">
-            <span>{errorMsg}</span>
-            <button
-              type="button"
-              className="error-banner-close-btn"
-              aria-label="Cerrar mensaje de error"
-              onClick={() => setErrorMsg('')}
-            >
-              <MdClose aria-hidden="true" />
-            </button>
-          </div>
+          <div className="create-element-message"><ErrorMessage message={errorMsg} onClose={() => setErrorMsg('')} /></div>
         )}
 
         {successMsg && (
@@ -103,10 +105,11 @@ export function CreateQuestionPage() {
             <Skeleton variant="list" count={3} hasActions={false} />
           </div>
         ) : (
-          <QuestionBuilder data={formData} onChange={setFormData} isCatalog
-            afterPrimaryField={<CategorySelect id="question-category" value={category} onChange={setCategory} placeholder="Selecciona la categoría de tu pregunta fija" />} />
+          <QuestionBuilder data={formData} onChange={(nextData) => { setFormData(nextData); setHasUnsavedChanges(true); }} isCatalog
+            afterPrimaryField={<CategorySelect id="question-category" value={category} onChange={(value) => { setCategory(value); setCategoryError(''); setHasUnsavedChanges(true); }} placeholder="Selecciona la categoría de tu pregunta fija" required validationError={categoryError} />} />
         )}
       </div>
+      <UnsavedElementGuard hasChanges={hasUnsavedChanges} elementName="pregunta fija" />
     </main>
   );
 }

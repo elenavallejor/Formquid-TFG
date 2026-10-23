@@ -1,6 +1,7 @@
 package com.formquid.question.service;
 
 import com.formquid.block.entity.BlockScope;
+import com.formquid.common.CatalogPagination;
 import com.formquid.common.Category;
 import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.common.dto.CatalogSearchField;
@@ -27,9 +28,7 @@ import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,7 +67,7 @@ public class QuestionService {
         Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
-        Pageable pageable = catalogPageable(page, size, sortOrder);
+        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder);
         Page<FixedQuestionSummaryDto> questions = questionRepository.findCatalogSummaries(
             QuestionScope.CATALOG_FIXED,
             user.getId(),
@@ -85,7 +84,7 @@ public class QuestionService {
 
     @Transactional(readOnly = true)
     public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size, Category category) {
-        Pageable pageable = builderPageable(page, size);
+        Pageable pageable = CatalogPagination.builderPageable(page, size);
         Page<QuestionResponseDto> questions = questionRepository
             .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, category, pageable)
             .map(this::toResponse);
@@ -321,9 +320,17 @@ public class QuestionService {
         if (dto.evaluationDirection() == EvaluationDirection.NEUTRAL && dto.evaluationWeight() != null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas neutrales no deben tener peso estadístico");
         }
-        if (dto.evaluationDirection() != EvaluationDirection.NEUTRAL
-            && (dto.evaluationWeight() == null || dto.evaluationWeight().compareTo(BigDecimal.ZERO) <= 0)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas evaluables necesitan peso mayor que cero");
+        if (dto.evaluationDirection() == EvaluationDirection.POSITIVE
+            && (dto.evaluationWeight() == null
+                || dto.evaluationWeight().compareTo(BigDecimal.ONE) < 0
+                || dto.evaluationWeight().compareTo(BigDecimal.valueOf(5)) > 0)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas positivas necesitan un peso entre 1 y 5");
+        }
+        if (dto.evaluationDirection() == EvaluationDirection.NEGATIVE
+            && (dto.evaluationWeight() == null
+                || dto.evaluationWeight().compareTo(BigDecimal.valueOf(-5)) < 0
+                || dto.evaluationWeight().compareTo(BigDecimal.ONE.negate()) > 0)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas negativas necesitan un peso entre -5 y -1");
         }
         if ((dto.questionType() == QuestionType.TEXT) && dto.evaluationDirection() != EvaluationDirection.NEUTRAL) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Las preguntas de texto deben ser neutrales");
@@ -812,28 +819,6 @@ public class QuestionService {
 
     private List<MatrixRowDto> safeRows(List<MatrixRowDto> rows) {
         return rows == null ? List.of() : rows.stream().filter(Objects::nonNull).toList();
-    }
-
-    private Pageable catalogPageable(int page, int size, CatalogSortOrder sortOrder) {
-        validatePage(page, size);
-        Sort.Direction direction = sortOrder == CatalogSortOrder.OLDEST
-            ? Sort.Direction.ASC
-            : Sort.Direction.DESC;
-        return PageRequest.of(page, size, Sort.by(direction, "updatedAt").and(Sort.by(direction, "id")));
-    }
-
-    private Pageable builderPageable(int page, int size) {
-        validatePage(page, size);
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
-    }
-
-    private void validatePage(int page, int size) {
-        if (page < 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La página no puede ser negativa");
-        }
-        if (size < 1 || size > 100) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "El tamaño de página debe estar entre 1 y 100");
-        }
     }
 
     private String normalizeSearch(String search) {

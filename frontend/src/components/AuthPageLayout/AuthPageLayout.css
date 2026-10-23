@@ -3,7 +3,7 @@
   padding: 72px 16px;
   background-image:
     linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4)),
-    url('../../../assets/images/fondo.jpg');
+    url('../../assets/images/fondo.jpg');
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -35,6 +35,8 @@
   top: -164px;
   left: 50%;
   z-index: 1;
+  height: 164px;
+  overflow: hidden;
   transform: translateX(-50%);
   pointer-events: none;
   user-select: none;

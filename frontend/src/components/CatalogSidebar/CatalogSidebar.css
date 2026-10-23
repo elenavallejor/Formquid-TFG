@@ -49,8 +49,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 36px;
   min-height: 44px;
-  padding: 10px 14px 10px 12px;
+  overflow: hidden;
+  padding: 10px 6px;
   border: 1px solid color-mix(in srgb, var(--color-surface) 35%, transparent);
   border-left: none;
   border-radius: 0 8px 8px 0;
@@ -59,9 +61,17 @@
   box-shadow: var(--card-shadow);
   cursor: pointer;
   opacity: 1;
+  white-space: nowrap;
   transform: translateX(0);
   visibility: visible;
-  transition: transform 0.3s ease, opacity 0.25s ease, background-color 0.2s ease, visibility 0s;
+  transition: width 0.3s ease, transform 0.3s ease, opacity 0.25s ease, background-color 0.2s ease, visibility 0s;
+}
+
+.catalog-toggle:hover:not(.catalog-toggle-hidden),
+.catalog-toggle:focus-visible:not(.catalog-toggle-hidden) {
+  width: 176px;
+  padding-right: 14px;
+  padding-left: 12px;
 }
 
 .catalog-toggle.catalog-toggle-hidden {
@@ -88,6 +98,7 @@
 }
 
 .catalog-toggle span {
+  flex: none;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -209,10 +220,10 @@
 
 .catalog-search input {
   width: 100%;
-  min-height: 40px;
+  height: 44px;
   box-sizing: border-box;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
@@ -226,6 +237,23 @@
 .catalog-search input::placeholder {
   color: var(--color-text-muted);
   opacity: 1;
+}
+
+.catalog-select .custom-dropdown-trigger {
+  height: 44px;
+  min-height: 44px;
+  padding: 8px 32px 8px 12px;
+  font-family: inherit;
+  font-size: 16.25px;
+  font-weight: 400;
+}
+
+.catalog-select .catalog-filter-placeholder .custom-dropdown-trigger {
+  color: var(--color-text-muted);
+}
+
+.catalog-select .custom-dropdown-trigger:hover:not(:disabled) {
+  background-color: var(--color-surface);
 }
 
 .catalog-search input:focus-visible {
@@ -427,6 +455,20 @@
   font-size: 16.25px;
   line-height: 1.5;
   text-align: center;
+}
+
+.catalog-empty-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.catalog-empty-category svg {
+  flex: 0 0 auto;
+  font-size: 19px;
 }
 
 .catalog-error {

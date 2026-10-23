@@ -1,14 +1,17 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdClose, MdSave } from 'react-icons/md';
+import { MdSave } from 'react-icons/md';
 
 import { createCatalogBlock } from '../../../api/catalogApi.js';
 import { BlockBuilder } from '../../../components/BlockBuilder/BlockBuilder.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
+import { UnsavedElementGuard } from '../../../components/ConfirmModal/UnsavedElementGuard.jsx';
+import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/useAuth.js';
+import { containsCatalogItem } from '../../../utils/catalogCategoryUtils.js';
 import { INITIAL_BLOCK_STATE, buildBlockQuestionFromCatalog, buildCreateCatalogBlockPayload, getBlockItems, getBlockBuilderValidationError } from "../../../utils/blockBuilderUtils.js";
 import './CreateBlockPage.css';
 
@@ -22,12 +25,20 @@ export function CreateBlockPage() {
 
   const [formData, setFormData] = useState(INITIAL_BLOCK_STATE);
   const [category, setCategory] = useState('');
+  const [categoryDetails, setCategoryDetails] = useState(null);
+  const [categoryError, setCategoryError] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
   function handleAddQuestionFromSidebar(question, targetIndex) {
+    if (!category || question.category !== category) {
+      setErrorMsg('Solo puedes añadir preguntas del catálogo de la categoría seleccionada.');
+      return false;
+    }
     setErrorMsg("");
+    setHasUnsavedChanges(true);
     const newQuestion = buildBlockQuestionFromCatalog(question);
 
     setFormData((current) => {
@@ -38,6 +49,19 @@ export function CreateBlockPage() {
       items.splice(insertionIndex, 0, newQuestion);
       return { ...current, items };
     });
+    return true;
+  }
+
+  function handleCategoryChange(value, details) {
+    if (value !== category && containsCatalogItem(getBlockItems(formData))) {
+      setErrorMsg('Quita primero las preguntas añadidas del catálogo para cambiar la categoría del bloque.');
+      return;
+    }
+    setCategory(value);
+    setCategoryDetails(details);
+    setCategoryError('');
+    setErrorMsg('');
+    setHasUnsavedChanges(true);
   }
 
   async function handleSaveBlock() {
@@ -51,14 +75,21 @@ export function CreateBlockPage() {
       return;
     }
 
+    if (!category) {
+      setCategoryError('Selecciona una categoría para el bloque.');
+      document.getElementById('block-category')?.focus();
+      return;
+    }
+
     if (saveLockRef.current) return;
     saveLockRef.current = true;
 
     try {
       setIsSaving(true);
       const payload = buildCreateCatalogBlockPayload(formData);
-      if (category) payload.category = category;
+      payload.category = category;
       await createCatalogBlock(payload);
+      setHasUnsavedChanges(false);
       setSuccessMsg('Bloque creado con éxito. Redirigiendo...');
 
       window.setTimeout(() => {
@@ -78,6 +109,8 @@ export function CreateBlockPage() {
         <CatalogSidebar
           showQuestions
           showBlocks={false}
+          categoryFilter={category}
+          categoryDetails={categoryDetails}
           defaultOpen={false}
           onAddQuestion={handleAddQuestionFromSidebar}
         />
@@ -111,18 +144,7 @@ export function CreateBlockPage() {
             </button>
           </header>
           {errorMsg && (
-            <div className="account-error-banner" role="alert">
-              <span>{errorMsg}</span>
-
-              <button
-                type="button"
-                className="error-banner-close-btn"
-                aria-label="Cerrar mensaje de error"
-                onClick={() => setErrorMsg("")}
-              >
-                <MdClose aria-hidden="true" />
-              </button>
-            </div>
+            <div className="create-element-message"><ErrorMessage message={errorMsg} onClose={() => setErrorMsg('')} /></div>
           )}
 
           {successMsg && (
@@ -138,13 +160,16 @@ export function CreateBlockPage() {
           ) : (
             <BlockBuilder
               data={formData}
-              onChange={setFormData}
-              afterPrimaryField={<CategorySelect id="block-category" value={category} onChange={setCategory} placeholder="Selecciona la categoría de tu bloque" />}
+              onChange={(nextData) => { setFormData(nextData); setHasUnsavedChanges(true); }}
+              categoryFilter={category}
+              categoryDetails={categoryDetails}
+              afterPrimaryField={<CategorySelect id="block-category" value={category} onChange={handleCategoryChange} placeholder="Selecciona la categoría de tu bloque" required validationError={categoryError} />}
               onDropQuestionFromSidebar={handleAddQuestionFromSidebar}
             />
           )}
         </div>
       </main>
+      <UnsavedElementGuard hasChanges={hasUnsavedChanges} elementName="bloque" />
     </div>
   );
 }

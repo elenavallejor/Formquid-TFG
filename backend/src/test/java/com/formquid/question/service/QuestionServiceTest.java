@@ -61,6 +61,39 @@ class QuestionServiceTest {
     }
 
     @Test
+    void rejectsEvaluationWeightOutsideOneToFiveRange() {
+        QuestionDraftDto valid = evaluableBooleanQuestion();
+        for (String weight : List.of("0.5", "5.5")) {
+            QuestionDraftDto invalid = new QuestionDraftDto(
+                valid.statement(), valid.annotation(), valid.questionType(), valid.evaluationDirection(),
+                new BigDecimal(weight), valid.settings(), valid.options(), valid.matrixRows()
+            );
+            assertThatThrownBy(() -> questionService.validateQuestionDraft(invalid))
+                .hasMessage("Las preguntas positivas necesitan un peso entre 1 y 5");
+        }
+    }
+
+    @Test
+    void acceptsNegativeWeightAndRejectsWrongSignOrMagnitude() {
+        QuestionDraftDto positive = evaluableBooleanQuestion();
+        QuestionDraftDto negative = new QuestionDraftDto(
+            positive.statement(), positive.annotation(), positive.questionType(), EvaluationDirection.NEGATIVE,
+            new BigDecimal("-3.5"), positive.settings(), positive.options(), positive.matrixRows()
+        );
+
+        questionService.validateQuestionDraft(negative);
+
+        for (String weight : List.of("3.5", "-0.5", "-5.5")) {
+            QuestionDraftDto invalid = new QuestionDraftDto(
+                negative.statement(), negative.annotation(), negative.questionType(), negative.evaluationDirection(),
+                new BigDecimal(weight), negative.settings(), negative.options(), negative.matrixRows()
+            );
+            assertThatThrownBy(() -> questionService.validateQuestionDraft(invalid))
+                .hasMessage("Las preguntas negativas necesitan un peso entre -5 y -1");
+        }
+    }
+
+    @Test
     void rejectsNonConsecutiveOptionPositions() {
         List<QuestionOptionDto> options = List.of(
             new QuestionOptionDto(null, "Uno", 1, false, null),

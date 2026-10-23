@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { MdOutlineVisibility, MdOutlineVisibilityOff } from 'react-icons/md';
 import { useModalFocus } from '../../hooks/useModalFocus.js';
 import { ErrorMessage } from '../ErrorMessage/ErrorMessage.jsx';
+import { PasswordVisibilityIcon } from '../PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import './PasswordConfirmModal.css';
 
 /**
@@ -98,9 +98,10 @@ function PasswordConfirmDialog({ onClose, onConfirm, isProcessing, errorMessage,
                 className="btn-pwd-modal-eye"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
+                aria-pressed={showPassword}
                 disabled={isProcessing}
               >
-                {showPassword ? <MdOutlineVisibilityOff aria-hidden="true" /> : <MdOutlineVisibility aria-hidden="true" />}
+                <PasswordVisibilityIcon visible={showPassword} />
               </button>
             </div>
           </div>

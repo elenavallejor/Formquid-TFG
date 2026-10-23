@@ -119,15 +119,13 @@
   white-space: nowrap;
 }
 
-.btn-promote,
-.btn-demote {
+.btn-promote {
   background-color: var(--color-primary);
   color: var(--color-text-on-dark);
   border: none;
 }
 
-.btn-promote:hover,
-.btn-demote:hover {
+.btn-promote:hover {
   background-color: var(--color-primary-hover);
 }
 

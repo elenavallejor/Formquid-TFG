@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md';
-import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 import { useAuth } from '../../context/useAuth.js';
+import { PasswordVisibilityIcon } from '../PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { createLoginCredentials, hasLoginFormErrors, validateLoginForm } from '../../utils/loginFormValidation.js';
 
 import './LoginForm.css';
@@ -127,7 +127,7 @@ export function LoginForm() {
             aria-pressed={isPasswordVisible}
             onClick={() => setIsPasswordVisible((current) => !current)}
           >
-            {isPasswordVisible ? <LuEyeClosed aria-hidden="true" /> : <LuEye aria-hidden="true" />}
+            <PasswordVisibilityIcon visible={isPasswordVisible} />
           </button>
         </div>
 

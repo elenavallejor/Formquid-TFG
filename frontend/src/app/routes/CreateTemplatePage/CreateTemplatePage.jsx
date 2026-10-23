@@ -6,10 +6,12 @@ import { createCatalogTemplate } from '../../../api/catalogApi.js';
 import { CatalogSidebar } from '../../../components/CatalogSidebar/CatalogSidebar.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
+import { UnsavedElementGuard } from '../../../components/ConfirmModal/UnsavedElementGuard.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
 import { useAuth } from '../../../context/useAuth.js';
+import { containsCatalogItem } from '../../../utils/catalogCategoryUtils.js';
 import {
   INITIAL_TEMPLATE_STATE,
   buildCreateCatalogTemplatePayload,
@@ -19,7 +21,6 @@ import {
 } from '../../../utils/templateBuilderUtils.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
-import './CreateTemplatePage.css';
 
 export function CreateTemplatePage() {
   const navigate = useNavigate();
@@ -27,18 +28,35 @@ export function CreateTemplatePage() {
   const saveLockRef = useRef(false);
   const [formData, setFormData] = useState(INITIAL_TEMPLATE_STATE);
   const [category, setCategory] = useState('');
+  const [categoryDetails, setCategoryDetails] = useState(null);
+  const [categoryError, setCategoryError] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   function addItem(item, targetIndex) {
     setErrorMsg('');
+    setHasUnsavedChanges(true);
     setFormData((current) => {
       const items = [...current.items];
       const insertionIndex = Number.isInteger(targetIndex) ? Math.max(0, Math.min(targetIndex, items.length)) : items.length;
       items.splice(insertionIndex, 0, item);
       return { ...current, items };
     });
+    return true;
+  }
+
+  function handleCategoryChange(value, details) {
+    if (value !== category && containsCatalogItem(formData.items)) {
+      setErrorMsg('Quita primero los elementos añadidos del catálogo para cambiar la categoría de la plantilla.');
+      return;
+    }
+    setCategory(value);
+    setCategoryDetails(details);
+    setCategoryError('');
+    setErrorMsg('');
+    setHasUnsavedChanges(true);
   }
 
   async function handleSaveTemplate() {
@@ -49,14 +67,20 @@ export function CreateTemplatePage() {
       setErrorMsg(validationError);
       return;
     }
+    if (!category) {
+      setCategoryError('Selecciona una categoría para la plantilla.');
+      document.getElementById('template-category')?.focus();
+      return;
+    }
     if (saveLockRef.current) return;
     saveLockRef.current = true;
 
     try {
       setIsSaving(true);
       const payload = buildCreateCatalogTemplatePayload(formData);
-      if (category) payload.category = category;
+      payload.category = category;
       await createCatalogTemplate(payload);
+      setHasUnsavedChanges(false);
       setSuccessMsg('Plantilla creada con éxito. Redirigiendo...');
       window.setTimeout(() => navigate('/catalogo/plantillas'), 1200);
     } catch (error) {
@@ -67,13 +91,25 @@ export function CreateTemplatePage() {
     }
   }
 
-  const addQuestion = (question, index) => addItem(buildTemplateQuestionFromCatalog(question), index);
+  function addQuestion(question, index) {
+    if (!category || question.category !== category) {
+      setErrorMsg('Solo puedes añadir preguntas del catálogo de la categoría seleccionada.');
+      return false;
+    }
+    return addItem(buildTemplateQuestionFromCatalog(question), index);
+  }
 
-  const addBlock = (block, index) => addItem(buildTemplateBlockFromCatalog(block), index);
+  function addBlock(block, index) {
+    if (!category || block.category !== category) {
+      setErrorMsg('Solo puedes añadir bloques del catálogo de la categoría seleccionada.');
+      return false;
+    }
+    return addItem(buildTemplateBlockFromCatalog(block), index);
+  }
 
   return (
     <div className="create-block-layout">
-      {!isInitializing && <CatalogSidebar showQuestions showBlocks defaultOpen={false} onAddQuestion={addQuestion} onAddBlock={addBlock} />}
+      {!isInitializing && <CatalogSidebar showQuestions showBlocks categoryFilter={category} categoryDetails={categoryDetails} defaultOpen={false} onAddQuestion={addQuestion} onAddBlock={addBlock} />}
       <main className="create-block-main">
         <div className="create-block-container">
           <Breadcrumbs items={[
@@ -85,11 +121,12 @@ export function CreateTemplatePage() {
             <div><h1>CREA TU PLANTILLA</h1><p className="page-main-subtitle">Crea y organiza los bloques y preguntas de tu nueva plantilla.</p></div>
             <button type="button" className="btn-create-submit" disabled={isSaving || isInitializing} onClick={handleSaveTemplate}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : 'Guardar plantilla'}</span></button>
           </header>
-          {errorMsg && <div className="create-template-message"><ErrorMessage message={errorMsg} onClose={() => setErrorMsg('')} /></div>}
+          {errorMsg && <div className="create-element-message"><ErrorMessage message={errorMsg} onClose={() => setErrorMsg('')} /></div>}
           {successMsg && <div className="account-success-banner" role="status"><span>{successMsg}</span></div>}
-          {isInitializing ? <div className="builder-skeleton-wrapper"><Skeleton variant="list" count={3} hasActions={false} /></div> : <TemplateBuilder data={formData} onChange={setFormData} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} afterPrimaryField={<CategorySelect id="template-category" value={category} onChange={setCategory} placeholder="Selecciona la categoría de tu plantilla" />} />}
+          {isInitializing ? <div className="builder-skeleton-wrapper"><Skeleton variant="list" count={3} hasActions={false} /></div> : <TemplateBuilder data={formData} onChange={(nextData) => { setFormData(nextData); setHasUnsavedChanges(true); }} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} categoryFilter={category} categoryDetails={categoryDetails} afterPrimaryField={<CategorySelect id="template-category" value={category} onChange={handleCategoryChange} placeholder="Selecciona la categoría de tu plantilla" required validationError={categoryError} />} />}
         </div>
       </main>
+      <UnsavedElementGuard hasChanges={hasUnsavedChanges} elementName="plantilla" />
     </div>
   );
 }

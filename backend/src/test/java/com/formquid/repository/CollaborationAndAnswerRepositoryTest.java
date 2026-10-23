@@ -182,6 +182,43 @@ class CollaborationAndAnswerRepositoryTest {
             .containsExactlyInAnyOrder(collaboratingSurvey.getId(), ownedSurvey.getId())
             .doesNotContain(emptyOwnedSurvey.getId(), unrelatedSurvey.getId());
         assertThat(page.getContent()).allSatisfy(summary -> assertThat(summary.responses()).isEqualTo(1));
+
+        var newestPage = surveys.findResultSummaries(
+            collaborator.getId(), false, "", true, true, null,
+            PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "updatedAt", "id"))
+        );
+        var oldestPage = surveys.findResultSummaries(
+            collaborator.getId(), false, "", true, true, null,
+            PageRequest.of(0, 1, Sort.by(Sort.Direction.ASC, "updatedAt", "id"))
+        );
+        assertThat(newestPage.getTotalElements()).isEqualTo(2);
+        assertThat(oldestPage.getTotalElements()).isEqualTo(2);
+        assertThat(newestPage.getContent()).hasSize(1);
+        assertThat(oldestPage.getContent()).hasSize(1);
+    }
+
+    @Test
+    void deletingOpenSurvey_removesItsParticipationsAndContent() {
+        User owner = persistUser("delete-open-survey@example.com");
+        Survey survey = persistSurvey(owner, "DELETEOPEN01");
+        Question question = persistQuestion(survey, 1, QuestionType.TEXT, "Pregunta de prueba");
+        Participation participation = persist(Participation.builder()
+            .survey(survey).respondentTokenHash("h".repeat(64)).build());
+        entityManager.flush();
+        Answer answer = persist(Answer.builder()
+            .participation(participation).question(question).textValue("Respuesta").build());
+        entityManager.flush();
+        entityManager.clear();
+
+        participations.deleteBySurveyId(survey.getId());
+        surveys.deleteSurveyById(survey.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(surveys.existsById(survey.getId())).isFalse();
+        assertThat(participations.existsById(participation.getId())).isFalse();
+        assertThat(answers.existsById(answer.getId())).isFalse();
+        assertThat(entityManager.find(Question.class, question.getId())).isNull();
     }
 
     private Question persistQuestion(Survey survey, int position, QuestionType type, String statement) {

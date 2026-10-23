@@ -15,17 +15,6 @@
   width: min(1500px, 100%);
 }
 
-.edit-survey-loading {
-  min-height: calc(100vh - 70px);
-  padding: 48px 24px;
-  background: var(--color-background);
-}
-
-.edit-survey-loading > div {
-  width: min(1100px, 100%);
-  margin: 0 auto;
-}
-
 .edit-survey-header {
   display: flex;
   align-items: flex-end;
@@ -48,6 +37,17 @@
   color: var(--color-text-muted);
   font-size: 16.25px;
   line-height: 1.5;
+}
+
+.edit-survey-access-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.edit-survey-access-notes .create-survey-access-description {
+  margin: 0;
 }
 
 .edit-survey-header-actions {
@@ -740,28 +740,18 @@
   background: var(--color-error);
 }
 
-.edit-survey-lifecycle-actions {
+.edit-survey-delete-card {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.edit-survey-lifecycle-actions button {
-  padding: 9px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 7px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.edit-survey-lifecycle-actions button.active {
-  border-color: var(--color-primary);
-  background: var(--color-accent-surface);
-  color: var(--color-primary);
-  cursor: default;
+.edit-survey-delete-card h2 {
+  margin: 0 0 7px;
+  color: var(--color-error);
+  font-size: 17.5px;
+  font-weight: 800;
 }
 
 @media only screen and (max-width: 850px) {
@@ -793,7 +783,8 @@
   }
 
   .edit-survey-header,
-  .edit-survey-lifecycle-card {
+  .edit-survey-lifecycle-card,
+  .edit-survey-delete-card {
     align-items: stretch;
     flex-direction: column;
   }
@@ -825,15 +816,6 @@
     min-width: 0;
     flex: 1 1 150px;
     padding-inline: 2px;
-  }
-
-  .edit-survey-lifecycle-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .edit-survey-lifecycle-actions .edit-survey-publish-button {
-    width: 100%;
   }
 
   .edit-survey-panel-card {

@@ -56,7 +56,8 @@ import java.util.List;
         )
         and (
             (evaluation_direction = 'NEUTRAL' and evaluation_weight is null)
-            or (evaluation_direction in ('POSITIVE', 'NEGATIVE') and evaluation_weight > 0)
+            or (evaluation_direction = 'POSITIVE' and evaluation_weight > 0)
+            or (evaluation_direction = 'NEGATIVE' and evaluation_weight < 0)
         )
     """),
     uniqueConstraints = @UniqueConstraint(name = "uk_questions_parent_item", columnNames = "parent_item_id"),
