@@ -2,8 +2,7 @@ package com.formquid.common;
 
 /** Categorías iniciales en español; las nuevas categorías se guardan en la base de datos. */
 public enum InitialCategory {
-    ORDENADOR_SOBREMESA,
-    PORTATIL,
+    ORDENADORES,
     TABLETA,
     TELEFONO_INTELIGENTE,
     GAFAS_INTELIGENTES,
@@ -15,7 +14,6 @@ public enum InitialCategory {
     ROBOTICA_EDUCATIVA,
     IMPRESION_3D,
     INTELIGENCIA_ARTIFICIAL,
-    IA_GENERATIVA,
     ASISTENTES_VOZ,
     REALIDAD_VIRTUAL,
     REALIDAD_AUMENTADA,

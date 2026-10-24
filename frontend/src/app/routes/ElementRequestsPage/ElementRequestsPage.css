@@ -1,7 +1,7 @@
 .element-requests-page {
   width: 100%;
   min-height: calc(100vh - 70px);
-  padding: 32px 24px;
+  padding: 32px var(--page-gutter);
   background: var(--color-background);
   box-sizing: border-box;
 }
@@ -20,6 +20,7 @@
 
 .element-requests-page-header p {
   margin: 6px 0 28px;
+  max-width: 70ch;
   color: var(--color-text-muted);
   font-size: 17.5px;
 }
@@ -27,22 +28,22 @@
 .element-requests-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .element-request-card {
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--color-surface);
   box-shadow: var(--card-shadow);
 }
 
 .element-request-card-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 26px;
   background: var(--color-primary);
   color: var(--color-text-on-dark);
 }
@@ -59,43 +60,79 @@
   font-size: 26.25px;
 }
 
-.element-request-card-header h2,
-.element-request-card-title {
-  margin: 0;
-  font-size: 21.25px;
-  font-weight: 800;
+.element-request-card-heading {
+  min-width: 0;
+  flex: 1;
 }
 
-.element-request-card-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.element-request-card-type {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.element-request-card-heading h2 {
+  margin: 0;
+  font-size: 22.5px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.element-request-card-toggle {
+  display: inline-flex;
+  min-height: 38px;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-on-dark);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.element-request-card-toggle:hover {
+  background: rgb(255 255 255 / 15%);
+}
+
+.element-request-card-toggle:focus-visible {
+  outline: 2px solid var(--color-text-on-dark);
+  outline-offset: 2px;
+}
+
+.element-request-card-toggle svg {
+  font-size: 21px;
 }
 
 .element-request-card-content {
-  padding: 22px;
+  padding: 0 26px 26px;
 }
 
-.element-request-card-content > h3 {
+.element-request-card-content[hidden] {
+  display: none;
+}
+
+.element-request-card-summary {
+  padding: 26px;
+}
+
+.element-request-applicant {
   margin: 0 0 16px;
   color: var(--color-header);
-  font-size: 20px;
-  text-transform: uppercase;
-}
-
-.element-request-section-label {
-  margin: 0 0 9px;
-  color: var(--color-text-muted);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 21.25px;
 }
 
 .element-request-user-data {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -103,10 +140,12 @@
 
 .element-request-user-data li {
   display: flex;
-  align-items: center;
-  gap: 7px;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 9px;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 16.25px;
+  overflow-wrap: anywhere;
 }
 
 .element-request-user-data svg {
@@ -115,20 +154,33 @@
 }
 
 .element-request-message {
-  margin-top: 20px;
+  padding: 20px 24px;
+  border-radius: 10px;
+  background: var(--color-accent-surface);
 }
 
-.element-request-message > p:last-child {
+.element-request-message h3 {
+  margin: 0 0 10px;
+  color: var(--color-primary);
+  font-size: 16.25px;
+  font-weight: 800;
+}
+
+.element-request-message p {
   margin: 0;
+  max-width: 76ch;
   color: var(--color-text);
-  line-height: 1.55;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
 .element-request-structure {
-  margin-top: 22px;
+  margin-top: 26px;
   border: 1px solid var(--color-border);
-  border-radius: 9px;
+  border-radius: 10px;
 }
 
 .element-request-structure-header {
@@ -140,25 +192,16 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.element-request-structure-header h4 {
+.element-request-structure-header h3 {
   margin: 0;
   color: var(--color-primary);
   font-size: 17.5px;
   font-weight: 800;
 }
 
-.element-request-structure-header button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 7px;
-  border: 0;
-  background: transparent;
-  color: var(--color-primary);
-  font: inherit;
-  font-size: 16.25px;
-  font-weight: 700;
-  cursor: pointer;
+.element-request-actions button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .element-request-structure-content {
@@ -218,7 +261,9 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
 }
 
 .element-request-actions button {
@@ -230,10 +275,8 @@
   padding: 12px 18px;
   border-radius: 10px;
   font: inherit;
-  font-size: 17.5px;
+  font-size: 16.25px;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -305,18 +348,38 @@
 
 @media only screen and (max-width: 720px) {
   .element-requests-page {
-    padding: 24px 16px;
+    padding: 24px var(--page-gutter);
   }
 
   .element-request-card-header {
-    align-items: flex-start;
     flex-wrap: wrap;
+    padding: 18px;
   }
 
-  .element-request-card-title {
-    width: 100%;
-    padding-left: 46px;
-    white-space: normal;
+  .element-request-card-toggle {
+    width: calc(100% - 50px);
+    justify-content: flex-start;
+    margin-left: 50px;
+  }
+
+  .element-request-card-content {
+    padding: 0 18px 18px;
+  }
+
+  .element-request-card-summary {
+    padding: 18px;
+  }
+
+  .element-request-user-data {
+    grid-template-columns: 1fr;
+  }
+
+  .element-request-message {
+    padding: 16px 18px;
+  }
+
+  .element-request-message p {
+    font-size: 18px;
   }
 
   .element-request-structure-header {

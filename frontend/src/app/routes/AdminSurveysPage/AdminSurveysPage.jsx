@@ -22,8 +22,8 @@ export function AdminSurveysPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [lifecycle, setLifecycle] = useState('ALL');
-  const [visibility, setVisibility] = useState('ALL');
+  const [lifecycles, setLifecycles] = useState([]);
+  const [visibilities, setVisibilities] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [totalItems, setTotalItems] = useState(0);
@@ -48,8 +48,8 @@ export function AdminSurveysPage() {
 
     getAdminSurveys({
       search: debouncedSearch,
-      lifecycleStatus: lifecycle,
-      visibility,
+      lifecycleStatuses: lifecycles,
+      visibilities,
       page: currentPage,
       size: itemsPerPage,
     })
@@ -71,7 +71,7 @@ export function AdminSurveysPage() {
       });
 
     return () => { isActive = false; };
-  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, visibility]);
+  }, [currentPage, debouncedSearch, itemsPerPage, lifecycles, visibilities]);
 
   return (
     <main className="admin-surveys-page">
@@ -96,30 +96,34 @@ export function AdminSurveysPage() {
           filterChoices={[
             {
               label: 'Estado de la encuesta',
+              control: 'multiselect',
+              allLabel: 'Todos los estados',
+              selectedCountLabel: 'estados seleccionados',
               options: [
-                { value: 'ALL', label: 'Todos los estados' },
                 { value: 'DRAFT', label: 'Borradores' },
                 { value: 'OPEN', label: 'Abiertas' },
                 { value: 'CLOSED', label: 'Cerradas' },
               ],
-              value: lifecycle,
-              resetValue: 'ALL',
+              value: lifecycles,
+              resetValue: [],
             },
             {
               label: 'Visibilidad',
+              control: 'multiselect',
+              allLabel: 'Todas las visibilidades',
+              selectedCountLabel: 'visibilidades seleccionadas',
               options: [
-                { value: 'ALL', label: 'Todas las visibilidades' },
                 { value: 'LISTED', label: 'Listadas' },
                 { value: 'UNLISTED', label: 'Ocultas' },
               ],
-              value: visibility,
-              resetValue: 'ALL',
+              value: visibilities,
+              resetValue: [],
             },
           ]}
           onFilterChange={(_values, _text, selectedChoices) => {
-            if (selectedChoices[0] !== lifecycle || selectedChoices[1] !== visibility || currentPage !== 0) startLoading();
-            setLifecycle(selectedChoices[0]);
-            setVisibility(selectedChoices[1]);
+            if (currentPage !== 0 || selectedChoices[0].join() !== lifecycles.join() || selectedChoices[1].join() !== visibilities.join()) startLoading();
+            setLifecycles(selectedChoices[0]);
+            setVisibilities(selectedChoices[1]);
             setCurrentPage(0);
           }}
           onFilterReset={() => {

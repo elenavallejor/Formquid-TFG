@@ -1,6 +1,6 @@
 .catalog-detail-page {
   width: 100%;
-  padding: 20px 40px 60px;
+  padding: 20px var(--page-gutter) 60px;
   background: var(--color-background);
 }
 
@@ -307,7 +307,7 @@
 
 @media only screen and (max-width: 768px) {
   .catalog-detail-page {
-    padding: 16px 12px 40px;
+    padding: 16px var(--page-gutter) 40px;
   }
 
   .catalog-detail-title-bar {

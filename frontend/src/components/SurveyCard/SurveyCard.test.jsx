@@ -1,9 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { BsPeople } from 'react-icons/bs';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
+import { getCategories } from '../../api/categoriesApi.js';
 import { SurveyCard } from './SurveyCard.jsx';
+
+vi.mock('../../api/categoriesApi.js', () => ({ getCategories: vi.fn() }));
 
 const survey = { id: 4, title: 'Hábitos', lifecycleStatus: 'OPEN', accessMode: 'PUBLIC', visibility: 'LISTED', editorName: 'Ana', responses: 2 };
 
@@ -12,6 +17,31 @@ function renderCard(props = {}) {
 }
 
 describe('SurveyCard', () => {
+  it.each(['editor', 'admin', 'directory', 'results', 'public'])(
+    'muestra el nombre y el icono de la categoría en la tarjeta %s',
+    async (variant) => {
+      getCategories.mockResolvedValue([{ code: 'SALUD', name: 'Salud y bienestar', icon: 'BsPeople' }]);
+      const { container } = renderCard({ variant, survey: { ...survey, category: 'SALUD' } });
+
+      expect(await screen.findByText('Salud y bienestar')).toBeVisible();
+      expect(container.querySelector('.survey-card-category svg').outerHTML)
+        .toBe(renderToStaticMarkup(<BsPeople aria-hidden="true" />));
+      expect(getCategories).toHaveBeenCalledWith({ surveyOnly: true });
+    },
+  );
+
+  it('comparte la consulta de categorías entre tarjetas simultáneas', async () => {
+    getCategories.mockClear();
+    getCategories.mockResolvedValue([{ code: 'SALUD', name: 'Salud', icon: 'BsPeople' }]);
+    render(<MemoryRouter>
+      <SurveyCard survey={{ ...survey, id: 4, category: 'SALUD' }} />
+      <SurveyCard survey={{ ...survey, id: 5, category: 'SALUD' }} />
+    </MemoryRouter>);
+
+    expect(await screen.findAllByText('Salud')).toHaveLength(2);
+    expect(getCategories).toHaveBeenCalledOnce();
+  });
+
   it('permite las acciones de edición y consulta de una encuesta propia', async () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();

@@ -343,6 +343,11 @@ export function CatalogPage() {
             setPublicCurrentPage(0);
           }}
           filterOptions={SEARCH_CATEGORY_OPTIONS}
+          filterOptionsLabel="Campos de búsqueda"
+          filterOptionsControl="multiselect"
+          filterOptionsAllLabel="Todos los campos"
+          filterOptionsNoneLabel="Ningún campo"
+          filterOptionsSelectedCountLabel="campos seleccionados"
           selectedFilterValues={selectedSearchCategories}
           onFilterChange={(categories) => {
             setSelectedSearchCategories(categories);

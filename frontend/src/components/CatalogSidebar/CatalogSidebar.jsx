@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdKeyboardArrowDown, MdLayers, MdOutlineVisibility, MdSearch } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdKeyboardArrowDown, MdLayers, MdOutlineVisibility, MdSearch } from 'react-icons/md';
+import { HiOutlineClipboardList } from 'react-icons/hi';
 
 import { createPortal } from 'react-dom';
 
 import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../utils/categoryIconOptions.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
+import { lockBodyScroll } from '../../utils/bodyScrollLock.js';
 import { CatalogBlockDetailsModal } from '../CatalogBlockDetailsModal/CatalogBlockDetailsModal.jsx';
 import { Dropdown } from '../Dropdown/Dropdown.jsx';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
@@ -46,6 +48,7 @@ function CatalogSidebarContent({
   const questionsTitleId = `${sidebarId}-questions-title`;
   const blocksTitleId = `${sidebarId}-blocks-title`;
   const instructionsId = `${sidebarId}-instructions`;
+  const spaceRef = useRef(null);
   const sidebarRef = useRef(null);
   const overlayRef = useRef(null);
   const pendingActionRef = useRef(false);
@@ -55,8 +58,8 @@ function CatalogSidebarContent({
   const closeRef = useRef(null);
   const shouldMoveFocusRef = useRef(false);
   const requestControllersRef = useRef(new Set());
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches);
-  const [isOpen, setIsOpen] = useState(() => embedded || (defaultOpen ?? !(typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches)));
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches);
+  const [isOpen, setIsOpen] = useState(() => embedded || (defaultOpen ?? !(typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches)));
   const [questions, setQuestions] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [questionSearch, setQuestionSearch] = useState('');
@@ -231,7 +234,7 @@ function CatalogSidebarContent({
   }
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 700px)');
+    const mediaQuery = window.matchMedia('(max-width: 900px)');
     const handleChange = (event) => setIsMobile(event.matches);
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
@@ -246,17 +249,20 @@ function CatalogSidebarContent({
     const host = overlayRef.current;
     if (!host) return;
     const header = document.querySelector(headerSelector);
+    const breadcrumbs = spaceRef.current?.nextElementSibling?.querySelector('.breadcrumb-nav');
     let frame = 0;
     function updatePosition() {
       frame = 0;
       const top = Math.max(0, Math.min(header?.getBoundingClientRect().bottom ?? 0, window.innerHeight));
       host.style.setProperty('--catalog-top', `${top}px`);
+      host.style.setProperty('--catalog-mobile-toggle-top', `${Math.max(top + 8, (breadcrumbs?.getBoundingClientRect().bottom ?? top) + 8)}px`);
     }
     function scheduleUpdate() {
       if (!frame) frame = window.requestAnimationFrame(updatePosition);
     }
     const observer = new ResizeObserver(scheduleUpdate);
     if (header) observer.observe(header);
+    if (breadcrumbs) observer.observe(breadcrumbs);
     window.addEventListener('scroll', scheduleUpdate, { passive: true, capture: true });
     window.addEventListener('resize', scheduleUpdate);
     window.visualViewport?.addEventListener('resize', scheduleUpdate);
@@ -272,10 +278,9 @@ function CatalogSidebarContent({
 
   useEffect(() => {
     if (embedded || !isMobile || !isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlockScroll = lockBodyScroll();
     closeRef.current?.focus({ preventScroll: true });
-    return () => { document.body.style.overflow = previousOverflow; };
+    return unlockScroll;
   }, [embedded, isMobile, isOpen]);
 
   useEffect(() => {
@@ -518,12 +523,16 @@ function CatalogSidebarContent({
 
   return (
     <>
-      <div className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
+      <div ref={spaceRef} className={`catalog-space ${isOpen ? 'open' : ''}`} aria-hidden="true" />
       {typeof document !== 'undefined' && createPortal(
         <div ref={overlayRef} className="catalog-overlay-root">
-      <button ref={toggleRef} type="button" className={`catalog-toggle ${isOpen ? 'catalog-toggle-hidden' : ''}`} aria-label="Abrir catálogo de elementos" title="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
-        <MdLayers aria-hidden="true" /><span>CATÁLOGO</span><MdChevronRight aria-hidden="true" />
-      </button>
+      <div className={`catalog-collapsed-rail ${isOpen ? 'catalog-collapsed-rail-hidden' : ''}`}>
+        <button ref={toggleRef} type="button" className="catalog-toggle" aria-label="Abrir catálogo de elementos" aria-controls={sidebarId} aria-expanded={isOpen} onClick={openSidebar}>
+          <HiOutlineClipboardList aria-hidden="true" />
+          <span className="catalog-toggle-label" aria-hidden="true">CATÁLOGO</span>
+          <span className="catalog-toggle-tooltip" aria-hidden="true">Catálogo de elementos</span>
+        </button>
+      </div>
 
       {sidebar}
 

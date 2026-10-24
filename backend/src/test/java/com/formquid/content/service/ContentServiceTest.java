@@ -1,36 +1,47 @@
 package com.formquid.content.service;
 
-import com.formquid.common.Category;
-import com.formquid.common.service.CategoryCatalogService;
+import com.formquid.block.dto.CreateBlockItemRequestDto;
+import com.formquid.block.dto.CreateBlockRequestDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
+import com.formquid.common.Category;
+import com.formquid.common.service.CategoryCatalogService;
 import com.formquid.content.dto.BlockContentItemRowDto;
 import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.dto.ContentItemResponseDto;
 import com.formquid.content.dto.CreateTextItemRequestDto;
 import com.formquid.content.dto.ReorderContentItemRequestDto;
 import com.formquid.content.dto.ReorderContentRequestDto;
+import com.formquid.content.dto.SurveyContentItemRequestDto;
+import com.formquid.content.dto.UpdateSurveyContentRequestDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
+import com.formquid.question.dto.QuestionDraftDto;
+import com.formquid.question.entity.EvaluationDirection;
 import com.formquid.question.entity.Question;
+import com.formquid.question.entity.QuestionType;
 import com.formquid.question.repository.QuestionRepository;
 import com.formquid.question.service.QuestionService;
 import com.formquid.survey.entity.Survey;
 import com.formquid.template.entity.Template;
+import com.formquid.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -166,6 +177,67 @@ class ContentServiceTest {
         verify(contentItemRepository, never()).findBySurveyIdOrderByPositionAsc(any());
         verify(questionRepository, never()).findByParentItemId(any());
         verify(blockRepository, never()).findByParentItemId(any());
+    }
+
+    @Test
+    void deleteSurveyContent_clearsDeletedQuestionBeforeNextLookup() {
+        Survey survey = Survey.builder().id(1L).build();
+        ContentItem first = ContentItem.builder()
+            .id(10L).survey(survey).itemType(ContentItemType.QUESTION).position(1).required(true).build();
+        ContentItem second = ContentItem.builder()
+            .id(11L).survey(survey).itemType(ContentItemType.QUESTION).position(2).required(true).build();
+        Question firstQuestion = Question.builder().id(20L).parentItem(first).build();
+        Question secondQuestion = Question.builder().id(21L).parentItem(second).build();
+        first.setQuestion(firstQuestion);
+        second.setQuestion(secondQuestion);
+
+        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of(first, second));
+        when(questionRepository.findByParentItemId(10L)).thenReturn(Optional.of(firstQuestion));
+        when(questionRepository.findByParentItemId(11L)).thenAnswer(invocation -> {
+            assertThat(first.getQuestion()).isNull();
+            return Optional.of(secondQuestion);
+        });
+
+        contentService.deleteSurveyContent(survey);
+
+        assertThat(second.getQuestion()).isNull();
+        verify(questionRepository).delete(firstQuestion);
+        verify(questionRepository).delete(secondQuestion);
+        verify(contentItemRepository).deleteAll(List.of(first, second));
+    }
+
+    @Test
+    void replacingSurveyContentSavesFinalPositionsWithoutReorderingEachItem() {
+        Survey survey = Survey.builder().id(1L).category(Category.OTROS).build();
+        User creator = User.builder().id(2L).build();
+        QuestionDraftDto question = new QuestionDraftDto(
+            "Pregunta", null, QuestionType.TEXT, EvaluationDirection.NEUTRAL, null, null, List.of(), List.of()
+        );
+        CreateBlockRequestDto block = new CreateBlockRequestDto(
+            "Bloque", null,
+            List.of(new CreateBlockItemRequestDto(ContentItemType.TEXT, 1, null, null, null, "Dentro")),
+            null
+        );
+        UpdateSurveyContentRequestDto request = new UpdateSurveyContentRequestDto(List.of(
+            new SurveyContentItemRequestDto(ContentItemType.BLOCK, 3, null, null, null, null, null, block),
+            new SurveyContentItemRequestDto(ContentItemType.TEXT, 1, null, null, "Introducción", null, null, null),
+            new SurveyContentItemRequestDto(ContentItemType.QUESTION, 2, true, question, null, null, null, null)
+        ));
+        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of());
+        when(contentItemRepository.save(any(ContentItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(blockRepository.save(any(Block.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        contentService.replaceSurveyContent(survey, request, creator);
+
+        ArgumentCaptor<ContentItem> savedItems = ArgumentCaptor.forClass(ContentItem.class);
+        verify(contentItemRepository, times(4)).save(savedItems.capture());
+        assertThat(savedItems.getAllValues().stream()
+            .filter(item -> item.getSurvey() != null)
+            .map(ContentItem::getPosition))
+            .containsExactly(1, 2, 3);
+        verify(contentItemRepository).findBySurveyIdOrderByPositionAsc(1L);
+        verify(contentItemRepository).flush();
+        verify(questionService).createLocalQuestion(question, savedItems.getAllValues().get(1), creator);
     }
 
     private ContentItem surveyItem(Long id, Survey survey, int position) {

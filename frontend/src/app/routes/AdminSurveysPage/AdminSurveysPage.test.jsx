@@ -76,17 +76,25 @@ describe('AdminSurveysPage', () => {
     await waitFor(() => expect(getAdminSurveys).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0, search: 'hábitos' })));
   });
 
-  it('filtra por estado y visibilidad y ajusta el tamaño de página', async () => {
+  it('filtra por varios estados y visibilidades y ajusta el tamaño de página', async () => {
     const user = userEvent.setup();
     getAdminSurveys.mockResolvedValue({ content: [survey], totalElements: 20, totalPages: 3 });
     renderWithRouter(<AdminSurveysPage />);
     await screen.findByRole('heading', { name: survey.title });
     await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
     const filters = screen.getByRole('group', { name: 'Filtrar' });
-    await user.click(within(filters).getByRole('radio', { name: 'Cerradas' }));
-    await user.click(within(filters).getByRole('radio', { name: 'Ocultas' }));
+    await user.click(within(filters).getByLabelText('Seleccionar estado de la encuesta'));
+    const statusOptions = within(filters).getByRole('group', { name: 'Estado de la encuesta' });
+    await user.click(within(statusOptions).getByRole('checkbox', { name: 'Abiertas' }));
+    await user.click(within(statusOptions).getByRole('checkbox', { name: 'Cerradas' }));
+    await user.click(within(filters).getByLabelText('Seleccionar visibilidad'));
+    const visibilityOptions = within(filters).getByRole('group', { name: 'Visibilidad' });
+    await user.click(within(visibilityOptions).getByRole('checkbox', { name: 'Listadas' }));
+    await user.click(within(visibilityOptions).getByRole('checkbox', { name: 'Ocultas' }));
     await user.click(within(filters).getByRole('button', { name: 'Aplicar' }));
-    await waitFor(() => expect(getAdminSurveys).toHaveBeenCalledWith(expect.objectContaining({ lifecycleStatus: 'CLOSED', visibility: 'UNLISTED' })));
+    await waitFor(() => expect(getAdminSurveys).toHaveBeenCalledWith(expect.objectContaining({
+      lifecycleStatuses: ['OPEN', 'CLOSED'], visibilities: ['LISTED', 'UNLISTED'], page: 0,
+    })));
     await user.click(screen.getByRole('button', { name: /Encuestas por página:/ }));
     fireEvent.click(screen.getByRole('button', { name: '18 por página' }));
     await waitFor(() => expect(getAdminSurveys).toHaveBeenCalledWith(expect.objectContaining({ size: 18, page: 0 })));

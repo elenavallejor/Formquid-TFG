@@ -1,25 +1,3 @@
-export const NOTIFICATION_TYPE_OPTIONS = [
-  ['GENERAL', 'Avisos generales'],
-  ['REGISTRATION_REQUEST', 'Solicitudes de registro'],
-  ['REGISTRATION_APPROVED', 'Altas aprobadas'],
-  ['REGISTRATION_REJECTED', 'Altas rechazadas'],
-  ['ACCOUNT_UPDATED', 'Cuenta'],
-  ['ACCOUNT_SECURITY_CHANGED', 'Seguridad de la cuenta'],
-  ['COLLABORATION_INVITATION', 'Invitaciones'],
-  ['COLLABORATION_REQUEST', 'Solicitudes de colaboración'],
-  ['COLLABORATION_ACCEPTED', 'Colaboraciones aceptadas'],
-  ['COLLABORATION_REJECTED', 'Colaboraciones rechazadas'],
-  ['COLLABORATION_REVOKED', 'Colaboraciones revocadas'],
-  ['COLLABORATION_PERMISSION_REDUCED', 'Cambios de permisos'],
-  ['PUBLICATION_REQUEST', 'Solicitudes de publicación'],
-  ['PUBLICATION_ACCEPTED', 'Publicaciones aceptadas'],
-  ['PUBLICATION_REJECTED', 'Publicaciones rechazadas'],
-  ['ELEMENT_REQUEST', 'Solicitudes de catálogo'],
-  ['ELEMENT_REQUEST_RESOLVED', 'Solicitudes de catálogo resueltas'],
-  ['SURVEY_STATUS_CHANGED', 'Cambios en encuestas'],
-  ['SURVEY_OWNERSHIP_TRANSFERRED', 'Transferencias de encuestas'],
-];
-
 const DESTINATION_LABELS = {
   BLOCK: 'Ir al catálogo',
   COLLABORATION_REQUEST: 'Gestionar colaboración',

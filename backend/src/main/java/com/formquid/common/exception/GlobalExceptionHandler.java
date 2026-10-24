@@ -121,7 +121,7 @@ public class GlobalExceptionHandler {
         MaxUploadSizeExceededException exception,
         HttpServletRequest request
     ) {
-        return build(HttpStatus.PAYLOAD_TOO_LARGE, "El documento no puede superar 5 MB", request);
+        return build(HttpStatus.CONTENT_TOO_LARGE, "El documento no puede superar 5 MB", request);
     }
 
     @ExceptionHandler(Exception.class)

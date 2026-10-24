@@ -24,7 +24,7 @@ import java.util.UUID;
 /** Almacena las portadas fuera de la imagen del contenedor. */
 @Service
 public class SurveyCoverStorage {
-    private static final long MAX_BYTES = 2L * 1024 * 1024;
+    private static final long MAX_BYTES = 3L * 1024 * 1024;
     private final Path directory;
 
     public SurveyCoverStorage(@Value("${app.survey-cover.directory:./data/survey-covers}") String directory) {
@@ -33,7 +33,7 @@ public class SurveyCoverStorage {
 
     public String save(Long surveyId, MultipartFile file) {
         if (file == null || file.isEmpty() || file.getSize() > MAX_BYTES) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "La portada debe ser una imagen de hasta 2 MB");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La portada debe ser una imagen de hasta 3 MB");
         }
         try {
             byte[] bytes = file.getBytes();
@@ -108,7 +108,7 @@ public class SurveyCoverStorage {
     }
 
     private String imageExtension(byte[] bytes) {
-        if (bytes.length > MAX_BYTES) throw new ApiException(HttpStatus.BAD_REQUEST, "La portada no puede superar 2 MB");
+        if (bytes.length > MAX_BYTES) throw new ApiException(HttpStatus.BAD_REQUEST, "La portada no puede superar 3 MB");
         try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             if (stream == null) throw new ApiException(HttpStatus.BAD_REQUEST, "La imagen no es válida");
             Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);

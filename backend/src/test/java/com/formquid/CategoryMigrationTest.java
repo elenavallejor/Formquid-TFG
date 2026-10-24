@@ -16,6 +16,89 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CategoryMigrationTest {
 
     @Test
+    void consolidatesComputersAndGenerativeAiWithoutLosingReferences() throws Exception {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")) {
+            postgres.start();
+            String jdbcUrl = postgres.getJdbcUrl();
+            String username = postgres.getUsername();
+            String password = postgres.getPassword();
+
+            Flyway.configure()
+                .dataSource(jdbcUrl, username, password)
+                .locations("classpath:db/migration", "classpath:db/testmigration")
+                .target("39")
+                .load()
+                .migrate();
+
+            try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+                 Statement statement = connection.createStatement()) {
+                statement.executeUpdate("""
+                    INSERT INTO surveys (owner_id, title, lifecycle_status, access_mode, visibility,
+                                         category, created_at, updated_at)
+                    SELECT id, 'Ordenador compartido', 'DRAFT', 'PUBLIC', 'UNLISTED',
+                           'ORDENADOR_SOBREMESA', now(), now()
+                    FROM users WHERE role = 'SUPERADMIN' LIMIT 1
+                    """);
+                statement.executeUpdate("""
+                    INSERT INTO templates (title, category, created_at, updated_at)
+                    VALUES ('Plantilla portátil', 'PORTATIL', now(), now())
+                    """);
+                statement.executeUpdate("""
+                    INSERT INTO blocks (scope, name, category, created_at, updated_at)
+                    VALUES ('CATALOG', 'Bloque de IA generativa', 'IA_GENERATIVA', now(), now())
+                    """);
+                statement.executeUpdate("""
+                    INSERT INTO questions (scope, statement, question_type, evaluation_direction,
+                                           category, created_at, updated_at)
+                    VALUES ('CATALOG_FIXED', '¿Usas IA generativa?', 'TEXT', 'NEUTRAL',
+                            'IA_GENERATIVA', now(), now())
+                    """);
+                statement.executeUpdate("""
+                    INSERT INTO element_requests (requested_by_user_id, element_type, message,
+                                                  request_payload, created_at)
+                    SELECT id, 'TEMPLATE', 'Propuesta portátil',
+                           '{"title":"Portátil","category":"PORTATIL"}'::jsonb, now()
+                    FROM users WHERE role = 'SUPERADMIN' LIMIT 1
+                    """);
+            }
+
+            Flyway.configure()
+                .dataSource(jdbcUrl, username, password)
+                .locations("classpath:db/migration", "classpath:db/testmigration")
+                .load()
+                .migrate();
+
+            try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+                 Statement statement = connection.createStatement();
+                 ResultSet rows = statement.executeQuery("""
+                     SELECT
+                       (SELECT count(*) FROM categories WHERE code IN
+                           ('ORDENADOR_SOBREMESA', 'PORTATIL', 'IA_GENERATIVA')) AS retired_count,
+                       (SELECT category FROM surveys WHERE title = 'Ordenador compartido') AS survey_category,
+                       (SELECT category FROM templates WHERE title = 'Plantilla portátil') AS template_category,
+                       (SELECT category FROM blocks WHERE name = 'Bloque de IA generativa') AS block_category,
+                       (SELECT category FROM questions WHERE statement = '¿Usas IA generativa?') AS question_category,
+                       (SELECT request_payload ->> 'category' FROM element_requests
+                           WHERE message = 'Propuesta portátil') AS request_category,
+                       (SELECT icon FROM categories WHERE code = 'TABLETA') AS tablet_icon,
+                       (SELECT icon FROM categories WHERE code = 'IMPRESION_3D') AS printer_icon,
+                       (SELECT icon FROM categories WHERE code = 'GAFAS_INTELIGENTES') AS glasses_icon
+                     """)) {
+                assertThat(rows.next()).isTrue();
+                assertThat(rows.getLong("retired_count")).isZero();
+                assertThat(rows.getString("survey_category")).isEqualTo("ORDENADORES");
+                assertThat(rows.getString("template_category")).isEqualTo("ORDENADORES");
+                assertThat(rows.getString("block_category")).isEqualTo("INTELIGENCIA_ARTIFICIAL");
+                assertThat(rows.getString("question_category")).isEqualTo("INTELIGENCIA_ARTIFICIAL");
+                assertThat(rows.getString("request_category")).isEqualTo("ORDENADORES");
+                assertThat(rows.getString("tablet_icon")).isEqualTo("FaTabletAlt");
+                assertThat(rows.getString("printer_icon")).isEqualTo("BsBadge3dFill");
+                assertThat(rows.getString("glasses_icon")).isEqualTo("BsEyeglasses");
+            }
+        }
+    }
+
+    @Test
     void consolidatesBookReaderAndStreamingCategoriesWithoutLosingContent() throws Exception {
         try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")) {
             postgres.start();
@@ -198,11 +281,11 @@ class CategoryMigrationTest {
                          'TELEVISION_INTELIGENTE') ORDER BY code
                     """)) {
                     assertThat(rows.next()).isTrue();
-                    assertThat(rows.getString(1)).isEqualTo("Robótica");
+                    assertThat(rows.getString(1)).isEqualTo("Robots educativos");
                     assertThat(rows.next()).isTrue();
-                    assertThat(rows.getString(1)).isEqualTo("Tablets");
+                    assertThat(rows.getString(1)).isEqualTo("Tabletas");
                     assertThat(rows.next()).isTrue();
-                    assertThat(rows.getString(1)).isEqualTo("Teléfonos");
+                    assertThat(rows.getString(1)).isEqualTo("Teléfonos móviles");
                     assertThat(rows.next()).isTrue();
                     assertThat(rows.getString(1)).isEqualTo("Televisión");
                 }
@@ -320,7 +403,7 @@ class CategoryMigrationTest {
                             (SELECT category FROM questions WHERE statement = 'Pregunta respondida')
                      """)) {
                 assertThat(rows.next()).isTrue();
-                assertThat(rows.getString(1)).isEqualTo("PORTATIL");
+                assertThat(rows.getString(1)).isEqualTo("ORDENADORES");
                 assertThat(rows.getString(2)).isEqualTo("INTELIGENCIA_ARTIFICIAL");
                 assertThat(rows.getString(3)).isEqualTo("TELEFONO_INTELIGENTE");
                 assertThat(rows.getString(4)).isEqualTo("DATOS_PERSONALES");
@@ -332,7 +415,7 @@ class CategoryMigrationTest {
                  Statement statement = connection.createStatement();
                  ResultSet rows = statement.executeQuery("""
                      SELECT code, icon, version FROM categories
-                     WHERE code IN ('PORTATIL', 'DATOS_PERSONALES', 'GAFAS_INTELIGENTES') ORDER BY code
+                     WHERE code IN ('ORDENADORES', 'DATOS_PERSONALES', 'GAFAS_INTELIGENTES') ORDER BY code
                      """)) {
                 assertThat(rows.next()).isTrue();
                 assertThat(rows.getString("code")).isEqualTo("DATOS_PERSONALES");
@@ -343,19 +426,19 @@ class CategoryMigrationTest {
                 assertThat(rows.getString("icon")).isEqualTo("BsEyeglasses");
                 assertThat(rows.getLong("version")).isEqualTo(1);
                 assertThat(rows.next()).isTrue();
-                assertThat(rows.getString("code")).isEqualTo("PORTATIL");
-                assertThat(rows.getString("icon")).isEqualTo("BsLaptop");
+                assertThat(rows.getString("code")).isEqualTo("ORDENADORES");
+                assertThat(rows.getString("icon")).isEqualTo("BsPcDisplay");
                 assertThat(rows.next()).isFalse();
             }
 
             try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
                  Statement statement = connection.createStatement()) {
                 assertThat(statement.executeUpdate("""
-                    UPDATE blocks SET category = 'PORTATIL', updated_at = now()
+                    UPDATE blocks SET category = 'ORDENADORES', updated_at = now()
                     WHERE name = 'Bloque respondido'
                     """)).isEqualTo(1);
                 assertThat(statement.executeUpdate("""
-                    UPDATE questions SET category = 'PORTATIL', updated_at = now()
+                    UPDATE questions SET category = 'ORDENADORES', updated_at = now()
                     WHERE statement = 'Pregunta respondida'
                     """)).isEqualTo(1);
             }

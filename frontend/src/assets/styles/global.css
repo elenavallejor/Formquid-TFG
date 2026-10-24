@@ -20,6 +20,8 @@
 }
 
 :root {
+  --page-gutter: clamp(16px, 8.8vw, 160px);
+
   --color-header: #002536;
   --color-accent: #00766f;
   --color-primary: #00766f;
@@ -34,7 +36,7 @@
   --color-border: #cfd8dd;
   --color-border-strong: var(--color-text-muted);
 
-  --color-error: #c9251b;
+  --color-error: #9f1d19;
   --color-error-border: #feb2b2;
   --color-error-hover: #fed7d7;
   --color-error-surface: #fde8e8;
@@ -76,9 +78,15 @@
     BlinkMacSystemFont, "Segoe UI", sans-serif;
   
   color: var(--color-text);
-  background-color: var(--color-background);
+  background-color: var(--color-header);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --page-gutter: clamp(16px, 4vw, 24px);
+  }
 }
 
 *,
@@ -88,17 +96,15 @@
 }
 
 html {
-  min-width: 320px;
   min-height: 100%;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
-  background-color: var(--color-background);
+  background-color: var(--color-header);
   color: var(--color-text);
   font-family: inherit;
 }

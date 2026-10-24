@@ -37,32 +37,26 @@ import './ElementRequestsPage.css';
 
 const TYPE_CONFIG = {
   FIXED_QUESTION: {
-    label: 'PREGUNTA SOLICITADA',
-    structureLabel: 'ESTRUCTURA DE LA PREGUNTA',
+    label: 'Pregunta solicitada',
+    structureLabel: 'Estructura de la pregunta',
     icon: MdOutlineHelpOutline,
   },
   BLOCK: {
-    label: 'BLOQUE SOLICITADO',
-    structureLabel: 'ESTRUCTURA DEL BLOQUE',
+    label: 'Bloque solicitado',
+    structureLabel: 'Estructura del bloque',
     icon: MdOutlineWidgets,
   },
   TEMPLATE: {
-    label: 'PLANTILLA SOLICITADA',
-    structureLabel: 'ESTRUCTURA DE LA PLANTILLA',
+    label: 'Plantilla solicitada',
+    structureLabel: 'Estructura de la plantilla',
     icon: MdOutlineDescription,
   },
 };
 
-const ROLE_LABELS = {
-  EDITOR: 'Editor',
-  ADMIN: 'Administrador',
-  SUPERADMIN: 'Superadministrador',
-};
-
-const SEARCH_OPTIONS = [
-  { value: 'REQUESTER', label: 'Solicitante' },
-  { value: 'EMAIL', label: 'Correo' },
-  { value: 'ELEMENT', label: 'Elemento solicitado' },
+const TYPE_OPTIONS = [
+  { value: 'FIXED_QUESTION', label: 'Preguntas' },
+  { value: 'BLOCK', label: 'Bloques' },
+  { value: 'TEMPLATE', label: 'Plantillas' },
 ];
 const SORT_OPTIONS = [
   { value: 'NEWEST', label: 'Más reciente' },
@@ -202,72 +196,74 @@ function ElementStructure({ request }) {
   return <TemplatePreview payload={payload} />;
 }
 
-function ElementRequestCard({ request, isCollapsed, onToggle, onAccept, onDeny }) {
+function ElementRequestCard({ request, isExpanded, onToggle, onAccept, onDeny }) {
   const config = TYPE_CONFIG[request.elementType] || TYPE_CONFIG.FIXED_QUESTION;
   const TypeIcon = config.icon;
-  const canCollapse = request.elementType !== 'FIXED_QUESTION';
   const applicantName = request.requestedByName || 'Usuario';
 
   return (
     <article className="element-request-card" aria-labelledby={`element-request-${request.id}`}>
       <header className="element-request-card-header">
         <span className="element-request-card-icon"><TypeIcon aria-hidden="true" /></span>
-        <h2 id={`element-request-${request.id}`}>{config.label}:</h2>
-        <span className="element-request-card-title">{getRequestTitle(request)}</span>
+        <div className="element-request-card-heading">
+          <span className="element-request-card-type">{config.label}</span>
+          <h2 id={`element-request-${request.id}`}>{getRequestTitle(request)}</h2>
+        </div>
+        <button
+          type="button"
+          className="element-request-card-toggle"
+          onClick={() => onToggle(request.id)}
+          aria-expanded={isExpanded}
+          aria-controls={`element-request-content-${request.id}`}
+        >
+          {isExpanded ? 'Ocultar solicitud' : 'Ver solicitud'}
+          {isExpanded ? <MdExpandLess aria-hidden="true" /> : <MdExpandMore aria-hidden="true" />}
+        </button>
       </header>
 
-      <div className="element-request-card-content">
-        <h3>{applicantName} · {ROLE_LABELS[request.requestedByRole] || request.requestedByRole || 'Editor'}</h3>
-
-        <p className="element-request-section-label">DATOS PERSONALES:</p>
-        <ul className="element-request-user-data">
-          <li><MdOutlineEmail aria-hidden="true" /><span>{request.requestedByEmail || '—'}</span></li>
-          <li><MdOutlineBusiness aria-hidden="true" /><span>{request.requestedByInstitution || '—'}</span></li>
-          <li><MdPublic aria-hidden="true" /><span>{getCountryName(request.requestedByCountry)}</span></li>
-          <li>
-            <MdOutlineCalendarToday aria-hidden="true" />
-            <time dateTime={request.createdAt}>{formatDateTime(request.createdAt)}</time>
-          </li>
-        </ul>
-
-        <div className="element-request-message">
-          <p className="element-request-section-label">MENSAJE:</p>
+      <div className="element-request-card-summary">
+        <section className="element-request-message" aria-label="Mensaje del solicitante">
+          <h3>Mensaje del solicitante</h3>
           <p>{request.message}</p>
-        </div>
-
-        <section className="element-request-structure">
-          <div className="element-request-structure-header">
-            <h4>{config.structureLabel}</h4>
-            {canCollapse && (
-              <button
-                type="button"
-                onClick={() => onToggle(request.id)}
-                aria-expanded={!isCollapsed}
-                aria-controls={`element-request-structure-${request.id}`}
-              >
-                {isCollapsed ? 'Mostrar estructura' : 'Ocultar estructura'}
-                {isCollapsed ? <MdExpandMore aria-hidden="true" /> : <MdExpandLess aria-hidden="true" />}
-              </button>
-            )}
-          </div>
-
-          {!isCollapsed && (
-            <div id={`element-request-structure-${request.id}`} className="element-request-structure-content">
-              <ElementStructure request={request} />
-            </div>
-          )}
         </section>
+      </div>
 
-        <div className="element-request-actions">
-          <button type="button" className="element-request-deny" onClick={() => onDeny(request)}>
-            <MdClose aria-hidden="true" />
-            Denegar
-          </button>
-          <button type="button" className="element-request-accept" onClick={() => onAccept(request)}>
-            <MdCheck aria-hidden="true" />
-            Aceptar
-          </button>
-        </div>
+      <div id={`element-request-content-${request.id}`} className="element-request-card-content" hidden={!isExpanded}>
+        {isExpanded && (
+          <>
+            <h3 className="element-request-applicant">{applicantName}</h3>
+            <ul className="element-request-user-data">
+              <li><MdOutlineEmail aria-hidden="true" /><span>{request.requestedByEmail || '—'}</span></li>
+              <li><MdOutlineBusiness aria-hidden="true" /><span>{request.requestedByInstitution || '—'}</span></li>
+              <li><MdPublic aria-hidden="true" /><span>{getCountryName(request.requestedByCountry)}</span></li>
+              <li>
+                <MdOutlineCalendarToday aria-hidden="true" />
+                <time dateTime={request.createdAt}>{formatDateTime(request.createdAt)}</time>
+              </li>
+            </ul>
+
+            <section className="element-request-structure">
+              <div className="element-request-structure-header">
+                <h3>{config.structureLabel}</h3>
+              </div>
+
+              <div className="element-request-structure-content">
+                <ElementStructure request={request} />
+              </div>
+            </section>
+
+            <div className="element-request-actions">
+              <button type="button" className="element-request-deny" onClick={() => onDeny(request)}>
+                <MdClose aria-hidden="true" />
+                Denegar
+              </button>
+              <button type="button" className="element-request-accept" onClick={() => onAccept(request)}>
+                <MdCheck aria-hidden="true" />
+                Aceptar
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </article>
   );
@@ -278,11 +274,9 @@ export function ElementRequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSearchFields, setSelectedSearchFields] = useState(
-    () => SEARCH_OPTIONS.map((option) => option.value),
-  );
+  const [selectedTypes, setSelectedTypes] = useState(() => TYPE_OPTIONS.map((option) => option.value));
   const [sortOrder, setSortOrder] = useState('NEWEST');
-  const [collapsedIds, setCollapsedIds] = useState(() => new Set());
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
   const [modalState, setModalState] = useState({ action: null, request: null });
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -310,22 +304,22 @@ export function ElementRequestsPage() {
     const query = searchQuery.trim().toLocaleLowerCase('es');
 
     return requests
-      .filter((request) => !query || (
-        (selectedSearchFields.includes('REQUESTER')
-          && request.requestedByName?.toLocaleLowerCase('es').includes(query))
-        || (selectedSearchFields.includes('EMAIL')
-          && request.requestedByEmail?.toLocaleLowerCase('es').includes(query))
-        || (selectedSearchFields.includes('ELEMENT')
-          && getRequestTitle(request).toLocaleLowerCase('es').includes(query))
-      ))
+      .filter((request) => selectedTypes.includes(request.elementType))
+      .filter((request) => !query || [
+        getRequestTitle(request),
+        request.requestedByName,
+        request.requestedByEmail,
+        request.requestedByInstitution,
+        request.message,
+      ].some((value) => value?.toLocaleLowerCase('es').includes(query)))
       .sort((left, right) => {
         const difference = new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
         return sortOrder === 'NEWEST' ? difference : -difference;
       });
-  }, [requests, searchQuery, selectedSearchFields, sortOrder]);
+  }, [requests, searchQuery, selectedTypes, sortOrder]);
 
-  function toggleStructure(id) {
-    setCollapsedIds((current) => {
+  function toggleRequest(id) {
+    setExpandedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -387,14 +381,18 @@ export function ElementRequestsPage() {
         </header>
 
         <SearchToolbar
-          ariaLabel="Filtros de solicitudes del catálogo"
+          ariaLabel="Búsqueda y filtros de solicitudes del catálogo"
           searchLabel="Introduce una palabra para buscar solicitudes del catálogo"
           searchValue={searchQuery}
           onSearchChange={(event) => setSearchQuery(event.target.value)}
-          filterOptions={SEARCH_OPTIONS}
-          selectedFilterValues={selectedSearchFields}
-          onFilterChange={setSelectedSearchFields}
-          onFilterReset={() => setSearchQuery('')}
+          filterOptions={TYPE_OPTIONS}
+          filterOptionsControl="multiselect"
+          filterOptionsAllLabel="Todos los tipos"
+          filterOptionsNoneLabel="Ningún tipo"
+          filterOptionsSelectedCountLabel="tipos seleccionados"
+          filterOptionsLabel="Tipos de solicitud"
+          selectedFilterValues={selectedTypes}
+          onFilterChange={setSelectedTypes}
           sortAriaLabel="Ordenar solicitudes del catálogo"
           sortOptions={SORT_OPTIONS}
           sortValue={sortOrder}
@@ -416,15 +414,21 @@ export function ElementRequestsPage() {
               <p>
                 {requests.length === 0
                   ? 'No se han recibido solicitudes para el catálogo.'
-                  : 'No hay solicitudes pendientes que coincidan con la búsqueda.'}
+                  : selectedTypes.length === 0
+                    ? 'Selecciona al menos un tipo de solicitud.'
+                  : selectedTypes.length !== TYPE_OPTIONS.length && searchQuery.trim()
+                    ? 'No hay solicitudes que coincidan con la búsqueda y los tipos seleccionados.'
+                    : selectedTypes.length !== TYPE_OPTIONS.length
+                      ? 'No hay solicitudes de los tipos seleccionados.'
+                      : 'No hay solicitudes pendientes que coincidan con la búsqueda.'}
               </p>
             </div>
           ) : visibleRequests.map((request) => (
             <ElementRequestCard
               key={request.id}
               request={request}
-              isCollapsed={collapsedIds.has(request.id)}
-              onToggle={toggleStructure}
+              isExpanded={expandedIds.has(request.id)}
+              onToggle={toggleRequest}
               onAccept={(item) => openModal('ACCEPT', item)}
               onDeny={(item) => openModal('DENY', item)}
             />

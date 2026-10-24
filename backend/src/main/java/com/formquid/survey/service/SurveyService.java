@@ -86,6 +86,18 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public SurveyPageResponseDto findEditableByUser(User user, String search, SurveyLifecycle lifecycleStatus, Pageable pageable) {
+        return findEditableByUser(user, search, lifecycleStatus, null, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public SurveyPageResponseDto findEditableByUser(
+        User user,
+        String search,
+        SurveyLifecycle lifecycleStatus,
+        List<SurveyAccessMode> accessModes,
+        List<Category> categories,
+        Pageable pageable
+    ) {
         if (user == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
         }
@@ -98,7 +110,24 @@ public class SurveyService {
         }
         String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
         PageRequest safePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(updatedAtOrder.getDirection(), "updatedAt"));
-        Page<Survey> surveys = surveyRepository.findEditableByUser(user.getId(), normalizedSearch, lifecycleStatus, safePageable);
+        List<SurveyAccessMode> selectedAccessModes = accessModes == null
+            ? List.of(SurveyAccessMode.values())
+            : accessModes.stream().distinct().toList();
+        List<Category> selectedCategories = categories == null ? List.of() : categories.stream().distinct().toList();
+        if (selectedCategories.contains(Category.DATOS_PERSONALES)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Una encuesta no puede ser de datos personales");
+        }
+        Page<Survey> surveys = selectedAccessModes.isEmpty()
+            ? Page.empty(safePageable)
+            : surveyRepository.findEditableByUser(
+                user.getId(),
+                normalizedSearch,
+                lifecycleStatus,
+                selectedAccessModes,
+                selectedCategories.isEmpty(),
+                selectedCategories.isEmpty() ? List.of(Category.OTROS) : selectedCategories,
+                safePageable
+            );
         return new SurveyPageResponseDto(
             surveys.getContent().stream().map(this::toSummary).toList(),
             surveys.getNumber(),
@@ -112,7 +141,7 @@ public class SurveyService {
     public PageResponseDto<SurveyDirectorySummaryDto> findDirectory(
         User user,
         String search,
-        SurveyLifecycle lifecycleStatus,
+        List<SurveyLifecycle> lifecycleStatuses,
         Pageable pageable
     ) {
         if (user == null) {
@@ -136,7 +165,10 @@ public class SurveyService {
             pageable.getPageSize(),
             Sort.by(updatedAtOrder.getDirection(), "updatedAt")
         );
-        Page<Survey> surveys = surveyRepository.findDirectory(normalizedSearch, lifecycleStatus, safePageable);
+        List<SurveyLifecycle> statuses = lifecycleStatuses == null ? List.of() : lifecycleStatuses.stream().distinct().toList();
+        Page<Survey> surveys = surveyRepository.findDirectory(
+            normalizedSearch, statuses.isEmpty(), statuses.isEmpty() ? List.of(SurveyLifecycle.DRAFT) : statuses, safePageable
+        );
         List<Long> surveyIds = surveys.getContent().stream().map(Survey::getId).toList();
         Set<Long> collaboratingIds = surveyIds.isEmpty()
             ? Set.of()
@@ -175,7 +207,7 @@ public class SurveyService {
         User user,
         String search,
         Set<SurveyResultsSearchField> searchFields,
-        SurveyLifecycle lifecycleStatus,
+        List<SurveyLifecycle> lifecycleStatuses,
         SurveyResultsSortOrder sortOrder,
         int page,
         int size
@@ -195,6 +227,7 @@ public class SurveyService {
         Set<SurveyResultsSearchField> safeSearchFields = searchFields == null ? Set.of() : searchFields;
         boolean searchTitle = safeSearchFields.contains(SurveyResultsSearchField.TITLE);
         boolean searchOwner = safeSearchFields.contains(SurveyResultsSearchField.OWNER);
+        List<SurveyLifecycle> statuses = lifecycleStatuses == null ? List.of() : lifecycleStatuses.stream().distinct().toList();
         Sort.Direction direction = sortOrder == SurveyResultsSortOrder.OLDEST
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
@@ -204,7 +237,8 @@ public class SurveyService {
             normalizedSearch,
             searchTitle,
             searchOwner,
-            lifecycleStatus,
+            statuses.isEmpty(),
+            statuses.isEmpty() ? List.of(SurveyLifecycle.DRAFT) : statuses,
             PageRequest.of(page, size, Sort.by(
                 new Sort.Order(direction, "updatedAt"),
                 new Sort.Order(direction, "id")
@@ -222,8 +256,8 @@ public class SurveyService {
     @Transactional(readOnly = true)
     public PageResponseDto<AdminSurveySummaryDto> findAdminSummaries(
         String search,
-        SurveyLifecycle lifecycleStatus,
-        SurveyVisibility visibility,
+        List<SurveyLifecycle> lifecycleStatuses,
+        List<SurveyVisibility> visibilities,
         int page,
         int size
     ) {
@@ -232,10 +266,14 @@ public class SurveyService {
         }
 
         String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        List<SurveyLifecycle> selectedStatuses = lifecycleStatuses == null ? List.of() : lifecycleStatuses.stream().distinct().toList();
+        List<SurveyVisibility> selectedVisibilities = visibilities == null ? List.of() : visibilities.stream().distinct().toList();
         Page<AdminSurveySummaryDto> surveys = surveyRepository.findAdminSummaries(
             normalizedSearch,
-            lifecycleStatus,
-            visibility,
+            selectedStatuses.isEmpty(),
+            selectedStatuses.isEmpty() ? List.of(SurveyLifecycle.DRAFT) : selectedStatuses,
+            selectedVisibilities.isEmpty(),
+            selectedVisibilities.isEmpty() ? List.of(SurveyVisibility.LISTED) : selectedVisibilities,
             PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"))
         );
 
@@ -255,9 +293,9 @@ public class SurveyService {
         SurveyAccessMode accessMode,
         int page,
         int size,
-        Category category
+        List<Category> categories
     ) {
-        return findListedOpenPage(search, tag, accessMode, page, size, category, false);
+        return findListedOpenPage(search, tag, accessMode, page, size, categories, false);
     }
 
     @Transactional(readOnly = true)
@@ -268,12 +306,12 @@ public class SurveyService {
         SurveyAccessMode accessMode,
         int page,
         int size,
-        Category category
+        List<Category> categories
     ) {
         if (user == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
         }
-        return findListedOpenPage(search, tag, accessMode, page, size, category, true);
+        return findListedOpenPage(search, tag, accessMode, page, size, categories, true);
     }
 
     private PageResponseDto<PublicSurveySummaryDto> findListedOpenPage(
@@ -282,47 +320,30 @@ public class SurveyService {
         SurveyAccessMode accessMode,
         int page,
         int size,
-        Category category,
+        List<Category> categories,
         boolean includeAuthenticated
     ) {
         if (page < 0 || size < 1 || size > 50) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Paginación de encuestas no válida");
         }
-        if (Category.DATOS_PERSONALES.equals(category)) {
+        List<Category> selectedCategories = categories == null ? List.of() : categories;
+        if (selectedCategories.contains(Category.DATOS_PERSONALES)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Una encuesta no puede ser de datos personales");
         }
 
-        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
         String normalizedTag = tag == null ? "" : Normalizer.normalize(
             tag.trim().toLowerCase(Locale.ROOT).replaceFirst("^#", ""),
             Normalizer.Form.NFKC
         ).replaceAll("\\s+", "-");
-        Page<Survey> surveys;
-        if (normalizedTag.isEmpty()) {
-            surveys = surveyRepository.findListedOpenPage(
-                SurveyLifecycle.OPEN,
-                SurveyVisibility.LISTED,
-                includeAuthenticated,
-                SurveyAccessMode.AUTHENTICATED,
-                accessMode,
-                category,
-                normalizedSearch,
-                PageRequest.of(
-                    page,
-                    size,
-                    Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
-                )
-            );
-        } else {
-            surveys = surveyRepository.findListedOpenPageByTag(
-                includeAuthenticated,
-                accessMode == null ? "" : accessMode.name(),
-                category == null ? "" : category.code(),
-                normalizedSearch,
-                normalizedTag,
-                PageRequest.of(page, size)
-            );
-        }
+        Page<Survey> surveys = surveyRepository.findListedOpenPage(
+            includeAuthenticated,
+            accessMode == null ? "" : accessMode.name(),
+            String.join(",", selectedCategories.stream().map(Category::code).distinct().toList()),
+            normalizedSearch,
+            normalizedTag,
+            PageRequest.of(page, size)
+        );
 
         return new PageResponseDto<>(
             surveys.getContent().stream().map(this::toPublicSummary).toList(),

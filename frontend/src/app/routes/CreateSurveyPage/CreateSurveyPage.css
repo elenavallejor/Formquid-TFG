@@ -1,7 +1,7 @@
 .create-survey-page {
   --breadcrumbs-margin-bottom: 14px;
   min-height: calc(100vh - 70px);
-  padding: 32px 24px 72px;
+  padding: 32px var(--page-gutter) 72px;
   background: var(--color-background);
   box-sizing: border-box;
 }
@@ -429,7 +429,7 @@
 
 @media only screen and (max-width: 760px) {
   .create-survey-page {
-    padding: 24px 16px 40px;
+    padding: 24px var(--page-gutter) 40px;
   }
 
   .create-survey-header,

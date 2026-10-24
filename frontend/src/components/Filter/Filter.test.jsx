@@ -37,4 +37,54 @@ describe('Filter', () => {
     expect(screen.queryByRole('dialog', { name: 'Filtros' })).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('permite mostrar una selección exclusiva como select', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Filter
+      label="Filtrar"
+      choiceFilter={{
+        label: 'Categoría',
+        control: 'select',
+        value: '',
+        resetValue: '',
+        options: [{ value: '', label: 'Todas' }, { value: 'ORDENADORES', label: 'Ordenadores' }],
+      }}
+      onChange={onChange}
+    />);
+
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    const filters = screen.getByRole('group', { name: 'Filtrar' });
+    await user.selectOptions(within(filters).getByRole('combobox', { name: 'Categoría' }), 'ORDENADORES');
+    await user.click(within(filters).getByRole('button', { name: 'Aplicar' }));
+    expect(onChange).toHaveBeenCalledWith([], '', 'ORDENADORES');
+  });
+
+  it('permite seleccionar varias opciones en un selector desplegable', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Filter
+      label="Filtrar"
+      choiceFilter={{
+        label: 'Categoría',
+        control: 'multiselect',
+        value: [],
+        resetValue: [],
+        options: [{ value: 'ORDENADORES', label: 'Ordenadores' }, { value: 'SALUD', label: 'Salud' }],
+      }}
+      onChange={onChange}
+    />);
+
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    const filters = screen.getByRole('group', { name: 'Filtrar' });
+    await user.click(within(filters).getByLabelText('Seleccionar categoría'));
+    await user.click(within(filters).getByRole('checkbox', { name: 'Ordenadores' }));
+    await user.click(within(filters).getByRole('checkbox', { name: 'Salud' }));
+    await user.click(within(filters).getByRole('button', { name: 'Aplicar' }));
+    expect(onChange).toHaveBeenLastCalledWith([], '', ['ORDENADORES', 'SALUD']);
+
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(within(screen.getByRole('group', { name: 'Filtrar' })).getByRole('button', { name: 'Borrar filtros' }));
+    expect(onChange).toHaveBeenLastCalledWith([], '', []);
+  });
 });

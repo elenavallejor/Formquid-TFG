@@ -1,14 +1,19 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { IoFilter } from 'react-icons/io5';
-import { MdClose } from 'react-icons/md';
+import { MdClose, MdKeyboardArrowDown } from 'react-icons/md';
+import { lockBodyScroll } from '../../utils/bodyScrollLock.js';
 
 import './Filter.css';
 
-/** Filtro con menú flotante, selección múltiple y una selección exclusiva opcional. */
+/** Filtro con menú flotante y grupos de selección simple o múltiple. */
 export function Filter({
   label = 'Filtrar',
   options = [],
   optionsLabel = 'Opciones',
+  optionsControl,
+  optionsAllLabel = 'Todas las opciones',
+  optionsNoneLabel = 'Ninguna opción',
+  optionsSelectedCountLabel = 'opciones seleccionadas',
   selectedValues = [],
   textFilter,
   choiceFilter,
@@ -54,11 +59,18 @@ export function Filter({
         : `${selectedValues.length} seleccionadas`;
   const appliedText = textFilter?.value?.trim() ?? '';
   const hasActiveChoice = choiceDefinitions.some((definition, index) => (
-    appliedChoiceValues[index] !== definition.resetValue
+    Array.isArray(appliedChoiceValues[index])
+      ? appliedChoiceValues[index].length > 0
+      : appliedChoiceValues[index] !== definition.resetValue
   ));
   const hasActiveFilters = selectedValues.length !== options.length || Boolean(appliedText) || hasActiveChoice;
   const selectedChoiceLabels = choiceDefinitions
-    .map((definition, index) => definition.options?.find((option) => option.value === appliedChoiceValues[index])?.label)
+    .flatMap((definition, index) => {
+      const values = Array.isArray(appliedChoiceValues[index])
+        ? appliedChoiceValues[index]
+        : [appliedChoiceValues[index]];
+      return values.map((value) => definition.options?.find((option) => option.value === value)?.label);
+    })
     .filter(Boolean)
     .join(', ');
 
@@ -88,14 +100,13 @@ export function Filter({
     if (!open || !isMobile || !modalRef.current) return undefined;
 
     const modal = modalRef.current;
-    const previousOverflow = document.body.style.overflow;
     modal.showModal();
     mobileCloseRef.current?.focus();
-    document.body.style.overflow = 'hidden';
+    const unlockScroll = lockBodyScroll();
 
     return () => {
       if (modal.open) modal.close();
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
     };
   }, [open, isMobile]);
 
@@ -114,7 +125,8 @@ export function Filter({
       const bounds = wrapperRef.current?.getBoundingClientRect();
       const estimatedHeight = Math.min(
         170 + options.length * 42 + (textFilter ? 70 : 0)
-          + choiceDefinitions.reduce((height, definition) => height + 60 + (definition.options?.length ?? 0) * 42, 0),
+          + choiceDefinitions.reduce((height, definition) => height + (['select', 'multiselect'].includes(definition.control)
+            ? 72 : 60 + (definition.options?.length ?? 0) * 42), 0),
         480,
       );
       const spaceBelow = bounds ? window.innerHeight - bounds.bottom : 0;
@@ -127,6 +139,15 @@ export function Filter({
     setDraftValues((current) => current.includes(value)
       ? current.filter((selected) => selected !== value)
       : [...current, value]);
+  }
+
+  function toggleChoice(groupIndex, value) {
+    setDraftChoices((current) => current.map((selected, index) => {
+      if (index !== groupIndex) return selected;
+      return selected.includes(value)
+        ? selected.filter((choice) => choice !== value)
+        : [...selected, value];
+    }));
   }
 
   function applyFilters() {
@@ -163,48 +184,121 @@ export function Filter({
         </label>
       )}
       {options.length > 0 && (
-        <>
+        <div className="filter__choice-select">
           <div className="filter__options-title">{optionsLabel}</div>
-          <button
-            type="button"
-            className="filter__select-all"
-            onClick={() => setDraftValues(options.map((option) => option.value))}
-          >
-            Ver todas
-          </button>
-          <div className="filter__options" role="group" aria-label={optionsLabel}>
-            {options.map((option, index) => (
-              <label key={option.value} className="filter__option" htmlFor={`${menuId}-option-${index}`}>
-                <input
-                  id={`${menuId}-option-${index}`}
-                  ref={index === 0 ? firstOptionRef : undefined}
-                  type="checkbox"
-                  checked={draftValues.includes(option.value)}
-                  onChange={() => toggleOption(option.value)}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </div>
-        </>
+          {optionsControl === 'multiselect' ? (
+            <details className="filter__multi-select">
+              <summary aria-label={`Seleccionar ${optionsLabel.toLowerCase()}`}>
+                <span className="filter__multi-select-value">
+                  {draftValues.length === options.length ? optionsAllLabel : draftValues.length === 0
+                    ? optionsNoneLabel : draftValues.length === 1
+                      ? options.find((option) => option.value === draftValues[0])?.label
+                      : `${draftValues.length} ${optionsSelectedCountLabel}`}
+                </span>
+                <MdKeyboardArrowDown aria-hidden="true" />
+              </summary>
+              <div className="filter__multi-select-options" role="group" aria-label={optionsLabel}>
+                <button type="button" className="filter__select-all"
+                  onClick={() => setDraftValues(options.map((option) => option.value))}>Ver todas</button>
+                {options.map((option, index) => (
+                  <label key={option.value} className="filter__option" htmlFor={`${menuId}-option-${index}`}>
+                    <input id={`${menuId}-option-${index}`} ref={index === 0 ? firstOptionRef : undefined}
+                      type="checkbox" checked={draftValues.includes(option.value)}
+                      onChange={() => toggleOption(option.value)} />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </details>
+          ) : (
+            <>
+              <button type="button" className="filter__select-all"
+                onClick={() => setDraftValues(options.map((option) => option.value))}>Ver todas</button>
+              <div className="filter__options" role="group" aria-label={optionsLabel}>
+                {options.map((option, index) => (
+                  <label key={option.value} className="filter__option" htmlFor={`${menuId}-option-${index}`}>
+                    <input id={`${menuId}-option-${index}`} ref={index === 0 ? firstOptionRef : undefined}
+                      type="checkbox" checked={draftValues.includes(option.value)}
+                      onChange={() => toggleOption(option.value)} />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
       {choiceDefinitions.map((definition, groupIndex) => (
         <div className="filter__choice-group" key={definition.label}>
-          <div className="filter__options-title">{definition.label}</div>
-          <div className="filter__choice-options" role="radiogroup" aria-label={definition.label}>
-            {definition.options?.map((option) => (
-              <label key={option.value} className="filter__option" htmlFor={`${menuId}-choice-${groupIndex}-${option.value}`}>
-                <input
-                  id={`${menuId}-choice-${groupIndex}-${option.value}`}
-                  type="radio"
-                  name={`${menuId}-choice-${groupIndex}`}
-                  checked={draftChoices[groupIndex] === option.value}
-                  onChange={() => setDraftChoices((current) => current.map((value, index) => index === groupIndex ? option.value : value))}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </div>
+          {definition.control === 'multiselect' ? (
+            <div className="filter__choice-select">
+              <div className="filter__options-title">{definition.label}</div>
+              <details className="filter__multi-select">
+                <summary aria-label={`Seleccionar ${definition.label.toLowerCase()}`}>
+                  <span className="filter__multi-select-value">
+                    {draftChoices[groupIndex]?.length === 0
+                      ? definition.allLabel ?? 'Todas las opciones'
+                      : draftChoices[groupIndex]?.length === 1
+                        ? definition.options?.find((option) => option.value === draftChoices[groupIndex][0])?.label
+                        : `${draftChoices[groupIndex].length} ${definition.selectedCountLabel ?? 'opciones seleccionadas'}`}
+                  </span>
+                  <MdKeyboardArrowDown aria-hidden="true" />
+                </summary>
+                <div className="filter__multi-select-options" role="group" aria-label={definition.label}>
+                  <button
+                    type="button"
+                    className="filter__select-all"
+                    onClick={() => setDraftChoices((current) => current.map((value, index) => index === groupIndex ? [] : value))}
+                  >
+                    {definition.allLabel ?? 'Todas las opciones'}
+                  </button>
+                  {definition.options?.map((option) => (
+                    <label key={option.value} className="filter__option">
+                      <input
+                        type="checkbox"
+                        checked={draftChoices[groupIndex]?.includes(option.value) ?? false}
+                        onChange={() => toggleChoice(groupIndex, option.value)}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </details>
+            </div>
+          ) : definition.control === 'select' ? (
+            <label className="filter__choice-select">
+              <span className="filter__options-title">{definition.label}</span>
+              <span className="filter__select-control">
+                <select
+                  value={draftChoices[groupIndex]}
+                  onChange={(event) => setDraftChoices((current) => current.map((value, index) => index === groupIndex ? event.target.value : value))}
+                >
+                  {definition.options?.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <MdKeyboardArrowDown aria-hidden="true" />
+              </span>
+            </label>
+          ) : (
+            <>
+              <div className="filter__options-title">{definition.label}</div>
+              <div className="filter__choice-options" role="radiogroup" aria-label={definition.label}>
+                {definition.options?.map((option) => (
+                  <label key={option.value} className="filter__option" htmlFor={`${menuId}-choice-${groupIndex}-${option.value}`}>
+                    <input
+                      id={`${menuId}-choice-${groupIndex}-${option.value}`}
+                      type="radio"
+                      name={`${menuId}-choice-${groupIndex}`}
+                      checked={draftChoices[groupIndex] === option.value}
+                      onChange={() => setDraftChoices((current) => current.map((value, index) => index === groupIndex ? option.value : value))}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ))}
       <div className="filter__footer">

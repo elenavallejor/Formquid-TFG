@@ -6,6 +6,7 @@ import com.formquid.collaboration.controller.CollaborationController;
 import com.formquid.collaboration.controller.CollaborationOverviewController;
 import com.formquid.collaboration.service.CollaborationService;
 import com.formquid.config.SecurityConfig;
+import com.formquid.common.Category;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.content.controller.ContentController;
 import com.formquid.content.service.ContentService;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -87,6 +89,25 @@ class SurveyFlowControllersWebTest {
             .andExpect(status().isOk());
 
         verify(surveyService).getSurveyForUser(4L, editor);
+    }
+
+    @Test
+    void editorSurveyListBindsMultipleAccessModesAndCategories() throws Exception {
+        User editor = editor();
+
+        mockMvc.perform(get("/api/v1/surveys")
+                .with(authentication(tokenFor(editor)))
+                .param("lifecycleStatus", "OPEN")
+                .param("accessMode", "PUBLIC", "AUTHENTICATED")
+                .param("category", "ORDENADORES", "TELEFONO_INTELIGENTE"))
+            .andExpect(status().isOk());
+
+        verify(surveyService).findEditableByUser(
+            same(editor), eq(null), eq(SurveyLifecycle.OPEN),
+            eq(List.of(SurveyAccessMode.PUBLIC, SurveyAccessMode.AUTHENTICATED)),
+            eq(List.of(Category.ORDENADORES, Category.TELEFONO_INTELIGENTE)),
+            any()
+        );
     }
 
     @Test
@@ -143,7 +164,7 @@ class SurveyFlowControllersWebTest {
             editor,
             "clima",
             Set.of(SurveyResultsSearchField.TITLE),
-            SurveyLifecycle.CLOSED,
+            List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED),
             SurveyResultsSortOrder.OLDEST,
             1,
             18
@@ -162,7 +183,7 @@ class SurveyFlowControllersWebTest {
                 .with(authentication(tokenFor(editor)))
                 .param("search", "clima")
                 .param("searchFields", "TITLE")
-                .param("lifecycleStatus", "CLOSED")
+                .param("lifecycleStatus", "OPEN", "CLOSED")
                 .param("sortOrder", "OLDEST")
                 .param("page", "1")
                 .param("size", "18"))
@@ -174,7 +195,7 @@ class SurveyFlowControllersWebTest {
             editor,
             "clima",
             Set.of(SurveyResultsSearchField.TITLE),
-            SurveyLifecycle.CLOSED,
+            List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED),
             SurveyResultsSortOrder.OLDEST,
             1,
             18

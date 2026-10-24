@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,64 +34,27 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
 
     @Query(
         value = """
-            select survey
-            from Survey survey
-            where survey.lifecycleStatus = :lifecycleStatus
-                and survey.visibility = :visibility
-                and (:includeAuthenticated = true or survey.accessMode <> :authenticatedAccessMode)
-                and (:accessMode is null or survey.accessMode = :accessMode)
-                and (:category is null or survey.category = :category)
-                and (
-                    :search = ''
-                    or lower(survey.title) like concat('%', :search, '%')
-                    or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
-                )
-            """,
-        countQuery = """
-            select count(survey.id)
-            from Survey survey
-            where survey.lifecycleStatus = :lifecycleStatus
-                and survey.visibility = :visibility
-                and (:includeAuthenticated = true or survey.accessMode <> :authenticatedAccessMode)
-                and (:accessMode is null or survey.accessMode = :accessMode)
-                and (:category is null or survey.category = :category)
-                and (
-                    :search = ''
-                    or lower(survey.title) like concat('%', :search, '%')
-                    or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
-                )
-            """
-    )
-    Page<Survey> findListedOpenPage(
-        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
-        @Param("visibility") SurveyVisibility visibility,
-        @Param("includeAuthenticated") boolean includeAuthenticated,
-        @Param("authenticatedAccessMode") SurveyAccessMode authenticatedAccessMode,
-        @Param("accessMode") SurveyAccessMode accessMode,
-        @Param("category") Category category,
-        @Param("search") String search,
-        Pageable pageable
-    );
-
-    @Query(
-        value = """
             select survey.*
             from surveys survey
             where survey.lifecycle_status = 'OPEN'
                 and survey.visibility = 'LISTED'
                 and (:includeAuthenticated = true or survey.access_mode <> 'AUTHENTICATED')
                 and (:accessMode = '' or survey.access_mode = :accessMode)
-                and (:category = '' or survey.category = :category)
+                and (:categories = '' or survey.category = any(string_to_array(:categories, ',')))
                 and (
                     :search = ''
                     or lower(survey.title) like concat('%', :search, '%')
                     or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
+                    or exists (
+                        select 1 from unnest(survey.tags) as searched_tag(tag_text)
+                        where strpos(lower(searched_tag.tag_text), replace(:search, ' ', '-')) > 0
+                    )
                 )
-                and exists (
+                and (:tag = '' or exists (
                     select 1
                     from unnest(survey.tags) as survey_tag(tag_text)
                     where strpos(lower(survey_tag.tag_text), :tag) > 0
-                )
+                ))
             order by survey.created_at desc, survey.id desc
             """,
         countQuery = """
@@ -100,24 +64,28 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 and survey.visibility = 'LISTED'
                 and (:includeAuthenticated = true or survey.access_mode <> 'AUTHENTICATED')
                 and (:accessMode = '' or survey.access_mode = :accessMode)
-                and (:category = '' or survey.category = :category)
+                and (:categories = '' or survey.category = any(string_to_array(:categories, ',')))
                 and (
                     :search = ''
                     or lower(survey.title) like concat('%', :search, '%')
                     or lower(coalesce(survey.description, '')) like concat('%', :search, '%')
+                    or exists (
+                        select 1 from unnest(survey.tags) as searched_tag(tag_text)
+                        where strpos(lower(searched_tag.tag_text), replace(:search, ' ', '-')) > 0
+                    )
                 )
-                and exists (
+                and (:tag = '' or exists (
                     select 1
                     from unnest(survey.tags) as survey_tag(tag_text)
                     where strpos(lower(survey_tag.tag_text), :tag) > 0
-                )
+                ))
             """,
         nativeQuery = true
     )
-    Page<Survey> findListedOpenPageByTag(
+    Page<Survey> findListedOpenPage(
         @Param("includeAuthenticated") boolean includeAuthenticated,
         @Param("accessMode") String accessMode,
-        @Param("category") String category,
+        @Param("categories") String categories,
         @Param("search") String search,
         @Param("tag") String tag,
         Pageable pageable
@@ -147,8 +115,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 or lower(survey.title) like concat('%', :search, '%')
                 or lower(survey.owner.name) like concat('%', :search, '%')
             )
-                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
-                and (:visibility is null or survey.visibility = :visibility)
+                and (:allLifecycleStatuses = true or survey.lifecycleStatus in :lifecycleStatuses)
+                and (:allVisibilities = true or survey.visibility in :visibilities)
             """,
         countQuery = """
             select count(survey.id)
@@ -158,14 +126,16 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 or lower(survey.title) like concat('%', :search, '%')
                 or lower(survey.owner.name) like concat('%', :search, '%')
             )
-                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
-                and (:visibility is null or survey.visibility = :visibility)
+                and (:allLifecycleStatuses = true or survey.lifecycleStatus in :lifecycleStatuses)
+                and (:allVisibilities = true or survey.visibility in :visibilities)
             """
     )
     Page<AdminSurveySummaryDto> findAdminSummaries(
         @Param("search") String search,
-        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
-        @Param("visibility") SurveyVisibility visibility,
+        @Param("allLifecycleStatuses") boolean allLifecycleStatuses,
+        @Param("lifecycleStatuses") List<SurveyLifecycle> lifecycleStatuses,
+        @Param("allVisibilities") boolean allVisibilities,
+        @Param("visibilities") List<SurveyVisibility> visibilities,
         Pageable pageable
     );
 
@@ -199,7 +169,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                     or (:searchTitle = true and lower(survey.title) like concat('%', :search, '%'))
                     or (:searchOwner = true and lower(owner.name) like concat('%', :search, '%'))
                 )
-                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and (:allLifecycleStatuses = true or survey.lifecycleStatus in :lifecycleStatuses)
             group by
                 survey.id,
                 survey.title,
@@ -229,7 +199,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                     or (:searchTitle = true and lower(survey.title) like concat('%', :search, '%'))
                     or (:searchOwner = true and lower(owner.name) like concat('%', :search, '%'))
                 )
-                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and (:allLifecycleStatuses = true or survey.lifecycleStatus in :lifecycleStatuses)
             """
     )
     Page<SurveyResultsSummaryDto> findResultSummaries(
@@ -238,7 +208,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
         @Param("search") String search,
         @Param("searchTitle") boolean searchTitle,
         @Param("searchOwner") boolean searchOwner,
-        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        @Param("allLifecycleStatuses") boolean allLifecycleStatuses,
+        @Param("lifecycleStatuses") List<SurveyLifecycle> lifecycleStatuses,
         Pageable pageable
     );
 
@@ -257,6 +228,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
             )
                 and (:search = '' or lower(survey.title) like concat('%', :search, '%'))
                 and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and survey.accessMode in :accessModes
+                and (:allCategories = true or survey.category in :categories)
         """,
         countQuery = """
             select count(survey.id)
@@ -272,12 +245,17 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
             )
                 and (:search = '' or lower(survey.title) like concat('%', :search, '%'))
                 and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and survey.accessMode in :accessModes
+                and (:allCategories = true or survey.category in :categories)
         """
     )
     Page<Survey> findEditableByUser(
         @Param("userId") Long userId,
         @Param("search") String search,
         @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        @Param("accessModes") List<SurveyAccessMode> accessModes,
+        @Param("allCategories") boolean allCategories,
+        @Param("categories") List<Category> categories,
         Pageable pageable
     );
 
@@ -291,7 +269,7 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 or lower(survey.title) like concat('%', :search, '%')
                 or lower(owner.name) like concat('%', :search, '%')
             )
-                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and (:allLifecycleStatuses = true or survey.lifecycleStatus in :lifecycleStatuses)
             """,
         countQuery = """
             select count(survey.id)
@@ -302,12 +280,13 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
                 or lower(survey.title) like concat('%', :search, '%')
                 or lower(owner.name) like concat('%', :search, '%')
             )
-                and (:lifecycleStatus is null or survey.lifecycleStatus = :lifecycleStatus)
+                and (:allLifecycleStatuses = true or survey.lifecycleStatus in :lifecycleStatuses)
             """
     )
     Page<Survey> findDirectory(
         @Param("search") String search,
-        @Param("lifecycleStatus") SurveyLifecycle lifecycleStatus,
+        @Param("allLifecycleStatuses") boolean allLifecycleStatuses,
+        @Param("lifecycleStatuses") List<SurveyLifecycle> lifecycleStatuses,
         Pageable pageable
     );
 }

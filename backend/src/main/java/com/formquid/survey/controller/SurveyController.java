@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -60,6 +61,8 @@ public class SurveyController {
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) String search,
         @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @RequestParam(name = "accessMode", required = false) List<SurveyAccessMode> accessModes,
+        @RequestParam(name = "category", required = false) List<Category> categories,
         @PageableDefault(
             size = 8,
             sort = "updatedAt",
@@ -70,6 +73,8 @@ public class SurveyController {
             user,
             search,
             lifecycleStatus,
+            accessModes,
+            categories,
             pageable
         );
     }
@@ -79,7 +84,7 @@ public class SurveyController {
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) String search,
         @RequestParam(defaultValue = "TITLE,OWNER") Set<SurveyResultsSearchField> searchFields,
-        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @RequestParam(name = "lifecycleStatus", required = false) List<SurveyLifecycle> lifecycleStatuses,
         @RequestParam(defaultValue = "NEWEST") SurveyResultsSortOrder sortOrder,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "9") int size
@@ -88,7 +93,7 @@ public class SurveyController {
             user,
             search,
             searchFields,
-            lifecycleStatus,
+            lifecycleStatuses,
             sortOrder,
             page,
             size
@@ -99,14 +104,14 @@ public class SurveyController {
     public PageResponseDto<SurveyDirectorySummaryDto> findDirectory(
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) String search,
-        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
+        @RequestParam(name = "lifecycleStatus", required = false) List<SurveyLifecycle> lifecycleStatuses,
         @PageableDefault(
             size = 9,
             sort = "updatedAt",
             direction = Sort.Direction.DESC
         ) Pageable pageable
     ) {
-        return surveyService.findDirectory(user, search, lifecycleStatus, pageable);
+        return surveyService.findDirectory(user, search, lifecycleStatuses, pageable);
     }
 
     @GetMapping("/registered/page")
@@ -117,9 +122,9 @@ public class SurveyController {
         @RequestParam(required = false) SurveyAccessMode accessMode,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "9") int size,
-        @RequestParam(required = false) Category category
+        @RequestParam(name = "category", required = false) List<Category> categories
     ) {
-        return surveyService.findListedOpenForRegisteredPage(user, search, tag, accessMode, page, size, category);
+        return surveyService.findListedOpenForRegisteredPage(user, search, tag, accessMode, page, size, categories);
     }
 
     @GetMapping("/by-code/{publicCode}")

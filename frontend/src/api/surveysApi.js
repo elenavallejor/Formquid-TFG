@@ -6,6 +6,7 @@ import { apiClient } from './apiClient.js';
 function getMainPageSurveys(path, {
   search = '',
   tag = '',
+  categories = [],
   accessMode = 'ALL',
   page = 0,
   size = 9,
@@ -16,6 +17,7 @@ function getMainPageSurveys(path, {
 
   if (normalizedSearch) params.set('search', normalizedSearch);
   if (normalizedTag) params.set('tag', normalizedTag);
+  categories.forEach((category) => params.append('category', category));
   if (accessMode !== 'ALL') params.set('accessMode', accessMode);
   params.set('page', String(page));
   params.set('size', String(size));
@@ -45,6 +47,8 @@ export function accessPasswordProtectedSurvey(surveyId, accessPassword) {
 export function getMySurveys({
   search = '',
   lifecycleStatus = 'ALL',
+  accessModes = [],
+  categories = [],
   sortOrder = 'RECENT',
   page = 0,
   size = 8,
@@ -60,6 +64,9 @@ export function getMySurveys({
   if (lifecycleStatus !== 'ALL') {
     params.set('lifecycleStatus', lifecycleStatus);
   }
+
+  accessModes.forEach((mode) => params.append('accessMode', mode));
+  categories.forEach((category) => params.append('category', category));
 
   params.set(
     'sort',
@@ -77,7 +84,7 @@ export function getMySurveys({
 export function getResultSurveys({
   search = '',
   searchFields = [],
-  lifecycleStatus = 'ALL',
+  lifecycleStatuses = [],
   sortOrder = 'NEWEST',
   page = 0,
   size = 9,
@@ -88,7 +95,7 @@ export function getResultSurveys({
 
   if (normalizedSearch) params.set('search', normalizedSearch);
   params.set('searchFields', searchFields.length > 0 ? searchFields.join(',') : 'NONE');
-  if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
+  lifecycleStatuses.forEach((status) => params.append('lifecycleStatus', status));
   params.set('sortOrder', sortOrder);
   params.set('page', String(page));
   params.set('size', String(size));
@@ -105,7 +112,7 @@ export function getRegisteredSurveys(options) {
 
 export function getSurveyDirectory({
   search = '',
-  lifecycleStatus = 'ALL',
+  lifecycleStatuses = [],
   sortOrder = 'RECENT',
   page = 0,
   size = 9,
@@ -114,7 +121,7 @@ export function getSurveyDirectory({
   const normalizedSearch = search.trim();
 
   if (normalizedSearch) params.set('search', normalizedSearch);
-  if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
+  lifecycleStatuses.forEach((status) => params.append('lifecycleStatus', status));
   params.set('sort', `updatedAt,${sortOrder === 'OLDEST' ? 'asc' : 'desc'}`);
   params.set('page', String(page));
   params.set('size', String(size));
@@ -186,8 +193,8 @@ export function updateSurveyLifecycle(surveyId, lifecycleStatus) {
 
 export function getAdminSurveys({
   search = '',
-  lifecycleStatus = 'ALL',
-  visibility = 'ALL',
+  lifecycleStatuses = [],
+  visibilities = [],
   page = 0,
   size = 9,
   signal,
@@ -196,8 +203,8 @@ export function getAdminSurveys({
   const normalizedSearch = search.trim();
 
   if (normalizedSearch) params.set('search', normalizedSearch);
-  if (lifecycleStatus !== 'ALL') params.set('lifecycleStatus', lifecycleStatus);
-  if (visibility !== 'ALL') params.set('visibility', visibility);
+  lifecycleStatuses.forEach((status) => params.append('lifecycleStatus', status));
+  visibilities.forEach((visibility) => params.append('visibility', visibility));
   params.set('page', String(page));
   params.set('size', String(size));
 

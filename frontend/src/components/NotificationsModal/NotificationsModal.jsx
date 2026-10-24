@@ -10,9 +10,7 @@ import { formatDate } from '../../utils/formatDate.js';
 import {
   getNotificationDestinationLabel,
   getNotificationPageSize,
-  NOTIFICATION_TYPE_OPTIONS,
 } from '../../utils/notificationsModalUtils.js';
-import { Dropdown } from '../Dropdown/Dropdown.jsx';
 import { Skeleton } from '../Skeleton/Skeleton.jsx';
 import './NotificationsModal.css';
 
@@ -27,7 +25,6 @@ export function NotificationsModal({ onClose }) {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [readFilter, setReadFilter] = useState('UNREAD');
-  const [typeFilter, setTypeFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -44,7 +41,7 @@ export function NotificationsModal({ onClose }) {
 
   useEffect(() => {
     let active = true;
-    getNotifications({ page, size: pageSize, unreadOnly: readFilter === 'UNREAD', type: typeFilter })
+    getNotifications({ page, size: pageSize, unreadOnly: readFilter === 'UNREAD' })
       .then((result) => {
         if (!active) return;
         setNotifications((items) => page === 0 ? result.content : [...items, ...result.content]);
@@ -54,7 +51,7 @@ export function NotificationsModal({ onClose }) {
       .catch((failure) => { if (active) setError(failure.message || 'No se pudieron cargar las notificaciones.'); })
       .finally(() => { if (active) { setLoading(false); setLoadingMore(false); } });
     return () => { active = false; };
-  }, [page, pageSize, readFilter, typeFilter, reloadKey]);
+  }, [page, pageSize, readFilter, reloadKey]);
 
   async function runAction(action) {
     if (actionLock.current) return;
@@ -65,10 +62,10 @@ export function NotificationsModal({ onClose }) {
     finally { actionLock.current = false; setBusy(false); }
   }
 
-  function resetList(nextReadFilter = readFilter, nextTypeFilter = typeFilter) {
+  function resetList(nextReadFilter = readFilter) {
     setLoading(true); setError(''); setNotifications([]); setPage(0);
-    setReadFilter(nextReadFilter); setTypeFilter(nextTypeFilter);
-    if (nextReadFilter === readFilter && nextTypeFilter === typeFilter) setReloadKey((key) => key + 1);
+    setReadFilter(nextReadFilter);
+    if (nextReadFilter === readFilter) setReloadKey((key) => key + 1);
   }
 
   async function markRead(item) {
@@ -118,20 +115,14 @@ export function NotificationsModal({ onClose }) {
       <section className="notifications-filters" aria-label="Filtros de notificaciones">
         <div className="notification-status-tabs" role="group" aria-label="Filtrar por estado">
           <button type="button" aria-controls="notifications-results" aria-pressed={readFilter === 'UNREAD'}
-            onClick={() => resetList('UNREAD', typeFilter)}>No leídas</button>
+            onClick={() => resetList('UNREAD')}>No leídas</button>
           <button type="button" aria-controls="notifications-results" aria-pressed={readFilter === 'ALL'}
-            onClick={() => resetList('ALL', typeFilter)}>Todas</button>
+            onClick={() => resetList('ALL')}>Todas</button>
         </div>
         <div className="notifications-filter-actions">
-          <label className="sr-only" htmlFor="notification-type-filter">Filtrar notificaciones por tipo</label>
-          <Dropdown id="notification-type-filter" value={typeFilter} aria-label="Filtrar notificaciones por tipo"
-            onChange={(event) => resetList(readFilter, event.target.value)}>
-            <option value="">Todos los tipos</option>
-            {NOTIFICATION_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </Dropdown>
           <button type="button" className="notifications-read-all" disabled={busy || loading || !totalElements}
             onClick={() => runAction(async () => {
-              await markAllNotificationsAsRead(); resetList(readFilter, typeFilter);
+              await markAllNotificationsAsRead(); resetList(readFilter);
               setStatus('Todas las notificaciones se han marcado como leídas.');
             })}>Marcar todas como leídas</button>
         </div>

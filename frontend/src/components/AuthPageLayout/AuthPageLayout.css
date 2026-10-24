@@ -1,6 +1,6 @@
 #login-page {
   min-height: 100%;
-  padding: 72px 16px;
+  padding: 72px var(--page-gutter);
   background-image:
     linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4)),
     url('../../assets/images/fondo.jpg');
@@ -16,7 +16,7 @@
 .login-page-container {
   width: 100%;
   min-height: calc(100vh - 120px);
-  padding: 40px 24px;
+  padding: 40px 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -80,13 +80,13 @@
 
 @media only screen and (max-width: 650px) {
   #login-page {
-    background-attachment: scroll;
+    padding: 0;
+    background: var(--color-background);
   }
 
   .login-page-container {
     min-height: 100dvh;
-    padding: 32px 24px;
-    background-color: #efefef;
+    padding: 32px var(--page-gutter);
     align-items: flex-start;
   }
 

@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Expone la consulta pública de encuestas disponibles sin requerir autenticación.
  */
@@ -34,9 +36,9 @@ public class PublicSurveyController {
         @RequestParam(required = false) SurveyAccessMode accessMode,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "9") int size,
-        @RequestParam(required = false) Category category
+        @RequestParam(name = "category", required = false) List<Category> categories
     ) {
-        return surveyService.findListedOpenPage(search, tag, accessMode, page, size, category);
+        return surveyService.findListedOpenPage(search, tag, accessMode, page, size, categories);
     }
 
     @GetMapping("/{publicCode}")

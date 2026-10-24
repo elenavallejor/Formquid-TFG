@@ -141,15 +141,6 @@
   justify-content: flex-end;
 }
 
-.notifications-modal .notifications-filter-actions .custom-dropdown {
-  width: 280px;
-}
-
-.notifications-modal .notifications-filter-actions .custom-dropdown-trigger {
-  min-height: 40px;
-  padding-block: 7px;
-  font-size: 18.75px;
-}
 
 .notifications-modal .notifications-read-all,
 .notifications-modal .notification-read {
@@ -370,10 +361,6 @@
     justify-content: stretch;
   }
 
-  .notifications-modal .notifications-filter-actions .custom-dropdown {
-    flex: 1;
-    width: auto;
-  }
 }
 
 @media (max-width: 640px) {
@@ -404,9 +391,6 @@
     flex-direction: column;
   }
 
-  .notifications-modal .notifications-filter-actions .custom-dropdown {
-    width: 100%;
-  }
 
   .notifications-modal .notifications-modal-body {
     padding: 18px;

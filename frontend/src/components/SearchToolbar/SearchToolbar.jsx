@@ -16,6 +16,10 @@ export function SearchToolbar({
   filterLabel = 'Filtrar',
   filterOptions,
   filterOptionsLabel = 'Filtrar por',
+  filterOptionsControl,
+  filterOptionsAllLabel,
+  filterOptionsNoneLabel,
+  filterOptionsSelectedCountLabel,
   selectedFilterValues,
   filterChoice,
   filterChoices,
@@ -47,6 +51,10 @@ export function SearchToolbar({
             label={filterLabel}
             options={filterOptions}
             optionsLabel={filterOptionsLabel}
+            optionsControl={filterOptionsControl}
+            optionsAllLabel={filterOptionsAllLabel}
+            optionsNoneLabel={filterOptionsNoneLabel}
+            optionsSelectedCountLabel={filterOptionsSelectedCountLabel}
             selectedValues={selectedFilterValues}
             choiceFilter={filterChoice}
             choiceFilters={filterChoices}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { lockBodyScroll } from '../utils/bodyScrollLock.js';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -13,8 +14,6 @@ const FOCUSABLE_SELECTOR = [
 ].join(',');
 
 const modalStack = [];
-let scrollLockCount = 0;
-let previousBodyOverflow = '';
 
 function getFocusableElements(container) {
   if (!container) return [];
@@ -37,19 +36,6 @@ function getInitialFocusTarget(dialog, initialFocusRef) {
     return preferredTarget;
   }
   return getFocusableElements(dialog)[0] || dialog;
-}
-
-function lockPageScroll() {
-  if (scrollLockCount === 0) {
-    previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  }
-  scrollLockCount += 1;
-}
-
-function unlockPageScroll() {
-  scrollLockCount = Math.max(0, scrollLockCount - 1);
-  if (scrollLockCount === 0) document.body.style.overflow = previousBodyOverflow;
 }
 
 /**
@@ -82,7 +68,7 @@ export function useModalFocus({
     const requestedReturnFocus = returnFocusRef?.current;
     shouldRestoreFocusRef.current = true;
     modalStack.push(modalId);
-    if (lockScroll) lockPageScroll();
+    const unlockScroll = lockScroll ? lockBodyScroll() : null;
 
     function isTopModal() {
       return modalStack[modalStack.length - 1] === modalId;
@@ -143,7 +129,7 @@ export function useModalFocus({
       document.removeEventListener('focusin', handleFocusIn, true);
       const stackIndex = modalStack.lastIndexOf(modalId);
       if (stackIndex >= 0) modalStack.splice(stackIndex, 1);
-      if (lockScroll) unlockPageScroll();
+      unlockScroll?.();
 
       const focusTarget = requestedReturnFocus || previouslyFocused;
       if (shouldRestoreFocusRef.current && focusTarget?.isConnected) {

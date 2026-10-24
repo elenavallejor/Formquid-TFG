@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createSurvey, createSurveyFromImport, createSurveyFromTemplate, uploadSurveyCover } from '../../../api/surveysApi.js';
 import { getCategories } from '../../../api/categoriesApi.js';
@@ -45,6 +45,7 @@ async function chooseCategory(user, name = 'Salud') {
 }
 
 describe('CreateSurveyPage', () => {
+  afterEach(() => vi.unstubAllGlobals());
   beforeEach(() => {
     vi.resetAllMocks();
     getCategories.mockResolvedValue([{ code: 'OTROS', name: 'Otros' }, { code: 'SALUD', name: 'Salud', icon: 'BsPeople' }]);
@@ -71,6 +72,27 @@ describe('CreateSurveyPage', () => {
     expect(await screen.findByRole('heading', { name: 'Encuesta creada: 16' })).toBeVisible();
     expect(uploadSurveyCover).toHaveBeenCalledWith(16, file);
     expect(createSurvey).toHaveBeenCalledTimes(1);
+  });
+
+  it('permite elegir una portada de la galería y subirla al crear la encuesta', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(new Blob(['imagen'], { type: 'image/png' })) }));
+    createSurvey.mockResolvedValue({ id: 17 });
+    uploadSurveyCover.mockResolvedValue({ id: 17 });
+    renderPage({ surveyOrigin: { type: 'BLANK' } });
+
+    await chooseCategory(user);
+    await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta con galería');
+    await user.click(screen.getByRole('button', { name: 'ABRIR GALERÍA DE FOTOS' }));
+    expect(screen.getByRole('group', { name: 'Galería de fotos' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Galería de fotos' })).toBeVisible();
+    expect(screen.getByText('Elige una foto para tu portada:')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Usar imagen: Aula' }));
+    expect(await screen.findByText('Aula.png')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
+
+    expect(await screen.findByRole('heading', { name: 'Encuesta creada: 17' })).toBeVisible();
+    expect(uploadSurveyCover).toHaveBeenCalledWith(17, expect.objectContaining({ name: 'Aula.png', type: 'image/png' }));
   });
 
   it('abre el selector al pulsar la vista previa y sitúa la creación al final', async () => {

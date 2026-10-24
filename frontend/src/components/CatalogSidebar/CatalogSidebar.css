@@ -6,7 +6,7 @@
 
 .catalog-space {
   flex-shrink: 0;
-  width: 0;
+  width: 64px;
   transition: width 0.3s ease;
 }
 
@@ -41,67 +41,97 @@
   transition: transform 0.3s ease, opacity 0.25s ease, visibility 0s;
 }
 
-.catalog-toggle {
+.catalog-collapsed-rail {
   position: fixed;
-  top: calc(var(--catalog-top, 0px) + 70px);
+  top: var(--catalog-top, 0px);
   left: 0;
   z-index: 40;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 36px;
-  min-height: 44px;
-  overflow: hidden;
-  padding: 10px 6px;
-  border: 1px solid color-mix(in srgb, var(--color-surface) 35%, transparent);
-  border-left: none;
-  border-radius: 0 8px 8px 0;
+  justify-content: center;
+  width: 64px;
+  height: calc(100vh - var(--catalog-top, 0px));
+  height: calc(100dvh - var(--catalog-top, 0px));
   background: var(--color-primary);
-  color: var(--color-text-on-dark);
-  box-shadow: var(--card-shadow);
-  cursor: pointer;
-  opacity: 1;
-  white-space: nowrap;
-  transform: translateX(0);
   visibility: visible;
-  transition: width 0.3s ease, transform 0.3s ease, opacity 0.25s ease, background-color 0.2s ease, visibility 0s;
+  transition: transform 0.3s ease, visibility 0s;
 }
 
-.catalog-toggle:hover:not(.catalog-toggle-hidden),
-.catalog-toggle:focus-visible:not(.catalog-toggle-hidden) {
-  width: 176px;
-  padding-right: 14px;
-  padding-left: 12px;
-}
-
-.catalog-toggle.catalog-toggle-hidden {
-  opacity: 0;
+.catalog-collapsed-rail-hidden {
   transform: translateX(-100%);
   visibility: hidden;
   pointer-events: none;
-  transition: transform 0.3s ease, opacity 0.25s ease, visibility 0s 0.3s;
+  transition: transform 0.3s ease, visibility 0s 0.3s;
+}
+
+.catalog-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 16px;
+  flex: none;
+  width: 100%;
+  height: 100%;
+  padding: 25px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-on-dark);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .catalog-toggle:hover {
   background: var(--color-primary-hover);
+  color: var(--color-accent-surface);
 }
 
 .catalog-toggle:focus-visible {
-  outline: var(--focus-outline);
-  outline-offset: var(--focus-outline-offset);
-  box-shadow: var(--focus-shadow);
+  outline: 2px solid var(--color-text-on-dark);
+  outline-offset: -4px;
 }
 
-.catalog-toggle svg {
+.catalog-toggle > svg {
   flex-shrink: 0;
-  font-size: 22.5px;
+  width: 30px;
+  height: 30px;
 }
 
-.catalog-toggle span {
-  flex: none;
-  font-size: 15px;
+.catalog-toggle-label {
+  color: var(--color-text-on-dark);
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.08em;
+  line-height: 1;
+  text-orientation: upright;
+  writing-mode: vertical-rl;
+}
+
+.catalog-toggle-tooltip {
+  position: absolute;
+  top: 40px;
+  left: calc(100% + 16px);
+  width: max-content;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--color-text);
+  color: var(--color-text-on-dark);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0s 0.15s;
+}
+
+.catalog-toggle:hover .catalog-toggle-tooltip,
+.catalog-toggle:focus-visible .catalog-toggle-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.15s ease, visibility 0s;
 }
 
 .catalog-header {
@@ -546,13 +576,9 @@
   padding: 10px;
 }
 
-@media screen and (max-width: 700px) {
+@media screen and (max-width: 900px) {
   .catalog-overlay-root {
     --catalog-width: min(380px, 90vw);
-  }
-
-  .catalog-embedded-root {
-    flex-basis: 240px;
   }
 
   .catalog-space,
@@ -560,16 +586,34 @@
     width: 0;
   }
 
+  .catalog-space + .create-block-main .breadcrumb-nav {
+    margin-bottom: 68px;
+  }
+
   .catalog-sidebar {
     width: var(--catalog-width, 380px);
   }
 
-  .catalog-filters {
-    flex-direction: column;
+  .catalog-collapsed-rail {
+    top: var(--catalog-mobile-toggle-top, calc(var(--catalog-top, 0px) + 8px));
+    bottom: auto;
+    left: 0;
+    width: 64px;
+    height: 48px;
+    border: 0;
+    border-radius: 0 8px 8px 0;
   }
 
   .catalog-toggle {
-    top: calc(var(--catalog-top, 0px) + 40px);
+    padding-top: 9px;
+  }
+
+  .catalog-toggle-label {
+    display: none;
+  }
+
+  .catalog-toggle-tooltip {
+    top: 24px;
   }
 
   .catalog-backdrop {
@@ -595,9 +639,20 @@
 
 }
 
+@media screen and (max-width: 700px) {
+  .catalog-embedded-root {
+    flex-basis: 240px;
+  }
+
+  .catalog-filters {
+    flex-direction: column;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .catalog-space,
   .catalog-sidebar,
+  .catalog-collapsed-rail,
   .catalog-toggle,
   .catalog-item,
   .catalog-action,

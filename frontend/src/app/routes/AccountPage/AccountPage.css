@@ -1,7 +1,7 @@
 .account-page {
   width: 100%;
   background-color: var(--color-background);
-  padding: 32px 40px 60px;
+  padding: 32px var(--page-gutter) 60px;
   box-sizing: border-box;
 }
 
@@ -319,7 +319,7 @@
 
 @media only screen and (max-width: 768px) {
   .account-page {
-    padding: 16px 12px 40px;
+    padding: 16px var(--page-gutter) 40px;
   }
 
   .account-page-header {

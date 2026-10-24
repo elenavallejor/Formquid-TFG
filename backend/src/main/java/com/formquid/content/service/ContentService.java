@@ -248,6 +248,15 @@ public class ContentService {
     ) {
         if (dto.category() != null) categoryCatalogService.requireExisting(dto.category());
         makeRoomForSurveyItem(survey, position);
+        return toSurveyResponse(saveLocalSurveyBlock(survey, position, dto, creator));
+    }
+
+    private ContentItem saveLocalSurveyBlock(
+        Survey survey,
+        Integer position,
+        CreateBlockRequestDto dto,
+        User creator
+    ) {
         ContentItem parentItem = contentItemRepository.save(
             baseSurveyItem(survey, ContentItemType.BLOCK, position)
         );
@@ -289,7 +298,7 @@ public class ContentService {
                     questionService.createLocalQuestion(item.question(), questionItem, creator);
                 }
             });
-        return toSurveyResponse(parentItem);
+        return parentItem;
     }
 
     @Transactional
@@ -310,29 +319,30 @@ public class ContentService {
 
     private void addSurveyItem(Survey survey, SurveyContentItemRequestDto item, User creator) {
         if (item.itemType() == ContentItemType.TEXT) {
-            addTextToSurvey(survey, new CreateTextItemRequestDto(item.position(), item.textBody()));
+            ContentItem textItem = baseSurveyItem(survey, ContentItemType.TEXT, item.position());
+            textItem.setTextBody(item.textBody().trim());
+            contentItemRepository.save(textItem);
             return;
         }
         if (item.itemType() == ContentItemType.QUESTION) {
+            ContentItem questionItem = baseSurveyItem(survey, ContentItemType.QUESTION, item.position());
+            questionItem.setRequired(item.required());
+            ContentItem savedItem = contentItemRepository.save(questionItem);
             if (item.fixedQuestionId() != null) {
-                addFixedQuestionToSurvey(
-                    survey,
-                    new AddFixedQuestionItemRequestDto(item.position(), item.required(), item.fixedQuestionId()),
-                    creator
-                );
+                questionService.createFixedSnapshot(getCatalogFixedQuestion(item.fixedQuestionId()), savedItem, creator);
             } else {
-                addLocalQuestionToSurvey(
-                    survey,
-                    new CreateQuestionItemRequestDto(item.position(), item.required(), item.question()),
-                    creator
-                );
+                questionService.createLocalQuestion(item.question(), savedItem, creator);
             }
             return;
         }
         if (item.blockId() != null) {
-            addBlockToSurvey(survey, new AddBlockItemRequestDto(item.position(), item.blockId()), creator);
+            ContentItem blockItem = contentItemRepository.save(
+                baseSurveyItem(survey, ContentItemType.BLOCK, item.position())
+            );
+            copyExistingBlock(getCatalogBlock(item.blockId()), blockItem, creator);
         } else {
-            addLocalBlockToSurvey(survey, item.position(), item.block(), creator);
+            if (item.block().category() != null) categoryCatalogService.requireExisting(item.block().category());
+            saveLocalSurveyBlock(survey, item.position(), item.block(), creator);
         }
     }
 
@@ -404,8 +414,7 @@ public class ContentService {
     @Transactional
     public void deleteSurveyItem(Survey survey, Long itemId) {
         ContentItem item = getSurveyItem(survey, itemId);
-        contentItemRepository.delete(item);
-        contentItemRepository.flush();
+        deleteParentContentItems(List.of(item));
         normalizeSurveyPositions(survey.getId());
     }
 
@@ -626,7 +635,7 @@ public class ContentService {
         List<ContentItem> items = contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId());
         for (ContentItem item : items) {
             if (item.getItemType() == ContentItemType.QUESTION) {
-                questionRepository.findByParentItemId(item.getId()).ifPresent(questionRepository::delete);
+                deleteQuestionForItem(item);
             }
         }
         questionRepository.flush();
@@ -647,10 +656,11 @@ public class ContentService {
     private void deleteParentContentItems(List<ContentItem> items) {
         for (ContentItem item : items) {
             if (item.getItemType() == ContentItemType.QUESTION) {
-                questionRepository.findByParentItemId(item.getId()).ifPresent(questionRepository::delete);
+                deleteQuestionForItem(item);
             } else if (item.getItemType() == ContentItemType.BLOCK) {
                 blockRepository.findByParentItemId(item.getId()).ifPresent(block -> {
                     deleteBlockContent(block);
+                    item.setBlock(null);
                     blockRepository.delete(block);
                     blockRepository.flush();
                 });
@@ -659,6 +669,13 @@ public class ContentService {
         questionRepository.flush();
         contentItemRepository.deleteAll(items);
         contentItemRepository.flush();
+    }
+
+    private void deleteQuestionForItem(ContentItem item) {
+        questionRepository.findByParentItemId(item.getId()).ifPresent(question -> {
+            item.setQuestion(null);
+            questionRepository.delete(question);
+        });
     }
 
     private ContentItem baseSurveyItem(Survey survey, ContentItemType type, Integer position) {

@@ -1,8 +1,11 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { BsPeople } from 'react-icons/bs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
+import { getCategories } from '../../../api/categoriesApi.js';
 import {
   acceptCollaborationRequest, acceptPublicationRequest, createCollaborationRequest, getCollaborationRequests,
   getCollaborators, getPublicationRequests, rejectCollaborationRequest, rejectPublicationRequest,
@@ -70,6 +73,7 @@ function renderPage(route = '/encuestas/12/editar', user = { id: 7, role: 'EDITO
 }
 
 describe('EditSurveyPage', () => {
+  afterEach(() => vi.unstubAllGlobals());
   beforeEach(() => {
     vi.resetAllMocks();
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:cover-preview') });
@@ -94,6 +98,25 @@ describe('EditSurveyPage', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Configuración guardada correctamente.');
     expect(uploadSurveyCover).toHaveBeenCalledWith('12', file);
+  });
+
+  it('permite elegir una portada de la galería al editar y espera a que cargue antes de guardar', async () => {
+    const user = userEvent.setup();
+    let resolveImage;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => { resolveImage = resolve; })));
+    uploadSurveyCover.mockResolvedValue({ ...survey, imageKey: '/api/v1/public/surveys/12/cover/Aula.png' });
+    renderPage('/encuestas/12/editar?seccion=configuracion');
+
+    await user.click(await screen.findByRole('button', { name: 'ABRIR GALERÍA DE FOTOS' }));
+    await user.click(screen.getByRole('button', { name: 'Usar imagen: Aula' }));
+    expect(screen.getByRole('button', { name: 'Actualizar configuración' })).toBeDisabled();
+
+    resolveImage({ ok: true, blob: () => Promise.resolve(new Blob(['imagen'], { type: 'image/png' })) });
+    expect(await screen.findByText('Aula.png')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Actualizar configuración' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Configuración guardada correctamente.');
+    expect(uploadSurveyCover).toHaveBeenCalledWith('12', expect.objectContaining({ name: 'Aula.png', type: 'image/png' }));
   });
 
   it('muestra los avisos como subtítulo bajo Acceso y visibilidad', async () => {
@@ -129,6 +152,18 @@ describe('EditSurveyPage', () => {
       items: [{ itemType: 'TEXT', position: 1, textBody: 'Introducción' }],
     });
     expect(updateSurvey).toHaveBeenCalledWith('12', expect.objectContaining({ tags: ['vida-digital'] }));
+  });
+
+  it('muestra el nombre de la categoría en la información general', async () => {
+    getSurveyById.mockResolvedValue({ ...survey, category: 'REDES_SOCIALES' });
+    getCategories.mockResolvedValue([{ code: 'REDES_SOCIALES', name: 'Redes sociales', icon: 'BsPeople' }]);
+    renderPage();
+
+    const category = await screen.findByRole('textbox', { name: 'Categoría' });
+    await waitFor(() => expect(category).toHaveValue('Redes sociales'));
+    expect(category).toHaveAttribute('readonly');
+    expect(category.parentElement.querySelector('svg')?.outerHTML)
+      .toBe(renderToStaticMarkup(<BsPeople aria-hidden="true" />));
   });
 
   it('guarda un cambio de título desde configuración', async () => {

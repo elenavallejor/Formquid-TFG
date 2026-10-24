@@ -18,6 +18,7 @@ import {
   requestPublication,
   updateCollaboratorPermission,
 } from '../../../api/collaborationsApi.js';
+import { getCategories } from '../../../api/categoriesApi.js';
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
 import { deleteSurvey, getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle, uploadSurveyCover } from '../../../api/surveysApi.js';
 import { resolveSurveyImageUrl } from '../../../api/apiClient.js';
@@ -41,6 +42,7 @@ import { INITIAL_SURVEY_STRUCTURE, buildSurveyStructurePayload, buildSurveyStruc
 import { formatDate, formatDateTime } from '../../../utils/formatDate.js';
 import { getSurveyAccessBadge } from '../../../utils/surveyAccess.js';
 import { normalizeTag } from '../../../utils/surveyTagUtils.js';
+import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../../utils/categoryIconOptions.js';
 
 import '../CreateBlockPage/CreateBlockPage.css';
 import '../CreateSurveyPage/CreateSurveyPage.css';
@@ -160,7 +162,29 @@ function settingsFromSurvey(survey) {
   };
 }
 
-function SurveyGeneralInfo({ title, description }) {
+function SurveyGeneralInfo({ title, category, description }) {
+  const [categoryDetails, setCategoryDetails] = useState(null);
+
+  useEffect(() => {
+    if (!category) return undefined;
+    let active = true;
+    getCategories({ surveyOnly: true })
+      .then((categories) => {
+        if (active) setCategoryDetails(Array.isArray(categories) ? categories.find((item) => item.code === category) ?? null : null);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [category]);
+
+  const categoryName = categoryDetails && categoryDetails.code === category
+    ? categoryDetails.name
+    : category === 'OTROS'
+      ? 'Otras tecnologías'
+      : category?.replaceAll('_', ' ').toLocaleLowerCase('es').replace(/^./, (letter) => letter.toLocaleUpperCase('es')) || 'Sin categoría';
+  const CategoryIcon = category && CATEGORY_ICON_COMPONENTS[getCategoryIconName(
+    categoryDetails?.code === category ? categoryDetails : { code: category },
+  )];
+
   return (
     <section className="edit-survey-panel-card edit-survey-general-card" aria-labelledby="edit-survey-summary-title">
       <div className="edit-survey-card-heading">
@@ -172,6 +196,13 @@ function SurveyGeneralInfo({ title, description }) {
       <div className="create-survey-field">
         <label htmlFor="edit-survey-summary-name">Título de la encuesta</label>
         <input id="edit-survey-summary-name" type="text" value={title} readOnly aria-readonly="true" />
+      </div>
+      <div className="create-survey-field">
+        <label htmlFor="edit-survey-summary-category">Categoría</label>
+        <div className={`edit-survey-category-value ${CategoryIcon ? 'has-icon' : ''}`}>
+          {CategoryIcon && <CategoryIcon aria-hidden="true" />}
+          <input id="edit-survey-summary-category" type="text" value={categoryName} readOnly aria-readonly="true" />
+        </div>
       </div>
       <div className="create-survey-field">
         <span id="edit-survey-summary-description-label" className="edit-survey-readonly-label">Descripción</span>
@@ -222,7 +253,7 @@ function SurveyTagsEditor({ tags, readOnly, onChange }) {
   );
 }
 
-function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onImageError, onChange, onFileChange, onError, showPolicySettings }) {
+function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onImageError, onChange, onFileChange, onError, onCoverBusyChange, showPolicySettings }) {
   const [isAccessPasswordVisible, setIsAccessPasswordVisible] = useState(false);
   const selectedFont = FONT_OPTIONS.find((font) => font.value === data.fontFamily) || FONT_OPTIONS[0];
   const accessNotes = [
@@ -239,6 +270,8 @@ function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onIma
           <input id="edit-survey-title" type="text" maxLength={200} value={data.title} onChange={(event) => onChange({ title: event.target.value })} />
           <small>{data.title.length}/200</small>
         </div>
+        <CategorySelect id="edit-survey-category" surveyOnly value={data.category}
+          onChange={(category) => onChange({ category })} />
         <div className="create-survey-field">
           <label htmlFor="edit-survey-description">Descripción</label>
           <textarea id="edit-survey-description" rows={5} maxLength={1000} value={data.description} onChange={(event) => onChange({ description: event.target.value })} />
@@ -248,16 +281,14 @@ function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onIma
 
       <section className="create-survey-card" aria-labelledby="edit-survey-image-title">
         <h2 id="edit-survey-image-title">IMAGEN</h2>
-        <SurveyCoverInput id="edit-survey-image" imageKey={data.imageKey} file={coverFile} imageHasError={imageHasError}
+        <SurveyCoverInput id="edit-survey-image" imageKey={data.imageKey} file={coverFile} imageHasError={imageHasError} enableGallery
           onImageError={onImageError} onUrlChange={(imageKey) => onChange({ imageKey }, true)}
-          onFileChange={onFileChange} onError={onError} />
+          onFileChange={onFileChange} onError={onError} onBusyChange={onCoverBusyChange} />
       </section>
 
       <section className="create-survey-card" aria-labelledby="edit-survey-appearance-title">
         <h2 id="edit-survey-appearance-title">APARIENCIA</h2>
         <div className="create-survey-grid edit-survey-appearance-layout">
-          <CategorySelect id="edit-survey-category" surveyOnly value={data.category}
-            onChange={(category) => onChange({ category })} />
           <div className="create-survey-field">
             <label htmlFor="edit-survey-font">Tipografía</label>
             <Dropdown id="edit-survey-font" value={data.fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value })}>
@@ -478,6 +509,7 @@ export function EditSurveyPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [imageHasError, setImageHasError] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
+  const [coverLoading, setCoverLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const isOwner = Boolean(user && survey && Number(user.id) === Number(survey.ownerId));
@@ -612,7 +644,7 @@ export function EditSurveyPage() {
 
   async function saveSettings() {
     if (!settings.title.trim()) return setErrorMessage('Introduce un título para la encuesta.');
-    if (saveLockRef.current) return;
+    if (saveLockRef.current || coverLoading) return;
     saveLockRef.current = true; setIsSaving(true); clearMessages();
     try {
       let response = await updateSurvey(surveyId, { title: settings.title.trim(), description: settings.description.trim() || null, imageKey: settings.imageKey.trim() || null, fontFamily: settings.fontFamily, accessMode: settings.accessMode, visibility: settings.visibility, accessPassword: settings.accessMode === 'PASSWORD_PROTECTED' ? settings.accessPassword || null : null, tags: settings.tags, category: settings.category });
@@ -754,7 +786,7 @@ export function EditSurveyPage() {
             {(survey || primaryActionLabel) && <div className="edit-survey-header-actions">
               {(canPreviewSurvey || primaryActionLabel) && <div className="edit-survey-header-buttons">
                 {canPreviewSurvey && <button type="button" className="edit-survey-preview-button" disabled={isPageLoading || !survey} onClick={() => setIsPreviewOpen(true)}><MdOutlineVisibility aria-hidden="true" />Previsualizar</button>}
-                {primaryActionLabel && <button type="button" className="btn-create-submit" disabled={isSaving || isPageLoading || !survey} onClick={handlePrimaryAction}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : primaryActionLabel}</span></button>}
+                {primaryActionLabel && <button type="button" className="btn-create-submit" disabled={isSaving || isPageLoading || !survey || coverLoading} onClick={handlePrimaryAction}><MdSave aria-hidden="true" /><span>{isSaving ? 'Guardando...' : primaryActionLabel}</span></button>}
               </div>}
               {survey && <span className={`table-badge table-badge-${survey.lifecycleStatus.toLocaleLowerCase()}`}>{LIFECYCLE_LABELS[survey.lifecycleStatus]}</span>}
             </div>}
@@ -791,14 +823,14 @@ export function EditSurveyPage() {
           {successMessage && <div className="edit-survey-success" role="status"><MdCheck aria-hidden="true" /><span>{successMessage}</span></div>}
 
           {activeTab === 'SURVEY' && <section id="survey-panel-survey" role="tabpanel" aria-labelledby="survey-tab-survey">
-            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <>{!canEditSurvey && <p className="edit-survey-structure-note">Tienes acceso de solo lectura. Puedes consultar la estructura, pero no modificarla.</p>}{canEditSurvey && survey.lifecycleStatus !== 'DRAFT' && <p className="edit-survey-structure-note">La estructura solo podrá guardarse si la encuesta todavía no tiene respuestas.</p>}<SurveyGeneralInfo title={survey.title} description={survey.description || ''} /><SurveyTagsEditor tags={settings.tags} readOnly={!canEditSurvey} onChange={(tags) => { setSettings((current) => ({ ...current, tags })); setHasTagChanges(true); clearMessages(); }} /><SurveyBuilder data={structure} onChange={(nextStructure) => { setStructure(nextStructure); setHasStructureChanges(true); clearMessages(); }} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} readOnly={!canEditSurvey} /></>}
+            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <>{!canEditSurvey && <p className="edit-survey-structure-note">Tienes acceso de solo lectura. Puedes consultar la estructura, pero no modificarla.</p>}{canEditSurvey && survey.lifecycleStatus !== 'DRAFT' && <p className="edit-survey-structure-note">La estructura solo podrá guardarse si la encuesta todavía no tiene respuestas.</p>}<SurveyGeneralInfo title={survey.title} category={survey.category} description={survey.description || ''} /><SurveyTagsEditor tags={settings.tags} readOnly={!canEditSurvey} onChange={(tags) => { setSettings((current) => ({ ...current, tags })); setHasTagChanges(true); clearMessages(); }} /><SurveyBuilder data={structure} onChange={(nextStructure) => { setStructure(nextStructure); setHasStructureChanges(true); clearMessages(); }} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} readOnly={!canEditSurvey} /></>}
           </section>}
           {activeTab === 'COLLABORATIONS' && <section id="survey-panel-collaborations" role="tabpanel" aria-labelledby="survey-tab-collaborations">
             {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <CollaborationsPanel surveyId={surveyId} isOwner={isOwner} isLoading={isLoadingCollaborations} collaborators={collaborators} requests={requests} publicationRequests={publicationRequests} onReload={loadCollaborations} onSurveyReload={reloadSurvey} onError={setErrorMessage} onSuccess={setSuccessMessage} />}
           </section>}
           {activeTab === 'SETTINGS' && <section id="survey-panel-settings" role="tabpanel" aria-labelledby="survey-tab-settings">
             {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={4} hasActions={false} /></div> : survey && <>
-              {!isSupervising && <SurveySettings data={settings} coverFile={coverFile} imageHasError={imageHasError} lifecycleStatus={survey.lifecycleStatus} onImageError={() => setImageHasError(true)} onChange={(changes, resetImageError = false) => { if (resetImageError) setImageHasError(false); setSettings((current) => ({ ...current, ...changes })); setHasSettingsChanges(true); clearMessages(); }} onFileChange={(file) => { setImageHasError(false); setCoverFile(file); setHasSettingsChanges(true); clearMessages(); }} onError={setErrorMessage} showPolicySettings={isOwner} />}
+              {!isSupervising && <SurveySettings data={settings} coverFile={coverFile} imageHasError={imageHasError} lifecycleStatus={survey.lifecycleStatus} onImageError={() => setImageHasError(true)} onChange={(changes, resetImageError = false) => { if (resetImageError) setImageHasError(false); setSettings((current) => ({ ...current, ...changes })); setHasSettingsChanges(true); clearMessages(); }} onFileChange={(file) => { setImageHasError(false); setCoverFile(file); setHasSettingsChanges(true); clearMessages(); }} onError={setErrorMessage} onCoverBusyChange={setCoverLoading} showPolicySettings={isOwner} />}
               {isOwner && <section className="edit-survey-panel-card edit-survey-lifecycle-card">
                 <div className="edit-survey-lifecycle-copy">
                   <h2>CICLO DE VIDA</h2>

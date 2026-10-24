@@ -29,40 +29,45 @@ describe('surveysApi', () => {
   });
 
   it('normaliza búsqueda y filtros de las encuestas públicas', () => {
-    getPublicSurveys({ search: '  ciencia  ', tag: ' salud ', accessMode: 'PUBLIC', page: 2 });
+    getPublicSurveys({ search: '  ciencia  ', tag: ' salud ', categories: ['ORDENADORES', 'TELEFONO_INTELIGENTE'], accessMode: 'PUBLIC', page: 2 });
     const { url, options } = lastRequest();
     expect(url.pathname).toBe('/public/surveys/page');
-    expect(Object.fromEntries(url.searchParams)).toEqual({ search: 'ciencia', tag: 'salud', accessMode: 'PUBLIC', page: '2', size: '9' });
+    expect(Object.fromEntries(url.searchParams)).toEqual({ search: 'ciencia', tag: 'salud', category: 'TELEFONO_INTELIGENTE', accessMode: 'PUBLIC', page: '2', size: '9' });
+    expect(url.searchParams.getAll('category')).toEqual(['ORDENADORES', 'TELEFONO_INTELIGENTE']);
     expect(options).toEqual({ method: 'GET' });
   });
 
   it('ordena las encuestas propias y transmite la señal de cancelación', () => {
     const signal = new AbortController().signal;
-    getMySurveys({ search: '  clima ', lifecycleStatus: 'OPEN', sortOrder: 'OLDEST', signal });
+    getMySurveys({ search: '  clima ', lifecycleStatus: 'OPEN', accessModes: ['PUBLIC', 'AUTHENTICATED'], categories: ['ORDENADORES', 'TELEFONO_INTELIGENTE'], sortOrder: 'OLDEST', signal });
     const { url, options } = lastRequest();
     expect(url.searchParams.get('search')).toBe('clima');
     expect(url.searchParams.get('lifecycleStatus')).toBe('OPEN');
+    expect(url.searchParams.getAll('accessMode')).toEqual(['PUBLIC', 'AUTHENTICATED']);
+    expect(url.searchParams.getAll('category')).toEqual(['ORDENADORES', 'TELEFONO_INTELIGENTE']);
     expect(url.searchParams.get('sort')).toBe('updatedAt,asc');
     expect(options.signal).toBe(signal);
   });
 
   it('envía los filtros de resultados y conserva el orden solicitado', () => {
-    getResultSurveys({ searchFields: ['TITLE', 'OWNER'], lifecycleStatus: 'CLOSED', sortOrder: 'OLDEST', page: 1, size: 18 });
+    getResultSurveys({ searchFields: ['TITLE', 'OWNER'], lifecycleStatuses: ['OPEN', 'CLOSED'], sortOrder: 'OLDEST', page: 1, size: 18 });
     const { url } = lastRequest();
     expect(url.pathname).toBe('/surveys/results');
-    expect(Object.fromEntries(url.searchParams)).toEqual({
-      searchFields: 'TITLE,OWNER', lifecycleStatus: 'CLOSED', sortOrder: 'OLDEST', page: '1', size: '18',
-    });
+    expect(url.searchParams.getAll('lifecycleStatus')).toEqual(['OPEN', 'CLOSED']);
+    expect(url.searchParams.get('searchFields')).toBe('TITLE,OWNER');
+    expect(url.searchParams.get('sortOrder')).toBe('OLDEST');
+    expect(url.searchParams.get('page')).toBe('1');
+    expect(url.searchParams.get('size')).toBe('18');
   });
 
   it('omite filtros no seleccionados en el directorio y la supervisión', () => {
     getSurveyDirectory();
     expect(lastRequest().url.searchParams.has('lifecycleStatus')).toBe(false);
-    getAdminSurveys({ visibility: 'UNLISTED', lifecycleStatus: 'DRAFT' });
+    getAdminSurveys({ visibilities: ['LISTED', 'UNLISTED'], lifecycleStatuses: ['DRAFT', 'OPEN'] });
     const { url } = lastRequest();
     expect(url.pathname).toBe('/admin/surveys');
-    expect(url.searchParams.get('visibility')).toBe('UNLISTED');
-    expect(url.searchParams.get('lifecycleStatus')).toBe('DRAFT');
+    expect(url.searchParams.getAll('visibility')).toEqual(['LISTED', 'UNLISTED']);
+    expect(url.searchParams.getAll('lifecycleStatus')).toEqual(['DRAFT', 'OPEN']);
   });
 
   it('sube el archivo ODT como formulario multipart', () => {

@@ -159,8 +159,12 @@ export function UsersManagementPage() {
             setCurrentPage(0);
           }}
           filterOptions={USER_SEARCH_OPTIONS}
+          filterOptionsControl="multiselect"
+          filterOptionsAllLabel="Todos los campos"
+          filterOptionsNoneLabel="Ningún campo"
+          filterOptionsSelectedCountLabel="campos seleccionados"
           filterLabel="Filtrar"
-          filterOptionsLabel="Buscar usuarios por"
+          filterOptionsLabel="Campos de búsqueda de usuarios"
           selectedFilterValues={selectedSearchFields}
           showFilter
           onFilterChange={(fields) => {

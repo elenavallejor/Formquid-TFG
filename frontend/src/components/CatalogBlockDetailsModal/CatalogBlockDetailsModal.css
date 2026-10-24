@@ -66,7 +66,7 @@
 }
 
 @media only screen and (max-width: 768px) {
-  .catalog-block-details-overlay { padding: 0; }
-  .catalog-block-details-modal { width: 100%; max-height: 100dvh; border-radius: 0; }
-  .catalog-block-details-body { max-height: 100dvh; padding: 16px 12px 40px; }
+  .catalog-block-details-overlay { padding: 8px; }
+  .catalog-block-details-modal { width: 100%; max-height: calc(100dvh - 16px); border-radius: 10px; }
+  .catalog-block-details-body { max-height: calc(100dvh - 16px); padding: 20px 20px 40px; }
 }

@@ -26,6 +26,8 @@ import com.formquid.question.service.QuestionService;
 import com.formquid.registration.controller.RegistrationRequestAdminController;
 import com.formquid.registration.service.RegistrationRequestService;
 import com.formquid.survey.controller.AdminSurveyController;
+import com.formquid.survey.entity.SurveyLifecycle;
+import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.service.SurveyService;
 import com.formquid.template.controller.TemplateController;
 import com.formquid.template.service.TemplateService;
@@ -48,6 +50,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -230,10 +233,18 @@ class CatalogAndAdminControllersWebTest {
         mockMvc.perform(get("/api/v1/admin/surveys")
                 .with(authentication(tokenFor(user(2L, UserRole.ADMIN)))))
             .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/admin/surveys")
+                .with(authentication(tokenFor(user(2L, UserRole.ADMIN))))
+                .param("lifecycleStatus", "OPEN", "CLOSED")
+                .param("visibility", "LISTED", "UNLISTED"))
+            .andExpect(status().isOk());
 
         verify(elementRequestService).findPending();
         verify(registrationRequestService).findPending();
         verify(surveyService).findAdminSummaries(null, null, null, 0, 9);
+        verify(surveyService).findAdminSummaries(null,
+            List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED),
+            List.of(SurveyVisibility.LISTED, SurveyVisibility.UNLISTED), 0, 9);
     }
 
     @Test

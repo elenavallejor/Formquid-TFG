@@ -41,6 +41,7 @@ describe('NotificationsModal', () => {
     renderModal();
     expect(await screen.findByRole('heading', { name: 'Invitación' })).toBeVisible();
     expect(getNotifications).toHaveBeenCalledWith(expect.objectContaining({ page: 0, unreadOnly: true }));
+    expect(screen.queryByRole('combobox', { name: 'Filtrar notificaciones por tipo' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Marcar como leída' }));
     expect(markNotificationAsRead).toHaveBeenCalledWith(1);
     expect(screen.queryByRole('heading', { name: 'Invitación' })).not.toBeInTheDocument();

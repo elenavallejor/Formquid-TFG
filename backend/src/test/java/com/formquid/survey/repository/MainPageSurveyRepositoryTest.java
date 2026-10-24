@@ -12,7 +12,6 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 
 import java.util.stream.IntStream;
 
@@ -44,13 +43,13 @@ class MainPageSurveyRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        var firstPage = surveys.findListedOpenPageByTag(
+        var firstPage = surveys.findListedOpenPage(
             false, "", "", "clima", "salud-mental", PageRequest.of(0, 1)
         );
-        var secondPage = surveys.findListedOpenPageByTag(
+        var secondPage = surveys.findListedOpenPage(
             false, "", "", "clima", "salud-mental", PageRequest.of(1, 1)
         );
-        var registeredPage = surveys.findListedOpenPageByTag(
+        var registeredPage = surveys.findListedOpenPage(
             true, "AUTHENTICATED", "", "clima", "salud-mental", PageRequest.of(0, 1)
         );
 
@@ -62,6 +61,12 @@ class MainPageSurveyRepositoryTest {
             .isNotEqualTo(secondPage.getContent().get(0).getId());
         assertThat(registeredPage.getTotalElements()).isEqualTo(1);
         assertThat(registeredPage.getContent().get(0).getTitle()).isEqualTo("Clima familiar");
+
+        var tagSearchPage = surveys.findListedOpenPage(
+            false, "PUBLIC", "", "salud mental", "", PageRequest.of(0, 2)
+        );
+        assertThat(tagSearchPage.getTotalElements()).isEqualTo(3);
+        assertThat(tagSearchPage.getContent()).hasSize(2);
     }
 
     @Test
@@ -94,26 +99,11 @@ class MainPageSurveyRepositoryTest {
             .executeUpdate();
         entityManager.clear();
 
-        Sort stableSort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
         var firstPage = surveys.findListedOpenPage(
-            SurveyLifecycle.OPEN,
-            SurveyVisibility.LISTED,
-            false,
-            SurveyAccessMode.AUTHENTICATED,
-            null,
-            null,
-            "",
-            PageRequest.of(0, 2, stableSort)
+            false, "", "", "", "", PageRequest.of(0, 2)
         );
         var secondPage = surveys.findListedOpenPage(
-            SurveyLifecycle.OPEN,
-            SurveyVisibility.LISTED,
-            false,
-            SurveyAccessMode.AUTHENTICATED,
-            null,
-            null,
-            "",
-            PageRequest.of(1, 2, stableSort)
+            false, "", "", "", "", PageRequest.of(1, 2)
         );
 
         assertThat(firstPage.getContent()).extracting(Survey::getId)
@@ -164,14 +154,22 @@ class MainPageSurveyRepositoryTest {
         entityManager.persist(owner);
         Survey smartphone = persistSurvey(owner, "CATEGORY0001", "Teléfonos", "móvil", SurveyAccessMode.PUBLIC);
         smartphone.setCategory(Category.TELEFONO_INTELIGENTE);
-        persistSurvey(owner, "CATEGORY0002", "Otros", "otro", SurveyAccessMode.PUBLIC);
+        Survey computers = persistSurvey(owner, "CATEGORY0002", "Ordenadores", "móvil", SurveyAccessMode.PUBLIC);
+        computers.setCategory(Category.ORDENADORES);
+        persistSurvey(owner, "CATEGORY0003", "Otros", "móvil", SurveyAccessMode.PUBLIC);
         entityManager.flush();
 
         var page = surveys.findListedOpenPage(
-            SurveyLifecycle.OPEN, SurveyVisibility.LISTED, false, SurveyAccessMode.AUTHENTICATED,
-            null, Category.TELEFONO_INTELIGENTE, "", PageRequest.of(0, 9)
+            false, "", "TELEFONO_INTELIGENTE,ORDENADORES", "móvil", "", PageRequest.of(0, 1)
         );
-        assertThat(page.getContent()).extracting(Survey::getId).containsExactly(smartphone.getId());
+        assertThat(page.getTotalElements()).isEqualTo(2);
+        assertThat(page.getTotalPages()).isEqualTo(2);
+        assertThat(page.getContent()).extracting(Survey::getId).containsAnyOf(smartphone.getId(), computers.getId());
+        var allMatches = surveys.findListedOpenPage(
+            false, "", "TELEFONO_INTELIGENTE,ORDENADORES", "móvil", "", PageRequest.of(0, 9)
+        );
+        assertThat(allMatches.getContent()).extracting(Survey::getId)
+            .containsExactlyInAnyOrder(smartphone.getId(), computers.getId());
 
         assertThatThrownBy(() -> entityManager.createNativeQuery(
             "update surveys set category = 'DATOS_PERSONALES' where id = :id"

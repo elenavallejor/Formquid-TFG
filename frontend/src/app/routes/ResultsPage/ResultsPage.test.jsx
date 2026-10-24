@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,25 @@ describe('ResultsPage', () => {
     renderWithRouter(<ResultsPage />);
     expect(await screen.findByRole('heading', { name: 'No hay encuestas con respuestas' })).toBeVisible();
     expect(getResultSurveys).toHaveBeenCalledWith(expect.objectContaining({ page: 0, size: 9, sortOrder: 'NEWEST' }));
+  });
+
+  it('combina varios estados con los campos de búsqueda seleccionados', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(<ResultsPage />);
+    await screen.findByRole('heading', { name: 'No hay encuestas con respuestas' });
+
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    const filters = screen.getByRole('group', { name: 'Filtrar' });
+    await user.click(within(filters).getByLabelText('Seleccionar campos de búsqueda'));
+    await user.click(within(filters).getByRole('checkbox', { name: 'Editor o propietario' }));
+    await user.click(within(filters).getByLabelText('Seleccionar estado de la encuesta'));
+    await user.click(within(filters).getByRole('checkbox', { name: 'Abiertas' }));
+    await user.click(within(filters).getByRole('checkbox', { name: 'Cerradas' }));
+    await user.click(within(filters).getByRole('button', { name: 'Aplicar' }));
+
+    await waitFor(() => expect(getResultSurveys).toHaveBeenLastCalledWith(expect.objectContaining({
+      searchFields: ['TITLE'], lifecycleStatuses: ['OPEN', 'CLOSED'], page: 0,
+    })));
   });
 
   it('permite navegar a los resultados de una encuesta', async () => {

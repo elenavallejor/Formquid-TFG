@@ -157,6 +157,11 @@ export function RegistrationRequestsPage() {
           searchValue={searchQuery}
           onSearchChange={(event) => setSearchQuery(event.target.value)}
           filterOptions={SEARCH_OPTIONS}
+          filterOptionsLabel="Campos de búsqueda"
+          filterOptionsControl="multiselect"
+          filterOptionsAllLabel="Todos los campos"
+          filterOptionsNoneLabel="Ningún campo"
+          filterOptionsSelectedCountLabel="campos seleccionados"
           selectedFilterValues={selectedSearchFields}
           onFilterChange={setSelectedSearchFields}
           onFilterReset={() => setSearchQuery('')}

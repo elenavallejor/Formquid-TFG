@@ -57,7 +57,8 @@ class AdministrationRepositoryTest {
 
         var userProjection = users.findResponseById(owner.getId()).orElseThrow();
         var surveyPage = surveys.findAdminSummaries(
-            "visible", SurveyLifecycle.OPEN, SurveyVisibility.LISTED, PageRequest.of(0, 10)
+            "visible", false, java.util.List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED),
+            false, java.util.List.of(SurveyVisibility.LISTED, SurveyVisibility.UNLISTED), PageRequest.of(0, 10)
         );
 
         assertThat(userProjection.email()).isEqualTo("owner-admin-view@example.com");
@@ -91,6 +92,35 @@ class AdministrationRepositoryTest {
             assertThat(summary.editorName()).isEqualTo("Propietaria");
             assertThat(summary.responses()).isEqualTo(2);
         });
+    }
+
+    @Test
+    void surveyListingsApplyMultipleStatusesAndVisibilitiesBeforePagination() {
+        User owner = persistUser("multi-filter@example.com", "Editora", UserRole.EDITOR);
+        Survey open = persistSurvey(owner, "MULTISTAT001", "Encuesta abierta");
+        Survey closed = persistSurvey(owner, "MULTISTAT002", "Encuesta cerrada");
+        closed.setLifecycleStatus(SurveyLifecycle.CLOSED);
+        closed.setVisibility(SurveyVisibility.UNLISTED);
+        Survey draft = persistSurvey(owner, "MULTISTAT003", "Encuesta borrador");
+        draft.setLifecycleStatus(SurveyLifecycle.DRAFT);
+        draft.setVisibility(SurveyVisibility.UNLISTED);
+        persist(Participation.builder().survey(open).respondentTokenHash("c".repeat(64)).build());
+        persist(Participation.builder().survey(closed).respondentTokenHash("d".repeat(64)).build());
+        entityManager.flush();
+
+        var adminPage = surveys.findAdminSummaries("", false,
+            java.util.List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED), false,
+            java.util.List.of(SurveyVisibility.LISTED, SurveyVisibility.UNLISTED), PageRequest.of(0, 1));
+        var directoryPage = surveys.findDirectory("", false,
+            java.util.List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED), PageRequest.of(0, 1));
+        var resultPage = surveys.findResultSummaries(owner.getId(), false, "", true, true, false,
+            java.util.List.of(SurveyLifecycle.OPEN, SurveyLifecycle.CLOSED), PageRequest.of(0, 1));
+
+        assertThat(adminPage.getTotalElements()).isEqualTo(2);
+        assertThat(directoryPage.getTotalElements()).isEqualTo(2);
+        assertThat(resultPage.getTotalElements()).isEqualTo(2);
+        assertThat(surveys.findAdminSummaries("", false, java.util.List.of(SurveyLifecycle.CLOSED), false,
+            java.util.List.of(SurveyVisibility.LISTED), PageRequest.of(0, 10))).isEmpty();
     }
 
     @Test

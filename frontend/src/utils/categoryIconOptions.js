@@ -1,6 +1,7 @@
 import {
   BsApp,
   BsBadgeAr,
+  BsBadge3dFill,
   BsBookHalf,
   BsBookshelf,
   BsBoxSeam,
@@ -24,6 +25,7 @@ import {
   BsPhone,
   BsPlayCircle,
   BsProjector,
+  BsPuzzle,
   BsRobot,
   BsSmartwatch,
   BsStars,
@@ -32,6 +34,12 @@ import {
   BsThreeDots,
   BsTv,
 } from 'react-icons/bs';
+import { FaTabletAlt } from 'react-icons/fa';
+import { CiMobile3 } from 'react-icons/ci';
+import { IoIosTv } from 'react-icons/io';
+import { TbDeviceProjector, TbSchool } from 'react-icons/tb';
+import { LiaRobotSolid } from 'react-icons/lia';
+import { PiVirtualReality } from 'react-icons/pi';
 
 export const DEFAULT_CATEGORY_ICON = 'BsTag';
 
@@ -39,24 +47,31 @@ export const CATEGORY_ICON_OPTIONS = [
   { value: 'BsPcDisplay', label: 'Ordenador', Icon: BsPcDisplay },
   { value: 'BsLaptop', label: 'Portátil', Icon: BsLaptop },
   { value: 'BsTablet', label: 'Tablet', Icon: BsTablet },
+  { value: 'FaTabletAlt', label: 'Tabletas', Icon: FaTabletAlt },
   { value: 'BsPhone', label: 'Teléfono', Icon: BsPhone },
+  { value: 'CiMobile3', label: 'Teléfonos móviles', Icon: CiMobile3 },
   { value: 'BsSmartwatch', label: 'Reloj', Icon: BsSmartwatch },
   { value: 'BsEyeglasses', label: 'Gafas inteligentes', Icon: BsEyeglasses },
   { value: 'BsTv', label: 'Televisión', Icon: BsTv },
+  { value: 'IoIosTv', label: 'Televisión', Icon: IoIosTv },
   { value: 'BsController', label: 'Consola', Icon: BsController },
   { value: 'BsBookHalf', label: 'Libro electrónico', Icon: BsBookHalf },
   { value: 'BsEasel', label: 'Pizarra', Icon: BsEasel },
   { value: 'BsProjector', label: 'Proyector', Icon: BsProjector },
+  { value: 'TbDeviceProjector', label: 'Proyectores digitales', Icon: TbDeviceProjector },
   { value: 'BsMortarboard', label: 'Aprendizaje', Icon: BsMortarboard },
+  { value: 'TbSchool', label: 'Plataformas de aprendizaje', Icon: TbSchool },
   { value: 'BsApp', label: 'Aplicaciones', Icon: BsApp },
   { value: 'BsBookshelf', label: 'Libros digitales', Icon: BsBookshelf },
   { value: 'BsRobot', label: 'Robótica', Icon: BsRobot },
+  { value: 'LiaRobotSolid', label: 'Robots educativos', Icon: LiaRobotSolid },
   { value: 'BsBoxSeam', label: 'Impresión 3D', Icon: BsBoxSeam },
+  { value: 'BsBadge3dFill', label: 'Impresoras 3D', Icon: BsBadge3dFill },
   { value: 'BsCpu', label: 'Inteligencia artificial', Icon: BsCpu },
-  { value: 'BsStars', label: 'IA generativa', Icon: BsStars },
   { value: 'BsChatDots', label: 'Bots', Icon: BsChatDots },
   { value: 'BsMic', label: 'Voz', Icon: BsMic },
   { value: 'BsHeadsetVr', label: 'Realidad virtual', Icon: BsHeadsetVr },
+  { value: 'PiVirtualReality', label: 'Experiencias de realidad virtual', Icon: PiVirtualReality },
   { value: 'BsBadgeAr', label: 'Realidad aumentada', Icon: BsBadgeAr },
   { value: 'BsPeople', label: 'Redes sociales', Icon: BsPeople },
   { value: 'BsChatText', label: 'Mensajería', Icon: BsChatText },
@@ -68,29 +83,29 @@ export const CATEGORY_ICON_OPTIONS = [
   { value: 'BsGlobe2', label: 'Internet', Icon: BsGlobe2 },
   { value: 'BsLightbulb', label: 'Ideas', Icon: BsLightbulb },
   { value: DEFAULT_CATEGORY_ICON, label: 'Etiqueta genérica', Icon: BsTag },
+  { value: 'BsPuzzle', label: 'Recursos', Icon: BsPuzzle },
 ];
 
-export const CATEGORY_ICON_COMPONENTS = Object.fromEntries(
-  CATEGORY_ICON_OPTIONS.map(({ value, Icon }) => [value, Icon]),
-);
+export const CATEGORY_ICON_COMPONENTS = {
+  ...Object.fromEntries(CATEGORY_ICON_OPTIONS.map(({ value, Icon }) => [value, Icon])),
+  BsStars,
+};
 
 export const INITIAL_CATEGORY_ICONS = {
-  ORDENADOR_SOBREMESA: 'BsPcDisplay',
-  PORTATIL: 'BsLaptop',
-  TABLETA: 'BsTablet',
-  TELEFONO_INTELIGENTE: 'BsPhone',
+  ORDENADORES: 'BsPcDisplay',
+  TABLETA: 'FaTabletAlt',
+  TELEFONO_INTELIGENTE: 'CiMobile3',
   GAFAS_INTELIGENTES: 'BsEyeglasses',
-  TELEVISION_INTELIGENTE: 'BsTv',
+  TELEVISION_INTELIGENTE: 'IoIosTv',
   PIZARRA_INTERACTIVA: 'BsEasel',
-  PROYECTOR_DIGITAL: 'BsProjector',
-  PLATAFORMA_APRENDIZAJE: 'BsMortarboard',
+  PROYECTOR_DIGITAL: 'TbDeviceProjector',
+  PLATAFORMA_APRENDIZAJE: 'TbSchool',
   LIBROS_TEXTO_DIGITALES: 'BsBookshelf',
-  ROBOTICA_EDUCATIVA: 'BsRobot',
-  IMPRESION_3D: 'BsBoxSeam',
+  ROBOTICA_EDUCATIVA: 'LiaRobotSolid',
+  IMPRESION_3D: 'BsBadge3dFill',
   INTELIGENCIA_ARTIFICIAL: 'BsCpu',
-  IA_GENERATIVA: 'BsStars',
   ASISTENTES_VOZ: 'BsMic',
-  REALIDAD_VIRTUAL: 'BsHeadsetVr',
+  REALIDAD_VIRTUAL: 'PiVirtualReality',
   REALIDAD_AUMENTADA: 'BsBadgeAr',
   REDES_SOCIALES: 'BsPeople',
   VIDEOJUEGOS: 'BsJoystick',

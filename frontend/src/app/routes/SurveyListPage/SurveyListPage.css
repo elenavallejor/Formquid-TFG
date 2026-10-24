@@ -1,6 +1,6 @@
 .survey-list-page {
   min-height: calc(100vh - 70px);
-  padding: 42px 24px 64px;
+  padding: 42px var(--page-gutter) 64px;
   background: var(--color-background);
 }
 
@@ -85,7 +85,7 @@
 
 @media only screen and (max-width: 760px) {
   .survey-list-page {
-    padding: 28px 16px 48px;
+    padding: 28px var(--page-gutter) 48px;
   }
 
   .survey-list-grid,

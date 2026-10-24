@@ -207,7 +207,7 @@ class SurveyServiceTest {
     @Test
     void mainPageCombinesNameAndTagBeforePagination() {
         PageRequest pageable = PageRequest.of(1, 3);
-        when(surveyRepository.findListedOpenPageByTag(
+        when(surveyRepository.findListedOpenPage(
             false,
             "PUBLIC",
             "",
@@ -231,19 +231,13 @@ class SurveyServiceTest {
     }
 
     @Test
-    void mainPageUsesStableCreatedAtAndIdOrder() {
-        PageRequest pageable = PageRequest.of(
-            0,
-            9,
-            Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
-        );
+    void mainPageUsesRequestedPageSize() {
+        PageRequest pageable = PageRequest.of(0, 9);
         when(surveyRepository.findListedOpenPage(
-            SurveyLifecycle.OPEN,
-            SurveyVisibility.LISTED,
             false,
-            SurveyAccessMode.AUTHENTICATED,
-            SurveyAccessMode.PUBLIC,
-            null,
+            "PUBLIC",
+            "",
+            "",
             "",
             pageable
         )).thenReturn(Page.empty(pageable));
@@ -255,6 +249,21 @@ class SurveyServiceTest {
         assertThat(response.content()).isEmpty();
         assertThat(response.page()).isZero();
         assertThat(response.size()).isEqualTo(9);
+    }
+
+    @Test
+    void mainPagePassesSelectedCategoriesToRepository() {
+        PageRequest pageable = PageRequest.of(0, 9);
+        when(surveyRepository.findListedOpenPage(
+            false, "PUBLIC", "ORDENADORES,TELEFONO_INTELIGENTE", "", "", pageable
+        )).thenReturn(Page.empty(pageable));
+
+        surveyService.findListedOpenPage(null, null, SurveyAccessMode.PUBLIC, 0, 9,
+            List.of(Category.ORDENADORES, Category.TELEFONO_INTELIGENTE));
+
+        verify(surveyRepository).findListedOpenPage(
+            false, "PUBLIC", "ORDENADORES,TELEFONO_INTELIGENTE", "", "", pageable
+        );
     }
 
     @Test
@@ -286,15 +295,17 @@ class SurveyServiceTest {
 
         when(surveyRepository.findAdminSummaries(
             "clima",
-            SurveyLifecycle.OPEN,
-            SurveyVisibility.LISTED,
+            false,
+            List.of(SurveyLifecycle.OPEN),
+            false,
+            List.of(SurveyVisibility.LISTED),
             pageable
         )).thenReturn(new PageImpl<>(List.of(summary), pageable, 20));
 
         PageResponseDto<AdminSurveySummaryDto> response = surveyService.findAdminSummaries(
             "  CLIMA  ",
-            SurveyLifecycle.OPEN,
-            SurveyVisibility.LISTED,
+            List.of(SurveyLifecycle.OPEN),
+            List.of(SurveyVisibility.LISTED),
             1,
             9
         );
@@ -320,7 +331,7 @@ class SurveyServiceTest {
             .build();
         PageRequest pageable = PageRequest.of(0, 9, Sort.by(Sort.Direction.DESC, "updatedAt"));
 
-        when(surveyRepository.findDirectory("creación", SurveyLifecycle.DRAFT, pageable))
+        when(surveyRepository.findDirectory("creación", false, List.of(SurveyLifecycle.DRAFT), pageable))
             .thenReturn(new PageImpl<>(List.of(draft), pageable, 1));
         when(collaboratorRepository.findSurveyIdsByUserIdAndSurveyIds(20L, List.of(30L)))
             .thenReturn(List.of());
@@ -330,7 +341,7 @@ class SurveyServiceTest {
         PageResponseDto<SurveyDirectorySummaryDto> response = surveyService.findDirectory(
             editor,
             "  CREACIÓN  ",
-            SurveyLifecycle.DRAFT,
+            List.of(SurveyLifecycle.DRAFT),
             pageable
         );
 
@@ -419,7 +430,7 @@ class SurveyServiceTest {
             SurveyVisibility.UNLISTED,
             null,
             List.of("colegio"),
-            Category.PORTATIL
+            Category.ORDENADORES
         );
 
         when(surveyRepository.findById(10L)).thenReturn(Optional.of(survey));
@@ -432,7 +443,7 @@ class SurveyServiceTest {
         assertThat(survey.getFontFamily()).isEqualTo(SurveyFontFamily.LEXEND);
         assertThat(survey.getAccessMode()).isEqualTo(SurveyAccessMode.PUBLIC);
         assertThat(survey.getVisibility()).isEqualTo(SurveyVisibility.LISTED);
-        assertThat(survey.getCategory()).isEqualTo(Category.PORTATIL);
+        assertThat(survey.getCategory()).isEqualTo(Category.ORDENADORES);
     }
 
     @Test

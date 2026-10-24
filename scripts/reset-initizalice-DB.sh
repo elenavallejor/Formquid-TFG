@@ -3,13 +3,13 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Uso: scripts/seed-dev.sh --confirm-reset
+Uso: scripts/reset-initizalice-DB.sh --confirm-reset
 
 Reinicia los datos de desarrollo de FormQuid conservando el superadministrador
 y las categorías iniciales. Requiere psql o Docker y la configuración DB_*
 de .env o de las variables de entorno.
 
-Revisa scripts/seed-dev.sql antes de ejecutarlo.
+Revisa scripts/reset-initizalice-DB.sql antes de ejecutarlo.
 USAGE
 }
 
@@ -25,14 +25,13 @@ fi
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 env_file="$script_dir/../.env"
-sql_file="$script_dir/seed-dev.sql"
+sql_file="$script_dir/reset-initizalice-DB.sql"
 
 if [[ ! -f "$sql_file" || ! -r "$sql_file" ]]; then
   printf 'No se puede leer %s.\n' "$sql_file" >&2
   exit 2
 fi
 
-# Lee únicamente DB_* como texto: no ejecuta instrucciones del archivo .env.
 if [[ -f "$env_file" ]]; then
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%$'\r'}"
@@ -76,7 +75,7 @@ export PGDATABASE="$DB_NAME"
 export PGUSER="$DB_USERNAME"
 export PGPASSWORD="$DB_PASSWORD"
 export PGSSLMODE="${DB_SSLMODE:-require}"
-# PGHOSTADDR puede prevalecer sobre PGHOST y dirigir la carga a otro servidor.
+
 unset PGHOSTADDR PGSERVICE
 
 send_sql() {
@@ -84,18 +83,29 @@ send_sql() {
   cat -- "$sql_file"
 }
 
-if command -v psql >/dev/null 2>&1; then
-  send_sql | psql -X -w -v ON_ERROR_STOP=1
-elif command -v docker >/dev/null 2>&1; then
-  if ! docker info >/dev/null 2>&1; then
-    printf 'Docker está instalado, pero no se puede acceder a su servicio. Comprueba «docker info».\n' >&2
-    exit 2
+run_sql() {
+  if command -v psql >/dev/null 2>&1; then
+    send_sql | psql -X -w -v ON_ERROR_STOP=1
+  elif command -v docker >/dev/null 2>&1; then
+    if ! docker info >/dev/null 2>&1; then
+      printf 'Docker está instalado, pero no se puede acceder a su servicio. Comprueba «docker info».\n' >&2
+      return 2
+    fi
+    printf 'psql no está instalado; se usará el cliente PostgreSQL de Docker.\n' >&2
+    send_sql | docker run --rm -i --network host \
+      -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE \
+      postgres:16-alpine psql -X -w -v ON_ERROR_STOP=1
+  else
+    printf 'No se encontró psql ni Docker. Instala postgresql-client o Docker para ejecutar la carga.\n' >&2
+    return 2
   fi
-  printf 'psql no está instalado; se usará el cliente PostgreSQL de Docker.\n' >&2
-  send_sql | docker run --rm -i --network host \
-    -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE \
-    postgres:16-alpine psql -X -w -v ON_ERROR_STOP=1
+}
+
+printf 'Iniciando el reinicio de %s en %s:%s...\n' "$DB_NAME" "$DB_HOST" "$DB_PORT"
+if run_sql; then
+  printf 'Reinicio de %s finalizado correctamente.\n' "$DB_NAME"
 else
-  printf 'No se encontró psql ni Docker. Instala postgresql-client o Docker para ejecutar la carga.\n' >&2
-  exit 2
+  status=$?
+  printf 'El reinicio de %s ha fallado; revisa el error anterior.\n' "$DB_NAME" >&2
+  exit "$status"
 fi

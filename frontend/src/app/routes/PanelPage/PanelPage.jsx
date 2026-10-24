@@ -5,6 +5,7 @@ import { MdAdd, MdOutlineBarChart, MdOutlineDescription, MdOutlineHelpOutline, M
 import { TbCategoryPlus } from 'react-icons/tb';
 
 import { getAdminDashboard } from '../../../api/dashboardApi.js';
+import { getCategories } from '../../../api/categoriesApi.js';
 import { getAdminSurveys, getMySurveys } from '../../../api/surveysApi.js';
 import { AdminPanelButton } from '../../../components/AdminPanelButton/AdminPanelButton.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
@@ -22,8 +23,13 @@ import './PanelPage.css';
  * Muestra el panel correspondiente al rol y carga los datos necesarios para su gestión.
  */
 const EDITOR_SURVEYS_PAGE_SIZE = 9;
-const ADMIN_SURVEYS_PAGE_SIZE = 10;
+const ADMIN_SURVEYS_PAGE_SIZE = 5;
 const SEARCH_DEBOUNCE_MS = 300;
+const ACCESS_FILTER_OPTIONS = [
+  { value: 'PUBLIC', label: 'Públicas' },
+  { value: 'PASSWORD_PROTECTED', label: 'Con contraseña' },
+  { value: 'AUTHENTICATED', label: 'Para usuarios registrados' },
+];
 
 const ROLE_CONTENT = {
   EDITOR: {
@@ -125,6 +131,9 @@ export function PanelPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [selectedAccessModes, setSelectedAccessModes] = useState(() => ACCESS_FILTER_OPTIONS.map(({ value }) => value));
+  const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [sortOrder, setSortOrder] = useState('RECENT');
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -140,6 +149,17 @@ export function PanelPage() {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (user?.role !== 'EDITOR') return undefined;
+    let active = true;
+    getCategories({ surveyOnly: true })
+      .then((response) => {
+        if (active) setCategories(Array.isArray(response) ? response : []);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [user?.role]);
+
+  useEffect(() => {
     if (!user?.id || !user?.role) return undefined;
 
     let isMounted = true;
@@ -150,13 +170,17 @@ export function PanelPage() {
         setDataError('');
 
         if (user.role === 'EDITOR') {
-          const response = await getMySurveys({
-            search: debouncedSearchQuery,
-            lifecycleStatus: statusFilter,
-            sortOrder,
-            page: currentPage,
-            size: EDITOR_SURVEYS_PAGE_SIZE,
-          });
+          const response = selectedAccessModes.length === 0
+            ? { content: [], totalPages: 0 }
+            : await getMySurveys({
+                search: debouncedSearchQuery,
+                lifecycleStatus: statusFilter,
+                accessModes: selectedAccessModes,
+                categories: selectedCategories,
+                sortOrder,
+                page: currentPage,
+                size: EDITOR_SURVEYS_PAGE_SIZE,
+              });
 
           if (!isMounted) return;
 
@@ -226,6 +250,8 @@ export function PanelPage() {
     user?.role,
     debouncedSearchQuery,
     statusFilter,
+    selectedAccessModes,
+    selectedCategories,
     sortOrder,
     currentPage,
   ]);
@@ -406,13 +432,6 @@ export function PanelPage() {
                   <h2 className="admin-section-title">
                     ACCESO AL CATÁLOGO
                   </h2>
-
-                  <Link
-                    to="/catalogo"
-                    className="btn-admin-action-link"
-                  >
-                    Ver catálogo &rarr;
-                  </Link>
                 </div>
 
                 <div className="catalog-buttons-grid">
@@ -475,19 +494,36 @@ export function PanelPage() {
                   setSearchQuery(event.target.value);
                   setCurrentPage(0);
                 }}
-                filterChoices={[{
-                  label: 'Estado de la encuesta',
-                  options: [
-                    { value: 'ALL', label: 'Todos los estados' },
-                    { value: 'OPEN', label: 'Abiertas' },
-                    { value: 'DRAFT', label: 'Borradores' },
-                    { value: 'CLOSED', label: 'Cerradas' },
-                  ],
-                  value: statusFilter,
-                  resetValue: 'ALL',
-                }]}
-                onFilterChange={(_values, _text, selectedChoices) => {
+                filterOptions={ACCESS_FILTER_OPTIONS}
+                filterOptionsLabel="Tipo de acceso"
+                selectedFilterValues={selectedAccessModes}
+                filterChoices={[
+                  {
+                    label: 'Estado de la encuesta',
+                    control: 'select',
+                    options: [
+                      { value: 'ALL', label: 'Todos los estados' },
+                      { value: 'OPEN', label: 'Abiertas' },
+                      { value: 'DRAFT', label: 'Borradores' },
+                      { value: 'CLOSED', label: 'Cerradas' },
+                    ],
+                    value: statusFilter,
+                    resetValue: 'ALL',
+                  },
+                  {
+                    label: 'Categoría',
+                    control: 'multiselect',
+                    allLabel: 'Todas las categorías',
+                    selectedCountLabel: 'categorías seleccionadas',
+                    options: categories.map(({ code, name }) => ({ value: code, label: name })),
+                    value: selectedCategories,
+                    resetValue: [],
+                  },
+                ]}
+                onFilterChange={(accessModes, _text, selectedChoices) => {
+                  setSelectedAccessModes(accessModes);
                   setStatusFilter(selectedChoices[0]);
+                  setSelectedCategories(selectedChoices[1]);
                   setCurrentPage(0);
                 }}
                 onFilterReset={() => {
@@ -512,7 +548,9 @@ export function PanelPage() {
               ) : !dataError && editorSurveys.length === 0 ? (
                 <div className="editor-surveys-empty" role="status">
                   <FaRegClipboard aria-hidden="true" />
-                  <p>No se han encontrado encuestas.</p>
+                  <p>{selectedAccessModes.length === 0
+                    ? 'Selecciona al menos un tipo de encuesta para ver los resultados.'
+                    : 'No se han encontrado encuestas.'}</p>
                 </div>
               ) : !dataError ? (
                 <>

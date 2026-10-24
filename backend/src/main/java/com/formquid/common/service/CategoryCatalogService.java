@@ -30,7 +30,9 @@ public class CategoryCatalogService {
         "BsBookshelf", "BsRobot", "BsBoxSeam", "BsCpu", "BsStars", "BsChatDots",
         "BsMic", "BsHeadsetVr", "BsBadgeAr", "BsPeople", "BsChatText", "BsCameraVideo",
         "BsJoystick", "BsPlayCircle", "BsThreeDots", "BsPersonVcard", "BsGlobe2",
-        "BsLightbulb", CategoryDefinition.DEFAULT_ICON
+        "BsLightbulb", "FaTabletAlt", "CiMobile3", "IoIosTv", "BsBadge3dFill",
+        "PiVirtualReality", "TbSchool", "LiaRobotSolid", "TbDeviceProjector", "BsPuzzle",
+        CategoryDefinition.DEFAULT_ICON
     );
     private static final Set<String> INITIAL_CATEGORY_CODES = Arrays.stream(InitialCategory.values())
         .map(Enum::name)

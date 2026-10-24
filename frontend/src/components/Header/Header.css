@@ -7,8 +7,7 @@
 }
 
 #main-header .header-content {
-  width: 100%;
-  max-width: 1500px;
+  width: min(1500px, calc(100% - var(--page-gutter) - var(--page-gutter)));
   min-height: 75px;
   margin: 0 auto;
   box-sizing: border-box;
@@ -26,6 +25,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
   text-decoration: none;
   transition: opacity 0.3s ease;
 }
@@ -55,6 +55,7 @@
   display: flex;
   align-items: center;
   gap: 32px;
+  flex-shrink: 0;
 }
 
 #main-header .request-account-link {
@@ -296,10 +297,34 @@
   outline-offset: var(--focus-outline-offset);
 }
 
-@media only screen and (max-width: 650px) {
+@media only screen and (max-width: 900px) {
+  #main-header .brand-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  #main-header .brand-name {
+    font-size: 28px;
+  }
+
+  #main-header .header-navigation {
+    gap: 16px;
+  }
+
+  #main-header .login-link {
+    padding: 0 14px;
+    font-size: 16.25px;
+  }
+
+  #main-header .request-account-link {
+    padding: 0 12px;
+    font-size: 16.25px;
+  }
+}
+
+@media only screen and (max-width: 680px) {
   #main-header .header-content {
     min-height: 60px;
-    padding: 0 16px;
   }
 
   #main-header .brand {

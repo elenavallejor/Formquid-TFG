@@ -52,6 +52,28 @@
   font-weight: 700;
 }
 
+.survey-card-category {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin: 0 0 12px;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.survey-card-category svg {
+  flex: 0 0 auto;
+  font-size: 17px;
+}
+
+.survey-card-category span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .survey-card--public {
   border-radius: 8px;
   box-shadow: 0 1px 3px rgb(5 47 69 / 12%);

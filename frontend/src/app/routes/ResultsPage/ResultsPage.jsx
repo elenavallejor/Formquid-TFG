@@ -19,7 +19,6 @@ const SEARCH_OPTIONS = [
   { value: 'OWNER', label: 'Editor o propietario' },
 ];
 const LIFECYCLE_OPTIONS = [
-  { value: 'ALL', label: 'Todos los estados' },
   { value: 'DRAFT', label: 'Borradores' },
   { value: 'OPEN', label: 'Abiertas' },
   { value: 'CLOSED', label: 'Cerradas' },
@@ -37,7 +36,7 @@ export function ResultsPage() {
   const [selectedSearchFields, setSelectedSearchFields] = useState(
     () => SEARCH_OPTIONS.map((option) => option.value),
   );
-  const [lifecycle, setLifecycle] = useState('ALL');
+  const [lifecycles, setLifecycles] = useState([]);
   const [sortOrder, setSortOrder] = useState('NEWEST');
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -62,7 +61,7 @@ export function ResultsPage() {
     const request = getResultSurveys({
       search: debouncedSearch,
       searchFields: selectedSearchFields,
-      lifecycleStatus: lifecycle,
+      lifecycleStatuses: lifecycles,
       sortOrder,
       page: currentPage,
       size: itemsPerPage,
@@ -101,7 +100,7 @@ export function ResultsPage() {
       isActive = false;
       abortController.abort();
     };
-  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, retryCount, selectedSearchFields, sortOrder]);
+  }, [currentPage, debouncedSearch, itemsPerPage, lifecycles, retryCount, selectedSearchFields, sortOrder]);
 
   return (
     <main className="results-page">
@@ -122,17 +121,24 @@ export function ResultsPage() {
           searchValue={search}
           onSearchChange={(event) => setSearch(event.target.value)}
           filterOptions={SEARCH_OPTIONS}
-          filterOptionsLabel="Filtrar por"
+          filterOptionsLabel="Campos de búsqueda"
+          filterOptionsControl="multiselect"
+          filterOptionsAllLabel="Todos los campos"
+          filterOptionsNoneLabel="Ningún campo"
+          filterOptionsSelectedCountLabel="campos seleccionados"
           selectedFilterValues={selectedSearchFields}
           filterChoice={{
             label: 'Estado de la encuesta',
+            control: 'multiselect',
             options: LIFECYCLE_OPTIONS,
-            value: lifecycle,
-            resetValue: 'ALL',
+            value: lifecycles,
+            resetValue: [],
+            allLabel: 'Todos los estados',
+            selectedCountLabel: 'estados seleccionados',
           }}
           onFilterChange={(values, _text, selectedLifecycle) => {
             setSelectedSearchFields(values);
-            setLifecycle(selectedLifecycle);
+            setLifecycles(selectedLifecycle);
             setCurrentPage(0);
           }}
           onFilterReset={() => setCurrentPage(0)}

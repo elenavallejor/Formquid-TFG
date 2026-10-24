@@ -7,6 +7,7 @@ import {
   MdSearch,
 } from 'react-icons/md';
 
+import { getCategories } from '../../../api/categoriesApi.js';
 import { getPublicSurveys, getRegisteredSurveys } from '../../../api/surveysApi.js';
 import bannerSmall from '../../../assets/images/banner-small.png';
 import { Filter } from '../../../components/Filter/Filter.jsx';
@@ -31,6 +32,12 @@ const ACCESS_OPTIONS = [
 
 const DEFAULT_PAGE_SIZE = 9;
 const PAGE_SIZE_OPTIONS = [3, 9, 18];
+const COMPACT_PAGE_SIZE = 2;
+const COMPACT_MEDIA_QUERY = '(max-width: 900px)';
+
+function isCompactViewport() {
+  return typeof window !== 'undefined' && Boolean(window.matchMedia?.(COMPACT_MEDIA_QUERY).matches);
+}
 
 function getLoadErrorMessage(error) {
   return error?.status
@@ -40,16 +47,17 @@ function getLoadErrorMessage(error) {
 
 function PaginatedSurveySection({
   accessMode,
+  categories,
   emptyMessage,
   icon: Icon,
   id,
   isAuthLoading,
   itemsPerPage,
   onPageSizeChange,
+  pageSizeOptions,
   request,
   search,
   searchEmptyMessage,
-  tag,
   title,
   visible,
 }) {
@@ -73,7 +81,7 @@ function PaginatedSurveySection({
 
     request({
       search,
-      tag,
+      categories,
       accessMode,
       page: currentPage,
       size: itemsPerPage,
@@ -100,13 +108,13 @@ function PaginatedSurveySection({
     };
   }, [
     accessMode,
+    categories,
     currentPage,
     isAuthLoading,
     itemsPerPage,
     request,
     requestVersion,
     search,
-    tag,
     visible,
   ]);
 
@@ -161,7 +169,7 @@ function PaginatedSurveySection({
       ) : !errorMessage && (
         <div className="main-page-section-empty" role="status">
           <FaRegClipboard aria-hidden="true" />
-          <p>{search || tag ? searchEmptyMessage : emptyMessage}</p>
+          <p>{search || categories.length > 0 ? searchEmptyMessage : emptyMessage}</p>
         </div>
       )}
 
@@ -177,7 +185,7 @@ function PaginatedSurveySection({
           }}
           pageSize={itemsPerPage}
           pageSizeLabel={`Encuestas por página en ${title.toLowerCase()}`}
-          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          pageSizeOptions={pageSizeOptions}
           totalItems={totalItems}
           totalPages={totalPages}
         />
@@ -195,10 +203,12 @@ export function MainPage() {
   const { isAuthenticated, isAuthLoading } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [tagFilter, setTagFilter] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedAccessModes, setSelectedAccessModes] = useState(
     () => ACCESS_OPTIONS.map((option) => option.value),
   );
+  const [isCompact, setIsCompact] = useState(isCompactViewport);
   const [pageSizes, setPageSizes] = useState(() => Object.fromEntries(
     ACCESS_OPTIONS.map(({ value }) => [value, DEFAULT_PAGE_SIZE]),
   ));
@@ -206,6 +216,24 @@ export function MainPage() {
   function updatePageSize(accessMode, size) {
     setPageSizes((current) => ({ ...current, [accessMode]: size }));
   }
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.(COMPACT_MEDIA_QUERY);
+    if (!mediaQuery) return undefined;
+    const handleChange = (event) => setIsCompact(event.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getCategories({ surveyOnly: true })
+      .then((response) => {
+        if (active) setCategories(Array.isArray(response) ? response : []);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -224,6 +252,8 @@ export function MainPage() {
     isAuthenticated || mode !== ACCESS_FILTERS.AUTHENTICATED
   ));
   const request = isAuthenticated ? getRegisteredSurveys : getPublicSurveys;
+  const pageSizeOptions = isCompact ? [] : PAGE_SIZE_OPTIONS;
+  const categoryOptions = categories.map(({ code, name }) => ({ value: code, label: name }));
 
   return (
     <main className="main-page" aria-labelledby="main-page-title">
@@ -249,7 +279,7 @@ export function MainPage() {
 
           <div className="main-page-controls" role="search">
             <label className="main-page-search">
-              <span className="sr-only">Buscar encuestas por nombre</span>
+              <span className="sr-only">Buscar encuestas por nombre, descripción o etiqueta</span>
               <MdSearch aria-hidden="true" />
               <input
                 type="search"
@@ -263,10 +293,18 @@ export function MainPage() {
               options={availableAccessOptions}
               optionsLabel="Tipo de acceso"
               selectedValues={visibleSelectedAccessModes}
-              textFilter={{ label: 'Etiqueta', placeholder: 'Buscar', value: tagFilter }}
-              onChange={(accessModes, tag) => {
+              choiceFilter={{
+                label: 'Categoría',
+                control: 'multiselect',
+                allLabel: 'Todas las categorías',
+                selectedCountLabel: 'categorías seleccionadas',
+                options: categoryOptions,
+                value: selectedCategories,
+                resetValue: [],
+              }}
+              onChange={(accessModes, _text, categoriesSelection) => {
                 setSelectedAccessModes(accessModes);
-                setTagFilter(tag);
+                setSelectedCategories(categoriesSelection);
               }}
               onReset={() => {
                 setSearch('');
@@ -284,51 +322,54 @@ export function MainPage() {
             </div>
           )}
           <PaginatedSurveySection
-            key={JSON.stringify([ACCESS_FILTERS.PUBLIC, debouncedSearch, tagFilter])}
+            key={JSON.stringify([ACCESS_FILTERS.PUBLIC, debouncedSearch, selectedCategories, isCompact])}
             accessMode={ACCESS_FILTERS.PUBLIC}
+            categories={selectedCategories}
             emptyMessage="No hay encuestas públicas disponibles."
             icon={MdPublic}
             id="public-surveys-title"
             isAuthLoading={isAuthLoading}
-            itemsPerPage={pageSizes[ACCESS_FILTERS.PUBLIC]}
+            itemsPerPage={isCompact ? COMPACT_PAGE_SIZE : pageSizes[ACCESS_FILTERS.PUBLIC]}
             onPageSizeChange={(size) => updatePageSize(ACCESS_FILTERS.PUBLIC, size)}
+            pageSizeOptions={pageSizeOptions}
             request={request}
             search={debouncedSearch}
             searchEmptyMessage="No hay encuestas públicas que coincidan con tu búsqueda."
-            tag={tagFilter}
             title="Encuestas públicas"
             visible={showPublicSection}
           />
           <PaginatedSurveySection
-            key={JSON.stringify([ACCESS_FILTERS.PASSWORD, debouncedSearch, tagFilter])}
+            key={JSON.stringify([ACCESS_FILTERS.PASSWORD, debouncedSearch, selectedCategories, isCompact])}
             accessMode={ACCESS_FILTERS.PASSWORD}
+            categories={selectedCategories}
             emptyMessage="No hay encuestas con contraseña disponibles."
             icon={MdLockOutline}
             id="password-surveys-title"
             isAuthLoading={isAuthLoading}
-            itemsPerPage={pageSizes[ACCESS_FILTERS.PASSWORD]}
+            itemsPerPage={isCompact ? COMPACT_PAGE_SIZE : pageSizes[ACCESS_FILTERS.PASSWORD]}
             onPageSizeChange={(size) => updatePageSize(ACCESS_FILTERS.PASSWORD, size)}
+            pageSizeOptions={pageSizeOptions}
             request={request}
             search={debouncedSearch}
             searchEmptyMessage="No hay encuestas con contraseña que coincidan con tu búsqueda."
-            tag={tagFilter}
             title="Encuestas con contraseña"
             visible={showPasswordSection}
           />
           {isAuthenticated && (
             <PaginatedSurveySection
-              key={JSON.stringify([ACCESS_FILTERS.AUTHENTICATED, debouncedSearch, tagFilter])}
+              key={JSON.stringify([ACCESS_FILTERS.AUTHENTICATED, debouncedSearch, selectedCategories, isCompact])}
               accessMode={ACCESS_FILTERS.AUTHENTICATED}
+              categories={selectedCategories}
               emptyMessage="No hay encuestas para usuarios registrados disponibles."
               icon={MdOutlinePerson}
               id="authenticated-surveys-title"
               isAuthLoading={isAuthLoading}
-              itemsPerPage={pageSizes[ACCESS_FILTERS.AUTHENTICATED]}
+              itemsPerPage={isCompact ? COMPACT_PAGE_SIZE : pageSizes[ACCESS_FILTERS.AUTHENTICATED]}
               onPageSizeChange={(size) => updatePageSize(ACCESS_FILTERS.AUTHENTICATED, size)}
+              pageSizeOptions={pageSizeOptions}
               request={request}
               search={debouncedSearch}
               searchEmptyMessage="No hay encuestas para usuarios registrados que coincidan con tu búsqueda."
-              tag={tagFilter}
               title="Encuestas para usuarios registrados"
               visible={showAuthenticatedSection}
             />

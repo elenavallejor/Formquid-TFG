@@ -16,8 +16,19 @@
 
 .admin-panel-card.full-width-variant {
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-panel-card.full-width-variant .admin-panel-card-left {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.admin-panel-card.full-width-variant .admin-panel-content {
+  min-width: 0;
 }
 
 .admin-panel-card-left {
@@ -113,12 +124,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
   padding: 8px 18px;
   border-radius: 50px;
   font-size: 16.25px;
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
   transition: all 0.2s ease;
+}
+
+.admin-panel-card.full-width-variant .admin-panel-action-button {
+  margin-left: auto;
 }
 
 .admin-panel-action-button.theme-teal {
@@ -142,14 +159,21 @@
 }
 
 .admin-panel-action-icon {
+  flex-shrink: 0;
   font-size: 20px;
 }
 
 @media only screen and (max-width: 768px) {
   .admin-panel-card.full-width-variant {
     flex-direction: column;
+    flex-wrap: nowrap;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .admin-panel-card.full-width-variant .admin-panel-card-left {
+    flex: none;
+    width: 100%;
   }
 
   .admin-panel-card.full-width-variant .admin-panel-action-button {

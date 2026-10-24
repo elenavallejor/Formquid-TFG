@@ -4,6 +4,7 @@ import com.formquid.collaboration.entity.CollaborationPermission;
 import com.formquid.collaboration.entity.SurveyCollaborator;
 import com.formquid.collaboration.entity.SurveyCollaboratorId;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
+import com.formquid.common.Category;
 import com.formquid.config.PostgresDataJpaTest;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
@@ -59,6 +60,9 @@ class CollaborationAndAnswerRepositoryTest {
         User unrelatedOwner = persistUser("collaboration-unrelated@example.com");
         Survey survey = persistSurvey(owner, "COLLAB000001");
         Survey ownedSurvey = persistSurvey(collaborator, "OWNED0000001");
+        survey.setCategory(Category.TELEFONO_INTELIGENTE);
+        survey.setAccessMode(SurveyAccessMode.AUTHENTICATED);
+        ownedSurvey.setCategory(Category.ORDENADORES);
         persistSurvey(unrelatedOwner, "OTHER0000001");
         persist(SurveyCollaborator.builder()
             .id(new SurveyCollaboratorId(survey.getId(), collaborator.getId()))
@@ -74,8 +78,13 @@ class CollaborationAndAnswerRepositoryTest {
             collaborator.getId(), List.of(survey.getId())
         )).containsExactly(survey.getId());
         assertThat(surveys.findEditableByUser(
-            collaborator.getId(), "", null, PageRequest.of(0, 10)
+            collaborator.getId(), "", null, List.of(SurveyAccessMode.PUBLIC, SurveyAccessMode.AUTHENTICATED),
+            false, List.of(Category.ORDENADORES, Category.TELEFONO_INTELIGENTE), PageRequest.of(0, 10)
         )).extracting(Survey::getId).containsExactlyInAnyOrder(survey.getId(), ownedSurvey.getId());
+        assertThat(surveys.findEditableByUser(
+            collaborator.getId(), "", null, List.of(SurveyAccessMode.AUTHENTICATED),
+            false, List.of(Category.ORDENADORES, Category.TELEFONO_INTELIGENTE), PageRequest.of(0, 10)
+        )).extracting(Survey::getId).containsExactly(survey.getId());
     }
 
     @Test
@@ -173,7 +182,8 @@ class CollaborationAndAnswerRepositoryTest {
             "",
             true,
             true,
-            null,
+            true,
+            java.util.List.of(SurveyLifecycle.DRAFT),
             PageRequest.of(0, 10)
         );
 
@@ -184,11 +194,11 @@ class CollaborationAndAnswerRepositoryTest {
         assertThat(page.getContent()).allSatisfy(summary -> assertThat(summary.responses()).isEqualTo(1));
 
         var newestPage = surveys.findResultSummaries(
-            collaborator.getId(), false, "", true, true, null,
+            collaborator.getId(), false, "", true, true, true, java.util.List.of(SurveyLifecycle.DRAFT),
             PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "updatedAt", "id"))
         );
         var oldestPage = surveys.findResultSummaries(
-            collaborator.getId(), false, "", true, true, null,
+            collaborator.getId(), false, "", true, true, true, java.util.List.of(SurveyLifecycle.DRAFT),
             PageRequest.of(0, 1, Sort.by(Sort.Direction.ASC, "updatedAt", "id"))
         );
         assertThat(newestPage.getTotalElements()).isEqualTo(2);

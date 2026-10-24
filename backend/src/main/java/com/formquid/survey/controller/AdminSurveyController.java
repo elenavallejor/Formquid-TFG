@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Expone las operaciones administrativas de supervisión sobre las encuestas de la plataforma.
  */
@@ -38,15 +40,15 @@ public class AdminSurveyController {
     @GetMapping
     public PageResponseDto<AdminSurveySummaryDto> findAll(
         @RequestParam(required = false) String search,
-        @RequestParam(required = false) SurveyLifecycle lifecycleStatus,
-        @RequestParam(required = false) SurveyVisibility visibility,
+        @RequestParam(name = "lifecycleStatus", required = false) List<SurveyLifecycle> lifecycleStatuses,
+        @RequestParam(name = "visibility", required = false) List<SurveyVisibility> visibilities,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "9") int size
     ) {
         return surveyService.findAdminSummaries(
             search,
-            lifecycleStatus,
-            visibility,
+            lifecycleStatuses,
+            visibilities,
             page,
             size
         );

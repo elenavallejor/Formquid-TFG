@@ -28,13 +28,13 @@ class CategoryCatalogServiceTest {
     void listsOtrosAfterEveryOtherCategory() {
         when(repository.findAllByOrderByNameAsc()).thenReturn(List.of(
             new CategoryDefinition("OTROS", "Otros"),
-            new CategoryDefinition("PORTATIL", "Portátil"),
+            new CategoryDefinition("ORDENADORES", "Ordenadores"),
             new CategoryDefinition("TECNOLOGIA_ASISTIVA", "Tecnología asistiva")
         ));
 
         assertThat(service.findAll(false))
             .extracting(category -> category.code())
-            .containsExactly("PORTATIL", "TECNOLOGIA_ASISTIVA", "OTROS");
+            .containsExactly("ORDENADORES", "TECNOLOGIA_ASISTIVA", "OTROS");
     }
 
     @Test

@@ -127,7 +127,8 @@ class PublicControllersWebTest {
 
     @Test
     void publicSurveyList_bindsFiltersAndReturnsPageMetadata() throws Exception {
-        when(surveyService.findListedOpenPage("clima", "tecnologia", SurveyAccessMode.PUBLIC, 1, 3, Category.TELEFONO_INTELIGENTE))
+        when(surveyService.findListedOpenPage("clima", "tecnologia", SurveyAccessMode.PUBLIC, 1, 3,
+            List.of(Category.TELEFONO_INTELIGENTE, Category.ORDENADORES)))
             .thenReturn(new PageResponseDto<>(List.of(new PublicSurveySummaryDto(
                 "ABC123", "Encuesta", "Descripción", null, SurveyAccessMode.PUBLIC,
                 List.of("infancia", "tecnologia"), null
@@ -137,7 +138,7 @@ class PublicControllersWebTest {
                 .param("search", "clima")
                 .param("tag", "tecnologia")
                 .param("accessMode", "PUBLIC")
-                .param("category", "TELEFONO_INTELIGENTE")
+                .param("category", "TELEFONO_INTELIGENTE", "ORDENADORES")
                 .param("page", "1")
                 .param("size", "3"))
             .andExpect(status().isOk())

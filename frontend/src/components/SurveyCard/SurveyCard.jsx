@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { MdArrowForward, MdBarChart, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { resolveSurveyImageUrl } from '../../api/apiClient.js';
+import { getCategories } from '../../api/categoriesApi.js';
 
+import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../utils/categoryIconOptions.js';
 import { formatDate } from '../../utils/formatDate.js';
 import { getSurveyAccessBadge } from '../../utils/surveyAccess.js';
 
@@ -22,6 +25,34 @@ const VISIBILITY_LABELS = {
   UNLISTED: 'OCULTA',
 };
 
+let pendingCategoriesRequest;
+
+function loadSurveyCategories() {
+  if (!pendingCategoriesRequest) {
+    pendingCategoriesRequest = getCategories({ surveyOnly: true }).finally(() => {
+      pendingCategoriesRequest = undefined;
+    });
+  }
+  return pendingCategoriesRequest;
+}
+
+function useSurveyCategory(code) {
+  const [category, setCategory] = useState(null);
+
+  useEffect(() => {
+    if (!code) return undefined;
+    let active = true;
+    loadSurveyCategories()
+      .then((categories) => {
+        if (active) setCategory(categories.find((item) => item.code === code) ?? null);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [code]);
+
+  return category?.code === code ? category : null;
+}
+
 function getCollaborationAction(survey, isRequesting) {
   if (survey.ownedByCurrentUser) return { disabled: true, label: 'Tu encuesta' };
   if (survey.collaborating) return { disabled: true, label: 'Ya colaboras' };
@@ -35,7 +66,10 @@ export function SurveyCard({
 }) {
   const normalizedHeadingLevel = Math.min(6, Math.max(2, Number(headingLevel) || 3));
   const Heading = `h${normalizedHeadingLevel}`;
-  const { id, title = 'Sin título', lifecycleStatus, tags, imageKey } = survey;
+  const { id, title = 'Sin título', lifecycleStatus, tags, imageKey, category: categoryCode } = survey;
+  const category = useSurveyCategory(categoryCode);
+  const CategoryIcon = categoryCode && CATEGORY_ICON_COMPONENTS[getCategoryIconName(category ?? { code: categoryCode })];
+  const categoryLabel = category?.name ?? categoryCode?.replaceAll('_', ' ').toLocaleLowerCase('es').replace(/^./, (letter) => letter.toLocaleUpperCase('es'));
   const normalizedLifecycle = LIFECYCLE_LABELS[lifecycleStatus] ? lifecycleStatus : 'DRAFT';
   const accessBadge = getSurveyAccessBadge(normalizedLifecycle, survey.accessMode);
   const surveyTags = Array.isArray(tags) ? tags : [];
@@ -63,6 +97,13 @@ export function SurveyCard({
 
       <div className="survey-card-content">
         <Heading className="survey-card-title">{title}</Heading>
+
+        {categoryCode && (
+          <div className="survey-card-category">
+            <CategoryIcon aria-hidden="true" />
+            <span>{categoryLabel}</span>
+          </div>
+        )}
 
         {!isPublicCard && (
           <div className="survey-card-badges">
@@ -147,9 +188,11 @@ export function SurveyCard({
             <button type="button" className="btn-survey-action btn-edit" onClick={() => onEdit?.(id)}>
               <MdOutlineEdit aria-hidden="true" /><span>Editar</span>
             </button>
-            <button type="button" className="btn-survey-action btn-view" onClick={() => onView?.(id)}>
-              <MdOutlineRemoveRedEye aria-hidden="true" /><span>Ver</span>
-            </button>
+            {onView && (
+              <button type="button" className="btn-survey-action btn-view" onClick={() => onView(id)}>
+                <MdOutlineRemoveRedEye aria-hidden="true" /><span>Ver</span>
+              </button>
+            )}
           </>}
 
           {onMoreOptions && <button type="button" className="btn-survey-more" onClick={() => onMoreOptions(id)} aria-label={`Más opciones para ${title}`}>

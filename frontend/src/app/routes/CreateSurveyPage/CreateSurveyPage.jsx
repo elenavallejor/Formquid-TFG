@@ -79,6 +79,7 @@ export function CreateSurveyPage() {
   const [tagError, setTagError] = useState('');
   const [imageHasError, setImageHasError] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
+  const [coverLoading, setCoverLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [categoryError, setCategoryError] = useState('');
@@ -138,7 +139,7 @@ export function CreateSurveyPage() {
       setErrorMessage('Introduce la contraseña de acceso de la encuesta.');
       return;
     }
-    if (saveLockRef.current) return;
+    if (saveLockRef.current || coverLoading) return;
 
     const payload = {
       title: formData.title.trim(),
@@ -287,12 +288,12 @@ export function CreateSurveyPage() {
 
         <section className="create-survey-card create-survey-image-card" data-step="04" aria-labelledby="survey-image-title">
           <h2 id="survey-image-title">PORTADA</h2>
-          <p className="create-survey-section-description">Elige una imagen desde tu dispositivo o pega su URL para usarla como portada.</p>
-          <SurveyCoverInput id="survey-image" imageKey={formData.imageKey} file={coverFile} imageHasError={imageHasError}
+          <p className="create-survey-section-description">Elige una imagen de la galería, desde tu dispositivo o pega su URL para usarla como portada.</p>
+          <SurveyCoverInput id="survey-image" imageKey={formData.imageKey} file={coverFile} imageHasError={imageHasError} enableGallery
             onImageError={() => setImageHasError(true)}
             onUrlChange={(imageKey) => { setImageHasError(false); updateForm({ imageKey }); }}
             onFileChange={(file) => { setImageHasError(false); setCoverFile(file); if (file) updateForm({ imageKey: '' }); }}
-            onError={setErrorMessage} />
+            onError={setErrorMessage} onBusyChange={setCoverLoading} />
         </section>
 
         <section className="create-survey-card" data-step="05" aria-labelledby="survey-appearance-title">
@@ -344,7 +345,7 @@ export function CreateSurveyPage() {
               <ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} />
             </div>
           )}
-          <button type="button" className="btn-create-submit" disabled={isSaving || !origin} onClick={handleCreate}>
+          <button type="button" className="btn-create-submit" disabled={isSaving || coverLoading || !origin} onClick={handleCreate}>
             <MdAdd aria-hidden="true" />
             <span>{isSaving ? 'Creando...' : origin?.type === 'IMPORT' ? 'Importar y crear borrador' : 'Crear encuesta'}</span>
           </button>

@@ -186,7 +186,11 @@ export function SurveyOriginModal({
               searchInputRef={searchInputRef}
               onSearchChange={(event) => setSearch(event.target.value)}
               filterOptions={TEMPLATE_SEARCH_OPTIONS}
-              filterOptionsLabel="Filtrar por"
+              filterOptionsControl="multiselect"
+              filterOptionsAllLabel="Todos los campos"
+              filterOptionsNoneLabel="Ningún campo"
+              filterOptionsSelectedCountLabel="campos seleccionados"
+              filterOptionsLabel="Campos de búsqueda"
               selectedFilterValues={selectedSearchFields}
               onFilterChange={setSelectedSearchFields}
               onFilterReset={() => {

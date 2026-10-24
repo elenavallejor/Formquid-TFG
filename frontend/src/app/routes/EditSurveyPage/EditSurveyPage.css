@@ -18,9 +18,15 @@
 .edit-survey-header {
   display: flex;
   align-items: flex-end;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 24px;
+}
+
+.edit-survey-header > div:first-child {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .edit-survey-header h1 {
@@ -54,7 +60,10 @@
   display: flex;
   align-items: flex-end;
   flex-direction: column;
+  flex: none;
   gap: 8px;
+  max-width: 100%;
+  margin-left: auto;
 }
 
 .edit-survey-header-buttons {
@@ -67,6 +76,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   gap: 8px;
   padding: 12px 18px;
   border: 1px solid var(--color-primary);
@@ -77,6 +87,7 @@
   font-size: 18.75px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -348,7 +359,6 @@
 }
 
 .edit-survey-appearance-layout {
-  --category-select-margin-bottom: 0px;
   align-items: start;
 }
 
@@ -393,6 +403,24 @@
   background: var(--color-surface-muted);
   color: var(--color-text);
   cursor: default;
+}
+
+.edit-survey-category-value {
+  position: relative;
+}
+
+.edit-survey-category-value svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  color: var(--color-primary);
+  font-size: 21px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.edit-survey-category-value.has-icon input {
+  padding-left: 44px;
 }
 
 .edit-survey-readonly-label {
@@ -764,6 +792,12 @@
   }
 }
 
+@media only screen and (max-width: 900px) {
+  .edit-survey-header .btn-create-submit {
+    width: auto;
+  }
+}
+
 @media only screen and (max-width: 700px) {
   .survey-detail-metadata {
     grid-template-columns: 1fr;
@@ -789,6 +823,10 @@
     flex-direction: column;
   }
 
+  .edit-survey-header > div:first-child {
+    flex: none;
+  }
+
   .edit-survey-header .btn-create-submit {
     width: 100%;
   }
@@ -800,6 +838,7 @@
 
   .edit-survey-header-actions {
     align-items: stretch;
+    margin-left: 0;
   }
 
   .edit-survey-header-actions .table-badge {

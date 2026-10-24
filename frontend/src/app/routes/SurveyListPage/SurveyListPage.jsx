@@ -22,7 +22,7 @@ export function SurveyListPage() {
   const [surveys, setSurveys] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [lifecycle, setLifecycle] = useState('ALL');
+  const [lifecycles, setLifecycles] = useState([]);
   const [sortOrder, setSortOrder] = useState('RECENT');
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -52,7 +52,7 @@ export function SurveyListPage() {
 
     getSurveyDirectory({
       search: debouncedSearch,
-      lifecycleStatus: lifecycle,
+      lifecycleStatuses: lifecycles,
       sortOrder,
       page: currentPage,
       size: itemsPerPage,
@@ -75,7 +75,7 @@ export function SurveyListPage() {
       });
 
     return () => { isActive = false; };
-  }, [currentPage, debouncedSearch, itemsPerPage, lifecycle, sortOrder]);
+  }, [currentPage, debouncedSearch, itemsPerPage, lifecycles, sortOrder]);
 
   async function requestCollaboration(surveyId) {
     if (!user?.id || requestingSurveyId !== null) return;
@@ -126,17 +126,19 @@ export function SurveyListPage() {
           filterChoices={[{
             label: 'Estado de la encuesta',
             options: [
-              { value: 'ALL', label: 'Todos los estados' },
               { value: 'DRAFT', label: 'Borradores' },
               { value: 'OPEN', label: 'Abiertas' },
               { value: 'CLOSED', label: 'Cerradas' },
             ],
-            value: lifecycle,
-            resetValue: 'ALL',
+            control: 'multiselect',
+            value: lifecycles,
+            resetValue: [],
+            allLabel: 'Todos los estados',
+            selectedCountLabel: 'estados seleccionados',
           }]}
           onFilterChange={(_values, _text, selectedChoices) => {
-            if (selectedChoices[0] !== lifecycle || currentPage !== 0) startLoading();
-            setLifecycle(selectedChoices[0]);
+            if (selectedChoices[0].join() !== lifecycles.join() || currentPage !== 0) startLoading();
+            setLifecycles(selectedChoices[0]);
             setCurrentPage(0);
           }}
           onFilterReset={() => {

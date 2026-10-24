@@ -1,7 +1,7 @@
 .panel-page {
   width: 100%;
   background-color: var(--color-background);
-  padding: 15px 40px 60px;
+  padding: 15px var(--page-gutter) 60px;
   box-sizing: border-box;
 }
 
@@ -28,8 +28,8 @@
 
 .editor-top-section {
   flex-shrink: 0;
-  padding-right: 40px;
-  padding-left: 40px;
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
 }
 
 .panel-container {
@@ -118,25 +118,6 @@
   border-bottom: none;
 }
 
-.btn-admin-action-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  font-size: 18.75px;
-  font-weight: 600;
-  color: var(--color-primary);
-  text-decoration: none;
-  border: 1.5px solid var(--color-accent);
-  border-radius: 50px;
-  transition: all 0.2s ease;
-}
-
-.btn-admin-action-link:hover {
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
-}
-
 .table-details-button {
   display: inline-flex;
   align-items: center;
@@ -162,6 +143,36 @@
 .table-details-button svg {
   flex-shrink: 0;
   font-size: 21.25px;
+}
+
+.surveys-summary-section .custom-table {
+  min-width: 1400px;
+}
+
+.surveys-summary-section .custom-table th:nth-child(4),
+.surveys-summary-section .custom-table td:nth-child(4) {
+  width: 250px;
+}
+
+.surveys-summary-section .custom-table td:nth-child(4) .table-badge {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.surveys-summary-section .table-footer .pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.surveys-summary-section .pagination-count {
+  text-align: center;
+}
+
+.surveys-summary-section .pagination-pages {
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .editor-actions-grid {
@@ -235,7 +246,7 @@
 .editor-surveys-section {
   display: flex;
   flex: 1;
-  padding: 40px 24px 60px;
+  padding: 40px var(--page-gutter) 60px;
   background-color: var(--color-surface);
   border-top: 1px solid var(--color-border);
 }
@@ -250,7 +261,12 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 20px;
+}
+
+.surveys-header-row > div {
+  min-width: 0;
 }
 
 .surveys-section-title {
@@ -268,6 +284,7 @@
 }
 
 .btn-see-all {
+  flex: none;
   padding: 8px 18px;
   font-size: 17.5px;
   font-weight: 700;
@@ -275,6 +292,7 @@
   text-decoration: none;
   border: 1px solid var(--color-primary);
   border-radius: 8px;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -324,6 +342,17 @@
   }
 }
 
+@media only screen and (max-width: 1100px) {
+  .editor-surveys-section .search-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editor-surveys-section .search-toolbar__sort {
+    justify-content: flex-end;
+  }
+}
+
 @media only screen and (max-width: 960px) {
   .surveys-cards-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -334,7 +363,7 @@
   .panel-page > .panel-container,
   .editor-top-section,
   .editor-surveys-section {
-    padding: 24px 16px;
+    padding: 24px var(--page-gutter);
   }
 
   .admin-cards-grid-3,
@@ -346,5 +375,31 @@
 
   .panel-type-editor {
     padding-bottom: 0;
+  }
+}
+
+@media only screen and (max-width: 560px) {
+  .surveys-header-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .surveys-header-row .btn-see-all {
+    align-self: flex-end;
+  }
+
+  .editor-surveys-section .filter__trigger {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 14px;
+  }
+
+  .editor-surveys-section .filter__value {
+    display: block;
+  }
+
+  .editor-surveys-section .search-toolbar__sort {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

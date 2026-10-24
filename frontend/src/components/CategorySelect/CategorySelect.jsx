@@ -11,7 +11,7 @@ function CategoryLabel({ category }) {
   return <span className="category-select-option"><Icon aria-hidden="true" /><span>{category.name}</span></span>;
 }
 
-export function CategorySelect({ id, value, onChange, surveyOnly = false, defaultLabel = 'Otros (por defecto)', placeholder = '', showDefaultOption = true, required = false, validationError = '' }) {
+export function CategorySelect({ id, value, onChange, surveyOnly = false, defaultLabel = 'Otras tecnologías (por defecto)', placeholder = '', showDefaultOption = true, required = false, validationError = '' }) {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
   const errorMessage = validationError || error;
@@ -38,7 +38,7 @@ export function CategorySelect({ id, value, onChange, surveyOnly = false, defaul
           ? <option value="" disabled>{placeholder}</option>
           : showDefaultOption && <option value="" disabled={required}>{required ? defaultLabel : <CategoryLabel category={{ code: 'OTROS', name: defaultLabel }} />}</option>}
         {!showDefaultOption && value && !categories.some((category) => category.code === value) && (
-          <option value={value}><CategoryLabel category={{ code: value, name: value === 'OTROS' ? 'Otros' : value }} /></option>
+          <option value={value}><CategoryLabel category={{ code: value, name: value === 'OTROS' ? 'Otras tecnologías' : value }} /></option>
         )}
         {categories.map((category) => (
           <option key={category.code} value={category.code}><CategoryLabel category={category} /></option>
