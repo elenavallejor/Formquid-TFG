@@ -88,11 +88,11 @@ describe('CreateSurveyPage', () => {
     expect(screen.getByRole('heading', { name: 'Galería de fotos' })).toBeVisible();
     expect(screen.getByText('Elige una foto para tu portada:')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Usar imagen: Aula' }));
-    expect(await screen.findByText('Aula.png')).toBeVisible();
+    expect(await screen.findByText('aula.png')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
 
     expect(await screen.findByRole('heading', { name: 'Encuesta creada: 17' })).toBeVisible();
-    expect(uploadSurveyCover).toHaveBeenCalledWith(17, expect.objectContaining({ name: 'Aula.png', type: 'image/png' }));
+    expect(uploadSurveyCover).toHaveBeenCalledWith(17, expect.objectContaining({ name: 'aula.png', type: 'image/png' }));
   });
 
   it('abre el selector al pulsar la vista previa y sitúa la creación al final', async () => {

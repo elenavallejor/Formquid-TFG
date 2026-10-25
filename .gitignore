@@ -20,6 +20,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 coverage/
+resultados-rendimiento/
 .eslintcache
 
 # Environment and local configuration

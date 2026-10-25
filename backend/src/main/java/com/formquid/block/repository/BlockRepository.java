@@ -1,9 +1,10 @@
 package com.formquid.block.repository;
 
-import com.formquid.common.Category;
+import com.formquid.block.dto.BlockItemIdDto;
 import com.formquid.block.dto.BlockSummaryDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
+import com.formquid.common.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -109,6 +110,13 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
     );
 
     Optional<Block> findByParentItemId(Long parentItemId);
+
+    @Query("""
+        select new com.formquid.block.dto.BlockItemIdDto(block.parentItem.id, block.id)
+        from Block block
+        where block.parentItem.id in :parentItemIds
+        """)
+    List<BlockItemIdDto> findIdsByParentItemIds(@Param("parentItemIds") Collection<Long> parentItemIds);
 
     @Query("""
         select block

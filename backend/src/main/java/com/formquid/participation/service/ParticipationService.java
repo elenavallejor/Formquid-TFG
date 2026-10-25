@@ -3,7 +3,8 @@ package com.formquid.participation.service;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.exception.ApiException;
-import com.formquid.content.entity.ContentItem;
+import com.formquid.content.dto.BlockContentItemRowDto;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
 import com.formquid.participation.dto.AnswerResponseDto;
@@ -53,6 +54,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -95,7 +97,8 @@ public class ParticipationService {
         validateSurveyAccess(survey, request.accessPassword(), authenticatedUser);
         validateRespondent(survey.getId(), authenticatedUser, respondentTokenHash);
 
-        Map<Long, Boolean> requiredByQuestion = loadSurveyQuestions(survey.getId());
+        SurveyQuestions surveyQuestions = loadSurveyQuestions(survey.getId());
+        Map<Long, Boolean> requiredByQuestion = surveyQuestions.requiredByQuestion();
         Set<Long> receivedQuestionIds = new HashSet<>();
         for (SubmitAnswerRequestDto answer : request.answers()) {
             if (!receivedQuestionIds.add(answer.questionId())) {
@@ -119,12 +122,18 @@ public class ParticipationService {
         });
 
         Participation participation = saveParticipation(survey, authenticatedUser, respondentTokenHash);
+        List<AnswerResponseDto> responseAnswers = new ArrayList<>();
         for (SubmitAnswerRequestDto dto : answersByQuestion.values()) {
             if (!isEmpty(dto)) {
-                saveAnswer(participation, dto);
+                responseAnswers.add(saveAnswer(participation, dto, surveyQuestions.questionsById().get(dto.questionId())));
             }
         }
-        return toResponse(participationRepository.findById(participation.getId()).orElse(participation));
+        return new ParticipationResponseDto(
+            participation.getId(),
+            survey.getPublicCode(),
+            participation.getSubmittedAt(),
+            List.copyOf(responseAnswers)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -280,33 +289,71 @@ public class ParticipationService {
         }
     }
 
-    private Map<Long, Boolean> loadSurveyQuestions(Long surveyId) {
-        Map<Long, Boolean> questions = new LinkedHashMap<>();
-        for (ContentItem item : contentItemRepository.findBySurveyIdOrderByPositionAsc(surveyId)) {
-            if (item.getItemType() == ContentItemType.QUESTION) {
-                Question question = questionRepository.findByParentItemId(item.getId())
-                    .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "La encuesta contiene una pregunta incompleta"));
-                questions.put(question.getId(), item.getRequired());
-            } else if (item.getItemType() == ContentItemType.BLOCK) {
-                var block = blockRepository.findByParentItemId(item.getId())
-                    .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "La encuesta contiene un bloque incompleto"));
-                contentItemRepository.findByParentBlockIdOrderByPositionAsc(block.getId()).forEach(blockItem -> {
-                    if (blockItem.getItemType() == ContentItemType.QUESTION) {
-                        Question question = questionRepository.findByParentItemId(blockItem.getId())
-                            .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "El bloque contiene una pregunta incompleta"));
-                        questions.put(question.getId(), blockItem.getRequired());
-                    } else if (blockItem.getItemType() != ContentItemType.TEXT) {
-                        throw new ApiException(HttpStatus.CONFLICT, "El bloque contiene un tipo de elemento no permitido");
-                    }
-                });
+    private SurveyQuestions loadSurveyQuestions(Long surveyId) {
+        List<ContentItemRowDto> surveyItems = contentItemRepository.findSurveyContentRows(surveyId);
+        Set<Long> blockItemIds = surveyItems.stream()
+            .filter(item -> item.itemType() == ContentItemType.BLOCK)
+            .map(ContentItemRowDto::id)
+            .collect(Collectors.toSet());
+        Map<Long, Long> blockIdsByItem = new HashMap<>();
+        Map<Long, List<BlockContentItemRowDto>> itemsByBlock = new HashMap<>();
+        if (!blockItemIds.isEmpty()) {
+            blockRepository.findIdsByParentItemIds(blockItemIds)
+                .forEach(block -> blockIdsByItem.put(block.parentItemId(), block.blockId()));
+            if (!blockIdsByItem.isEmpty()) {
+                contentItemRepository.findBlockContentRows(Set.copyOf(blockIdsByItem.values()))
+                    .forEach(item -> itemsByBlock
+                        .computeIfAbsent(item.parentBlockId(), ignored -> new ArrayList<>())
+                        .add(item));
             }
         }
-        return questions;
+
+        Map<Long, Boolean> requiredByItem = new LinkedHashMap<>();
+        Set<Long> blockQuestionItemIds = new HashSet<>();
+        for (ContentItemRowDto item : surveyItems) {
+            if (item.itemType() == ContentItemType.QUESTION) {
+                requiredByItem.put(item.id(), item.required());
+            } else if (item.itemType() == ContentItemType.BLOCK) {
+                Long blockId = blockIdsByItem.get(item.id());
+                if (blockId == null) {
+                    throw new ApiException(HttpStatus.CONFLICT, "La encuesta contiene un bloque incompleto");
+                }
+                for (BlockContentItemRowDto blockItem : itemsByBlock.getOrDefault(blockId, List.of())) {
+                    if (blockItem.itemType() == ContentItemType.QUESTION) {
+                        requiredByItem.put(blockItem.id(), blockItem.required());
+                        blockQuestionItemIds.add(blockItem.id());
+                    } else if (blockItem.itemType() != ContentItemType.TEXT) {
+                        throw new ApiException(HttpStatus.CONFLICT, "El bloque contiene un tipo de elemento no permitido");
+                    }
+                }
+            }
+        }
+
+        Map<Long, Question> questionsByItem = new HashMap<>();
+        if (!requiredByItem.isEmpty()) {
+            questionRepository.findByParentItemIdsForStatistics(requiredByItem.keySet())
+                .forEach(question -> questionsByItem.put(question.getParentItem().getId(), question));
+        }
+
+        Map<Long, Boolean> questions = new LinkedHashMap<>();
+        Map<Long, Question> questionsById = new HashMap<>();
+        requiredByItem.forEach((itemId, required) -> {
+            Question question = questionsByItem.get(itemId);
+            if (question == null) {
+                throw new ApiException(HttpStatus.CONFLICT, blockQuestionItemIds.contains(itemId)
+                    ? "El bloque contiene una pregunta incompleta"
+                    : "La encuesta contiene una pregunta incompleta");
+            }
+            questions.put(question.getId(), required);
+            questionsById.put(question.getId(), question);
+        });
+        return new SurveyQuestions(questions, questionsById);
     }
 
-    private void saveAnswer(Participation participation, SubmitAnswerRequestDto dto) {
-        Question question = questionRepository.findById(dto.questionId())
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Pregunta no encontrada"));
+    private record SurveyQuestions(Map<Long, Boolean> requiredByQuestion, Map<Long, Question> questionsById) {
+    }
+
+    private AnswerResponseDto saveAnswer(Participation participation, SubmitAnswerRequestDto dto, Question question) {
         validateCompatible(question, dto);
         Answer answer = answerRepository.save(Answer.builder()
             .participation(participation)
@@ -353,7 +400,15 @@ public class ParticipationService {
                 .numericValue(matrixDto.numericValue())
                 .build());
         }
-        answerRepository.save(answer);
+        return new AnswerResponseDto(
+            answer.getId(),
+            question.getId(),
+            answer.getTextValue(),
+            answer.getNumericValue(),
+            answer.getBooleanValue(),
+            answer.getSelectedOptions().stream().map(selected -> selected.getOption().getId()).toList(),
+            answer.getMatrixValues().stream().map(value -> value.getMatrixRow().getId()).toList()
+        );
     }
 
     private void validateCompatible(Question question, SubmitAnswerRequestDto dto) {
@@ -513,27 +568,6 @@ public class ParticipationService {
 
     private Boolean booleanValue(Question question, SubmitAnswerRequestDto dto) {
         return question.getQuestionType() == QuestionType.BOOLEAN ? dto.booleanValue() : null;
-    }
-
-    private ParticipationResponseDto toResponse(Participation participation) {
-        List<AnswerResponseDto> answers = answerRepository.findByParticipationId(participation.getId())
-            .stream()
-            .map(answer -> new AnswerResponseDto(
-                answer.getId(),
-                answer.getQuestion().getId(),
-                answer.getTextValue(),
-                answer.getNumericValue(),
-                answer.getBooleanValue(),
-                answer.getSelectedOptions().stream().map(selected -> selected.getOption().getId()).toList(),
-                answer.getMatrixValues().stream().map(value -> value.getMatrixRow().getId()).toList()
-            ))
-            .toList();
-        return new ParticipationResponseDto(
-            participation.getId(),
-            participation.getSurvey().getPublicCode(),
-            participation.getSubmittedAt(),
-            answers
-        );
     }
 
     private List<OptionAnswerRequestDto> safeOptions(List<OptionAnswerRequestDto> values) {

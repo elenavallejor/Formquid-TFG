@@ -157,6 +157,39 @@ class CollaborationAndAnswerRepositoryTest {
     }
 
     @Test
+    void savedAnswers_cascadeNewOptionsAndMatrixValuesAtFlush() {
+        User owner = persistUser("cascade-answer-owner@example.com");
+        Survey survey = persistSurvey(owner, "CASCADE00001");
+        Question choiceQuestion = persistQuestion(survey, 1, QuestionType.SINGLE_CHOICE, "Opción");
+        Question matrixQuestion = persistQuestion(survey, 2, QuestionType.MATRIX_SCALE, "Matriz");
+        QuestionOption option = persist(QuestionOption.builder()
+            .question(choiceQuestion).label("Sí").position(1).build());
+        MatrixRow row = persist(MatrixRow.builder()
+            .question(matrixQuestion).label("Fila").position(1).build());
+        Participation participation = persist(Participation.builder()
+            .survey(survey).respondentTokenHash("i".repeat(64)).build());
+
+        Answer choiceAnswer = answers.save(Answer.builder()
+            .participation(participation).question(choiceQuestion).build());
+        choiceAnswer.getSelectedOptions().add(AnswerOption.builder()
+            .id(new AnswerOptionId(choiceAnswer.getId(), option.getId()))
+            .answer(choiceAnswer).option(option).build());
+        Answer matrixAnswer = answers.save(Answer.builder()
+            .participation(participation).question(matrixQuestion).build());
+        matrixAnswer.getMatrixValues().add(MatrixAnswerValue.builder()
+            .id(new MatrixAnswerValueId(matrixAnswer.getId(), row.getId()))
+            .answer(matrixAnswer).matrixRow(row).numericValue(new BigDecimal("3")).build());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(answerOptions.findByAnswerIdsWithOption(List.of(choiceAnswer.getId(), matrixAnswer.getId())))
+            .extracting(value -> value.getOption().getId()).containsExactly(option.getId());
+        assertThat(matrixValues.findByAnswerIdsWithRow(List.of(choiceAnswer.getId(), matrixAnswer.getId())))
+            .extracting(value -> value.getMatrixRow().getId()).containsExactly(row.getId());
+    }
+
+    @Test
     void resultSurveyQuery_excludesSurveysWithoutResponsesAndUnauthorizedSurveys() {
         User owner = persistUser("results-owner@example.com");
         User collaborator = persistUser("results-collaborator@example.com");

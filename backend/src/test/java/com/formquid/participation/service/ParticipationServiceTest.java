@@ -1,8 +1,11 @@
 package com.formquid.participation.service;
 
+import com.formquid.block.dto.BlockItemIdDto;
 import com.formquid.block.entity.Block;
 import com.formquid.block.repository.BlockRepository;
 import com.formquid.common.exception.ApiException;
+import com.formquid.content.dto.BlockContentItemRowDto;
+import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
 import com.formquid.content.repository.ContentItemRepository;
@@ -41,13 +44,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ParticipationServiceTest {
@@ -94,13 +98,6 @@ class ParticipationServiceTest {
             .position(1)
             .build();
         Block block = Block.builder().id(20L).parentItem(blockItem).build();
-        ContentItem textItem = ContentItem.builder()
-            .id(30L)
-            .parentBlock(block)
-            .itemType(ContentItemType.TEXT)
-            .position(1)
-            .textBody("Introducción")
-            .build();
         ContentItem questionItem = ContentItem.builder()
             .id(31L)
             .parentBlock(block)
@@ -114,28 +111,28 @@ class ParticipationServiceTest {
             .questionType(QuestionType.TEXT)
             .statement("Pregunta")
             .build();
-        AtomicReference<Answer> savedAnswer = new AtomicReference<>();
-
         when(surveyRepository.findByPublicCode("ABCDEF234567")).thenReturn(Optional.of(survey));
-        when(contentItemRepository.findBySurveyIdOrderByPositionAsc(1L)).thenReturn(List.of(blockItem));
-        when(blockRepository.findByParentItemId(10L)).thenReturn(Optional.of(block));
-        when(contentItemRepository.findByParentBlockIdOrderByPositionAsc(20L)).thenReturn(List.of(textItem, questionItem));
-        when(questionRepository.findByParentItemId(31L)).thenReturn(Optional.of(question));
-        when(questionRepository.findById(40L)).thenReturn(Optional.of(question));
+        when(contentItemRepository.findSurveyContentRows(1L))
+            .thenReturn(List.of(new ContentItemRowDto(10L, ContentItemType.BLOCK, 1, null, null)));
+        when(blockRepository.findIdsByParentItemIds(Set.of(10L)))
+            .thenReturn(List.of(new BlockItemIdDto(10L, 20L)));
+        when(contentItemRepository.findBlockContentRows(Set.of(20L))).thenReturn(List.of(
+            new BlockContentItemRowDto(20L, 30L, ContentItemType.TEXT, 1, null, "Introducción"),
+            new BlockContentItemRowDto(20L, 31L, ContentItemType.QUESTION, 2, true, null)
+        ));
+        when(questionRepository.findByParentItemIdsForStatistics(Set.of(31L)))
+            .thenReturn(List.of(question));
         when(participationRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Participation.class))).thenAnswer(invocation -> {
             Participation participation = invocation.getArgument(0);
             participation.setId(50L);
             participation.setSubmittedAt(Instant.parse("2026-09-15T10:00:00Z"));
             return participation;
         });
-        when(participationRepository.findById(50L)).thenReturn(Optional.empty());
         when(answerRepository.save(org.mockito.ArgumentMatchers.any(Answer.class))).thenAnswer(invocation -> {
             Answer answer = invocation.getArgument(0);
             answer.setId(60L);
-            savedAnswer.set(answer);
             return answer;
         });
-        when(answerRepository.findByParticipationId(50L)).thenAnswer(invocation -> List.of(savedAnswer.get()));
 
         ParticipationResponseDto response = participationService.submit(
             "abcdef234567",
@@ -149,6 +146,45 @@ class ParticipationServiceTest {
         assertThat(response.id()).isEqualTo(50L);
         assertThat(response.answers()).hasSize(1);
         assertThat(response.answers().getFirst().questionId()).isEqualTo(40L);
+        verify(answerRepository, times(1)).save(org.mockito.ArgumentMatchers.any(Answer.class));
+    }
+
+    @Test
+    void submit_withMultipleQuestions_loadsThemInOneQuery() {
+        Survey survey = Survey.builder()
+            .id(1L)
+            .publicCode("ABCDEF234567")
+            .lifecycleStatus(SurveyLifecycle.OPEN)
+            .accessMode(SurveyAccessMode.PUBLIC)
+            .build();
+        ContentItem firstItem = ContentItem.builder()
+            .id(11L).itemType(ContentItemType.QUESTION).required(false).build();
+        ContentItem secondItem = ContentItem.builder()
+            .id(12L).itemType(ContentItemType.QUESTION).required(false).build();
+        Question firstQuestion = Question.builder().id(21L).parentItem(firstItem).build();
+        Question secondQuestion = Question.builder().id(22L).parentItem(secondItem).build();
+        when(surveyRepository.findByPublicCode("ABCDEF234567")).thenReturn(Optional.of(survey));
+        when(contentItemRepository.findSurveyContentRows(1L))
+            .thenReturn(List.of(
+                new ContentItemRowDto(11L, ContentItemType.QUESTION, 1, false, null),
+                new ContentItemRowDto(12L, ContentItemType.QUESTION, 2, false, null)
+            ));
+        when(questionRepository.findByParentItemIdsForStatistics(Set.of(11L, 12L)))
+            .thenReturn(List.of(firstQuestion, secondQuestion));
+        when(participationRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Participation.class)))
+            .thenReturn(Participation.builder().id(50L).survey(survey)
+                .submittedAt(Instant.parse("2026-09-15T10:00:00Z")).build());
+
+        ParticipationResponseDto response = participationService.submit(
+            "ABCDEF234567",
+            new SubmitParticipationRequestDto(null, List.of()),
+            null,
+            "respondent-token-hash"
+        );
+
+        assertThat(response.id()).isEqualTo(50L);
+        assertThat(response.answers()).isEmpty();
+        verify(questionRepository).findByParentItemIdsForStatistics(Set.of(11L, 12L));
     }
 
     @Test

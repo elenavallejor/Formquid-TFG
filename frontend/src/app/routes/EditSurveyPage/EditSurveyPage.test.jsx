@@ -104,7 +104,7 @@ describe('EditSurveyPage', () => {
     const user = userEvent.setup();
     let resolveImage;
     vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => { resolveImage = resolve; })));
-    uploadSurveyCover.mockResolvedValue({ ...survey, imageKey: '/api/v1/public/surveys/12/cover/Aula.png' });
+    uploadSurveyCover.mockResolvedValue({ ...survey, imageKey: '/api/v1/public/surveys/12/cover/aula.png' });
     renderPage('/encuestas/12/editar?seccion=configuracion');
 
     await user.click(await screen.findByRole('button', { name: 'ABRIR GALERÍA DE FOTOS' }));
@@ -112,11 +112,11 @@ describe('EditSurveyPage', () => {
     expect(screen.getByRole('button', { name: 'Actualizar configuración' })).toBeDisabled();
 
     resolveImage({ ok: true, blob: () => Promise.resolve(new Blob(['imagen'], { type: 'image/png' })) });
-    expect(await screen.findByText('Aula.png')).toBeVisible();
+    expect(await screen.findByText('aula.png')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Actualizar configuración' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Configuración guardada correctamente.');
-    expect(uploadSurveyCover).toHaveBeenCalledWith('12', expect.objectContaining({ name: 'Aula.png', type: 'image/png' }));
+    expect(uploadSurveyCover).toHaveBeenCalledWith('12', expect.objectContaining({ name: 'aula.png', type: 'image/png' }));
   });
 
   it('muestra los avisos como subtítulo bajo Acceso y visibilidad', async () => {

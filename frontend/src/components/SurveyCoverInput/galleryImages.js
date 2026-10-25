@@ -5,23 +5,24 @@ const imageUrls = import.meta.glob('../../assets/images/gallery/*', {
 });
 
 const descriptions = {
-  '3dPINTING.png': 'Impresión 3D',
-  'Aula.png': 'Aula',
-  'Imatges-Posts-Web-30-min.png': 'Educación digital',
-  'UN0462803.png': 'Aprendizaje',
-  'aula2.png': 'Aula y tecnología',
+  'asistente_virtual.png': 'Asistente virtual',
+  'aula.png': 'Aula',
+  'clase.png': 'Clase',
   'gafas.png': 'Gafas inteligentes',
-  'images.jpeg': 'Tecnología educativa',
-  'jornada-ia-1200x600-1.png': 'Inteligencia artificial',
+  'impresion_3d.png': 'Impresión 3D',
   'libro.jpg': 'Libro',
   'movil.jpeg': 'Teléfono móvil',
+  'niño_pc.png': 'Niño con ordenador',
+  'niño_tablet.jpeg': 'Niño con tableta',
+  'niños_portatiles.jpeg': 'Aula y tecnología',
+  'niños_robot.png': 'Robótica educativa',
   'padres.jpeg': 'Familias',
   'realidad_aumentada.jpeg': 'Realidad aumentada',
   'realidad_virtual.jpg': 'Realidad virtual',
   'robotica.jpg': 'Robótica',
   'tablet.jpg': 'Tableta',
-  'tele.jpeg': 'Televisión',
-  'televisión.jpeg': 'Pantalla de televisión',
+  'tv.jpeg': 'Televisión',
+  'tv_niños.jpeg': 'Pantalla de televisión',
 };
 
 export const galleryImages = Object.entries(imageUrls)
