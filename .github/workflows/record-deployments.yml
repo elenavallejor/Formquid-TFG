@@ -1,0 +1,102 @@
+name: Registrar despliegues
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: SHA completo del commit ya desplegado
+        required: true
+        type: string
+      provider:
+        description: Servicio cuyo despliegue se registrará
+        required: true
+        default: both
+        type: choice
+        options: [both, frontend, backend]
+
+permissions:
+  contents: read
+  statuses: read
+  deployments: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.scope.outputs.sha }}
+      frontend: ${{ steps.scope.outputs.frontend }}
+      backend: ${{ steps.scope.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: scope
+        name: Determinar qué servicios pueden haberse desplegado
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          MANUAL_SHA: ${{ inputs.commit_sha }}
+          PROVIDER: ${{ inputs.provider }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            sha="$MANUAL_SHA"
+            frontend=false
+            backend=false
+            if [ "$PROVIDER" = both ] || [ "$PROVIDER" = frontend ]; then frontend=true; fi
+            if [ "$PROVIDER" = both ] || [ "$PROVIDER" = backend ]; then backend=true; fi
+          else
+            sha="$GITHUB_SHA"
+            changed=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
+            frontend=false
+            backend=false
+            if printf '%s\n' "$changed" | grep -q '^frontend/'; then frontend=true; fi
+            if printf '%s\n' "$changed" | grep -q '^backend/'; then backend=true; fi
+          fi
+          if ! [[ "$sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo 'El SHA debe tener 40 caracteres hexadecimales.' >&2
+            exit 1
+          fi
+          {
+            echo "sha=$sha"
+            echo "frontend=$frontend"
+            echo "backend=$backend"
+          } >> "$GITHUB_OUTPUT"
+
+  frontend:
+    needs: detect
+    if: needs.detect.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Registrar el resultado real de Vercel
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ needs.detect.outputs.sha }}
+        run: python3 .github/scripts/record_deployment.py frontend
+
+  backend:
+    needs: detect
+    if: needs.detect.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Registrar el resultado real de Render
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ needs.detect.outputs.sha }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+        run: |
+          if [ -z "$RENDER_API_KEY" ] || [ -z "$RENDER_SERVICE_ID" ]; then
+            echo 'Para registrar Render, configura RENDER_API_KEY (secret) y RENDER_SERVICE_ID (variable).' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 .github/scripts/record_deployment.py backend
