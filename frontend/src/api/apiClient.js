@@ -2,7 +2,7 @@
  * Centraliza las peticiones HTTP de FormQuid, evita GET simultáneos duplicados y gestiona credenciales, CSRF, serialización y errores.
  */
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1'
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/api/v1' : 'http://localhost:8080/api/v1')
 ).replace(/\/$/, '');
 
 export function resolveSurveyImageUrl(imageKey) {
