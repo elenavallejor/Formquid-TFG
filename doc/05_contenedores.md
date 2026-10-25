@@ -29,4 +29,4 @@ La comprobación previa valida la configuración requerida sin imprimir las clav
 
 El perfil `prod` activa las migraciones Flyway y desactiva la generación del esquema mediante JPA. También marca la cookie JWT como segura. La URL `FRONTEND_ORIGIN` se utiliza para CORS. El navegador y la API deben servirse con la configuración adecuada para esa cookie.
 
-El inicializador solo crea el primer superadministrador cuando la base no contiene usuarios. Cambiar sus variables después no cambia una cuenta ya creada. Antes de aplicar migraciones a una base existente hay que revisar su historial y disponer de una copia de seguridad. El [README principal](../README.md) explica la precaución específica sobre la migración V9.
+El inicializador solo crea el primer superadministrador cuando la base no contiene usuarios. Cambiar sus variables después no cambia una cuenta ya creada. Antes de aplicar migraciones a una base existente hay que revisar su historial y disponer de una copia de seguridad. La [guía de desarrollo](04_entorno_y_desarrollo.md#migraciones-de-bases-existentes) explica la precaución específica sobre la migración V9.

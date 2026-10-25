@@ -78,7 +78,25 @@ Las opciones de correo y almacenamiento son:
 - `frontend/src/app/router.jsx` define las rutas y sus restricciones. Las pantallas están en `frontend/src/app/routes`, los componentes compartidos en `frontend/src/components` y las llamadas al servidor en `frontend/src/api`.
 - `scripts` reúne las tareas de datos de desarrollo. `performance` contiene los planes JMeter. Ambos directorios tienen su propio README.
 
-El perfil `dev` valida con JPA el esquema que ha construido Flyway. Para una base que hubiera aplicado una versión anterior de V9, se debe leer la precaución del [README principal](../README.md#migraciones-de-bases-existentes) antes de actualizarla.
+El perfil `dev` valida con JPA el esquema que ha construido Flyway. La actualización de una base que ya aplicó migraciones requiere revisar su historial antes de arrancar una versión nueva.
+
+### Migraciones de bases existentes
+
+La migración `V9__allow_multiple_superadmins.sql` se modificó para admitir una base sin usuarios. Una base que aplicó una versión anterior puede presentar una diferencia de checksum. Antes de actualizarla:
+
+1. Haz una copia de seguridad de la base y de las portadas.
+2. Consulta la entrada de V9 en `flyway_schema_history`.
+
+   ```sql
+   SELECT version, description, checksum, success
+   FROM flyway_schema_history
+   WHERE version = '9';
+   ```
+
+3. Si Flyway informa de un checksum distinto, compara la migración aplicada con la actual. El historial de Git conserva las versiones anteriores. Comprueba que la versión aplicada terminó correctamente y que el esquema contiene los objetos esperados.
+4. Después de esas comprobaciones, actualiza el checksum con `flyway repair` usando el mismo conjunto de migraciones que se desplegará.
+
+No modifiques otra vez V9 ni repares el historial sin investigar las diferencias. Si la migración falló o hay otros cambios en el esquema, corrígelos antes. La migración V33 protege la existencia de al menos un superadministrador.
 
 ## Pruebas y mantenimiento
 

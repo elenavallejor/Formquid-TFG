@@ -33,6 +33,7 @@ resultados-rendimiento/
 # VS Code
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 
 # Operating system and editor temporary files
 .DS_Store
