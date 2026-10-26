@@ -665,7 +665,33 @@
 .edit-survey-collaborator-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+.edit-survey-transfer-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.edit-survey-transfer-button:hover:not(:disabled) {
+  background: var(--color-accent-surface);
+}
+
+.edit-survey-transfer-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .edit-survey-permission-select {

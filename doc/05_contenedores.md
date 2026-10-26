@@ -14,6 +14,8 @@ El backend lee las variables del archivo `.env` de la raíz. La [guía del entor
 docker compose up --build
 ```
 
+Para enviar correos reales durante el desarrollo, `docker-compose.brevo.yml` configura el backend para Brevo sin alterar el Compose habitual. Requiere `BREVO_SMTP_LOGIN`, `BREVO_SMTP_KEY` y `BREVO_MAIL_FROM` en el `.env` ignorado por Git. La [guía de Brevo](04_entorno_y_desarrollo.md#correo-en-desarrollo-con-brevo) recoge la preparación y el comando de arranque.
+
 El volumen `survey-covers` conserva las portadas que se suben desde la aplicación. Su ruta dentro del contenedor es `/app/data/survey-covers`. Conviene incluir tanto el volumen como la base de datos en las copias de seguridad. El correo está desactivado por defecto. Para probar mensajes con MailHog se configuran `MAIL_ENABLED=true` y `MAIL_HOST=mailhog`.
 
 ## Perfil de producción del backend

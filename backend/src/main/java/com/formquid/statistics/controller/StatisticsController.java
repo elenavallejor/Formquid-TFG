@@ -1,6 +1,5 @@
 package com.formquid.statistics.controller;
 
-import com.formquid.statistics.dto.QuestionStatisticsResponseDto;
 import com.formquid.statistics.dto.SurveyStatisticsResponseDto;
 import com.formquid.statistics.service.StatisticsService;
 import com.formquid.user.entity.User;
@@ -24,14 +23,5 @@ public class StatisticsController {
         @AuthenticationPrincipal User user
     ) {
         return statisticsService.getSurveyStatistics(surveyId, user);
-    }
-
-    @GetMapping("/questions/{questionId}")
-    public QuestionStatisticsResponseDto getQuestionStatistics(
-        @PathVariable Long surveyId,
-        @PathVariable Long questionId,
-        @AuthenticationPrincipal User user
-    ) {
-        return statisticsService.getQuestionStatistics(surveyId, questionId, user);
     }
 }

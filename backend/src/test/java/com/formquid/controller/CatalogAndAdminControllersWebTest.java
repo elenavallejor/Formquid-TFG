@@ -275,6 +275,27 @@ class CatalogAndAdminControllersWebTest {
     }
 
     @Test
+    void transferSurveyOwnership_requiresPasswordAndPassesItToService() throws Exception {
+        User editor = user(8L, UserRole.EDITOR);
+
+        mockMvc.perform(post("/api/v1/users/surveys/12/transfer-ownership")
+                .contentType("application/json")
+                .content("{\"newOwnerId\":9,\"currentPassword\":\"current\"}")
+                .with(csrf())
+                .with(authentication(tokenFor(editor))))
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/users/surveys/12/transfer-ownership")
+                .contentType("application/json")
+                .content("{\"newOwnerId\":9}")
+                .with(csrf())
+                .with(authentication(tokenFor(editor))))
+            .andExpect(status().isBadRequest());
+
+        verify(userService).transferSurveyOwnership(12L, 8L, 9L, "current");
+    }
+
+    @Test
     void updateMyAccount_withNewPassword_renewsAuthenticationCookie() throws Exception {
         User editor = user(8L, UserRole.EDITOR);
         when(userService.updateMyAccount(eq(8L), any())).thenReturn(new UpdateAccountResult(editor, true));

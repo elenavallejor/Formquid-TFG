@@ -3,7 +3,7 @@ import { useBlocker, useNavigate, useParams, useSearchParams } from 'react-route
 import '@fontsource/lexend/400.css';
 import '../../../assets/styles/opendyslexic.css';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdGroups, MdImage, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdVisibilityOff } from 'react-icons/md';
+import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdGroups, MdImage, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdSwapHoriz, MdVisibilityOff } from 'react-icons/md';
 
 import {
   acceptCollaborationRequest,
@@ -21,6 +21,7 @@ import {
 import { getCategories } from '../../../api/categoriesApi.js';
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
 import { deleteSurvey, getSurveyById, updateAdminSurveyLifecycle, updateAdminSurveyVisibility, updateSurvey, updateSurveyLifecycle, uploadSurveyCover } from '../../../api/surveysApi.js';
+import { transferSurveyOwnership } from '../../../api/usersApi.js';
 import { resolveSurveyImageUrl } from '../../../api/apiClient.js';
 import { MAX_SURVEY_TAGS } from '../../surveyConstants.js';
 import { BackButton } from '../../../components/BackButton/BackButton.jsx';
@@ -31,6 +32,7 @@ import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx'
 import { Dropdown } from '../../../components/Dropdown/Dropdown.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
+import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyBuilder } from '../../../components/SurveyBuilder/SurveyBuilder.jsx';
 import { SurveyPreviewModal } from '../../../components/SurveyPreviewModal/SurveyPreviewModal.jsx';
@@ -329,7 +331,7 @@ function SurveySettings({ data, coverFile, imageHasError, lifecycleStatus, onIma
   );
 }
 
-function CollaboratorItem({ collaborator, isOwner, isDisabled, onPermissionChange, onRemove }) {
+function CollaboratorItem({ collaborator, isOwner, isDisabled, onPermissionChange, onRemove, onTransfer }) {
   const name = collaborator.name || collaborator.email || 'Usuario';
 
   return (
@@ -347,6 +349,14 @@ function CollaboratorItem({ collaborator, isOwner, isDisabled, onPermissionChang
       </span>
       {isOwner && (
         <span className="edit-survey-collaborator-actions">
+          <button
+            type="button"
+            className="edit-survey-transfer-button"
+            disabled={isDisabled}
+            onClick={() => onTransfer(collaborator)}
+          >
+            <MdSwapHoriz aria-hidden="true" />Transferir autoridad a {name}
+          </button>
           <Dropdown
             className="edit-survey-permission-select"
             value={collaborator.permission}
@@ -378,6 +388,8 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
   const [message, setMessage] = useState('');
   const [publicationMessage, setPublicationMessage] = useState('');
   const [pendingAction, setPendingAction] = useState('');
+  const [transferTarget, setTransferTarget] = useState(null);
+  const [transferError, setTransferError] = useState('');
 
   async function runAction(key, action, successMessage) {
     if (pendingAction) return false;
@@ -422,6 +434,24 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
     );
   }
 
+  async function confirmTransfer(currentPassword) {
+    if (!transferTarget || pendingAction) return;
+    const collaborator = transferTarget;
+    setPendingAction(`transfer-${collaborator.userId}`);
+    setTransferError('');
+    onError('');
+    try {
+      await transferSurveyOwnership(surveyId, collaborator.userId, currentPassword);
+      await Promise.all([onReload(), onSurveyReload()]);
+      onSuccess(`La autoridad se ha transferido a ${collaborator.name || collaborator.email || 'este usuario'}. Ahora colaboras con permiso de edición.`);
+      setTransferTarget(null);
+    } catch (error) {
+      setTransferError(error.message || 'No se ha podido transferir la autoridad de la encuesta.');
+    } finally {
+      setPendingAction('');
+    }
+  }
+
   return (
     <div className="edit-survey-collaboration-grid">
       {isOwner ? (
@@ -458,6 +488,7 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
                 isDisabled={Boolean(pendingAction)}
                 onPermissionChange={changePermission}
                 onRemove={revokeCollaboration}
+                onTransfer={(target) => { setTransferError(''); setTransferTarget(target); }}
               />
             ))}
           </ul>
@@ -476,6 +507,17 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
         <div className="edit-survey-card-heading"><div><h2>SOLICITUDES DE PUBLICACIÓN</h2>{!isLoading && <p>{publicationRequests.length} pendientes</p>}</div></div>
         {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={1} hasActions={false} /></div> : publicationRequests.length === 0 ? <p className="edit-survey-empty-state">No hay solicitudes de publicación pendientes.</p> : <ul className="edit-survey-people-list">{publicationRequests.map((request) => <li key={request.id}><span className="edit-survey-avatar"><MdPublish aria-hidden="true" /></span><span className="edit-survey-person-data"><strong>{request.requestedByName || `Usuario #${request.requestedByUserId}`}</strong><small>{request.requestedByEmail}</small>{request.message && <small>“{request.message}”</small>}<small>{formatDate(request.createdAt)}</small></span><span className="edit-survey-request-actions"><button type="button" className="edit-survey-icon-accept" aria-label="Aceptar publicación" onClick={() => runAction(`publish-${request.id}`, () => acceptPublicationRequest(surveyId, request.id), 'Publicación aprobada.')}><MdCheck aria-hidden="true" /></button><button type="button" className="edit-survey-icon-danger" aria-label="Rechazar publicación" onClick={() => runAction(`reject-publication-${request.id}`, () => rejectPublicationRequest(surveyId, request.id), 'Solicitud de publicación rechazada.')}><MdClose aria-hidden="true" /></button></span></li>)}</ul>}
       </section>}
+      <PasswordConfirmModal
+        isOpen={Boolean(transferTarget)}
+        onClose={() => { setTransferTarget(null); setTransferError(''); }}
+        onConfirm={confirmTransfer}
+        isProcessing={pendingAction.startsWith('transfer-')}
+        errorMessage={transferError}
+        onClearError={() => setTransferError('')}
+        title="Transferir autoridad"
+        description={`¿Confirmas que deseas transferir la autoridad de esta encuesta a ${transferTarget?.name || transferTarget?.email || 'este usuario'}? Seguirás colaborando con permiso de edición. Introduce tu contraseña actual para continuar.`}
+        confirmLabel="Transferir autoridad"
+      />
     </div>
   );
 }

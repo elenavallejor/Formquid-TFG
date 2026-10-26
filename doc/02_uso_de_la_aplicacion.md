@@ -32,7 +32,7 @@ La encuesta se guarda como borrador y después puede abrirse o cerrarse. Para ab
 
 ## Colaborar y consultar resultados
 
-Una encuesta admite colaboradores con permiso de lectura o edición. Las invitaciones y solicitudes de acceso se gestionan desde las pantallas de colaboración. Un colaborador puede presentar una solicitud de publicación y el propietario decide si la acepta. Los avisos de la aplicación muestran las acciones relacionadas con estas solicitudes.
+Una encuesta admite colaboradores con permiso de lectura o edición. Las invitaciones y solicitudes de acceso se gestionan desde las pantallas de colaboración. El propietario puede transferir la autoridad a uno de los colaboradores tras confirmar su contraseña; después conserva acceso como colaborador con permiso de edición. Un colaborador puede presentar una solicitud de publicación y el propietario decide si la acepta. Los avisos de la aplicación muestran las acciones relacionadas con estas solicitudes.
 
 Las páginas de resultados presentan:
 

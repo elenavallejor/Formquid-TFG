@@ -19,6 +19,13 @@ export function deleteMyAccount(data) {
   });
 }
 
+export function transferSurveyOwnership(surveyId, newOwnerId, currentPassword) {
+  return apiClient(`/users/surveys/${surveyId}/transfer-ownership`, {
+    method: 'POST',
+    body: { newOwnerId, currentPassword },
+  });
+}
+
 export function getUsers({
   page = 0,
   size = 20,

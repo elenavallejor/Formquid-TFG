@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { replaceSurveyContent } from '../../../api/surveyContentApi.js';
 import { getCategories } from '../../../api/categoriesApi.js';
+import { transferSurveyOwnership } from '../../../api/usersApi.js';
 import {
   acceptCollaborationRequest, acceptPublicationRequest, createCollaborationRequest, getCollaborationRequests,
   getCollaborators, getPublicationRequests, rejectCollaborationRequest, rejectPublicationRequest,
@@ -41,6 +42,7 @@ vi.mock('../../../api/collaborationsApi.js', () => ({
   updateCollaboratorPermission: vi.fn(),
 }));
 vi.mock('../../../api/categoriesApi.js', () => ({ getCategories: vi.fn(() => Promise.resolve([])) }));
+vi.mock('../../../api/usersApi.js', () => ({ transferSurveyOwnership: vi.fn() }));
 vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: () => null }));
 vi.mock('../../../components/SurveyBuilder/SurveyBuilder.jsx', () => ({
   SurveyBuilder: ({ data, onChange, readOnly }) => (
@@ -216,12 +218,51 @@ describe('EditSurveyPage', () => {
     expect(removeCollaborator).toHaveBeenCalledWith('12', 9);
   });
 
+  it('transfiere la autoridad tras confirmar la contraseña y mantiene al autor como colaborador', async () => {
+    const user = userEvent.setup();
+    getCollaborators.mockResolvedValue([{ userId: 9, name: 'Eva', email: 'eva@example.com', permission: 'VIEW' }]);
+    transferSurveyOwnership.mockResolvedValue(undefined);
+    renderPage('/encuestas/12/editar?seccion=colaboraciones');
+
+    await user.click(await screen.findByRole('button', { name: 'Transferir autoridad a Eva' }));
+    const dialog = screen.getByRole('dialog', { name: 'Transferir autoridad' });
+    expect(within(dialog).getByText(/Seguirás colaborando con permiso de edición/)).toBeVisible();
+    await waitFor(() => expect(dialog).toHaveFocus());
+    await user.type(within(dialog).getByLabelText('Contraseña actual'), 'current');
+    getSurveyById.mockResolvedValue({ ...survey, ownerId: 9, canEdit: true, canPreview: true });
+    getCollaborators.mockResolvedValue([{ userId: 7, name: 'Autor', email: 'autor@example.com', permission: 'EDIT' }]);
+    await user.click(within(dialog).getByRole('button', { name: 'Transferir autoridad' }));
+
+    expect(transferSurveyOwnership).toHaveBeenCalledWith('12', 9, 'current');
+    expect(await screen.findByRole('status')).toHaveTextContent('La autoridad se ha transferido a Eva');
+    expect(await screen.findByRole('heading', { name: 'SOLICITAR PUBLICACIÓN' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Transferir autoridad a/ })).not.toBeInTheDocument();
+  });
+
+  it('mantiene abierto el modal si falla la confirmación de contraseña', async () => {
+    const user = userEvent.setup();
+    getCollaborators.mockResolvedValue([{ userId: 9, name: 'Eva', email: 'eva@example.com', permission: 'EDIT' }]);
+    transferSurveyOwnership.mockRejectedValue(new Error('La contraseña actual no es correcta'));
+    renderPage('/encuestas/12/editar?seccion=colaboraciones');
+
+    await user.click(await screen.findByRole('button', { name: 'Transferir autoridad a Eva' }));
+    const dialog = screen.getByRole('dialog', { name: 'Transferir autoridad' });
+    await waitFor(() => expect(dialog).toHaveFocus());
+    await user.type(within(dialog).getByLabelText('Contraseña actual'), 'wrong');
+    await user.click(within(dialog).getByRole('button', { name: 'Transferir autoridad' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('La contraseña actual no es correcta');
+    expect(transferSurveyOwnership).toHaveBeenCalledWith('12', 9, 'wrong');
+    expect(screen.getByRole('button', { name: 'Transferir autoridad a Eva' })).toBeVisible();
+  });
+
   it('permite al colaborador solicitar la publicación de la encuesta', async () => {
     const user = userEvent.setup();
     getSurveyById.mockResolvedValue({ ...survey, ownerId: 99, canEdit: true, canPreview: true });
     requestPublication.mockResolvedValue({ id: 8 });
     renderPage('/encuestas/12/editar?seccion=colaboraciones');
     expect(await screen.findByRole('heading', { name: 'SOLICITAR PUBLICACIÓN' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Transferir autoridad a/ })).not.toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: 'Mensaje opcional' }), 'Revisada');
     await user.click(screen.getByRole('button', { name: 'Solicitar publicación' }));
     expect(requestPublication).toHaveBeenCalledWith('12', 'Revisada');

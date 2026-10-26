@@ -58,8 +58,7 @@ La aplicación devuelve códigos HTTP acordes con el resultado de cada operació
 | `POST` | `/surveys/{publicCode}/participations` | Enviar una participación con sesión. |
 | `GET` | `/surveys/{surveyId}/participations` | Consultar las participaciones de la encuesta. |
 | `GET` | `/surveys/{surveyId}/participations/{participationId}` | Consultar una participación concreta. |
-| `GET` | `/surveys/{surveyId}/statistics` | Obtener estadísticas generales. |
-| `GET` | `/surveys/{surveyId}/statistics/questions/{questionId}` | Obtener estadísticas de una pregunta. |
+| `GET` | `/surveys/{surveyId}/statistics` | Obtener estadísticas generales y por pregunta. |
 
 ## Colaboración y catálogo
 
@@ -93,7 +92,7 @@ La aplicación devuelve códigos HTTP acordes con el resultado de cada operació
 | `GET` | `/users` | Listar usuarios. |
 | `PATCH` | `/users/{userId}/role` | Cambiar el rol de un usuario. |
 | `DELETE` | `/users/{userId}` | Eliminar un usuario. |
-| `POST` | `/users/surveys/{surveyId}/transfer-ownership` | Transferir la propiedad de una encuesta. |
+| `POST` | `/users/surveys/{surveyId}/transfer-ownership` | Transferir la propiedad de una encuesta a un colaborador, confirmando con la contraseña actual. El propietario anterior pasa a colaborar con permiso de edición. |
 | `POST` | `/categories` | Crear una categoría. |
 | `PATCH` | `/categories/{code}/icon` | Actualizar su icono. |
 | `GET` | `/notifications`, `/notifications/unread-count`, `/notifications/{notificationId}/destination` | Consultar avisos y su destino. |

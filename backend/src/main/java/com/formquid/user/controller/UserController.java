@@ -99,6 +99,6 @@ public class UserController {
     @PostMapping("/surveys/{surveyId}/transfer-ownership")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void transferOwnership(@PathVariable Long surveyId, @AuthenticationPrincipal User user, @Valid @RequestBody TransferOwnershipRequestDto request) {
-        userService.transferSurveyOwnership(surveyId, user.getId(), request.newOwnerId());
+        userService.transferSurveyOwnership(surveyId, user.getId(), request.newOwnerId(), request.currentPassword());
     }
 }

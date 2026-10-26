@@ -77,15 +77,6 @@ public class StatisticsService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public QuestionStatisticsResponseDto getQuestionStatistics(Long surveyId, Long questionId, User user) {
-        getSurveyWithResultsAccess(surveyId, user);
-        Question question = questionRepository.findForStatistics(surveyId, questionId)
-            .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "La pregunta no pertenece a la encuesta"));
-        long participationCount = statisticsQueryRepository.summarizeParticipations(surveyId).participationCount();
-        return getQuestionStatistics(question, participationCount, loadStatisticsData(List.of(question)));
-    }
-
     private Survey getSurveyWithResultsAccess(Long surveyId, User user) {
         Survey survey = surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));

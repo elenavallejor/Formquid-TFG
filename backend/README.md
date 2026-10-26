@@ -38,7 +38,7 @@ SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 
 También puede arrancarse desde la raíz con `docker compose up --build`. En ese caso, Docker Compose lee el archivo `.env` de la raíz. El backend atiende por defecto en el puerto 8080.
 
-La entrega de correo se habilita con `MAIL_ENABLED=true`. El servidor SMTP se configura con `MAIL_HOST` y `MAIL_PORT`. Cuando corresponda, se añaden las opciones de autenticación y TLS. En el entorno de Compose, `MAIL_HOST=mailhog` dirige los mensajes al capturador local. La recuperación de contraseña utiliza `FRONTEND_ORIGIN` o `PASSWORD_RESET_BASE_URL` para construir el enlace. Cada enlace es de un solo uso y caduca a los 30 minutos.
+La entrega de correo se habilita con `MAIL_ENABLED=true`. El servidor SMTP se configura con `MAIL_HOST` y `MAIL_PORT`; `MAIL_USERNAME` y `MAIL_PASSWORD` aportan las credenciales cuando se necesita autenticación. `MAIL_SMTP_AUTH` y `MAIL_STARTTLS` controlan autenticación y STARTTLS obligatorio. El Compose habitual dirige los mensajes a MailHog; `docker-compose.brevo.yml` permite usar Brevo en desarrollo con una clave SMTP y un remitente verificado, sin modificar el envío existente. La recuperación de contraseña utiliza `FRONTEND_ORIGIN` o `PASSWORD_RESET_BASE_URL` para construir el enlace. Cada enlace es de un solo uso y caduca a los 30 minutos.
 
 La sesión se identifica mediante un JWT almacenado en una cookie `HttpOnly`. Las operaciones que modifican datos utilizan protección CSRF y las contraseñas se almacenan con BCrypt. Cambiar `JWT_SECRET` invalida las sesiones emitidas con la clave anterior. La configuración de producción marca la cookie de sesión como segura.
 

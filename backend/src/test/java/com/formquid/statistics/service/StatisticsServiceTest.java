@@ -1,7 +1,6 @@
 package com.formquid.statistics.service;
 
 import com.formquid.block.repository.BlockRepository;
-import com.formquid.common.exception.ApiException;
 import com.formquid.content.dto.ContentItemRowDto;
 import com.formquid.content.entity.ContentItem;
 import com.formquid.content.entity.ContentItemType;
@@ -31,8 +30,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -191,18 +188,5 @@ class StatisticsServiceTest {
                     org.assertj.core.groups.Tuple.tuple(new BigDecimal("5"), 1L, 100.0 / 3.0)
                 )
         );
-    }
-
-    @Test
-    void getQuestionStatistics_rejectsQuestionOutsideSurveyBeforeQueryingAggregates() {
-        User user = User.builder().id(4L).build();
-        Survey survey = Survey.builder().id(1L).build();
-        when(surveyRepository.findById(1L)).thenReturn(Optional.of(survey));
-        when(questionRepository.findForStatistics(1L, 99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> statisticsService.getQuestionStatistics(1L, 99L, user))
-            .isInstanceOf(ApiException.class)
-            .hasMessage("La pregunta no pertenece a la encuesta");
-        verify(statisticsQueryRepository, never()).summarizeParticipations(1L);
     }
 }

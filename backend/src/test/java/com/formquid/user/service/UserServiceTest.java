@@ -1,11 +1,14 @@
 package com.formquid.user.service;
 
+import com.formquid.collaboration.entity.CollaborationPermission;
+import com.formquid.collaboration.entity.SurveyCollaborator;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.notification.service.NotificationService;
 import com.formquid.common.exception.ApiException;
 import com.formquid.user.dto.DeleteOwnAccountRequestDto;
 import com.formquid.user.dto.UpdateAccountRequestDto;
 import com.formquid.survey.repository.SurveyRepository;
+import com.formquid.survey.entity.Survey;
 import com.formquid.user.dto.UserResponseDto;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -21,6 +25,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -113,5 +118,42 @@ class UserServiceTest {
             .isInstanceOf(ApiException.class)
             .hasMessageContaining("siempre un superadministrador");
         assertThat(user.getRole()).isEqualTo(UserRole.SUPERADMIN);
+    }
+
+    @Test
+    void transferSurveyOwnership_withValidPassword_makesPreviousOwnerEditorCollaborator() {
+        User previousOwner = User.builder().id(7L).passwordHash("hash").build();
+        User newOwner = User.builder().id(9L).build();
+        Survey survey = Survey.builder().id(12L).owner(previousOwner).title("Hábitos digitales").build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+        when(passwordEncoder.matches("current", "hash")).thenReturn(true);
+        when(collaboratorRepository.existsByIdSurveyIdAndIdUserId(12L, 9L)).thenReturn(true);
+        when(userRepository.findById(9L)).thenReturn(Optional.of(newOwner));
+
+        userService.transferSurveyOwnership(12L, 7L, 9L, "current");
+
+        assertThat(survey.getOwner()).isSameAs(newOwner);
+        verify(collaboratorRepository).deleteByIdSurveyIdAndIdUserId(12L, 9L);
+        ArgumentCaptor<SurveyCollaborator> collaborator = ArgumentCaptor.forClass(SurveyCollaborator.class);
+        verify(collaboratorRepository).save(collaborator.capture());
+        assertThat(collaborator.getValue().getId().getSurveyId()).isEqualTo(12L);
+        assertThat(collaborator.getValue().getId().getUserId()).isEqualTo(7L);
+        assertThat(collaborator.getValue().getUser()).isSameAs(previousOwner);
+        assertThat(collaborator.getValue().getPermission()).isEqualTo(CollaborationPermission.EDIT);
+    }
+
+    @Test
+    void transferSurveyOwnership_withWrongPassword_keepsOwnerAndCollaborators() {
+        User previousOwner = User.builder().id(7L).passwordHash("hash").build();
+        Survey survey = Survey.builder().id(12L).owner(previousOwner).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+
+        assertThatThrownBy(() -> userService.transferSurveyOwnership(12L, 7L, 9L, "wrong"))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("La contraseña actual no es correcta");
+
+        assertThat(survey.getOwner()).isSameAs(previousOwner);
+        verify(collaboratorRepository, never()).save(any());
+        verify(collaboratorRepository, never()).deleteByIdSurveyIdAndIdUserId(12L, 9L);
     }
 }

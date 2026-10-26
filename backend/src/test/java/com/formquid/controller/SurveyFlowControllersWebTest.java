@@ -287,14 +287,14 @@ class SurveyFlowControllersWebTest {
     }
 
     @Test
-    void questionStatistics_bindBothPathVariables() throws Exception {
+    void questionStatistics_removedEndpoint_returnsNotFound() throws Exception {
         User editor = editor();
 
         mockMvc.perform(get("/api/v1/surveys/4/statistics/questions/12")
                 .with(authentication(tokenFor(editor))))
-            .andExpect(status().isOk());
+            .andExpect(status().isNotFound());
 
-        verify(statisticsService).getQuestionStatistics(4L, 12L, editor);
+        verifyNoInteractions(statisticsService);
     }
 
     @Test

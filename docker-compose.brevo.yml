@@ -1,0 +1,11 @@
+services:
+  backend:
+    environment:
+      MAIL_ENABLED: "true"
+      MAIL_HOST: smtp-relay.brevo.com
+      MAIL_PORT: "587"
+      MAIL_SMTP_AUTH: "true"
+      MAIL_STARTTLS: "true"
+      MAIL_USERNAME: ${BREVO_SMTP_LOGIN:?Configura BREVO_SMTP_LOGIN en .env}
+      MAIL_PASSWORD: ${BREVO_SMTP_KEY:?Configura BREVO_SMTP_KEY en .env}
+      MAIL_FROM: ${BREVO_MAIL_FROM:?Configura BREVO_MAIL_FROM en .env}

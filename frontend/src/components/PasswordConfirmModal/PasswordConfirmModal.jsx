@@ -7,7 +7,7 @@ import './PasswordConfirmModal.css';
 /**
  * Solicita la contraseña actual para confirmar una acción y muestra los errores recibidos.
  */
-export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing = false, errorMessage = '', onClearError }) {
+export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing = false, errorMessage = '', onClearError, title = 'Confirmar contraseña', description = 'Introduce tu contraseña actual para confirmar esta acción.', confirmLabel = 'Confirmar' }) {
   if (!isOpen) return null;
 
   return (
@@ -17,11 +17,14 @@ export function PasswordConfirmModal({ isOpen, onClose, onConfirm, isProcessing 
       isProcessing={isProcessing}
       errorMessage={errorMessage}
       onClearError={onClearError}
+      title={title}
+      description={description}
+      confirmLabel={confirmLabel}
     />
   );
 }
 
-function PasswordConfirmDialog({ onClose, onConfirm, isProcessing, errorMessage, onClearError }) {
+function PasswordConfirmDialog({ onClose, onConfirm, isProcessing, errorMessage, onClearError, title, description, confirmLabel }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const modalRef = useRef(null);
@@ -69,11 +72,11 @@ function PasswordConfirmDialog({ onClose, onConfirm, isProcessing, errorMessage,
         aria-busy={isProcessing}
       >
         <h2 id="pwd-modal-title" className="pwd-modal-title">
-          Confirmar contraseña
+          {title}
         </h2>
 
         <p id="pwd-modal-description" className="pwd-modal-description">
-          Introduce tu contraseña actual para confirmar esta acción.
+          {description}
         </p>
 
         <ErrorMessage message={errorMessage} onClose={handleClearError} />
@@ -111,7 +114,7 @@ function PasswordConfirmDialog({ onClose, onConfirm, isProcessing, errorMessage,
               Cancelar
             </button>
             <button type="submit" className="btn-pwd-modal-confirm" disabled={isProcessing || !password}>
-              {isProcessing ? 'Procesando...' : 'Confirmar'}
+              {isProcessing ? 'Procesando...' : confirmLabel}
             </button>
           </div>
         </form>

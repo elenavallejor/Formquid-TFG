@@ -142,6 +142,22 @@ MAIL_ENABLED=true
 MAIL_HOST=mailhog
 ```
 
+Para enviar correos reales en desarrollo con Brevo, crea un remitente verificado en Brevo y una clave **SMTP**. Añade a `.env` (excluido de Git):
+
+```dotenv
+BREVO_SMTP_LOGIN=tu-login-smtp
+BREVO_SMTP_KEY=tu-clave-smtp
+BREVO_MAIL_FROM=notificaciones@tu-dominio.example
+```
+
+Arranca con el archivo opcional de Brevo:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.brevo.yml up --build
+```
+
+Este archivo configura el backend para `smtp-relay.brevo.com:587`, con autenticación y STARTTLS obligatorio. El arranque habitual con `docker compose up --build` sigue usando la configuración local de MailHog. El login SMTP y la clave SMTP se obtienen en **Settings → SMTP & API** de Brevo; una clave API no sirve como contraseña SMTP. Consulta la [guía del entorno](doc/04_entorno_y_desarrollo.md#correo-en-desarrollo-con-brevo) para la ejecución fuera de Compose.
+
 También se pueden arrancar ambos proyectos sin Compose. Los README del [backend](backend/README.md#configuración-y-arranque) y del [frontend](frontend/README.md#desarrollo-local) explican los comandos. La [guía del entorno](doc/04_entorno_y_desarrollo.md) reúne la instalación y todas las variables.
 
 ## Pruebas

@@ -1,5 +1,8 @@
 package com.formquid.user.service;
 
+import com.formquid.collaboration.entity.CollaborationPermission;
+import com.formquid.collaboration.entity.SurveyCollaborator;
+import com.formquid.collaboration.entity.SurveyCollaboratorId;
 import com.formquid.collaboration.repository.SurveyCollaboratorRepository;
 import com.formquid.common.dto.PageResponseDto;
 import com.formquid.common.CountryCodes;
@@ -154,7 +157,7 @@ public class UserService {
     }
 
     @Transactional
-    public void transferSurveyOwnership(Long surveyId, Long currentOwnerId, Long newOwnerId) {
+    public void transferSurveyOwnership(Long surveyId, Long currentOwnerId, Long newOwnerId, String currentPassword) {
         var survey = surveyRepository.findById(surveyId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Encuesta no encontrada"));
 
@@ -162,15 +165,22 @@ public class UserService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Solo el propietario actual puede transferir la encuesta");
         }
 
-        User newOwner = getById(newOwnerId);
         User previousOwner = survey.getOwner();
+        ensureCurrentPassword(previousOwner, currentPassword);
 
         if (!collaboratorRepository.existsByIdSurveyIdAndIdUserId(surveyId, newOwnerId)) {
             throw new ApiException(HttpStatus.CONFLICT, "El nuevo propietario debe ser colaborador de la encuesta");
         }
 
+        User newOwner = getById(newOwnerId);
         survey.setOwner(newOwner);
         collaboratorRepository.deleteByIdSurveyIdAndIdUserId(surveyId, newOwnerId);
+        collaboratorRepository.save(SurveyCollaborator.builder()
+            .id(new SurveyCollaboratorId(surveyId, currentOwnerId))
+            .survey(survey)
+            .user(previousOwner)
+            .permission(CollaborationPermission.EDIT)
+            .build());
 
         notificationService.createSurveyNotification(newOwner, NotificationType.SURVEY_OWNERSHIP_TRANSFERRED, "Propiedad de encuesta transferida", "Ahora eres propietario de la encuesta " + survey.getTitle(), survey);
         notificationService.createSurveyNotification(previousOwner, NotificationType.SURVEY_OWNERSHIP_TRANSFERRED, "Propiedad de encuesta transferida", "Has transferido la propiedad de " + survey.getTitle(), survey);
