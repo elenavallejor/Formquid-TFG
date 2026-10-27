@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/src/assets/images/formquid-logo.png" alt="Logo de FormQuid" width="120">
+  <img src="frontend/src/assets/images/formquid-logo-transparent.png" alt="Logo de FormQuid" width="120">
 </p>
 
 <h1 align="center">FormQuid</h1>
