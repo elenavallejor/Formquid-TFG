@@ -116,7 +116,7 @@ function QuestionPreview({ question, number, required = false, headingLevel = 5 
       {TypeIcon && (
         <span
           className="question-type-badge"
-          style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
+          style={{ color: typeConfig.color, borderColor: `color-mix(in srgb, ${typeConfig.color} 37.5%, transparent)` }}
           title={typeConfig.title}
         >
           <TypeIcon aria-hidden="true" />
@@ -202,7 +202,7 @@ function ElementRequestCard({ request, isExpanded, onToggle, onAccept, onDeny })
   const applicantName = request.requestedByName || 'Usuario';
 
   return (
-    <article className="element-request-card" aria-labelledby={`element-request-${request.id}`}>
+    <section className="element-request-card" aria-labelledby={`element-request-${request.id}`}>
       <header className="element-request-card-header">
         <span className="element-request-card-icon"><TypeIcon aria-hidden="true" /></span>
         <div className="element-request-card-heading">
@@ -265,7 +265,7 @@ function ElementRequestCard({ request, isExpanded, onToggle, onAccept, onDeny })
           </>
         )}
       </div>
-    </article>
+    </section>
   );
 }
 

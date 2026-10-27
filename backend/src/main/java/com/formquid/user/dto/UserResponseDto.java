@@ -14,6 +14,7 @@ public record UserResponseDto(
     String name,
     String institution,
     String country,
+    String profileImageKey,
     Instant createdAt,
     Instant updatedAt
 ) {

@@ -49,7 +49,7 @@ export function AdminPanelButton({
 
   if (fullWidth) {
     return (
-      <article className={`admin-panel-card full-width-variant theme-${theme}`}>
+      <div className={`admin-panel-card full-width-variant theme-${theme}`}>
         <div className="admin-panel-card-left">
           <div className={`admin-panel-icon-container theme-${theme}`}>
             {Icon && (
@@ -81,12 +81,12 @@ export function AdminPanelButton({
             aria-hidden="true"
           />
         </Link>
-      </article>
+      </div>
     );
   }
 
   return (
-    <article className={`admin-panel-card theme-${theme}`}>
+    <div className={`admin-panel-card theme-${theme}`}>
       <div className="admin-panel-card-top">
         <div className={`admin-panel-icon-container theme-${theme}`}>
           {Icon && (
@@ -113,17 +113,13 @@ export function AdminPanelButton({
           <div className="admin-panel-counter">
             <span
               className={`admin-panel-count-number theme-${theme}`}
-              aria-label={
-                hasCount
-                  ? `${count} ${formattedCounterLabel}`
-                  : 'Dato cargando'
-              }
+              aria-hidden={hasCount ? undefined : 'true'}
             >
               {hasCount ? count : '—'}
             </span>
 
             <span className="admin-panel-count-label">
-              {formattedCounterLabel}
+              {hasCount ? formattedCounterLabel : 'Cargando'}
             </span>
           </div>
         )}
@@ -139,6 +135,6 @@ export function AdminPanelButton({
           />
         </Link>
       </div>
-    </article>
+    </div>
   );
 }

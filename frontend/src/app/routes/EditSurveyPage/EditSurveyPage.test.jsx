@@ -89,6 +89,29 @@ describe('EditSurveyPage', () => {
     getPublicationRequests.mockResolvedValue([]);
   });
 
+  it('mantiene asociadas las pestañas visibles a paneles existentes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Hábitos digitales' });
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(3);
+    for (const tab of tabs) {
+      expect(document.getElementById(tab.getAttribute('aria-controls'))).toHaveAttribute('role', 'tabpanel');
+    }
+    await user.click(tabs[2]);
+    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
+    expect(document.getElementById('survey-panel-survey')).toHaveAttribute('hidden');
+    expect(document.getElementById('survey-panel-settings')).not.toHaveAttribute('hidden');
+  });
+
+  it('selecciona la única pestaña disponible si una vista de solo lectura llega con otra sección en la URL', async () => {
+    renderPage('/encuestas/12/editar?seccion=configuracion', { id: 8, role: 'EDITOR' });
+    const tab = await screen.findByRole('tab', { name: /Encuesta/i });
+    expect(tab).toHaveAttribute('aria-selected', 'true');
+    expect(document.getElementById(tab.getAttribute('aria-controls'))).not.toHaveAttribute('hidden');
+    expect(document.querySelector('[aria-labelledby="survey-tab-settings"]')).not.toBeInTheDocument();
+  });
+
   it('sube y guarda una portada local desde configuración', async () => {
     const user = userEvent.setup();
     const file = new File(['imagen'], 'portada.jpg', { type: 'image/jpeg' });

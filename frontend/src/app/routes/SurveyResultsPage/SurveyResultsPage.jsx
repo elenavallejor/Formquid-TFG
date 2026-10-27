@@ -59,7 +59,7 @@ function collectQuestionSettings(contentItems = []) {
 function PercentageBars({ items, ariaLabel }) {
   if (!items?.length) return null;
   return (
-    <div className="statistics-bars" aria-label={ariaLabel}>
+    <div className="statistics-bars" role="group" aria-label={ariaLabel}>
       {items.map((item) => {
         const percentage = Math.max(0, Math.min(100, Number(item.percentage) || 0));
         return (
@@ -104,7 +104,7 @@ function NumericSummary({ data }) {
 function EvaluationBadge({ score, question }) {
   if (score === null || score === undefined || !question) return null;
   return (
-    <div className="question-evaluation" aria-label="Configuración de evaluación">
+    <div className="question-evaluation" role="group" aria-label="Configuración de evaluación">
       <span>Peso <strong>{question.evaluationWeight > 0 ? '+' : ''}{formatNumber(question.evaluationWeight, 2)}</strong></span>
       <span>Dirección <strong>{DIRECTION_LABELS[question.evaluationDirection] || question.evaluationDirection}</strong></span>
       <span>Índice <strong>{formatNumber(score, 1)}</strong></span>
@@ -149,7 +149,7 @@ function QuestionStatistics({ statistics, index, question }) {
   }));
 
   return (
-    <article className="question-statistics-card">
+    <div className="question-statistics-card">
       <header className="question-statistics-header">
         <div>
           <span className="question-statistics-number">Pregunta {index + 1}</span>
@@ -158,8 +158,8 @@ function QuestionStatistics({ statistics, index, question }) {
             className="question-statistics-type"
             style={typeConfig ? {
               color: typeConfig.color,
-              borderColor: `${typeConfig.color}60`,
-              backgroundColor: `${typeConfig.color}14`,
+              borderColor: `color-mix(in srgb, ${typeConfig.color} 37.5%, transparent)`,
+              backgroundColor: `color-mix(in srgb, ${typeConfig.color} 8%, transparent)`,
             } : undefined}
           >
             {TypeIcon && <TypeIcon aria-hidden="true" />}
@@ -175,7 +175,7 @@ function QuestionStatistics({ statistics, index, question }) {
             <button
               type="button"
               className="question-view-button"
-              aria-controls={questionDetailId}
+              aria-controls={isQuestionVisible ? questionDetailId : undefined}
               aria-expanded={isQuestionVisible}
               onClick={() => setIsQuestionVisible((isVisible) => !isVisible)}
             >
@@ -258,7 +258,7 @@ function QuestionStatistics({ statistics, index, question }) {
       )}
 
       <EvaluationBadge score={statistics.evaluationScore} question={question} />
-    </article>
+    </div>
   );
 }
 
@@ -400,7 +400,7 @@ export function SurveyResultsPage() {
           <p>Consulta las respuestas agregadas y el análisis ponderado de la encuesta.</p>
         </header>
 
-        <article className="catalog-detail-card survey-results-card">
+        <div className="catalog-detail-card survey-results-card">
           <header className="catalog-detail-title-bar survey-results-title-bar">
             <div className="survey-results-title-heading">
               <span className="catalog-detail-title-icon" aria-hidden="true"><MdAssessment /></span>
@@ -466,7 +466,7 @@ export function SurveyResultsPage() {
               </div>
             </section>
           </div>
-        </article>
+        </div>
       </div>
     </main>
   );

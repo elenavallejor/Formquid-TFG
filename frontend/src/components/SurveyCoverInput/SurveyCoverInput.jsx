@@ -116,7 +116,7 @@ export function SurveyCoverInput({ id, imageKey, file, imageHasError, onImageErr
               }
             }}>
             <button ref={galleryTriggerRef} type="button" className="survey-cover-gallery-trigger"
-              aria-expanded={galleryOpen} aria-controls={`${id}-gallery`}
+              aria-expanded={galleryOpen} aria-controls={galleryOpen ? `${id}-gallery` : undefined}
               onClick={() => setGalleryOpen((open) => !open)}>
               <MdPhotoLibrary className="survey-cover-gallery-icon" aria-hidden="true" />
               <span>ABRIR GALERÍA DE FOTOS</span>

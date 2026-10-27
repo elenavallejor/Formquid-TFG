@@ -2,14 +2,15 @@
   width: 100%;
   background-color: var(--color-background);
   box-sizing: border-box;
+  line-height: 1.5;
 }
 
 .main-page-hero {
   position: relative;
   width: 100%;
   overflow: hidden;
-  background-color: #2a9794;
-  color: var(--color-text-on-dark);
+  background-color: var(--color-hero);
+  color: var(--color-on-hero);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
@@ -17,19 +18,10 @@
   padding-inline: var(--page-gutter);
 }
 
-.main-page-hero::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  background-color: rgb(0 37 54 / 24%);
-  pointer-events: none;
-}
-
 .main-page-hero-picture {
   grid-column: 2;
   grid-row: 1;
-  width: min(100%, clamp(330px, 36vw, 520px));
+  width: min(100%, 640px);
   justify-self: end;
 }
 
@@ -37,6 +29,7 @@
   display: block;
   width: 100%;
   height: auto;
+  transform: scale(1.12);
 }
 
 .main-page-hero-content {
@@ -51,9 +44,9 @@
 .main-page-hero-content h1 {
   max-width: 760px;
   margin: 0 0 24px;
-  color: #ffffff;
-  font-size: clamp(52px, 4.6vw, 64px);
-  line-height: 1.04;
+  color: var(--color-on-hero);
+  font-size: clamp(4.16rem, 4.6vw, 5.12rem);
+  line-height: 1.5;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -61,9 +54,10 @@
 .main-page-hero-content p {
   max-width: 620px;
   margin: 0;
-  color: #ffffff;
-  font-size: 22px;
-  line-height: 1.42;
+  color: var(--color-on-hero);
+  font-size: 1.76rem;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .main-page-surveys {
@@ -87,8 +81,8 @@
 .main-page-surveys-header h2 {
   margin: 0 0 7px;
   color: var(--color-header);
-  font-size: 35px;
-  line-height: 1.15;
+  font-size: 2.8rem;
+  line-height: 1.5;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -96,8 +90,8 @@
 .main-page-survey-section h3 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 21.25px;
-  line-height: 1.2;
+  font-size: 1.7rem;
+  line-height: 1.5;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -109,8 +103,8 @@
 .main-page-surveys-header p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
-  line-height: 1.4;
+  font-size: 1.4rem;
+  line-height: 1.5;
 }
 
 .main-page-controls {
@@ -124,44 +118,39 @@
 }
 
 .main-page-search {
+  position: relative;
   min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background-color: var(--color-surface);
   color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.main-page-search:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-shadow);
 }
 
 .main-page-search svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
   width: var(--search-icon-size);
   height: var(--search-icon-size);
-  flex: 0 0 var(--search-icon-size);
   font-size: var(--search-icon-size);
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .main-page-search input {
   min-width: 0;
   width: 100%;
-  padding: 11px 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
+  min-height: 48px;
+  padding: 11px 14px 11px calc(24px + var(--search-icon-size));
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface);
   color: var(--color-text);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .main-page-search input:focus,
 .main-page-search input:focus-visible {
-  outline: none;
-  box-shadow: none;
+  border-color: var(--color-brand);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .main-page-results {
@@ -190,8 +179,8 @@
 
 .main-page-survey-section > header > svg {
   flex: 0 0 auto;
-  color: var(--color-primary);
-  font-size: 27px;
+  color: var(--color-brand);
+  font-size: 2.16rem;
 }
 
 .main-page-section-empty {
@@ -211,30 +200,31 @@
 }
 
 .main-page-section-empty svg {
-  color: var(--color-primary);
-  font-size: 42px;
+  color: var(--color-brand);
+  font-size: 3.36rem;
 }
 
 .main-page-section-empty p {
   margin: 0;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .main-page-error > button {
   min-height: 44px;
   padding: 9px 16px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
-  font-size: 17.5px;
+  background-color: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .main-page-error > button:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .main-page-error {
@@ -253,7 +243,7 @@
 .main-page-error p {
   flex: 1;
   margin: 0;
-  font-size: 20px;
+  font-size: 1.6rem;
   line-height: 1.5;
 }
 
@@ -312,12 +302,12 @@
 
   .main-page-hero-content h1 {
     margin-bottom: 14px;
-    font-size: clamp(36px, 9vw, 46px);
+    font-size: clamp(2.88rem, 9vw, 3.68rem);
   }
 
   .main-page-hero-content p {
     max-width: 540px;
-    font-size: 19.5px;
+    font-size: 1.56rem;
   }
 
   .main-page-surveys {
@@ -326,7 +316,7 @@
   }
 
   .main-page-surveys-header h2 {
-    font-size: 30px;
+    font-size: 2.4rem;
   }
 
 }
@@ -349,6 +339,6 @@
 
 @media only screen and (max-width: 380px) {
   .main-page-hero-content h1 {
-    font-size: 34px;
+    font-size: 2.72rem;
   }
 }

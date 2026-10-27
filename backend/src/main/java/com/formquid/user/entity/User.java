@@ -70,6 +70,9 @@ public class User implements UserDetails {
     @Column(length = 100)
     private String country;
 
+    @Column(name = "profile_image_key", length = 255)
+    private String profileImageKey;
+
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 

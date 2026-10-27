@@ -38,6 +38,12 @@ describe('PublicSurveyPage', () => {
     vi.resetAllMocks();
   });
 
+  it('mantiene un título de página mientras se carga la encuesta', () => {
+    getPublicSurveyById.mockReturnValue(new Promise(() => {}));
+    renderSurvey();
+    expect(screen.getByRole('main')).toContainElement(screen.getByRole('heading', { level: 1, name: 'Cargando encuesta' }));
+  });
+
   it('presenta un error de carga con la ilustración y permite reintentar', async () => {
     const user = userEvent.setup();
     getPublicSurveyById.mockRejectedValue(new Error('Red no disponible'));
@@ -45,7 +51,7 @@ describe('PublicSurveyPage', () => {
 
     const error = await screen.findByRole('alert');
     expect(error).toHaveTextContent('No hemos podido abrir la encuesta');
-    expect(error.querySelector('img')).toHaveAttribute('src', expect.stringContaining('error-page-background'));
+    expect(error.querySelector('img')).toHaveAttribute('src', expect.stringContaining('error.png'));
     expect(screen.getByRole('link', { name: 'Volver a las encuestas' })).toHaveAttribute('href', '/');
 
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));

@@ -83,12 +83,16 @@ describe('CreateSurveyPage', () => {
 
     await chooseCategory(user);
     await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta con galería');
-    await user.click(screen.getByRole('button', { name: 'ABRIR GALERÍA DE FOTOS' }));
+    const galleryTrigger = screen.getByRole('button', { name: 'ABRIR GALERÍA DE FOTOS' });
+    expect(galleryTrigger).not.toHaveAttribute('aria-controls');
+    await user.click(galleryTrigger);
     expect(screen.getByRole('group', { name: 'Galería de fotos' })).toBeVisible();
+    expect(document.getElementById(galleryTrigger.getAttribute('aria-controls'))).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Galería de fotos' })).toBeVisible();
     expect(screen.getByText('Elige una foto para tu portada:')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Usar imagen: Aula' }));
     expect(await screen.findByText('aula.png')).toBeVisible();
+    expect(galleryTrigger).not.toHaveAttribute('aria-controls');
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
 
     expect(await screen.findByRole('heading', { name: 'Encuesta creada: 17' })).toBeVisible();

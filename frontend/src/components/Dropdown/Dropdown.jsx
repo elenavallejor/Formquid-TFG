@@ -128,7 +128,7 @@ function DropdownPopover({ ariaDescribedBy, ariaInvalid, ariaLabel, className, d
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
         aria-expanded={open && !disabled}
-        aria-controls={menuId}
+        aria-controls={open && !disabled ? menuId : undefined}
         disabled={disabled}
         onKeyDown={handleTriggerKeyDown}
         onClick={() => {

@@ -3,6 +3,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SURVEY_COVER_STORAGE_PATH: /app/data/survey-covers
+      PROFILE_PHOTO_STORAGE_PATH: /app/data/profile-photos
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:?Configura FRONTEND_ORIGIN en .env}
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Configura SUPERADMIN_EMAIL en .env}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Configura SUPERADMIN_PASSWORD en .env}

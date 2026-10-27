@@ -24,7 +24,9 @@ Las migraciones están en `src/main/resources/db/migration`. Los perfiles `dev` 
 
 Las portadas subidas se guardan fuera de la imagen del contenedor. El servicio acepta PNG y JPEG de hasta 3 MB y 4000 píxeles por lado. Con Docker Compose, el volumen `survey-covers` conserva esos archivos en `/app/data/survey-covers`. La ruta puede cambiarse mediante `SURVEY_COVER_STORAGE_PATH` cuando el backend se ejecuta de otra forma.
 
-La [guía de desarrollo](../doc/04_entorno_y_desarrollo.md#migraciones-de-bases-existentes) explica qué comprobar si una base antigua presenta una discrepancia de checksum en la migración V9. Para las copias de seguridad deben conservarse tanto PostgreSQL como el volumen de portadas.
+Las fotos de perfil admiten los mismos formatos y límites. Se guardan en el volumen `profile-photos` (`/app/data/profile-photos`) y su ruta se puede configurar con `PROFILE_PHOTO_STORAGE_PATH`. La API solo entrega la foto activa de cada usuario a clientes autenticados; las fotos sustituidas o eliminadas se borran después de confirmar el cambio.
+
+La [guía de desarrollo](../doc/04_entorno_y_desarrollo.md#migraciones-de-bases-existentes) explica qué comprobar si una base antigua presenta una discrepancia de checksum en la migración V9. Para las copias de seguridad deben conservarse PostgreSQL y los volúmenes de portadas y fotos de perfil.
 
 ## Configuración y arranque
 

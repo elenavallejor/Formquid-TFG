@@ -227,11 +227,11 @@ export function SurveyOriginModal({
               ))}
             </div>
 
-            <footer>
+            <div className="survey-origin-modal-actions">
               <button type="button" className="survey-origin-back" onClick={() => setView('CHOICE')}>
                 Volver
               </button>
-            </footer>
+            </div>
           </>
         )}
       </section>

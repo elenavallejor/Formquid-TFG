@@ -1,5 +1,3 @@
-import formQuidLogo from '../../assets/images/formquid-logo.png';
-
 import './AuthPageLayout.css';
 
 export function AuthPageLayout({ title, description, children }) {
@@ -8,7 +6,7 @@ export function AuthPageLayout({ title, description, children }) {
       <div className="login-page-container">
         <section className="login-card-container" aria-describedby="login-description">
           <div className="login-logo-backdrop" aria-hidden="true">
-            <img src={formQuidLogo} alt="" className="backdrop-logo-img" />
+            <span className="backdrop-logo-img" />
           </div>
           <div className="login-card">
             <div className="login-card-header">

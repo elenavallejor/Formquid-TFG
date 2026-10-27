@@ -223,7 +223,7 @@ export function Question({
   }
 
   return (
-    <article className="academic-question-card" aria-labelledby={titleId}>
+    <section className="academic-question-card" aria-labelledby={titleId}>
       <Heading id={titleId} className="academic-statement">
         {questionNumber && <span className="question-prefix">Pregunta {questionNumber}.</span>}
         {statement}
@@ -426,6 +426,6 @@ export function Question({
       </div>
 
       <ErrorMessage id={errorId} message={errorMessage} onClose={onClearError} />
-    </article>
+    </section>
   );
 }

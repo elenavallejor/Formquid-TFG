@@ -18,7 +18,7 @@
   margin: 0;
   color: var(--color-header);
   font-family: inherit;
-  font-size: 20px;
+  font-size: 1.6rem;
   font-weight: 800;
   line-height: 1.45;
   text-transform: uppercase;
@@ -34,9 +34,9 @@
   margin: 6px 0 0;
   color: var(--color-text-muted);
   font-family: inherit;
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   font-style: italic;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .block-content-items {
@@ -98,7 +98,7 @@
   border-radius: 5px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 21.25px;
+  font-size: 1.7rem;
   cursor: pointer;
 }
 
@@ -141,7 +141,7 @@
   border: 1px solid;
   border-radius: 6px;
   background: var(--color-surface);
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .block-content-question .academic-question-card {
@@ -185,14 +185,14 @@
   align-items: center;
   gap: 6px;
   color: var(--color-primary);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
 .block-content-dropzone-text p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14.375px;
+  font-size: var(--font-size-min);
 }
 
 .block-content .academic-question-card,

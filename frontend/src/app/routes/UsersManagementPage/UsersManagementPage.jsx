@@ -204,7 +204,7 @@ export function UsersManagementPage() {
               const canRemoveUser = canDeleteUser(item, user);
 
               return (
-                <article key={item.id} className="user-management-card">
+                <div key={item.id} className="user-management-card">
                   <div className="user-card-info">
                     <h2 className="user-card-title">
                       {String(item.name ?? 'Usuario sin nombre').toUpperCase()} - {getUserRoleLabel(item.role)}
@@ -253,7 +253,7 @@ export function UsersManagementPage() {
                       </button>
                     )}
                   </div>
-                </article>
+                </div>
               );
             })}
           </div>

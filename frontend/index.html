@@ -2,12 +2,49 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="public/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="theme-color" content="#002536" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FormQuid</title>
+    <style>
+      .app-startup {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: #efefef;
+        color: #002536;
+        font: 1.125rem/1.5 system-ui, sans-serif;
+      }
+      .app-startup-spinner {
+        width: 20px;
+        height: 20px;
+        box-sizing: border-box;
+        border: 2px solid #cfd8dd;
+        border-top-color: #00988d;
+        border-radius: 50%;
+        animation: startup-spin 0.8s linear infinite;
+      }
+      @keyframes startup-spin {
+        to { transform: rotate(360deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .app-startup-spinner { animation: none; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-startup" role="status" aria-label="Cargando FormQuid">
+        <span class="app-startup-spinner" aria-hidden="true"></span>
+      </div>
+    </div>
+    <noscript>
+      <style>#root { display: none; }</style>
+      <main class="app-startup">
+        <p>Activa JavaScript para consultar las encuestas de FormQuid.</p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

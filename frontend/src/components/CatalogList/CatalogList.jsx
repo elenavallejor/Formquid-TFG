@@ -280,7 +280,7 @@ export function CatalogList({
                 : item[config.detailKey] ?? 0;
 
             return (
-              <article
+              <div
                 key={item.id}
                 className={`catalog-block-card ${!hasActions ? 'no-actions' : ''} ${!canManageCatalog && onView ? 'view-action' : ''}`}
               >
@@ -288,7 +288,7 @@ export function CatalogList({
                   <div
                     className={`catalog-item-icon ${questionTypeConfig ? 'catalog-item-icon--question' : ''}`}
                     style={questionTypeConfig
-                      ? { color: questionTypeConfig.color, borderColor: `${questionTypeConfig.color}60` }
+                      ? { color: questionTypeConfig.color, borderColor: `color-mix(in srgb, ${questionTypeConfig.color} 37.5%, transparent)` }
                       : undefined}
                     title={questionTypeConfig?.title}
                   >
@@ -315,7 +315,7 @@ export function CatalogList({
                   {updatedAt.time && <div className="time-subtext">{updatedAt.time}</div>}
                 </div>
                 {renderActions(item)}
-              </article>
+              </div>
             );
           })}
         </div>

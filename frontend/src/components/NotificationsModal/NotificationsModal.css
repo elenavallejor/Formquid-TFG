@@ -11,7 +11,7 @@
   border: 0;
   border-radius: 12px;
   box-shadow: var(--card-shadow);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .notifications-modal[open] {
@@ -32,8 +32,8 @@
   gap: 20px;
   min-height: 75px;
   padding: 12px 28px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -50,7 +50,7 @@
 .notifications-modal .notifications-title-group h1 {
   margin: 0;
   color: inherit;
-  font-size: 37.5px;
+  font-size: 3rem;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: 0.02em;
@@ -65,7 +65,7 @@
   background: var(--color-surface-muted);
   color: var(--color-header);
   border-radius: 7px;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   text-align: center;
 }
@@ -78,11 +78,11 @@
   padding: 0;
   place-items: center;
   background: transparent;
-  color: var(--color-text-on-dark);
+  color: var(--color-on-action);
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 28.75px;
+  font-size: 2.3rem;
   transition: background-color 0.15s ease;
 }
 
@@ -113,10 +113,10 @@
 .notifications-modal .notifications-read-all,
 .notifications-modal .notification-actions button,
 .notifications-modal .notifications-more {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 16px;
   font: inherit;
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 700;
   border-radius: 8px;
   cursor: pointer;
@@ -146,7 +146,7 @@
 .notifications-modal .notification-read {
   background: var(--color-surface);
   color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
 }
 
 .notifications-modal .notifications-read-all:hover:not(:disabled),
@@ -209,7 +209,7 @@
 .notifications-modal .notification-title-row h2 {
   margin: 0;
   color: var(--color-header);
-  font-size: 19.625px;
+  font-size: 1.57rem;
   font-weight: 800;
   line-height: 1.3;
   overflow-wrap: anywhere;
@@ -220,7 +220,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .notifications-modal .notification-new > span {
@@ -233,8 +233,8 @@
 .notifications-modal .notification-description {
   margin: 6px 0;
   color: var(--color-text);
-  font-size: 17.5px;
-  line-height: 1.45;
+  font-size: 1.4rem;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
@@ -243,7 +243,7 @@
   flex-wrap: wrap;
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .notifications-modal .notification-meta span {
@@ -271,18 +271,19 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
-  border: 1px solid var(--color-primary);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  border: 1px solid var(--color-brand);
 }
 
 .notifications-modal .notification-manage:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .notifications-modal .notification-manage svg {
   flex: none;
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .notifications-modal .notification-delete {
@@ -298,7 +299,7 @@
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 25px;
+  font-size: 2rem;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -316,7 +317,7 @@
   margin-top: 16px;
   background: var(--color-surface);
   color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
 }
 
 .notifications-modal .notifications-more:hover:not(:disabled) {
@@ -326,7 +327,7 @@
 .notifications-modal .notifications-empty {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 20px;
+  font-size: 1.6rem;
   text-align: center;
 }
 
@@ -338,7 +339,7 @@
   background: var(--color-error-surface);
   border: 1px solid var(--color-error-border);
   border-radius: 8px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 @media (max-width: 900px) {
@@ -379,7 +380,7 @@
   }
 
   .notifications-modal .notifications-title-group h1 {
-    font-size: 27.5px;
+    font-size: 2.2rem;
   }
 
   .notifications-modal .notifications-filters {
@@ -424,7 +425,7 @@
   }
 
   .notifications-modal .notifications-title-group h1 {
-    font-size: 25px;
+    font-size: 2rem;
   }
 
   .notifications-modal .notifications-count {

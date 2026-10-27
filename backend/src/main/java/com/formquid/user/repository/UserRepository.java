@@ -47,6 +47,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 user.name,
                 user.institution,
                 user.country,
+                user.profileImageKey,
                 user.createdAt,
                 user.updatedAt
             )
@@ -102,6 +103,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             user.name,
             user.institution,
             user.country,
+            user.profileImageKey,
             user.createdAt,
             user.updatedAt
         )

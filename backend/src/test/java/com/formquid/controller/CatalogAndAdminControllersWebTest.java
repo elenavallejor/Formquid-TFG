@@ -40,11 +40,13 @@ import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import com.formquid.user.repository.UserRepository;
 import com.formquid.user.service.UserService;
+import com.formquid.user.service.ProfilePhotoStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.ResponseCookie;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -60,6 +62,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -263,7 +266,7 @@ class CatalogAndAdminControllersWebTest {
         User editor = user(8L, UserRole.EDITOR);
         when(userService.getProfile(editor)).thenReturn(new UserResponseDto(
             8L, UserRole.EDITOR, "user8@example.com", "Usuario",
-            "Centro", "ES", Instant.parse("2026-01-01T10:00:00Z"), Instant.parse("2026-01-01T10:00:00Z")
+            "Centro", "ES", null, Instant.parse("2026-01-01T10:00:00Z"), Instant.parse("2026-01-01T10:00:00Z")
         ));
 
         mockMvc.perform(get("/api/v1/users/me").with(authentication(tokenFor(editor))))
@@ -272,6 +275,28 @@ class CatalogAndAdminControllersWebTest {
             .andExpect(jsonPath("$.role").value("EDITOR"))
             .andExpect(jsonPath("$.country").value("ES"))
             .andExpect(jsonPath("$.gender").doesNotExist());
+    }
+
+    @Test
+    void profilePhotoUploadAndReadRequireAuthenticatedUser() throws Exception {
+        User editor = user(8L, UserRole.EDITOR);
+        String filename = "123e4567-e89b-12d3-a456-426614174000.png";
+        String key = "/api/v1/users/8/photo/" + filename;
+        var file = new MockMultipartFile("file", "portrait.png", "image/png", new byte[] {1, 2, 3});
+        when(userService.uploadProfilePhoto(eq(8L), any())).thenReturn(new UserResponseDto(
+            8L, UserRole.EDITOR, "user8@example.com", "Usuario", "Centro", "ES", key, null, null
+        ));
+        when(userService.getProfilePhoto(8L, filename))
+            .thenReturn(new ProfilePhotoStorage.StoredPhoto(new byte[] {1, 2, 3}, "image/png"));
+
+        mockMvc.perform(multipart("/api/v1/users/me/photo").file(file)
+                .with(csrf()).with(authentication(tokenFor(editor))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.profileImageKey").value(key));
+        mockMvc.perform(get(key).with(authentication(tokenFor(editor))))
+            .andExpect(status().isOk())
+            .andExpect(header().string("X-Content-Type-Options", "nosniff"));
+        mockMvc.perform(get(key)).andExpect(status().isUnauthorized());
     }
 
     @Test

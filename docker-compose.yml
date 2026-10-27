@@ -8,12 +8,14 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SURVEY_COVER_STORAGE_PATH: /app/data/survey-covers
+      PROFILE_PHOTO_STORAGE_PATH: /app/data/profile-photos
     depends_on:
       - mailhog
     ports:
       - "8080:8080"
     volumes:
       - survey-covers:/app/data/survey-covers
+      - profile-photos:/app/data/profile-photos
     restart: unless-stopped
 
   mailhog:
@@ -37,3 +39,4 @@ services:
 
 volumes:
   survey-covers:
+  profile-photos:

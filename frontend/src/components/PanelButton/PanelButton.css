@@ -6,7 +6,7 @@
   max-width: 480px;
   padding: 20px;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-brand);
   border-radius: 12px;
   text-decoration: none;
   box-shadow: var(--card-shadow);
@@ -15,7 +15,7 @@
 }
 
 .panel-button:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-brand);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.183);
 }
 
@@ -31,13 +31,14 @@
 }
 
 .panel-button-icon {
-  font-size: 38px;
-  color: var(--color-primary);
+  font-size: 3.04rem;
+  color: var(--color-brand);
 }
 
 /* Textos */
 .panel-button-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -45,7 +46,7 @@
 
 .panel-button-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--color-text);
   line-height: 1.2;
@@ -53,13 +54,13 @@
 
 .panel-button-description {
   margin: 0;
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .panel-button-arrow {
-  font-size: 27.5px;
+  font-size: 2.2rem;
   color: var(--color-text);
   flex-shrink: 0;
   transition: transform 0.2s ease;

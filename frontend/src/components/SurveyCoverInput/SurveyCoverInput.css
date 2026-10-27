@@ -17,7 +17,7 @@
   border-radius: 10px;
   background: color-mix(in srgb, var(--color-accent-surface) 35%, var(--color-surface));
   color: var(--color-text-muted);
-  font-size: 50px;
+  font-size: 4rem;
   cursor: pointer;
   transition: border-color 0.18s ease, background 0.18s ease;
 }
@@ -28,7 +28,7 @@
 }
 
 .create-survey-image-preview:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background: var(--color-accent-surface);
 }
 
@@ -49,19 +49,19 @@
   gap: 6px;
   padding: 20px;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 600;
   text-align: center;
 }
 
 .survey-cover-preview-empty svg {
-  color: var(--color-primary);
-  font-size: 46px;
+  color: var(--color-brand);
+  font-size: 3.68rem;
 }
 
 .survey-cover-preview-empty small {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 400;
 }
 
@@ -73,7 +73,7 @@
   border-radius: 5px;
   background: rgb(0 37 54 / 80%);
   color: #fff;
-  font-size: 12.5px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -107,25 +107,25 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-header);
   font: inherit;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .survey-cover-gallery-trigger:hover,
 .survey-cover-gallery-trigger[aria-expanded='true'] {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background: var(--color-accent-surface);
 }
 
 .survey-cover-gallery-trigger svg {
   flex: none;
-  font-size: 22px;
+  font-size: 1.76rem;
 }
 
 .survey-cover-gallery-trigger > span {
@@ -134,8 +134,8 @@
 }
 
 .survey-cover-gallery-trigger .survey-cover-gallery-icon {
-  color: var(--color-primary);
-  font-size: 24px;
+  color: var(--color-brand);
+  font-size: 1.92rem;
 }
 
 .survey-cover-gallery-chevron {
@@ -164,14 +164,14 @@
 .survey-cover-gallery-menu h3 {
   margin: 0 0 4px;
   color: var(--color-primary);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 800;
 }
 
 .survey-cover-gallery-menu p {
   margin: 0 0 16px;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .survey-cover-gallery-grid {
@@ -184,7 +184,7 @@
   min-width: 0;
   overflow: hidden;
   padding: 0;
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-brand);
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text);
@@ -194,7 +194,7 @@
 
 .survey-cover-gallery-grid button:hover,
 .survey-cover-gallery-grid button[aria-pressed='true'] {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background: var(--color-accent-surface);
 }
 
@@ -211,7 +211,7 @@
 }
 
 .survey-cover-gallery-menu [role='status'] {
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .survey-cover-gallery-trigger:focus-visible,
@@ -227,7 +227,7 @@
 
 .survey-cover-field-label {
   color: var(--color-header);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
@@ -264,11 +264,11 @@
   justify-content: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
   background: var(--color-surface);
-  color: var(--color-primary);
-  font-size: 16.25px;
+  color: var(--color-text);
+  font-size: var(--font-size-min);
   font-weight: 700;
   cursor: pointer;
   box-sizing: border-box;
@@ -276,7 +276,7 @@
 }
 
 .survey-cover-file-button svg {
-  font-size: 21px;
+  font-size: 1.68rem;
 }
 
 .survey-cover-file-button:hover {
@@ -292,7 +292,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -304,7 +304,7 @@
 
 .survey-cover-file-help {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .create-survey-remove-image {
@@ -322,7 +322,7 @@
   color: var(--color-header);
   box-shadow: var(--card-shadow);
   font: inherit;
-  font-size: 24px;
+  font-size: 1.92rem;
   cursor: pointer;
 }
 
@@ -380,16 +380,16 @@
   .survey-cover-preview-empty {
     gap: 3px;
     padding: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-min);
   }
 
   .survey-cover-preview-empty svg {
-    font-size: 32px;
+    font-size: 2.56rem;
   }
 
   .create-survey-field .survey-cover-file-button {
     gap: 6px;
     padding-inline: 10px;
-    font-size: 14.5px;
+    font-size: var(--font-size-min);
   }
 }

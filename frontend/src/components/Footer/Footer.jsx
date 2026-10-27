@@ -14,23 +14,17 @@ export function Footer() {
           2026, FormQuid - Trabajo de Fin de Grado
         </p>
 
-        <nav className="footer-navigation" aria-label="Enlaces del pie de página">
-          <a className="footer-link" href="/terms">
-            Términos de uso
-          </a>
-
-          |
-
+        <div className="footer-navigation">
           <a className="footer-link" href="/manual">
             Manual de usuario
           </a>
 
-          |
+          <span aria-hidden="true">|</span>
 
           <a className="footer-link" href="/contact">
             Contacto
           </a>
-        </nav>
+        </div>
       </div>
     </footer>
   );

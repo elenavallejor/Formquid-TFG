@@ -46,11 +46,15 @@ describe('SurveyParticipationsPage', () => {
       answers: [{ answerId: 1, questionType: 'TEXT', statement: 'Tu opinión', textValue: 'Muy útil' }],
     });
     renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Ver respuestas' }));
+    const detailToggle = await screen.findByRole('button', { name: 'Ver respuestas' });
+    expect(detailToggle).not.toHaveAttribute('aria-controls');
+    await user.click(detailToggle);
     expect(await screen.findByText('Muy útil')).toBeVisible();
+    expect(document.getElementById(detailToggle.getAttribute('aria-controls'))).toBeVisible();
     expect(getSurveyParticipation).toHaveBeenCalledWith('12', 5);
     await user.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
     expect(screen.queryByText('Muy útil')).not.toBeInTheDocument();
+    expect(detailToggle).not.toHaveAttribute('aria-controls');
   });
 
   it('conserva la lista si falla la carga de un detalle', async () => {

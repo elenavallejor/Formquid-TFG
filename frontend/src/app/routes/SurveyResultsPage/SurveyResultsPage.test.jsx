@@ -59,7 +59,10 @@ describe('SurveyResultsPage', () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: '¿Te gusta?' })).toBeVisible();
     expect(screen.getByText('Tendencia positiva')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Ver pregunta' }));
+    const questionToggle = screen.getByRole('button', { name: 'Ver pregunta' });
+    expect(questionToggle).not.toHaveAttribute('aria-controls');
+    await user.click(questionToggle);
+    expect(document.getElementById(questionToggle.getAttribute('aria-controls'))).toBeVisible();
     expect(screen.getByText('Pregunta: ¿Te gusta?')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Ver participaciones individuales' }));
     expect(screen.getByRole('heading', { name: 'Participaciones individuales' })).toBeVisible();

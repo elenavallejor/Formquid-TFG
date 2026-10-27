@@ -36,7 +36,7 @@
 
 .survey-component.font-open-dyslexic { font-size: 1em; }
 .survey-component .academic-question-card { padding: 20px 0; font-family: inherit; }
-.survey-component.font-open-dyslexic .academic-statement { font-size: 17.5px; }
+.survey-component.font-open-dyslexic .academic-statement { font-size: 1.4rem; }
 
 .survey-preview-notice {
   display: flex;
@@ -48,8 +48,8 @@
   background: var(--color-accent-surface);
   color: var(--color-text);
   font-family: Arial, sans-serif;
-  font-size: 16.25px;
-  line-height: 1.45;
+  font-size: var(--font-size-min);
+  line-height: 1.5;
 }
 
 .survey-preview-notice::before {
@@ -62,7 +62,7 @@
   background: var(--color-info);
   color: var(--color-text-on-dark);
   content: '!';
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 900;
   line-height: 1;
 }
@@ -78,28 +78,28 @@
 }
 
 .survey-response-header { padding: 10px 0 18px; }
-.survey-response-header h1 { margin: 0 0 10px; color: var(--color-header); font: inherit; font-size: 37.5px; font-weight: 800; overflow-wrap: anywhere; }
-.survey-response-header > p { margin: 0; color: var(--color-text); font: inherit; font-size: 18.75px; line-height: 1.65; overflow-wrap: anywhere; white-space: pre-wrap; }
+.survey-response-header h1 { margin: 0 0 10px; color: var(--color-header); font: inherit; font-size: 3rem; font-weight: 800; overflow-wrap: anywhere; }
+.survey-response-header > p { margin: 0; color: var(--color-text); font: inherit; font-size: 1.5rem; line-height: 1.65; overflow-wrap: anywhere; white-space: pre-wrap; }
 .survey-response-header ul { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 0; padding: 0; list-style: none; }
-.survey-response-header li { padding: 4px 9px; border-radius: 999px; background: var(--color-accent-surface); color: var(--color-primary); font-family: Arial, sans-serif; font-size: 13.75px; font-weight: 800; }
-.survey-required-note { display: flex; align-items: baseline; gap: 7px; margin: 16px auto 0; color: var(--color-text); font-family: Arial, sans-serif; font-size: 16.25px; line-height: 1.45; }
-.survey-required-note > span:first-child { color: var(--color-error); font-size: 20px; font-weight: 800; }
+.survey-response-header li { padding: 4px 9px; border-radius: 999px; background: var(--color-accent-surface); color: var(--color-primary); font-family: Arial, sans-serif; font-size: var(--font-size-min); font-weight: 800; }
+.survey-required-note { display: flex; align-items: baseline; gap: 7px; margin: 16px auto 0; color: var(--color-text); font-family: Arial, sans-serif; font-size: var(--font-size-min); line-height: 1.5; }
+.survey-required-note > span:first-child { color: var(--color-error); font-size: 1.6rem; font-weight: 800; }
 .survey-response-content { display: flex; flex-direction: column; gap: 12px; padding: 22px 0; }
-.survey-content-text { margin: 0; padding: 20px 0; color: var(--color-text); font-size: 20px; font-style: italic; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.survey-content-text { margin: 0; padding: 20px 0; color: var(--color-text); font-size: 1.6rem; font-style: italic; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 
 .survey-response-block { margin: 24px 0 12px; padding: 0; border: 0; }
 .survey-response-block > header { margin-bottom: 0; padding: 18px 0 2px; border: 0; }
-.survey-response-block h2 { margin: 0 0 5px; color: var(--color-text); font: inherit; font-size: 22.5px; font-weight: 800; line-height: 1.35; text-transform: uppercase; }
+.survey-response-block h2 { margin: 0 0 5px; color: var(--color-text); font: inherit; font-size: 1.8rem; font-weight: 800; line-height: 1.35; text-transform: uppercase; }
 .survey-block-prefix { margin-right: 8px; }
 .survey-response-block-items { display: flex; flex-direction: column; gap: 6px; }
 .survey-response-block-items > .academic-question-card:first-child { padding-top: 8px; }
 .survey-response-empty { margin: 0; padding: 34px 20px; border: 1px dashed var(--color-border); color: var(--color-text-muted); text-align: center; }
 .survey-response-actions { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--color-border); }
-.survey-response-actions button { padding: 12px 18px; border: 1px solid var(--color-primary); border-radius: 8px; background: var(--color-primary); color: var(--color-text-on-dark); font-family: Arial, sans-serif; font-size: 16.25px; font-weight: 800; cursor: pointer; }
+.survey-response-actions button { padding: 12px 18px; border: 1px solid var(--color-brand); border-radius: 8px; background: var(--color-action); color: var(--color-on-action); font-family: Arial, sans-serif; font-size: var(--font-size-min); font-weight: 800; cursor: pointer; }
 .survey-response-actions button:disabled { opacity: 0.68; cursor: wait; }
 
 @media only screen and (max-width: 640px) {
-  .survey-response-header h1 { font-size: 30px; }
+  .survey-response-header h1 { font-size: 2.4rem; }
   .survey-response-introduction,
   .survey-response-questions { padding-right: 18px; padding-left: 18px; }
   .survey-response-introduction { padding-top: 30px; padding-bottom: 22px; }

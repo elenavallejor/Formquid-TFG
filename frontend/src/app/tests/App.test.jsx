@@ -50,4 +50,14 @@ describe('navegación de la aplicación', () => {
     expect(publicSurvey.loader({ params: { publicCode: 'ABC123DEF456' } })).toBeNull();
     expect(() => publicSurvey.loader({ params: { publicCode: 'invalid' } })).toThrow();
   });
+
+  it('conserva cabecera y pie cuando falla un loader de navegación', async () => {
+    renderWithDataRouter(router.routes, { route: '/invalid' });
+
+    expect(await screen.findByRole('heading', { name: 'Página no encontrada' })).toBeVisible();
+    expect(screen.getByRole('banner')).toHaveTextContent('Cabecera');
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Pie');
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(document.title).toBe('Página no encontrada | FormQuid');
+  });
 });

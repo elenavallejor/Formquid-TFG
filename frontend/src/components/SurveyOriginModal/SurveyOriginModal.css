@@ -32,13 +32,13 @@
 .survey-origin-modal h2 {
   margin: 0;
   color: var(--color-header);
-  font-size: 30px;
+  font-size: 2.4rem;
 }
 
 .survey-origin-modal header p {
   margin: 8px 0 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .survey-origin-close {
@@ -53,7 +53,7 @@
   border-radius: 7px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 27.5px;
+  font-size: 2.2rem;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -81,7 +81,7 @@
   gap: 24px;
   min-height: 118px;
   padding: 20px 26px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-brand);
   border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-text);
@@ -92,9 +92,9 @@
 }
 
 .survey-origin-options > button:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background: var(--color-accent-surface);
-  box-shadow: 0 5px 14px rgb(0 118 111 / 14%);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--color-primary) 14%, transparent);
   transform: translateX(2px);
 }
 
@@ -104,10 +104,10 @@
   height: 64px;
   place-items: center;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
-  font-size: 36px;
-  box-shadow: 0 5px 12px rgb(0 118 111 / 20%);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 2.88rem;
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .survey-origin-options > button > span:nth-child(2),
@@ -130,11 +130,11 @@
 }
 
 .survey-origin-options strong {
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .survey-template-option strong {
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .survey-origin-options small,
@@ -143,17 +143,17 @@
   overflow: hidden;
   color: var(--color-text-muted);
   font-weight: 400;
-  line-height: 1.45;
+  line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .survey-origin-options small {
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .survey-template-option small {
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .survey-origin-option-action {
@@ -162,13 +162,13 @@
   justify-self: end;
   gap: 5px;
   color: var(--color-primary);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .survey-origin-option-action svg {
-  font-size: 23.75px;
+  font-size: 1.9rem;
   transition: transform 0.2s ease;
 }
 
@@ -199,7 +199,7 @@
   align-items: center;
   gap: 13px;
   padding: 11px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 9px;
   background: var(--color-surface);
   color: var(--color-text-muted);
@@ -208,7 +208,7 @@
 }
 
 .survey-template-option:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
 }
 
 .survey-template-image {
@@ -221,7 +221,7 @@
   border-radius: 6px;
   background: var(--color-surface-muted);
   color: var(--color-primary);
-  font-size: 30px;
+  font-size: 2.4rem;
 }
 
 .survey-template-image img {
@@ -240,7 +240,7 @@
   color: var(--color-error);
 }
 
-.survey-origin-modal > footer {
+.survey-origin-modal-actions {
   display: flex;
   justify-content: flex-end;
   padding: 16px 26px;
@@ -249,12 +249,12 @@
 
 .survey-origin-back {
   padding: 10px 18px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-primary);
   font: inherit;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   cursor: pointer;
 }
@@ -298,20 +298,20 @@
   .survey-origin-option-icon {
     width: 52px;
     height: 52px;
-    font-size: 30px;
+    font-size: 2.4rem;
   }
 
   .survey-origin-options strong {
-    font-size: 17.5px;
+    font-size: 1.4rem;
   }
 
   .survey-origin-options small {
-    font-size: 15px;
+    font-size: var(--font-size-min);
   }
 
   .survey-origin-option-action {
     grid-column: 2;
     justify-self: start;
-    font-size: 15px;
+    font-size: var(--font-size-min);
   }
 }

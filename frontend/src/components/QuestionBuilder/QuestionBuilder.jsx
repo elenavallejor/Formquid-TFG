@@ -188,7 +188,7 @@ export function QuestionBuilder({
                   className="tile-icon-box"
                   style={{
                     color: type.color,
-                    borderColor: `${type.color}80`,
+                    borderColor: `color-mix(in srgb, ${type.color} 50%, transparent)`,
                   }}
                 >
                   <Icon aria-hidden="true" />
@@ -607,10 +607,10 @@ export function QuestionBuilder({
         </div>
 
         {onSave && (
-          <footer className="builder-modal-footer">
+          <div className="builder-modal-footer">
             <ErrorMessage message={modalError} onClose={() => setModalError('')} />
             <button type="button" className="btn-modal-save" onClick={handleModalSave}>Guardar</button>
-          </footer>
+          </div>
         )}
       </div>
     </div>

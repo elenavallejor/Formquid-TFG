@@ -95,7 +95,7 @@ class PublicControllersWebTest {
 
     @Test
     void login_returnsUserAndSecureCookie() throws Exception {
-        var user = new AuthUserResponseDto(7L, "editor@example.com", "Editora", UserRole.EDITOR);
+        var user = new AuthUserResponseDto(7L, "editor@example.com", "Editora", UserRole.EDITOR, null);
         when(authService.login(any())).thenReturn(new LoginResult("signed-token", user));
         when(jwtCookieService.createCookie("signed-token"))
             .thenReturn(ResponseCookie.from("access_token", "signed-token").httpOnly(true).build());

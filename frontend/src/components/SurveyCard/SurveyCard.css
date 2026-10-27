@@ -19,7 +19,7 @@
   width: 100%;
   height: 220px;
   overflow: hidden;
-  background-color: var(--color-header);
+  background-color: var(--color-accent-surface);
 }
 
 .survey-card-image {
@@ -30,10 +30,13 @@
 }
 
 .survey-card-placeholder {
+  display: grid;
+  place-items: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--color-header) 0%, var(--color-header) 100%);
-  opacity: 0.9;
+  background: var(--color-accent-surface);
+  color: var(--color-brand);
+  font-size: 6.4rem;
 }
 
 .survey-card-content {
@@ -47,8 +50,8 @@
   min-height: 42px;
   margin: 0 0 10px;
   color: var(--color-header);
-  font-size: 20px;
-  line-height: 1.3;
+  font-size: 1.6rem;
+  line-height: 1.5;
   font-weight: 700;
 }
 
@@ -59,14 +62,15 @@
   min-width: 0;
   margin: 0 0 12px;
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: var(--font-size-min);
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.5;
 }
 
 .survey-card-category svg {
   flex: 0 0 auto;
-  font-size: 17px;
+  color: var(--color-brand);
+  font-size: 1.36rem;
 }
 
 .survey-card-category span {
@@ -91,7 +95,7 @@
 .survey-card--public .survey-card-title {
   min-height: 0;
   margin-bottom: 8px;
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .survey-card--public .survey-card-tags {
@@ -105,12 +109,8 @@
 .survey-card-description {
   margin: 0 0 16px;
   color: var(--color-text-muted);
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 16.25px;
-  line-height: 1.45;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  font-size: var(--font-size-min);
+  line-height: 1.5;
 }
 
 .survey-card-access {
@@ -122,13 +122,13 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
 .survey-card-access svg {
   flex: 0 0 auto;
-  font-size: 19px;
+  font-size: 1.52rem;
 }
 
 .survey-card-public-action {
@@ -136,17 +136,17 @@
   min-height: 48px;
   margin-top: auto;
   padding: 11px 16px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 800;
-  line-height: 1.3;
+  line-height: 1.5;
   text-align: center;
   text-decoration: none;
   transition: background-color 0.2s ease;
@@ -158,8 +158,8 @@
 }
 
 .survey-card-public-action:hover {
-  background-color: var(--color-primary-hover);
-  color: var(--color-text-on-dark);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .survey-card-public-action:focus-visible {
@@ -169,7 +169,7 @@
 
 .survey-card-public-action svg {
   flex: 0 0 auto;
-  font-size: 22px;
+  font-size: 1.76rem;
 }
 
 .survey-card-badges {
@@ -198,7 +198,7 @@
 .survey-card-admin-details dt {
   margin-bottom: 2px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -207,7 +207,7 @@
 .survey-card-admin-details dd {
   overflow: hidden;
   color: var(--color-text);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -229,7 +229,7 @@
   border-radius: 6px;
   background-color: var(--color-surface-muted);
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 500;
 }
 
@@ -251,7 +251,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -262,14 +262,14 @@
 
 .btn-survey-action svg {
   flex-shrink: 0;
-  font-size: 22.5px;
+  font-size: 1.8rem;
 }
 
 .btn-survey-action.btn-edit,
 .btn-survey-action.btn-details {
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   background-color: var(--color-surface);
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .btn-survey-action.btn-edit:hover,
@@ -284,7 +284,7 @@
 .survey-card--results .survey-card-updated {
   margin-left: auto;
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 600;
   text-align: right;
 }
@@ -297,16 +297,17 @@
 .btn-survey-action.btn-results,
 .btn-survey-action.btn-supervise,
 .btn-survey-action.btn-collaborate {
-  border: 1px solid var(--color-primary);
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
+  border: 1px solid var(--color-brand);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .btn-survey-action.btn-view:hover,
 .btn-survey-action.btn-results:hover,
 .btn-survey-action.btn-supervise:hover,
 .btn-survey-action.btn-collaborate:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .btn-survey-action.btn-collaborate:disabled {
@@ -324,7 +325,7 @@
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  font-size: 25px;
+  font-size: 2rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }

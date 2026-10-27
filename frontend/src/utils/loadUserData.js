@@ -14,6 +14,7 @@ export async function loadUserData() {
       pais: accountInfo?.country ?? '',
     },
     email: accountInfo?.email ?? '',
+    profileImageKey: accountInfo?.profileImageKey ?? null,
     hasOwnedSurveys,
     hasActiveSurveys: Boolean(accountInfo?.hasActiveSurveys),
   };

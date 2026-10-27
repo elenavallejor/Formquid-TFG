@@ -16,7 +16,7 @@
 
 .users-page-header h1 {
   margin: 0;
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
   color: var(--color-header);
   letter-spacing: -0.01em;
@@ -24,7 +24,7 @@
 
 .users-subtitle {
   margin: 6px 0 0;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 500;
   color: var(--color-text-muted);
 }
@@ -61,7 +61,7 @@
 
 .user-card-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.6rem;
   font-weight: 800;
   color: var(--color-header);
   letter-spacing: 0.02em;
@@ -74,7 +74,7 @@
 }
 
 .user-details-title {
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   color: var(--color-text-muted);
   letter-spacing: 0.04em;
@@ -91,13 +91,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .user-detail-item svg {
-  font-size: 22.5px;
+  font-size: 1.8rem;
   color: var(--color-text-muted);
 }
 
@@ -110,7 +110,7 @@
 
 .btn-user-action {
   padding: 12px 24px;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   border-radius: 8px;
   cursor: pointer;
@@ -120,19 +120,20 @@
 }
 
 .btn-promote {
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   border: none;
 }
 
 .btn-promote:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .btn-delete-user {
   background-color: var(--color-surface);
-  color: var(--color-primary);
-  border: 1.5px solid var(--color-primary);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-brand);
 }
 
 .btn-delete-user:hover {
@@ -146,7 +147,7 @@
   border: 1px dashed var(--color-border);
   border-radius: 12px;
   color: var(--color-text-muted);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 

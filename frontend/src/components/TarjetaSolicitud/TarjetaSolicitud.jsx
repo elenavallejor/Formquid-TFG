@@ -15,7 +15,7 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
     : '-';
 
   return (
-    <article className="solicitud-card" aria-labelledby={`applicant-name-${id}`}>
+    <section className="solicitud-card" aria-labelledby={`applicant-name-${id}`}>
       <div className="solicitud-col solicitud-col-personal">
         <h3 id={`applicant-name-${id}`} className="solicitud-applicant-name">
           {name}
@@ -79,6 +79,6 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
           <MdClose className="action-btn-icon" aria-hidden="true" />
         </button>
       </div>
-    </article>
+    </section>
   );
 }

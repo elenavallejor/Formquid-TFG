@@ -13,6 +13,7 @@ export function RequireRole({ allowedRoles, children }) {
   if (isInitializing) {
     return (
       <main className="route-loading-state" aria-busy="true">
+        <h1 className="sr-only">Cargando página</h1>
         <Skeleton variant="list" count={4} hasActions={false} label="Cargando página…" />
       </main>
     );

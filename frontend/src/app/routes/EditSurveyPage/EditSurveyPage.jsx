@@ -3,7 +3,7 @@ import { useBlocker, useNavigate, useParams, useSearchParams } from 'react-route
 import '@fontsource/lexend/400.css';
 import '../../../assets/styles/opendyslexic.css';
 import { FaRegClipboard } from 'react-icons/fa';
-import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdGroups, MdImage, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdSwapHoriz, MdVisibilityOff } from 'react-icons/md';
+import { MdAdd, MdCheck, MdClose, MdDeleteOutline, MdEvent, MdGroups, MdImage, MdMailOutline, MdOutlineSettings, MdOutlineVisibility, MdPublish, MdSave, MdSwapHoriz, MdVisibilityOff } from 'react-icons/md';
 
 import {
   acceptCollaborationRequest,
@@ -38,6 +38,7 @@ import { SurveyBuilder } from '../../../components/SurveyBuilder/SurveyBuilder.j
 import { SurveyPreviewModal } from '../../../components/SurveyPreviewModal/SurveyPreviewModal.jsx';
 import { SurveyCoverInput } from '../../../components/SurveyCoverInput/SurveyCoverInput.jsx';
 import { SurveyFontPreview } from '../../../components/SurveyFontPreview/SurveyFontPreview.jsx';
+import { UserAvatar } from '../../../components/UserAvatar.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 import { buildTemplateBlockFromCatalog, buildTemplateQuestionFromCatalog } from '../../../utils/templateBuilderUtils.js';
 import { INITIAL_SURVEY_STRUCTURE, buildSurveyStructurePayload, buildSurveyStructureState, getSurveyPublicationValidationError, getSurveyStructureValidationError } from '../../../utils/surveyBuilderUtils.js';
@@ -99,7 +100,7 @@ function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHa
         )}
 
         {!isLoading && survey && (
-          <article className="catalog-detail-card">
+          <div className="catalog-detail-card">
             <header className="catalog-detail-title-bar survey-detail-title-bar">
               <div className="survey-detail-title-heading">
                 <span className="catalog-detail-title-icon" aria-hidden="true"><FaRegClipboard /></span>
@@ -127,7 +128,7 @@ function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHa
                 <div><dt>ÚLTIMA ACTUALIZACIÓN</dt><dd>{formatDateTime(survey.updatedAt)}</dd></div>
               </dl>
 
-              <div className="survey-detail-tags" aria-label="Etiquetas de la encuesta">
+              <div className="survey-detail-tags" role="group" aria-label="Etiquetas de la encuesta">
                 <strong>Etiquetas:</strong>
                 {tags.length > 0
                   ? tags.map((tag) => <span key={tag} className="survey-detail-tag">#{tag}</span>)
@@ -143,7 +144,7 @@ function SurveyDetailsView({ survey, structure, isLoading, errorMessage, imageHa
                 </div>
               </section>
             </div>
-          </article>
+          </div>
         )}
       </div>
     </main>
@@ -335,20 +336,24 @@ function CollaboratorItem({ collaborator, isOwner, isDisabled, onPermissionChang
   const name = collaborator.name || collaborator.email || 'Usuario';
 
   return (
-    <li>
-      <span className="edit-survey-avatar">{name.slice(0, 1).toUpperCase()}</span>
-      <span className="edit-survey-person-data">
-        <strong>{collaborator.name || 'Usuario'}</strong>
-        <small>{collaborator.email}</small>
-        {!isOwner && (
-          <span className={`edit-survey-permission-badge permission-${(collaborator.permission || 'EDIT').toLocaleLowerCase()}`}>
-            {collaborator.permission === 'VIEW' ? 'Solo lectura' : 'Puede editar'}
-          </span>
-        )}
-        <small>Desde el {formatDate(collaborator.joinedAt)}</small>
-      </span>
+    <li className="edit-survey-collaborator-row">
+      <div className="edit-survey-collaborator-person">
+        <UserAvatar className="edit-survey-avatar" name={name} imageKey={collaborator.profileImageKey} />
+        <div className="edit-survey-collaborator-info">
+          <strong>{collaborator.name || 'Usuario'}</strong>
+          <div className="edit-survey-collaborator-details">
+            <span><MdMailOutline aria-hidden="true" />{collaborator.email}</span>
+            {!isOwner && (
+              <span className={`edit-survey-permission-badge permission-${(collaborator.permission || 'EDIT').toLocaleLowerCase()}`}>
+                {collaborator.permission === 'VIEW' ? 'Solo lectura' : 'Puede editar'}
+              </span>
+            )}
+            <span><MdEvent aria-hidden="true" />Desde el {formatDate(collaborator.joinedAt)}</span>
+          </div>
+        </div>
+      </div>
       {isOwner && (
-        <span className="edit-survey-collaborator-actions">
+        <div className="edit-survey-collaborator-actions">
           <button
             type="button"
             className="edit-survey-transfer-button"
@@ -376,7 +381,7 @@ function CollaboratorItem({ collaborator, isOwner, isDisabled, onPermissionChang
           >
             <MdDeleteOutline aria-hidden="true" />
           </button>
-        </span>
+        </div>
       )}
     </li>
   );
@@ -476,10 +481,10 @@ function CollaborationsPanel({ surveyId, isOwner, isLoading, collaborators, requ
         </section>
       )}
 
-      <section className="edit-survey-panel-card">
+      <section className="edit-survey-panel-card edit-survey-collaborators-section">
         <div className="edit-survey-card-heading"><div><h2>COLABORADORES</h2>{!isLoading && <p>{collaborators.length} en total</p>}</div></div>
         {isLoading ? <div className="edit-survey-list-skeleton"><Skeleton variant="list" count={2} hasActions={false} /></div> : collaborators.length === 0 ? <p className="edit-survey-empty-state">Esta encuesta todavía no tiene colaboradores.</p> : (
-          <ul className="edit-survey-people-list">
+          <ul className="edit-survey-people-list edit-survey-collaborators-list">
             {collaborators.map((collaborator) => (
               <CollaboratorItem
                 key={collaborator.userId}
@@ -645,6 +650,7 @@ export function EditSurveyPage() {
   const visibleTabs = isSupervising
     ? TABS.filter((tab) => tab.id !== 'COLLABORATIONS')
     : survey && !canEditSurvey ? TABS.filter((tab) => tab.id === 'SURVEY') : TABS;
+  const displayedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : 'SURVEY';
 
   function clearMessages() { setErrorMessage(''); setSuccessMessage(''); }
   function addStructureItem(item, targetIndex) {
@@ -771,13 +777,13 @@ export function EditSurveyPage() {
     }
   }
 
-  const primaryActionLabel = activeTab === 'SURVEY'
+  const primaryActionLabel = displayedTab === 'SURVEY'
     ? canEditSurvey ? 'Guardar cambios' : ''
-    : activeTab === 'SETTINGS' && canEditSurvey ? 'Actualizar configuración' : '';
+    : displayedTab === 'SETTINGS' && canEditSurvey ? 'Actualizar configuración' : '';
 
   function handlePrimaryAction() {
-    if (activeTab === 'SURVEY') void saveStructure();
-    if (activeTab === 'SETTINGS') void saveSettings();
+    if (displayedTab === 'SURVEY') void saveStructure();
+    if (displayedTab === 'SETTINGS') void saveSettings();
   }
 
   function selectTab(tabId) {
@@ -815,8 +821,8 @@ export function EditSurveyPage() {
   const defaultTitle = isSupervising ? 'SUPERVISAR ENCUESTA' : 'EDITAR ENCUESTA';
 
   return (
-    <div className={`create-block-layout edit-survey-layout ${activeTab !== 'SURVEY' ? 'without-catalog' : ''}`}>
-      {activeTab === 'SURVEY' && canEditSurvey && <CatalogSidebar showQuestions showBlocks defaultOpen={false} onAddQuestion={addQuestion} onAddBlock={addBlock} />}
+    <div className={`create-block-layout edit-survey-layout ${displayedTab !== 'SURVEY' ? 'without-catalog' : ''}`}>
+      {displayedTab === 'SURVEY' && canEditSurvey && <CatalogSidebar showQuestions showBlocks defaultOpen={false} onAddQuestion={addQuestion} onAddBlock={addBlock} />}
       <main className="create-block-main edit-survey-main">
         <div className="create-block-container edit-survey-container">
           <Breadcrumbs items={breadcrumbItems} />
@@ -847,10 +853,10 @@ export function EditSurveyPage() {
                   id={`survey-tab-${tab.id.toLocaleLowerCase()}`}
                   type="button"
                   role="tab"
-                  aria-selected={activeTab === tab.id}
+                  aria-selected={displayedTab === tab.id}
                   aria-controls={`survey-panel-${tab.id.toLocaleLowerCase()}`}
-                  tabIndex={activeTab === tab.id ? 0 : -1}
-                  className={activeTab === tab.id ? 'active' : ''}
+                  tabIndex={displayedTab === tab.id ? 0 : -1}
+                  className={displayedTab === tab.id ? 'active' : ''}
                   onClick={() => selectTab(tab.id)}
                   onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
                 >
@@ -864,14 +870,14 @@ export function EditSurveyPage() {
           {errorMessage && <div className="edit-survey-message"><ErrorMessage message={errorMessage} onClose={() => setErrorMessage('')} /></div>}
           {successMessage && <div className="edit-survey-success" role="status"><MdCheck aria-hidden="true" /><span>{successMessage}</span></div>}
 
-          {activeTab === 'SURVEY' && <section id="survey-panel-survey" role="tabpanel" aria-labelledby="survey-tab-survey">
-            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <>{!canEditSurvey && <p className="edit-survey-structure-note">Tienes acceso de solo lectura. Puedes consultar la estructura, pero no modificarla.</p>}{canEditSurvey && survey.lifecycleStatus !== 'DRAFT' && <p className="edit-survey-structure-note">La estructura solo podrá guardarse si la encuesta todavía no tiene respuestas.</p>}<SurveyGeneralInfo title={survey.title} category={survey.category} description={survey.description || ''} /><SurveyTagsEditor tags={settings.tags} readOnly={!canEditSurvey} onChange={(tags) => { setSettings((current) => ({ ...current, tags })); setHasTagChanges(true); clearMessages(); }} /><SurveyBuilder data={structure} onChange={(nextStructure) => { setStructure(nextStructure); setHasStructureChanges(true); clearMessages(); }} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} readOnly={!canEditSurvey} /></>}
+          <section id="survey-panel-survey" role="tabpanel" aria-labelledby="survey-tab-survey" hidden={displayedTab !== 'SURVEY'}>
+            {displayedTab === 'SURVEY' && (isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <>{!canEditSurvey && <p className="edit-survey-structure-note">Tienes acceso de solo lectura. Puedes consultar la estructura, pero no modificarla.</p>}{canEditSurvey && survey.lifecycleStatus !== 'DRAFT' && <p className="edit-survey-structure-note">La estructura solo podrá guardarse si la encuesta todavía no tiene respuestas.</p>}<SurveyGeneralInfo title={survey.title} category={survey.category} description={survey.description || ''} /><SurveyTagsEditor tags={settings.tags} readOnly={!canEditSurvey} onChange={(tags) => { setSettings((current) => ({ ...current, tags })); setHasTagChanges(true); clearMessages(); }} /><SurveyBuilder data={structure} onChange={(nextStructure) => { setStructure(nextStructure); setHasStructureChanges(true); clearMessages(); }} onDropQuestionFromSidebar={addQuestion} onDropBlockFromSidebar={addBlock} readOnly={!canEditSurvey} /></>)}
+          </section>
+          {visibleTabs.some((tab) => tab.id === 'COLLABORATIONS') && <section id="survey-panel-collaborations" role="tabpanel" aria-labelledby="survey-tab-collaborations" hidden={displayedTab !== 'COLLABORATIONS'}>
+            {displayedTab === 'COLLABORATIONS' && (isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <CollaborationsPanel surveyId={surveyId} isOwner={isOwner} isLoading={isLoadingCollaborations} collaborators={collaborators} requests={requests} publicationRequests={publicationRequests} onReload={loadCollaborations} onSurveyReload={reloadSurvey} onError={setErrorMessage} onSuccess={setSuccessMessage} />)}
           </section>}
-          {activeTab === 'COLLABORATIONS' && <section id="survey-panel-collaborations" role="tabpanel" aria-labelledby="survey-tab-collaborations">
-            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={3} hasActions={false} /></div> : survey && <CollaborationsPanel surveyId={surveyId} isOwner={isOwner} isLoading={isLoadingCollaborations} collaborators={collaborators} requests={requests} publicationRequests={publicationRequests} onReload={loadCollaborations} onSurveyReload={reloadSurvey} onError={setErrorMessage} onSuccess={setSuccessMessage} />}
-          </section>}
-          {activeTab === 'SETTINGS' && <section id="survey-panel-settings" role="tabpanel" aria-labelledby="survey-tab-settings">
-            {isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={4} hasActions={false} /></div> : survey && <>
+          {visibleTabs.some((tab) => tab.id === 'SETTINGS') && <section id="survey-panel-settings" role="tabpanel" aria-labelledby="survey-tab-settings" hidden={displayedTab !== 'SETTINGS'}>
+            {displayedTab === 'SETTINGS' && (isPageLoading ? <div className="edit-survey-api-skeleton"><Skeleton variant="list" count={4} hasActions={false} /></div> : survey && <>
               {!isSupervising && <SurveySettings data={settings} coverFile={coverFile} imageHasError={imageHasError} lifecycleStatus={survey.lifecycleStatus} onImageError={() => setImageHasError(true)} onChange={(changes, resetImageError = false) => { if (resetImageError) setImageHasError(false); setSettings((current) => ({ ...current, ...changes })); setHasSettingsChanges(true); clearMessages(); }} onFileChange={(file) => { setImageHasError(false); setCoverFile(file); setHasSettingsChanges(true); clearMessages(); }} onError={setErrorMessage} onCoverBusyChange={setCoverLoading} showPolicySettings={isOwner} />}
               {isOwner && <section className="edit-survey-panel-card edit-survey-lifecycle-card">
                 <div className="edit-survey-lifecycle-copy">
@@ -918,7 +924,7 @@ export function EditSurveyPage() {
                   {survey.visibility !== 'UNLISTED' && <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving} onClick={() => { clearMessages(); setVisibilityConfirmation(true); }}><MdVisibilityOff aria-hidden="true" />Ocultar encuesta</button>}
                 </section>
               </div>}
-            </>}
+            </>)}
           </section>}
         </div>
       </main>

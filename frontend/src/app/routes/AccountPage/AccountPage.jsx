@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdSave, MdOutlineWarningAmber, MdOutlineDelete } from 'react-icons/md';
-import { deleteMyAccount, updateMyAccount } from '../../../api/usersApi.js';
+import { MdSave, MdOutlineWarningAmber, MdOutlineDelete, MdUploadFile } from 'react-icons/md';
+import { deleteMyAccount, removeMyProfilePhoto, updateMyAccount, uploadMyProfilePhoto } from '../../../api/usersApi.js';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { CountrySelect } from '../../../components/CountrySelect/CountrySelect.jsx';
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { PasswordConfirmModal } from '../../../components/PasswordConfirmModal/PasswordConfirmModal.jsx';
 import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
+import { UserAvatar } from '../../../components/UserAvatar.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 import { loadUserData } from '../../../utils/loadUserData.js';
 import { hasAccountFormErrors, hasFormChanges, hasPersonalChanges, validateEmailChange, validatePasswordChange, validatePersonalInfo } from '../../../utils/accountFormUtils.js';
@@ -31,6 +32,11 @@ export function AccountPage() {
   const [globalError, setGlobalError] = useState('');
   const [globalSuccess, setGlobalSuccess] = useState('');
   const [hasBlockingSurveys, setHasBlockingSurveys] = useState(false);
+  const [profileImageKey, setProfileImageKey] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState('');
   const [pendingAction, setPendingAction] = useState(null);
   const [isPwdModalOpen, setIsPwdModalOpen] = useState(false);
   const [pwdModalError, setPwdModalError] = useState('');
@@ -43,7 +49,7 @@ export function AccountPage() {
         setIsLoading(true);
         setGlobalError('');
 
-        const { personalData: loadedPersonal, email, hasActiveSurveys, hasOwnedSurveys } = await loadUserData();
+        const { personalData: loadedPersonal, email, profileImageKey: loadedPhoto, hasActiveSurveys, hasOwnedSurveys } = await loadUserData();
 
         if (!isMounted) return;
 
@@ -51,6 +57,7 @@ export function AccountPage() {
         setPersonalData(loadedPersonal);
         setEmailData((prev) => ({ ...prev, currentEmail: email }));
         setHasBlockingSurveys(Boolean(hasOwnedSurveys ?? hasActiveSurveys));
+        setProfileImageKey(loadedPhoto);
       } catch (error) {
         if (!isMounted) return;
         setGlobalError(error.message || 'No se han podido cargar los datos de la cuenta.');
@@ -66,6 +73,63 @@ export function AccountPage() {
       if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
+  const handlePhotoSelection = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type) || file.size === 0 || file.size > 3 * 1024 * 1024) {
+      setPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      setPhotoError('Selecciona una imagen PNG o JPEG de hasta 3 MB.');
+      return;
+    }
+    setPhotoError('');
+    setPhotoFile(file);
+    setPhotoPreviewUrl(typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : null);
+  };
+
+  const savePhoto = async () => {
+    if (!photoFile || photoBusy || isSaving) return;
+    setPhotoBusy(true);
+    setPhotoError('');
+    setGlobalSuccess('');
+    try {
+      const updatedUser = await uploadMyProfilePhoto(photoFile);
+      setProfileImageKey(updatedUser.profileImageKey);
+      setAuthenticatedUser(updatedUser);
+      setPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      setGlobalSuccess('Foto de perfil actualizada.');
+    } catch (error) {
+      setPhotoError(error.message || 'No se ha podido guardar la foto de perfil.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (photoBusy || isSaving) return;
+    setPhotoBusy(true);
+    setPhotoError('');
+    setGlobalSuccess('');
+    try {
+      const updatedUser = await removeMyProfilePhoto();
+      setProfileImageKey(null);
+      setAuthenticatedUser(updatedUser);
+      setGlobalSuccess('Foto de perfil eliminada.');
+    } catch (error) {
+      setPhotoError(error.message || 'No se ha podido quitar la foto de perfil.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   const togglePasswordVisibility = (field) => {
     setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -91,7 +155,13 @@ export function AccountPage() {
     setGlobalError('');
     setGlobalSuccess('');
 
-    if (!hasFormChanges(personalData, initialPersonalData, passwordData, emailData)) {
+    if (photoBusy) return;
+    const accountChanged = hasFormChanges(personalData, initialPersonalData, passwordData, emailData);
+    if (!accountChanged && photoFile) {
+      void savePhoto();
+      return;
+    }
+    if (!accountChanged) {
       setGlobalError('No se ha detectado ningún cambio para guardar.');
       return;
     }
@@ -161,7 +231,7 @@ export function AccountPage() {
           email: emailData.newEmail ? { newEmail: emailData.newEmail.trim().toLowerCase() } : null,
         };
 
-        const updatedUser = await updateMyAccount(payload);
+        let updatedUser = await updateMyAccount(payload);
         const normalizedUser = updatedUser?.user ?? updatedUser;
 
         if (isPersonalChanged) {
@@ -187,6 +257,21 @@ export function AccountPage() {
             newEmail: '',
             confirmNewEmail: '',
           });
+        }
+
+        if (photoFile) {
+          setAuthenticatedUser(updatedUser);
+          try {
+            updatedUser = await uploadMyProfilePhoto(photoFile);
+            setProfileImageKey(updatedUser.profileImageKey);
+            setPhotoFile(null);
+            setPhotoPreviewUrl(null);
+          } catch (error) {
+            setPendingAction(null);
+            setIsPwdModalOpen(false);
+            setGlobalError(`Los datos de la cuenta se han guardado, pero la foto no: ${error.message || 'no se ha podido subir.'}`);
+            return;
+          }
         }
 
         setAuthenticatedUser(updatedUser);
@@ -217,6 +302,7 @@ export function AccountPage() {
     return (
       <main className="account-page">
         <div className="account-container">
+          <h1 className="sr-only">Cargando mi cuenta</h1>
           <Skeleton variant="list" count={4} hasActions={false} />
         </div>
       </main>
@@ -239,7 +325,7 @@ export function AccountPage() {
             </p>
           </div>
 
-          <button type="button" className="btn-save-changes" disabled={isSaving} onClick={handleInitSave}>
+          <button type="button" className="btn-save-changes" disabled={isSaving || photoBusy} onClick={handleInitSave}>
             <MdSave className="btn-save-icon" aria-hidden="true" />
             <span>{isSaving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}</span>
           </button>
@@ -256,6 +342,24 @@ export function AccountPage() {
         <form onSubmit={handleInitSave} className="account-sections-wrapper">
           <section className="account-card-section">
             <h2 className="account-section-title">INFORMACIÓN PERSONAL</h2>
+
+            <div className="account-photo-editor">
+              <UserAvatar className="account-photo-preview" name={personalData.nombre} imageKey={photoPreviewUrl || profileImageKey} />
+              <div className="account-photo-controls">
+                <strong>Foto de perfil</strong>
+                <p>PNG o JPEG · Máximo 3 MB</p>
+                <div className="account-photo-actions">
+                  <input id="account-photo-file" className="account-photo-file-input" type="file" accept="image/png,image/jpeg"
+                    aria-label="Seleccionar foto de perfil" disabled={photoBusy || isSaving} onChange={handlePhotoSelection} />
+                  <label htmlFor="account-photo-file" className="account-photo-select"><MdUploadFile aria-hidden="true" />{profileImageKey || photoFile ? 'Cambiar foto' : 'Seleccionar foto'}</label>
+                  {photoFile && <button type="button" disabled={photoBusy || isSaving} onClick={savePhoto}>{photoBusy ? 'Guardando foto...' : 'Guardar foto'}</button>}
+                  {photoFile && <button type="button" className="account-photo-secondary" disabled={photoBusy || isSaving} onClick={() => { setPhotoFile(null); setPhotoPreviewUrl(null); }}>Descartar selección</button>}
+                  {!photoFile && profileImageKey && <button type="button" className="account-photo-secondary" disabled={photoBusy || isSaving} onClick={removePhoto}>{photoBusy ? 'Quitando foto...' : 'Quitar foto'}</button>}
+                </div>
+                {photoFile && <small className="account-photo-filename">{photoFile.name}</small>}
+                {photoError && <p className="account-photo-error" role="alert">{photoError}</p>}
+              </div>
+            </div>
 
             <div className="account-grid-2">
               <div className="input-field-group">

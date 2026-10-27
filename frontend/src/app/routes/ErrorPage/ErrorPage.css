@@ -1,6 +1,6 @@
 .error-page {
   width: 100%;
-  min-height: 100vh;
+  min-height: calc(100dvh - 150px);
   padding: 32px var(--page-gutter) 60px;
   box-sizing: border-box;
   background-color: var(--color-background);
@@ -28,7 +28,7 @@
 .error-page-logo {
   margin: 0 0 24px;
   color: var(--color-header);
-  font-size: 52.5px;
+  font-size: 4.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -36,7 +36,7 @@
 .error-page-status {
   margin: 0 0 16px;
   color: var(--color-text);
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .error-page-status strong {
@@ -47,7 +47,7 @@
 .error-page-description {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   line-height: 1.6;
 }
 

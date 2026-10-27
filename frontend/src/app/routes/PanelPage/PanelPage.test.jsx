@@ -55,6 +55,8 @@ describe('PanelPage', () => {
     );
     expect(await screen.findByRole('heading', { name: 'Hábitos digitales' })).toBeVisible();
     expect(getMySurveys).toHaveBeenCalledWith(expect.objectContaining({ page: 0, size: 9 }));
+    const catalogSection = screen.getByRole('heading', { name: 'ACCESO AL CATÁLOGO' }).closest('section');
+    expect(within(catalogSection).getAllByRole('listitem')).toHaveLength(3);
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
     const dialog = screen.getByRole('dialog', { name: 'Origen de la encuesta' });
     await user.click(within(dialog).getByRole('button', { name: 'Crear desde cero' }));
@@ -124,6 +126,14 @@ describe('PanelPage', () => {
     expect(await screen.findByRole('heading', { name: 'PANEL DE SUPERADMINISTRADOR' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'OTRAS GESTIONES' })).toBeVisible();
     expect(screen.getByRole('link', { name: /Ver usuarios/ })).toHaveAttribute('href', '/superadmin/usuarios');
+    const requestsCard = screen.getByRole('heading', { name: 'SOLICITUDES PARA CATÁLOGO' }).closest('.admin-panel-card');
+    expect(within(requestsCard).getByText('2')).not.toHaveAttribute('aria-label');
+    expect(within(requestsCard).getByText('pendientes')).toBeVisible();
+    const catalogSection = screen.getByRole('heading', { name: 'ACCESO AL CATÁLOGO' }).closest('section');
+    expect(within(catalogSection).getByRole('list')).toContainElement(
+      within(catalogSection).getByRole('link', { name: /Plantillas/ }),
+    );
+    expect(within(catalogSection).getAllByRole('listitem')).toHaveLength(3);
   });
 
   it('informa del fallo de carga del resumen sin ocultar el panel', async () => {

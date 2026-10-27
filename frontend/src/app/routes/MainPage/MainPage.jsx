@@ -9,7 +9,7 @@ import {
 
 import { getCategories } from '../../../api/categoriesApi.js';
 import { getPublicSurveys, getRegisteredSurveys } from '../../../api/surveysApi.js';
-import bannerSmall from '../../../assets/images/banner-small.png';
+import bannerSmall from '../../../assets/images/banner.png';
 import { Filter } from '../../../components/Filter/Filter.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
@@ -314,7 +314,7 @@ export function MainPage() {
           </div>
         </div>
 
-        <div className="main-page-results" aria-labelledby="available-surveys-title">
+        <section className="main-page-results" aria-labelledby="available-surveys-title">
           {visibleSelectedAccessModes.length === 0 && (
             <div className="main-page-section-empty" role="status">
               <FaRegClipboard aria-hidden="true" />
@@ -374,7 +374,7 @@ export function MainPage() {
               visible={showAuthenticatedSection}
             />
           )}
-        </div>
+        </section>
       </div>
     </main>
   );

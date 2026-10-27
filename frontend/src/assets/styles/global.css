@@ -22,37 +22,47 @@
 :root {
   --page-gutter: clamp(16px, 8.8vw, 160px);
 
+  --color-brand: #00988d;
+  --color-brand-blue: var(--color-brand);
+  --color-brand-turquoise: var(--color-brand);
+  --color-brand-cream: #f7f6f2;
+  --color-header-background: #002536;
   --color-header: #002536;
-  --color-accent: #00766f;
-  --color-primary: #00766f;
-  --color-primary-hover: #006962;
-  --color-background: #EFEFEF;
+  --color-primary: #005852;
+  --color-action: #008278;
+  --color-action-hover: #00766f;
+  --color-on-action: #ffffff;
+  --color-hero: #00988d;
+  --color-on-hero: #ffffff;
+  --color-accent: var(--color-brand);
+  --color-primary-hover: #004d49;
+  --color-background: #efefef;
   --color-surface: #ffffff;
 
   --color-text: #002536;
-  --color-text-muted: #5d6d77;
+  --color-text-muted: #3b4f60;
   --color-text-on-dark: #ffffff;
 
   --color-border: #cfd8dd;
-  --color-border-strong: var(--color-text-muted);
+  --color-border-strong: var(--color-primary);
 
-  --color-error: #9f1d19;
-  --color-error-border: #feb2b2;
+  --color-error: #8f1b17;
+  --color-error-border: var(--color-error);
   --color-error-hover: #fed7d7;
   --color-error-surface: #fde8e8;
 
-  --color-success: #31624e;
-  --color-success-border: #bbf7d0;
-  --color-success-surface: #f0fdf4;
+  --color-success: var(--color-primary);
+  --color-success-border: var(--color-primary);
+  --color-success-surface: color-mix(in srgb, var(--color-brand-turquoise) 10%, white);
 
-  --color-warning: #8a4b08;
-  --color-warning-border: #fef08a;
+  --color-warning: #804507;
+  --color-warning-border: var(--color-warning);
   --color-warning-surface: #fffbeb;
 
   --color-info: #42426f;
 
 
-  --color-super: #7c4092;
+  --color-super: #69347d;
   --color-super-surface: #f3e8fd;
 
   --color-surface-muted: #eeeeee;
@@ -61,24 +71,26 @@
   --color-overlay: rgb(0 26 38 / 68%);
   --color-disabled: var(--color-text-muted);
   --color-accent-accessible: var(--color-primary);
-  --font-size-min: 12.5px;
-  --target-size-min: 24px;
+  --font-size-min: 1.36rem;
+  --target-size-min: 44px;
   --search-icon-size: 22px;
 
   --focus-outline: 2px solid var(--color-primary);
   --focus-outline-offset: 2px;
   --focus-shadow: 0 0 0 2px var(--color-primary);
 
-  --card-shadow: 0 2px 6px rgb(5 47 69 / 18%);
+  --card-shadow: 0 2px 8px rgb(5 47 69 / 18%);
   --font-logo: "Nunito", Inter, system-ui, sans-serif;
 
-  font-size: var(--font-size-min);
+  /* Equivale a 12.5px con la configuración habitual y respeta el tamaño elegido en el navegador. */
+  font-size: 78.125%;
+  line-height: 1.5;
   font-family:
     "Atkinson Hyperlegible Next", Inter, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
   
   color: var(--color-text);
-  background-color: var(--color-header);
+  background-color: var(--color-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -104,9 +116,10 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
-  background-color: var(--color-header);
+  background-color: var(--color-background);
   color: var(--color-text);
   font-family: inherit;
+  font-size: var(--font-size-min);
 }
 
 #root {
@@ -131,15 +144,13 @@ textarea {
   font: inherit;
 }
 
-:where(button, summary, [role="button"], [role="tab"], a[class]) {
-  min-width: var(--target-size-min);
-  min-height: var(--target-size-min);
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
 }
 
-:where(
-  input[type="checkbox"]:not(.visual-choice-input),
-  input[type="radio"]:not(.visual-choice-input)
-) {
+:where(button, summary, [role="button"], [role="tab"], a[class]) {
   min-width: var(--target-size-min);
   min-height: var(--target-size-min);
 }

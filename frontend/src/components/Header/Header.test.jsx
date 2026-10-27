@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +13,7 @@ vi.mock('../NotificationsModal/NotificationsModal.jsx', () => ({
 }));
 
 function renderHeader(auth, route = '/') {
-  render(<AuthContext.Provider value={auth}>
+  return render(<AuthContext.Provider value={auth}>
     <MemoryRouter initialEntries={[route]}>
       <Header />
       <Routes><Route path="/" element={<p>Inicio</p>} /><Route path="/panel" element={<p>Panel</p>} /></Routes>
@@ -26,6 +26,8 @@ describe('Header', () => {
 
   it('presenta los accesos de inicio a quienes no han iniciado sesión', () => {
     renderHeader({ isAuthenticated: false, user: null });
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' }))
+      .toContainElement(screen.getByRole('link', { name: 'FormQuid - Inicio' }));
     expect(screen.getByRole('link', { name: 'Inicia sesión' })).toHaveAttribute('href', '/inicia-sesion');
     expect(screen.getByRole('link', { name: 'Solicita tu cuenta' })).toHaveAttribute('href', '/solicita-cuenta');
     expect(screen.queryByRole('button', { name: /Ver notificaciones/ })).not.toBeInTheDocument();
@@ -44,6 +46,19 @@ describe('Header', () => {
     expect(screen.queryByRole('button', { name: 'Cerrar notificaciones' })).not.toBeInTheDocument();
     window.dispatchEvent(new Event('notifications-changed'));
     expect(getUnreadNotificationsCount).toHaveBeenCalledTimes(2);
+  });
+
+  it('muestra la foto guardada y recupera las iniciales si falla la imagen', () => {
+    getUnreadNotificationsCount.mockResolvedValue(0);
+    const { container } = renderHeader({ isAuthenticated: true, user: {
+      id: 7, name: 'Ana García', role: 'EDITOR', profileImageKey: '/api/v1/users/7/photo/imagen.png',
+    }, logout: vi.fn() });
+    const image = container.querySelector('.user-avatar img');
+    expect(image).toHaveAttribute('src', 'http://localhost:8080/api/v1/users/7/photo/imagen.png');
+
+    fireEvent.error(image);
+
+    expect(container.querySelector('.user-avatar')).toHaveTextContent('AG');
   });
 
   it('cierra la sesión y lleva a inicio', async () => {

@@ -20,14 +20,14 @@
 .account-page-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
 }
 
 .account-subtitle {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 500;
 }
 
@@ -36,18 +36,19 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   border: none;
   border-radius: 8px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 800;
   cursor: pointer;
   transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .btn-save-changes:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .btn-save-changes:disabled {
@@ -56,7 +57,7 @@
 }
 
 .btn-save-icon {
-  font-size: 25px;
+  font-size: 2rem;
 }
 
 .account-error-banner {
@@ -69,7 +70,7 @@
   border: 1px solid var(--color-error-border);
   border-radius: 8px;
   color: var(--color-error);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
@@ -84,7 +85,7 @@
   border: 1px solid var(--color-success-border);
   border-radius: 8px;
   color: var(--color-success);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
@@ -105,9 +106,62 @@
 .account-section-title {
   margin: 0 0 20px;
   color: var(--color-primary);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 800;
 }
+
+.account-photo-editor {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.account-photo-preview {
+  display: grid;
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--color-accent-surface);
+  color: var(--color-primary);
+  font-size: 2.56rem;
+  font-weight: 800;
+}
+
+.account-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-photo-controls { min-width: 0; }
+.account-photo-controls > strong { color: var(--color-header); font-size: 1.36rem; }
+.account-photo-controls > p { margin: 4px 0 12px; color: var(--color-text-muted); }
+.account-photo-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.account-photo-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.account-photo-select,
+.account-photo-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 13px;
+  border: 1px solid var(--color-brand);
+  border-radius: 8px;
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font: inherit;
+  font-size: var(--font-size-min);
+  font-weight: 700;
+  cursor: pointer;
+}
+.account-photo-actions .account-photo-secondary { background: var(--color-surface); color: var(--color-primary); }
+.account-photo-actions button:disabled { opacity: 0.6; cursor: not-allowed; }
+.account-photo-file-input:focus-visible + .account-photo-select { outline: var(--focus-outline); outline-offset: var(--focus-outline-offset); }
+.account-photo-filename { display: block; margin-top: 8px; color: var(--color-text-muted); overflow-wrap: anywhere; }
+.account-photo-controls .account-photo-error { color: var(--color-error); font-weight: 600; }
 
 .account-grid-2 {
   display: grid;
@@ -131,7 +185,7 @@
 
 .input-field-group label {
   color: var(--color-header);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -139,16 +193,16 @@
   width: 100%;
   padding: 11px 14px;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   color: var(--color-text);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-field-group input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   box-shadow: var(--focus-shadow);
 }
 
@@ -178,7 +232,7 @@
   background: transparent;
   border: none;
   color: var(--color-text-muted);
-  font-size: 25px;
+  font-size: 2rem;
   cursor: pointer;
 }
 
@@ -193,7 +247,7 @@
 .password-requirements p {
   margin: 0 0 10px;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 600;
 }
 
@@ -202,7 +256,7 @@
   align-items: center;
   gap: 8px;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 600;
 }
 
@@ -215,13 +269,13 @@
 }
 
 .status-dot.valid {
-  background-color: var(--color-primary);
+  background-color: var(--color-action);
 }
 
 .delete-account-subtext {
   margin: 0 0 20px;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .delete-account-row {
@@ -245,20 +299,20 @@
 .warning-box-icon {
   flex-shrink: 0;
   color: var(--color-warning);
-  font-size: 35px;
+  font-size: 2.8rem;
 }
 
 .warning-box-content h3 {
   margin: 0 0 4px;
   color: var(--color-warning);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .warning-box-content p {
   margin: 0;
   color: var(--color-warning);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .btn-delete-account {
@@ -270,7 +324,7 @@
   border: 1px solid var(--color-error-border);
   border-radius: 8px;
   color: var(--color-error);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -288,7 +342,7 @@
 }
 
 .btn-delete-icon {
-  font-size: 22.5px;
+  font-size: 1.8rem;
 }
 
 .btn-save-changes:focus-visible,
@@ -318,6 +372,7 @@
 }
 
 @media only screen and (max-width: 768px) {
+  .account-photo-editor { align-items: flex-start; flex-direction: column; }
   .account-page {
     padding: 16px var(--page-gutter) 40px;
   }

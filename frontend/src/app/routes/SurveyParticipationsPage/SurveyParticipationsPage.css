@@ -25,7 +25,7 @@
 }
 
 .survey-participations-title > span {
-  font-size: 14px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -53,7 +53,7 @@
 }
 
 .survey-participations-list li.selected {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
@@ -65,18 +65,18 @@
 .survey-participations-list time,
 .participation-detail time {
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--font-size-min);
 }
 
 .survey-participations-list button {
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
   padding: 9px 13px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-text);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -128,7 +128,7 @@
 
 .participation-detail > header span {
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -145,7 +145,7 @@
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
-  font-size: 24px;
+  font-size: 1.92rem;
 }
 
 .participation-answers {
@@ -167,7 +167,7 @@
   justify-content: space-between;
   gap: 16px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-min);
 }
 
 .participation-answer-card > header strong {
@@ -176,7 +176,7 @@
 
 .participation-answer-card h3 {
   color: var(--color-header);
-  font-size: 18px;
+  font-size: 1.44rem;
 }
 
 .participation-text-answer,
@@ -187,7 +187,7 @@
 
 .participation-scalar-answer {
   color: var(--color-header);
-  font-size: 20px;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .participation-option-list li {
-  border-left: 3px solid var(--color-primary);
+  border-left: 3px solid var(--color-brand);
   padding: 7px 10px;
   display: grid;
   gap: 3px;

@@ -34,9 +34,9 @@ export function Pagination({
   const endItem = Math.min((currentPage + 1) * pageSize, totalItems);
 
   return (
-    <footer className={`pagination pagination--${variant}`}>
+    <div className={`pagination pagination--${variant}`}>
       {isCompact ? (
-        <nav className="pagination-compact-controls" aria-label={ariaLabel}>
+        <div className="pagination-compact-controls" role="group" aria-label={ariaLabel}>
           <button
             type="button"
             disabled={disabled || currentPage === 0}
@@ -56,14 +56,14 @@ export function Pagination({
             Siguiente
             <MdChevronRight aria-hidden="true" />
           </button>
-        </nav>
+        </div>
       ) : (
         <>
           <div className="pagination-count">
             Mostrando {startItem} a {endItem} de {totalItems} {itemLabel}
           </div>
 
-          <nav className="pagination-pages" aria-label={ariaLabel}>
+          <div className="pagination-pages" role="group" aria-label={ariaLabel}>
             <button
               type="button"
               disabled={disabled || currentPage === 0}
@@ -93,7 +93,7 @@ export function Pagination({
             >
               <MdChevronRight aria-hidden="true" />
             </button>
-          </nav>
+          </div>
 
           {pageSizeOptions.length > 0 && onPageSizeChange && (
             <Dropdown
@@ -110,6 +110,6 @@ export function Pagination({
           )}
         </>
       )}
-    </footer>
+    </div>
   );
 }

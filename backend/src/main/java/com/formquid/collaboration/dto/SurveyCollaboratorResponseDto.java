@@ -9,6 +9,7 @@ public record SurveyCollaboratorResponseDto(
     Long userId,
     String email,
     String name,
+    String profileImageKey,
     CollaborationPermission permission,
     Instant joinedAt
 ) {

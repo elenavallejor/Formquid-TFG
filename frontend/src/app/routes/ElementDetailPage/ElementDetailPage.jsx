@@ -284,7 +284,7 @@ function ElementDetailContent() {
         )}
 
         {!isLoading && element && (
-          <article className="catalog-detail-card">
+          <div className="catalog-detail-card">
             <header className="catalog-detail-title-bar">
               <span className="catalog-detail-title-icon" aria-hidden="true">
                 <ElementIcon />
@@ -360,7 +360,7 @@ function ElementDetailContent() {
                 </div>
               </section>
             </div>
-          </article>
+          </div>
         )}
       </div>
 

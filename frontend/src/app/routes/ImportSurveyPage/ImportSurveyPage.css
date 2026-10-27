@@ -21,7 +21,7 @@
 .import-survey-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 35px;
+  font-size: 2.8rem;
   font-weight: 800;
   line-height: 1.15;
 }
@@ -30,7 +30,7 @@
   max-width: 780px;
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   line-height: 1.55;
 }
 
@@ -43,10 +43,10 @@
   border: 0;
   border-radius: 8px;
   padding: 12px 20px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font: inherit;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -55,7 +55,8 @@
 .import-survey-download:hover,
 .import-survey-validate:hover:not(:disabled),
 .import-survey-continue:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .import-survey-file-button:hover,
@@ -84,7 +85,7 @@
   border-radius: 50%;
   background: var(--color-accent-surface);
   color: var(--color-primary);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -97,14 +98,14 @@
 .import-survey-card h2 {
   margin: 3px 0 8px;
   color: var(--color-primary);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 800;
 }
 
 .import-survey-card p {
   margin: 0 0 18px;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   line-height: 1.55;
 }
 
@@ -128,7 +129,7 @@
 
 .import-survey-dropzone:hover,
 .import-survey-dropzone.is-dragging {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background: var(--color-accent-surface);
 }
 
@@ -138,7 +139,7 @@
 
 .import-survey-dropzone svg {
   margin-bottom: 10px;
-  color: var(--color-primary);
+  color: var(--color-brand);
   font-size: 2.5rem;
 }
 
@@ -149,13 +150,13 @@
 
 .import-survey-dropzone strong {
   color: var(--color-header);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .import-survey-dropzone span {
   margin-top: 6px;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .import-survey-dropzone small {
@@ -169,13 +170,13 @@
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
   margin-top: 12px;
   padding: 9px 16px;
   background: var(--color-surface);
-  color: var(--color-primary);
-  font-size: 16.25px;
+  color: var(--color-text);
+  font-size: var(--font-size-min);
   font-weight: 700;
   cursor: pointer;
 }
@@ -218,13 +219,13 @@
 .import-survey-selected-file small {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-min);
 }
 
 .import-survey-selected-file > button {
   display: grid;
   width: 42px;
-  min-height: 40px;
+  min-height: 44px;
   border: 0;
   border-radius: 8px;
   place-items: center;
@@ -236,8 +237,8 @@
 
 .import-survey-selected-file > svg {
   flex: 0 0 auto;
-  color: var(--color-primary);
-  font-size: 25px;
+  color: var(--color-brand);
+  font-size: 2rem;
 }
 
 .import-survey-selected-file > button:hover {
@@ -299,15 +300,15 @@
   border-radius: 8px;
   padding: 12px 20px;
   font: inherit;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .import-survey-validate,
 .import-survey-continue {
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .import-survey-replace {
@@ -337,7 +338,7 @@
   }
 
   .import-survey-header h1 {
-    font-size: 30px;
+    font-size: 2.4rem;
   }
 
   .import-survey-card {

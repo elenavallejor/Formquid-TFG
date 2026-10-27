@@ -29,9 +29,9 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.survey-preview-modal-header span { color: var(--color-text-muted); font-size: 13.75px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
-.survey-preview-modal-header h2 { margin: 3px 0 0; color: var(--color-header); font-size: 21.25px; }
-.survey-preview-modal-header button { display: grid; width: 38px; height: 38px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--color-text-muted); font-size: 28.75px; cursor: pointer; }
+.survey-preview-modal-header span { color: var(--color-text-muted); font-size: var(--font-size-min); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.survey-preview-modal-header h2 { margin: 3px 0 0; color: var(--color-header); font-size: 1.7rem; }
+.survey-preview-modal-header button { display: grid; width: 38px; height: 38px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--color-text-muted); font-size: 2.3rem; cursor: pointer; }
 .survey-preview-modal-header button:hover { background: var(--color-surface-muted); color: var(--color-header); }
 .survey-preview-modal-body { flex: 1; overflow-y: auto; padding: 30px 34px 38px; background-color: var(--color-background); }
 

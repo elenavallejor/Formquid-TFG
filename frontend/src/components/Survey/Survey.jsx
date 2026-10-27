@@ -447,11 +447,11 @@ export function Survey({
           {items.length > 0 ? items.map(renderItem) : <p className="survey-response-empty">Esta encuesta todavía no contiene elementos.</p>}
         </div>
 
-        {interactive && <footer className="survey-response-actions">
+        {interactive && <div className="survey-response-actions">
           {isPreview
             ? <button type="button" onClick={onClosePreview}>Cerrar previsualización</button>
             : <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Enviando...' : 'Enviar respuestas'}</button>}
-        </footer>}
+        </div>}
       </section>
     </form>
   );

@@ -3,7 +3,7 @@
 }
 
 .template-block-badge {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   color: var(--color-primary);
 }
 

@@ -51,9 +51,10 @@
   width: 64px;
   height: calc(100vh - var(--catalog-top, 0px));
   height: calc(100dvh - var(--catalog-top, 0px));
-  background: var(--color-primary);
+  background: var(--color-action);
   visibility: visible;
   transition: transform 0.3s ease, visibility 0s;
+  color: var(--color-on-action);
 }
 
 .catalog-collapsed-rail-hidden {
@@ -77,14 +78,14 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--color-text-on-dark);
+  color: var(--color-on-action);
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .catalog-toggle:hover {
-  background: var(--color-primary-hover);
-  color: var(--color-accent-surface);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .catalog-toggle:focus-visible {
@@ -99,8 +100,8 @@
 }
 
 .catalog-toggle-label {
-  color: var(--color-text-on-dark);
-  font-size: 20px;
+  color: var(--color-on-action);
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1;
@@ -117,9 +118,9 @@
   border-radius: 6px;
   background: var(--color-text);
   color: var(--color-text-on-dark);
-  font-size: 14px;
+  font-size: var(--font-size-min);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.5;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-50%);
@@ -142,14 +143,14 @@
   width: 100%;
   padding: 12px 14px 12px 20px;
   box-sizing: border-box;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .catalog-header h2 {
   margin: 0;
-  color: var(--color-text-on-dark);
-  font-size: 18.75px;
+  color: var(--color-on-action);
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -165,8 +166,8 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--color-text-on-dark);
-  font-size: 30px;
+  color: var(--color-on-action);
+  font-size: 2.4rem;
   cursor: pointer;
 }
 
@@ -175,7 +176,7 @@
 }
 
 .catalog-close:focus-visible {
-  outline: var(--focus-outline);
+  outline: 2px solid var(--color-text-on-dark);
   outline-offset: var(--focus-outline-offset);
 }
 
@@ -203,7 +204,7 @@
 .catalog-title {
   margin: 0 0 14px;
   color: var(--color-primary);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -252,12 +253,12 @@
   width: 100%;
   height: 44px;
   box-sizing: border-box;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .catalog-search input {
@@ -274,7 +275,7 @@
   min-height: 44px;
   padding: 8px 32px 8px 12px;
   font-family: inherit;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 400;
 }
 
@@ -287,7 +288,7 @@
 }
 
 .catalog-search input:focus-visible {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
 }
@@ -363,12 +364,12 @@
   border: 1px solid currentColor;
   border-radius: 6px;
   background: var(--color-surface);
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .catalog-block-icon {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  color: var(--color-brand);
+  border-color: var(--color-brand);
 }
 
 .catalog-info {
@@ -384,7 +385,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 15.625px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -394,7 +395,7 @@
 
 .catalog-info span {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 500;
 }
 
@@ -416,13 +417,13 @@
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: 22.5px;
+  font-size: 1.8rem;
   cursor: pointer;
   transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
 .catalog-action:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background: var(--color-accent-surface);
   color: var(--color-primary);
 }
@@ -432,7 +433,7 @@
 }
 
 .catalog-action:focus-visible {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
 }
@@ -449,16 +450,17 @@
   box-sizing: border-box;
   border: none;
   border-radius: 6px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
-  font-size: 16.25px;
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: var(--font-size-min);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .catalog-more:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .catalog-more:focus-visible {
@@ -472,7 +474,7 @@
 }
 
 .catalog-more svg {
-  font-size: 22.5px;
+  font-size: 1.8rem;
 }
 
 .catalog-empty {
@@ -482,7 +484,7 @@
   border-radius: 8px;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   line-height: 1.5;
   text-align: center;
 }
@@ -498,7 +500,7 @@
 
 .catalog-empty-category svg {
   flex: 0 0 auto;
-  font-size: 19px;
+  font-size: 1.52rem;
 }
 
 .catalog-error {
@@ -507,7 +509,7 @@
   border-radius: 8px;
   background: var(--color-error-surface);
   color: var(--color-error);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   line-height: 1.5;
   text-align: center;
 }
@@ -517,7 +519,7 @@
 }
 
 .catalog-error button {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 14px;
   border: 1px solid var(--color-error);
   border-radius: 6px;
@@ -533,8 +535,8 @@
   border-radius: 6px;
   background: var(--color-error-surface);
   color: var(--color-error);
-  font-size: 16.25px;
-  line-height: 1.4;
+  font-size: var(--font-size-min);
+  line-height: 1.5;
 }
 
 .catalog-backdrop {

@@ -17,8 +17,8 @@ import {
   getPublicSurveyById,
   getRegisteredSurveyByCode,
 } from '../../../api/surveysApi.js';
-import errorImage from '../../../assets/images/error-page-background.png';
-import happyFormImage from '../../../assets/images/happy-form-white.png';
+import errorImage from '../../../assets/images/error.png';
+import happyFormImage from '../../../assets/images/happy-form.png';
 import { PasswordVisibilityIcon } from '../../../components/PasswordVisibilityIcon/PasswordVisibilityIcon.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { Survey } from '../../../components/Survey/Survey.jsx';
@@ -196,6 +196,7 @@ export function PublicSurveyPage() {
 
         {isLoading && (
           <section aria-busy="true" aria-label="Cargando encuesta">
+            <h1 className="sr-only">Cargando encuesta</h1>
             <Skeleton variant="list" count={3} hasActions={false} label="Cargando encuesta…" />
           </section>
         )}

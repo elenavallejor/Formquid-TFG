@@ -9,6 +9,7 @@ public record AuthUserResponseDto(
     Long id,
     String email,
     String name,
-    UserRole role
+    UserRole role,
+    String profileImageKey
 ) {
 }

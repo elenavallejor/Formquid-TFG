@@ -12,6 +12,16 @@ export function updateMyAccount(data) {
   });
 }
 
+export function uploadMyProfilePhoto(file) {
+  const body = new FormData();
+  body.append('file', file);
+  return apiClient('/users/me/photo', { method: 'POST', body });
+}
+
+export function removeMyProfilePhoto() {
+  return apiClient('/users/me/photo', { method: 'DELETE' });
+}
+
 export function deleteMyAccount(data) {
   return apiClient('/users/me', {
     method: 'DELETE',

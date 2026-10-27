@@ -11,6 +11,8 @@ describe('Pagination', () => {
     const onPageSizeChange = vi.fn();
     render(<Pagination currentPage={2} totalPages={8} totalItems={75} pageSize={10} pageSizeOptions={[10, 25]} onPageChange={onPageChange} onPageSizeChange={onPageSizeChange} />);
     expect(screen.getByText('Mostrando 21 a 30 de 75 elementos')).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Paginación' })).toBeVisible();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Página 3' })).toHaveAttribute('aria-current', 'page');
     await user.click(screen.getByRole('button', { name: 'Página siguiente' }));
     expect(onPageChange).toHaveBeenCalledWith(3);

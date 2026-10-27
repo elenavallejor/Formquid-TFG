@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useRouteError } from 'react-router-dom';
 
-import errorBg from '../../../assets/images/error-page-background.png';
+import errorBg from '../../../assets/images/error.png';
 
 import './ErrorPage.css';
 

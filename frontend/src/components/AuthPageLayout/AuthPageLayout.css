@@ -1,9 +1,8 @@
 #login-page {
   min-height: 100%;
   padding: 72px var(--page-gutter);
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4)),
-    url('../../assets/images/fondo.jpg');
+  background-color: var(--color-background);
+  background-image: linear-gradient(to bottom, rgb(0 0 0 / 0%), rgb(0 0 0 / 38%)), url('../../assets/images/fondo.jpg');
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -44,8 +43,11 @@
 
 .backdrop-logo-img {
   width: 850px;
-  height: auto;
+  height: 850px;
   display: block;
+  background-color: var(--color-brand);
+  -webkit-mask: url('../../assets/images/formquid-logo-transparent.png') center / contain no-repeat;
+  mask: url('../../assets/images/formquid-logo-transparent.png') center / contain no-repeat;
 }
 
 .login-card {
@@ -55,7 +57,7 @@
   padding: 96px 56px 88px;
   box-sizing: border-box;
   border-radius: 12px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.07);
 }
 
@@ -66,22 +68,22 @@
 
 .login-title {
   margin: 0 0 12px;
-  color: #102a3a;
-  font-size: 40px;
+  color: var(--color-header);
+  font-size: 3.2rem;
   line-height: 1.2;
   font-weight: 800;
 }
 
 .login-subtitle {
-  color: var(--color-text-muted, #5d6d77);
-  font-size: 18.75px;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
   font-weight: 500;
 }
 
 @media only screen and (max-width: 650px) {
   #login-page {
     padding: 0;
-    background: var(--color-background);
+    background: linear-gradient(to bottom, var(--color-background), #c9c9c9);
   }
 
   .login-page-container {
@@ -112,12 +114,12 @@
   }
 
   .login-title {
-    font-size: 27.5px;
+    font-size: 2.2rem;
     font-weight: 700;
   }
 
   .login-subtitle {
-    font-size: 17.5px;
+    font-size: 1.4rem;
   }
 
   .login-form {
@@ -131,7 +133,7 @@
   .login-input-wrapper input {
     min-height: 46px;
     border-radius: 6px;
-    font-size: 18.75px;
+    font-size: 1.5rem;
     
   }
 
@@ -140,10 +142,10 @@
     margin: 20px 0 16px;
     border-radius: 6px;
     box-shadow: none;
-    font-size: 18.75px;
+    font-size: 1.5rem;
   }
 
   .request-account-text {
-    font-size: 16.25px;
+    font-size: var(--font-size-min);
   }
 }

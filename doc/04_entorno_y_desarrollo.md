@@ -108,6 +108,7 @@ Las opciones de correo y almacenamiento son:
 - `MAIL_HOST` y `MAIL_PORT` indican el servidor SMTP. Sus valores iniciales son `localhost` y `1025`. `MAIL_USERNAME` y `MAIL_PASSWORD` son opcionales para servidores sin autenticación. `MAIL_SMTP_AUTH` y `MAIL_STARTTLS` están desactivadas por defecto; al activar `MAIL_STARTTLS`, también se exige que el servidor acepte STARTTLS. Con MailHog en Compose se utiliza `MAIL_HOST=mailhog`.
 - `PASSWORD_RESET_BASE_URL` fija la dirección de los enlaces de recuperación. Si no se indica, toma `FRONTEND_ORIGIN` o `http://localhost:5173`.
 - `SURVEY_COVER_STORAGE_PATH` indica dónde se guardan las portadas. Por defecto es `./data/survey-covers`. Compose utiliza `/app/data/survey-covers`.
+- `PROFILE_PHOTO_STORAGE_PATH` indica dónde se guardan las fotos de perfil. Por defecto es `./data/profile-photos`. Compose utiliza `/app/data/profile-photos`.
 
 `SERVER_PORT` cambia el puerto 8080 del backend. Las variables `DB_POOL_MAX_SIZE` y `DB_POOL_MIN_IDLE` ajustan el tamaño del grupo de conexiones, con valores iniciales de 5 y 1. Los tiempos se configuran con `DB_POOL_MAX_LIFETIME_MS`, `DB_POOL_IDLE_TIMEOUT_MS`, `DB_POOL_KEEPALIVE_MS`, `DB_POOL_CONNECTION_TIMEOUT_MS` y `DB_POOL_VALIDATION_TIMEOUT_MS`.
 

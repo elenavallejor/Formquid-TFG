@@ -3,14 +3,14 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 18px;
   border: none;
   border-radius: 8px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: var(--color-action);
+  color: var(--color-on-action);
   font: inherit;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -19,7 +19,8 @@
 }
 
 .create-element-trigger:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .create-element-trigger:focus-visible,
@@ -35,7 +36,7 @@
 }
 
 .create-element-trigger svg {
-  font-size: 23.75px;
+  font-size: 1.9rem;
 }
 
 .create-element-overlay {
@@ -72,7 +73,7 @@
 .create-element-header h2 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 21.25px;
+  font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -80,7 +81,7 @@
 .create-element-header p {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .create-element-close {
@@ -93,13 +94,13 @@
   border: none;
   border-radius: 7px;
   background: transparent;
-  color: #64748b;
-  font-size: 27.5px;
+  color: var(--color-text-muted);
+  font-size: 2.2rem;
   cursor: pointer;
 }
 
 .create-element-close:hover {
-  background: #f1f5f9;
+  background: var(--color-surface-muted);
   color: var(--color-header);
 }
 
@@ -117,7 +118,7 @@
   gap: 13px;
   min-height: 126px;
   padding: 18px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 10px;
   background: var(--color-surface);
   color: var(--color-text);
@@ -131,9 +132,9 @@
 }
 
 .create-element-option:hover {
-  border-color: var(--color-primary);
-  background: #f0fdfa;
-  box-shadow: 0 4px 14px rgba(0, 152, 138, 0.1);
+  border-color: var(--color-brand);
+  background: var(--color-accent-surface);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .create-element-option-icon {
@@ -144,9 +145,9 @@
   height: 38px;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: #e8f7f5;
-  color: var(--color-primary);
-  font-size: 26.25px;
+  background: var(--color-accent-surface);
+  color: var(--color-brand);
+  font-size: 2.1rem;
 }
 
 .create-element-option-content {
@@ -157,13 +158,13 @@
 
 .create-element-option-content strong {
   color: var(--color-header);
-  font-size: 18.75px;
+  font-size: 1.5rem;
 }
 
 .create-element-option-content > span {
   color: var(--color-text-muted);
-  font-size: 16.25px;
-  line-height: 1.45;
+  font-size: var(--font-size-min);
+  line-height: 1.5;
 }
 
 @media (max-width: 560px) {

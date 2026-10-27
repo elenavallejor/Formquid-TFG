@@ -7,9 +7,9 @@
 }
 
 .academic-statement {
-  font-size: 20px;
+  font-size: 1.6rem;
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.5;
   margin: 0 0 14px 0;
   color: var(--color-text);
 }
@@ -29,11 +29,11 @@
   background-color: var(--color-surface-muted);
   padding: 8px 14px;
   border-radius: 0;
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   font-style: italic;
   color: var(--color-text-muted);
   margin: 0 0 18px 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .annotation-prefix {
@@ -78,19 +78,19 @@
 .academic-text-field {
   width: 100%;
   padding: 12px 14px;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 0;
   background-color: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
-  font-size: 18.125px;
+  font-size: 1.45rem;
   line-height: 1.5;
   resize: vertical;
   box-sizing: border-box;
 }
 
 .academic-text-field:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background-color: var(--color-surface);
 }
 
@@ -110,17 +110,17 @@
 .academic-number-input {
   width: 110px;
   padding: 8px 12px;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
   border-radius: 0;
   background-color: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
-  font-size: 18.75px;
+  font-size: 1.5rem;
   box-sizing: border-box;
 }
 
 .academic-number-input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   background-color: var(--color-surface);
 }
 
@@ -131,7 +131,7 @@
 }
 
 .academic-number-hint {
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   color: var(--color-text-muted);
   font-style: italic;
 }
@@ -149,15 +149,15 @@
 .academic-selection-hint {
   margin: 0 0 10px;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-style: italic;
 }
 
 .academic-option-row {
   display: flex;
   align-items: flex-start;
-  font-size: 18.125px;
-  line-height: 1.2;
+  font-size: 1.45rem;
+  line-height: 1.5;
 }
 
 .option-index {
@@ -177,7 +177,7 @@
 
 .academic-option-label {
   display: inline-flex;
-  min-height: 32px;
+  min-height: 44px;
   align-items: center;
   cursor: pointer;
 }
@@ -215,13 +215,13 @@
 
 .academic-other-field input {
   width: min(100%, 420px);
-  min-height: 38px;
+  min-height: 44px;
   padding: 7px 10px;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   box-sizing: border-box;
 }
 
@@ -236,7 +236,7 @@
 }
 
 .scale-bound-label {
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   font-style: italic;
   color: var(--color-text-muted);
 }
@@ -277,7 +277,7 @@
 }
 
 .visual-choice-input:checked + .visual-choice-content {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
 }
 
 .visual-choice-input:focus-visible + .visual-choice-content {
@@ -291,13 +291,13 @@
 }
 
 .scale-unit-number {
-  font-size: 17.5px;
+  font-size: 1.4rem;
   color: var(--color-text);
 }
 
 /* Estrellas */
 .scale-star-item {
-  font-size: 30px;
+  font-size: 2.4rem;
   width: 24px;
   height: 24px;
   display: flex;
@@ -314,7 +314,7 @@
 
 /* Caras */
 .scale-face-item {
-  font-size: 40px;
+  font-size: 3.2rem;
   display: flex;
   align-items: center;
   color: var(--color-text);
@@ -343,7 +343,7 @@
 
 .academic-matrix-table th {
   padding: 10px 14px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--color-text);
   border-bottom: 2px solid var(--color-border);
@@ -375,7 +375,7 @@
 
 .matrix-row-title {
   text-align: left;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -391,8 +391,8 @@
 .matrix-numeric-label,
 .matrix-scale-choice-label {
   display: inline-flex;
-  min-width: 32px;
-  min-height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
 }
@@ -413,7 +413,7 @@
 }
 
 .boolean-pill-text {
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text);
 }

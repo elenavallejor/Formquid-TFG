@@ -67,7 +67,7 @@ export function CatalogBlockDetailsModal({ block, onClose }) {
             </div>
           )}
           {!isLoading && details && (
-            <article className="catalog-detail-card">
+            <div className="catalog-detail-card">
               <header className="catalog-detail-title-bar">
                 <span className="catalog-detail-title-icon" aria-hidden="true"><MdOutlineWidgets /></span>
                 <h2>{(details.name || 'Sin bloque').toUpperCase()}</h2>
@@ -89,7 +89,7 @@ export function CatalogBlockDetailsModal({ block, onClose }) {
                   <div className="catalog-detail-structure-content"><CatalogBlockContent element={details} /></div>
                 </section>
               </div>
-            </article>
+            </div>
           )}
         </div>
       </section>

@@ -32,7 +32,7 @@ export function CatalogContentItem({ item, numbering = {} }) {
         ) : TypeIcon ? (
           <span
             className="question-type-badge"
-            style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
+            style={{ color: typeConfig.color, borderColor: `color-mix(in srgb, ${typeConfig.color} 37.5%, transparent)` }}
             title={typeConfig.title}
           >
             <TypeIcon aria-hidden="true" />

@@ -13,10 +13,13 @@ import com.formquid.user.dto.UserSearchField;
 import com.formquid.user.dto.UserSortOrder;
 import com.formquid.user.entity.User;
 import com.formquid.user.service.UserService;
+import com.formquid.user.service.ProfilePhotoStorage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +33,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
 
@@ -48,6 +53,26 @@ public class UserController {
     @GetMapping("/me")
     public UserResponseDto me(@AuthenticationPrincipal User user) {
         return userService.getProfile(user);
+    }
+
+    @PostMapping(value = "/me/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UserResponseDto uploadMyPhoto(@AuthenticationPrincipal User user, @RequestPart("file") MultipartFile file) {
+        return userService.uploadProfilePhoto(user.getId(), file);
+    }
+
+    @DeleteMapping("/me/photo")
+    public UserResponseDto removeMyPhoto(@AuthenticationPrincipal User user) {
+        return userService.removeProfilePhoto(user.getId());
+    }
+
+    @GetMapping("/{userId}/photo/{filename:.+}")
+    public ResponseEntity<byte[]> getPhoto(@PathVariable Long userId, @PathVariable String filename) {
+        ProfilePhotoStorage.StoredPhoto photo = userService.getProfilePhoto(userId, filename);
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(photo.contentType()))
+            .header("X-Content-Type-Options", "nosniff")
+            .cacheControl(CacheControl.noStore())
+            .body(photo.bytes());
     }
 
     @PatchMapping("/me/account")

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MdArrowForward, MdBarChart, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
+import { MdArrowForward, MdBarChart, MdCheckCircle, MdLockOutline, MdMoreVert, MdOutlineAssignment, MdOutlineEdit, MdOutlineManageSearch, MdOutlinePerson, MdOutlineRemoveRedEye, MdPersonAdd } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import { resolveSurveyImageUrl } from '../../api/apiClient.js';
 import { getCategories } from '../../api/categoriesApi.js';
@@ -88,11 +88,11 @@ export function SurveyCard({
   ].filter(Boolean).join(' ');
 
   return (
-    <article className={cardClassName}>
+    <div className={cardClassName}>
       <div className="survey-card-image-wrapper">
         {imageKey
           ? <img src={resolveSurveyImageUrl(imageKey)} alt="" className="survey-card-image" loading="lazy" decoding="async" />
-          : <div className="survey-card-placeholder" aria-hidden="true" />}
+          : <div className="survey-card-placeholder" aria-hidden="true"><MdOutlineAssignment /></div>}
       </div>
 
       <div className="survey-card-content">
@@ -143,11 +143,11 @@ export function SurveyCard({
             {survey.accessMode === 'PASSWORD_PROTECTED'
               ? <MdLockOutline aria-hidden="true" />
               : <MdOutlinePerson aria-hidden="true" />}
-            <span>
+            <strong>
               {survey.accessMode === 'PASSWORD_PROTECTED'
                 ? 'Acceso con contraseña'
                 : 'Acceso con cuenta'}
-            </span>
+            </strong>
           </p>
         )}
 
@@ -200,6 +200,6 @@ export function SurveyCard({
           </button>}
         </div>}
       </div>
-    </article>
+    </div>
   );
 }

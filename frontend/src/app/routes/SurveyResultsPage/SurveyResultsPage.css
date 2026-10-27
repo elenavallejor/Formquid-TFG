@@ -32,7 +32,7 @@
 
 .weighted-analysis-kicker {
   color: var(--color-primary);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   letter-spacing: 0.05em;
 }
@@ -53,7 +53,7 @@
 .weighted-analysis-copy h2 {
   margin: 5px 0 6px;
   color: var(--color-header);
-  font-size: 22.5px;
+  font-size: 1.8rem;
   font-weight: 800;
 }
 
@@ -61,7 +61,7 @@
   max-width: 720px;
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   line-height: 1.5;
 }
 
@@ -73,14 +73,14 @@
 
 .weighted-analysis-result strong {
   color: var(--color-primary);
-  font-size: 37.5px;
+  font-size: 3rem;
   line-height: 1;
 }
 
 .weighted-analysis-result span {
   margin-top: 5px;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -103,7 +103,7 @@
   top: 50%;
   width: 20px;
   height: 20px;
-  border: 3px solid var(--color-primary);
+  border: 3px solid var(--color-brand);
   border-radius: 50%;
   background: var(--color-surface);
   box-shadow: 0 0 0 2px var(--color-surface);
@@ -116,7 +116,7 @@
   display: flex;
   justify-content: space-between;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-min);
 }
 
 .weighted-analysis--empty {
@@ -125,20 +125,20 @@
 }
 
 .weighted-analysis--empty > svg {
-  color: var(--color-primary);
-  font-size: 42px;
+  color: var(--color-brand);
+  font-size: 3.36rem;
 }
 
 .weighted-analysis--empty h2 {
   margin: 0 0 4px;
   color: var(--color-header);
-  font-size: 22.5px;
+  font-size: 1.8rem;
 }
 
 .weighted-analysis--empty p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .questions-statistics-section > .catalog-detail-structure-header {
@@ -148,8 +148,8 @@
 .questions-statistics-section > .catalog-detail-structure-header p {
   margin: 5px 0 0;
   color: var(--color-text-muted);
-  font-size: 15px;
-  line-height: 1.4;
+  font-size: var(--font-size-min);
+  line-height: 1.5;
 }
 
 .questions-statistics-list {
@@ -173,7 +173,7 @@
 
 .question-statistics-number {
   color: var(--color-primary);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -182,7 +182,7 @@
 .question-statistics-header h3 {
   margin: 5px 0 10px;
   color: var(--color-header);
-  font-size: 21.25px;
+  font-size: 1.7rem;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -196,13 +196,13 @@
   border-radius: 999px;
   background: var(--color-accent-surface);
   color: var(--color-primary);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
 .question-statistics-type svg {
   flex: 0 0 auto;
-  font-size: 18px;
+  font-size: 1.44rem;
 }
 
 .question-response-rate {
@@ -222,27 +222,27 @@
 
 .question-response-rate strong {
   color: var(--color-primary);
-  font-size: 27.5px;
+  font-size: 2.2rem;
 }
 
 .question-response-rate span {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .question-view-button {
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
   background: var(--color-surface);
-  color: var(--color-primary);
+  color: var(--color-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease;
@@ -259,7 +259,7 @@
 
 .question-view-button svg {
   flex: 0 0 auto;
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .question-detail-preview {
@@ -275,7 +275,7 @@
   padding-bottom: 12px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-primary);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -294,7 +294,7 @@
   flex-wrap: wrap;
   gap: 24px;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .question-statistics-counts strong {
@@ -304,7 +304,7 @@
 .question-statistics-card h4 {
   margin: 22px 0 14px;
   color: var(--color-primary);
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 800;
 }
 
@@ -319,7 +319,7 @@
   justify-content: space-between;
   gap: 12px;
   color: var(--color-text);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .statistics-bar-label strong {
@@ -337,7 +337,7 @@
 .statistics-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--color-primary);
+  background: var(--color-action);
   display: block;
   transition: width 0.3s ease;
 }
@@ -346,7 +346,7 @@
   margin-top: 4px;
   color: var(--color-text-muted);
   display: block;
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .statistics-help {
@@ -355,12 +355,12 @@
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .statistics-help svg {
   flex: 0 0 auto;
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .numeric-summary {
@@ -384,14 +384,14 @@
 
 .numeric-summary dt {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   letter-spacing: 0.025em;
 }
 
 .numeric-summary dd {
   margin: 5px 0 0;
   color: var(--color-header);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 650;
 }
 
@@ -417,13 +417,13 @@
 .matrix-statistics-heading h5 {
   margin: 0;
   color: var(--color-header);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .matrix-statistics-heading span {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .statistics-text-note,
@@ -434,7 +434,7 @@
   border-radius: 8px;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   line-height: 1.5;
 }
 
@@ -454,7 +454,7 @@
   flex-wrap: wrap;
   gap: 8px 24px;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .question-evaluation strong {
@@ -476,8 +476,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--color-action);
+  color: var(--color-on-action);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -491,7 +491,7 @@
 .survey-results-participations-action p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--font-size-min);
 }
 
 @media only screen and (max-width: 1024px) {

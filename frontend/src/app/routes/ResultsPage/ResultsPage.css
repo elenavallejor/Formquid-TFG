@@ -16,7 +16,7 @@
 .results-page-header h1 {
   margin: 0 0 6px;
   color: var(--color-header);
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -24,7 +24,7 @@
 .results-page-header p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .results-page-content {
@@ -54,8 +54,8 @@
 }
 
 .results-page-empty svg {
-  color: var(--color-primary);
-  font-size: 45px;
+  color: var(--color-brand);
+  font-size: 3.6rem;
 }
 
 .results-page-empty h2,
@@ -65,20 +65,20 @@
 
 .results-page-empty h2 {
   color: var(--color-header);
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .results-page-empty p {
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .results-page-retry {
   padding: 9px 18px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -97,7 +97,7 @@
   }
 
   .results-page-header h1 {
-    font-size: 30px;
+    font-size: 2.4rem;
   }
 
   .results-survey-grid,

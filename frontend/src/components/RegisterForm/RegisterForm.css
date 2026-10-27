@@ -11,7 +11,7 @@
 }
 
 .register-field label {
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -30,7 +30,7 @@
   position: absolute;
   left: 14px;
   color: var(--color-text-muted);
-  font-size: 25px;
+  font-size: 2rem;
   pointer-events: none;
 }
 
@@ -42,9 +42,9 @@
 .register-input-wrapper textarea {
   width: 100%;
   padding: 10px 14px 10px 42px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   color: var(--color-text);
   background-color: var(--color-surface);
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -74,7 +74,7 @@
 .register-field-hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .register-form .password-toggle {
@@ -90,7 +90,7 @@
   background: none;
   border: none;
   color: var(--color-text-muted);
-  font-size: 22.5px;
+  font-size: 1.8rem;
   cursor: pointer;
 }
 
@@ -109,7 +109,7 @@
   min-height: 16px;
   margin: 0;
   color: var(--color-error);
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .register-submit {
@@ -118,16 +118,17 @@
   padding: 12px;
   border: none;
   border-radius: 8px;
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
-  font-size: 18.75px;
+  background-color: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 1.5rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s, opacity 0.2s;
 }
 
 .register-submit:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .register-submit:disabled {
@@ -138,14 +139,21 @@
 .register-login-text {
   margin: 8px 0 0;
   color: var(--color-text-muted);
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   text-align: center;
 }
 
 .register-login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
   color: var(--color-primary);
+  font-size: 1.6rem;
   font-weight: 600;
-  text-decoration: none;
+  line-height: 1.5;
+  text-decoration: underline;
 }
 
 .register-login-link:hover {
@@ -163,20 +171,20 @@
 .register-success-icon {
   margin-bottom: 16px;
   color: var(--color-success);
-  font-size: 70px;
+  font-size: 5.6rem;
 }
 
 .register-success-title {
   margin: 0 0 12px;
   color: var(--color-header);
-  font-size: 25px;
+  font-size: 2.4rem;
   font-weight: 700;
 }
 
 .register-success-message {
   margin: 10px 0 65px;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.6rem;
   font-weight: 400;
   line-height: 1.5;
 }

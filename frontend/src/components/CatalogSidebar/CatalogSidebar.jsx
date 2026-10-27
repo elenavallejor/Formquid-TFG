@@ -409,15 +409,15 @@ function CatalogSidebarContent({
           const actionId = `QUESTION-${question.id}`;
 
           return (
-            <article key={question.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'QUESTION', question)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
+            <div key={question.id} className="catalog-item" draggable onDragStart={(event) => handleDragStart(event, 'QUESTION', question)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
               <span className="catalog-icon" style={{ color: typeConfig.color, borderColor: typeConfig.color }} aria-hidden="true"><Icon /></span>
               <div className="catalog-info"><h4>{questionName}</h4><span>{typeConfig.title}</span></div>
               {onAddQuestion && (
-                <button type="button" className="catalog-action" aria-label={`Añadir pregunta: ${questionName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('QUESTION', question)}>
+                <button type="button" className="catalog-action" aria-label={`Añadir pregunta: ${questionName}`} aria-describedby={instructionsId} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('QUESTION', question)}>
                   <MdAdd aria-hidden="true" />
                 </button>
               )}
-            </article>
+            </div>
           );
         })}
       </div>
@@ -452,7 +452,7 @@ function CatalogSidebarContent({
             ?? 0;
 
           return (
-            <article key={block.id} className="catalog-item" draggable aria-describedby={instructionsId} onDragStart={(event) => handleDragStart(event, 'BLOCK', block)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
+            <div key={block.id} className="catalog-item" draggable onDragStart={(event) => handleDragStart(event, 'BLOCK', block)} onDragEnd={(event) => event.currentTarget.classList.remove('dragging')}>
               <span className="catalog-icon catalog-block-icon" aria-hidden="true"><MdLayers /></span>
               <div className="catalog-info"><h4>{blockName.toUpperCase()}</h4><span>{questionCount} {questionCount === 1 ? 'pregunta' : 'preguntas'}</span></div>
               <div className="catalog-actions">
@@ -464,9 +464,9 @@ function CatalogSidebarContent({
                 >
                   <MdOutlineVisibility aria-hidden="true" />
                 </button>
-                {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
+                {onAddBlock && <button type="button" className="catalog-action" aria-label={`Añadir bloque: ${blockName}`} aria-describedby={instructionsId} aria-busy={pendingAction === actionId} disabled={Boolean(pendingAction)} onClick={() => handleAdd('BLOCK', block)}><MdAdd aria-hidden="true" /></button>}
               </div>
-            </article>
+            </div>
           );
         })}
       </div>

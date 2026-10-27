@@ -73,7 +73,7 @@ function RequestSection({ id, title, requests, headers, rows, emptyMessage }) {
     <section className="collaborations-section" aria-labelledby={id}>
       <div className="collaborations-section-heading">
         <h2 id={id}>{title}</h2>
-        <span aria-label={`${requests.length} elementos`}>{requests.length}</span>
+        <span>{requests.length}</span>
       </div>
       <Table
         caption={`${title} del usuario`}

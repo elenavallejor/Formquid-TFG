@@ -253,11 +253,11 @@ La [guía de contenedores](doc/05_contenedores.md) amplía la configuración del
 <details>
 <summary><strong>Portadas y copias de seguridad</strong></summary>
 
-- Las portadas subidas se guardan en `/app/data/survey-covers` dentro del backend.
-- Docker Compose monta el volumen persistente `survey-covers` en esa ruta. La configuración de producción reutiliza el montaje.
+- Las portadas subidas se guardan en `/app/data/survey-covers` y las fotos de perfil en `/app/data/profile-photos` dentro del backend.
+- Docker Compose monta los volúmenes persistentes `survey-covers` y `profile-photos` en esas rutas. La configuración de producción reutiliza los montajes.
 - Las copias de seguridad deben incluir PostgreSQL y el volumen de portadas.
 - Al retirar los contenedores, conserva el volumen. El comando `docker compose down -v` también lo elimina.
-- Fuera de Compose, monta almacenamiento persistente y configura su ruta en `SURVEY_COVER_STORAGE_PATH`.
+- Fuera de Compose, monta almacenamiento persistente y configura sus rutas en `SURVEY_COVER_STORAGE_PATH` y `PROFILE_PHOTO_STORAGE_PATH`.
 - Se admiten imágenes PNG y JPEG de hasta 3 MB y 4000 píxeles por lado.
 - Las portadas de borradores y de encuestas con acceso restringido requieren autorización para leerse.
 

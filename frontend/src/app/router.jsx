@@ -2,7 +2,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 
 import { RequireAuth } from './guards/RequireAuth.jsx';
 import { RequireRole } from './guards/RequireRole.jsx';
-import { App } from './app';
+import { App, AppLayout } from './app';
 import { ElementDetailPage } from './routes/ElementDetailPage/ElementDetailPage.jsx';
 import { ElementRequestsPage } from './routes/ElementRequestsPage/ElementRequestsPage.jsx';
 import { CatalogPage } from './routes/CatalogPage/CatalogPage.jsx';
@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
-    errorElement: <ErrorPage />,
+    errorElement: <AppLayout><ErrorPage /></AppLayout>,
     children: [
       {
         index: true,

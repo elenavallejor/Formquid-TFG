@@ -51,7 +51,7 @@
 
 .solicitud-applicant-name {
   margin: 0 0 12px 0;
-  font-size: 23.75px;
+  font-size: 1.9rem;
   font-weight: 800;
   color: var(--color-header);
   text-transform: uppercase;
@@ -60,7 +60,7 @@
 
 .solicitud-section-label {
   margin: 0 0 10px 0;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
@@ -74,7 +74,7 @@
 }
 
 .solicitud-label-icon {
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .solicitud-data-list {
@@ -90,20 +90,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 18.75px;
+  font-size: 1.5rem;
   color: var(--color-text);
   font-weight: 500;
 }
 
 .solicitud-icon {
-  font-size: 23.75px;
+  font-size: 1.9rem;
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
 .solicitud-motivation-text {
   margin: 0;
-  font-size: 18.75px;
+  font-size: 1.5rem;
   line-height: 1.55;
   color: var(--color-text);
   overflow-wrap: anywhere;
@@ -128,7 +128,7 @@
 }
 
 .solicitud-date-value {
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -139,7 +139,7 @@
   justify-content: space-between;
   padding: 12px 18px;
   border-radius: 10px;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -148,13 +148,13 @@
 
 .btn-accept {
   background-color: var(--color-success-surface);
-  border: 1.5px solid var(--color-success);
-  color: var(--color-success);
+  border: 1.5px solid var(--color-brand);
+  color: var(--color-text);
 }
 
 .btn-accept:hover {
-  background-color: var(--color-success);
-  color: var(--color-text-on-dark);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .btn-deny {
@@ -169,7 +169,7 @@
 }
 
 .action-btn-icon {
-  font-size: 25px;
+  font-size: 2rem;
 }
 
 @media only screen and (max-width: 1100px) {

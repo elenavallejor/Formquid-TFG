@@ -45,7 +45,7 @@ function AnswerDetail({ answer, index }) {
   const matrixValues = Array.isArray(answer.matrixValues) ? answer.matrixValues : [];
 
   return (
-    <article className="participation-answer-card">
+    <div className="participation-answer-card">
       <header>
         <span>Respuesta {index + 1}</span>
         <strong>{QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}</strong>
@@ -72,7 +72,7 @@ function AnswerDetail({ answer, index }) {
           ))}
         </dl>
       )}
-    </article>
+    </div>
   );
 }
 
@@ -209,7 +209,7 @@ export function SurveyParticipationsPage() {
         {surveyError && <ErrorMessage message={surveyError} onClose={() => setSurveyError('')} />}
         {listError && <ErrorMessage message={listError} onClose={() => setListError('')} />}
 
-        <article className="catalog-detail-card survey-participations-card">
+        <div className="catalog-detail-card survey-participations-card">
           <header className="catalog-detail-title-bar survey-participations-title">
             <div>
               <MdOutlineAssignment aria-hidden="true" />
@@ -235,7 +235,7 @@ export function SurveyParticipationsPage() {
                     </div>
                     <button
                       type="button"
-                      aria-controls="participation-detail"
+                      aria-controls={selectedId === participation.id ? 'participation-detail' : undefined}
                       aria-expanded={selectedId === participation.id}
                       disabled={isDetailLoading && selectedId === participation.id}
                       onClick={() => showParticipation(participation.id)}
@@ -263,7 +263,7 @@ export function SurveyParticipationsPage() {
               />
             )}
           </div>
-        </article>
+        </div>
 
         {selectedId && (
           <section id="participation-detail" className="participation-detail" aria-busy={isDetailLoading} aria-live="polite">

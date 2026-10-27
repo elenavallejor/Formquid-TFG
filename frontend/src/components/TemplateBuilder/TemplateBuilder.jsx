@@ -519,7 +519,7 @@ export function TemplateBuilder({
                   {isText ? <TextContentIcon /> : isBlock ? (
                     <span className="question-type-badge template-block-badge" title="Bloque de preguntas"><MdLayers aria-hidden="true" /></span>
                   ) : TypeIcon ? (
-                    <span className="question-type-badge" style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }} title={typeConfig.title}><TypeIcon aria-hidden="true" /></span>
+                    <span className="question-type-badge" style={{ color: typeConfig.color, borderColor: `color-mix(in srgb, ${typeConfig.color} 37.5%, transparent)` }} title={typeConfig.title}><TypeIcon aria-hidden="true" /></span>
                   ) : null}
                 </div>
 
@@ -604,7 +604,7 @@ export function TemplateBuilder({
               <div className="builder-field"><label htmlFor="template-text-body">Contenido <span>*</span></label><textarea ref={textInputRef} id="template-text-body" rows={8} maxLength={5000} value={editingText} onChange={(event) => { setEditingText(event.target.value); setModalError(''); }} /><span className="field-counter">{editingText.length}/5000</span></div>
               <ErrorMessage message={modalError} onClose={() => setModalError('')} />
             </div>
-            <footer className="block-modal-footer"><button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-confirm" onClick={handleSaveText}>Guardar texto</button></footer>
+            <div className="block-modal-footer"><button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-confirm" onClick={handleSaveText}>Guardar texto</button></div>
           </section>
         </div>
       )}
@@ -626,7 +626,7 @@ export function TemplateBuilder({
       )}
 
       {modalMode === 'DELETE' && selectedItem && (
-        <div className="block-modal-overlay" onClick={closeModal}><section ref={deleteModalRef} tabIndex={-1} className="block-modal-container delete-modal-box" role="dialog" aria-modal="true" aria-labelledby="template-delete-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-delete-title">ELIMINAR {getItemLabel(selectedItem).toUpperCase()}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><p>¿Estás seguro de que deseas retirar este elemento de la {containerLabel}?</p></div><footer className="block-modal-footer"><button ref={deleteCancelRef} type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>Eliminar</button></footer></section></div>
+        <div className="block-modal-overlay" onClick={closeModal}><section ref={deleteModalRef} tabIndex={-1} className="block-modal-container delete-modal-box" role="dialog" aria-modal="true" aria-labelledby="template-delete-title" onClick={(event) => event.stopPropagation()}><header className="block-modal-header"><h2 id="template-delete-title">ELIMINAR {getItemLabel(selectedItem).toUpperCase()}</h2><button type="button" className="btn-close-modal" aria-label="Cerrar modal" onClick={closeModal}><MdClose aria-hidden="true" /></button></header><div className="block-modal-body"><p>¿Estás seguro de que deseas retirar este elemento de la {containerLabel}?</p></div><div className="block-modal-footer"><button ref={deleteCancelRef} type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button><button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>Eliminar</button></div></section></div>
       )}
     </div>
   );

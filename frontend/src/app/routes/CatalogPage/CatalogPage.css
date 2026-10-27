@@ -19,7 +19,7 @@
 
 .catalog-page-header h1 {
   margin: 0;
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
   color: var(--color-header);
   letter-spacing: -0.01em;
@@ -35,26 +35,27 @@
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background-color: var(--color-primary);
-  color: #ffffff;
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   border: none;
   border-radius: 8px;
-  font-size: 18.75px;
+  font-size: 1.5rem;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .btn-catalog-create-dropdown:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .btn-create-icon {
-  font-size: 27.5px;
+  font-size: 2.2rem;
 }
 
 .btn-dropdown-arrow {
-  font-size: 25px;
+  font-size: 2rem;
   margin-left: 2px;
 }
 
@@ -82,19 +83,19 @@
   padding: 12px 16px;
   color: var(--color-text);
   text-decoration: none;
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 600;
   box-sizing: border-box;
   transition: background-color 0.15s ease;
 }
 
 .create-element-menu a:hover {
-  background-color: #f1f5f9;
+  background-color: var(--color-accent-surface);
   color: var(--color-primary);
 }
 
 .create-element-menu svg {
-  font-size: 25px;
+  font-size: 2rem;
 }
 
 .catalog-tabs-container {
@@ -115,7 +116,7 @@
   padding: 18px;
   background-color: var(--color-surface);
   border: none;
-  font-size: 21.25px;
+  font-size: 1.7rem;
   font-weight: 700;
   color: var(--color-text);
   cursor: pointer;
@@ -124,13 +125,13 @@
 }
 
 .catalog-tab.active {
-  background-color: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   box-shadow: none;
 }
 
 .tab-icon {
-  font-size: 35px;
+  font-size: 2.8rem;
 }
 
 .catalog-results {
@@ -158,7 +159,7 @@
 .catalog-results-header h2 {
   margin: 0;
   color: var(--color-header);
-  font-size: 22.5px;
+  font-size: 1.8rem;
   font-weight: 800;
 }
 
@@ -188,7 +189,7 @@
 
   .catalog-tab {
     padding: 14px;
-    font-size: 18.75px;
+    font-size: 1.5rem;
   }
 
 }

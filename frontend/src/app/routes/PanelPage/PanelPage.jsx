@@ -302,6 +302,7 @@ export function PanelPage() {
     return (
       <main className="panel-page" aria-busy={isInitializing}>
         <div className="panel-container">
+          <h1 className="sr-only">Cargando panel</h1>
           <Skeleton variant="list" count={4} />
         </div>
       </main>
@@ -392,7 +393,7 @@ export function PanelPage() {
                   const Icon = card.icon;
 
                   return (
-                    <article
+                    <div
                       key={card.title}
                       className="editor-action-card"
                     >
@@ -422,7 +423,7 @@ export function PanelPage() {
                       >
                         {card.buttonText}
                       </button>
-                    </article>
+                    </div>
                   );
                 })}
               </div>
@@ -434,29 +435,34 @@ export function PanelPage() {
                   </h2>
                 </div>
 
-                <div className="catalog-buttons-grid">
-                  <PanelButton
-                    title="Plantillas"
-                    description="Consulta las plantillas de encuesta."
-                    icon={MdOutlineDescription}
-                    to="/catalogo/plantillas"
-                  />
-                  
-                  <PanelButton
-                    title="Bloques"
-                    description="Consulta los bloques de preguntas reutilizables."
-                    icon={MdOutlineWidgets}
-                    to="/catalogo/bloques"
-                  />
+                <ul className="catalog-buttons-grid" role="list">
+                  <li>
+                    <PanelButton
+                      title="Plantillas"
+                      description="Consulta las plantillas de encuesta."
+                      icon={MdOutlineDescription}
+                      to="/catalogo/plantillas"
+                    />
+                  </li>
 
-                  <PanelButton
-                    title="Preguntas fijas"
-                    description="Consulta las preguntas disponibles en el catálogo."
-                    icon={MdOutlineHelpOutline}
-                    to="/catalogo/preguntas"
-                  />  
-                  
-                </div>
+                  <li>
+                    <PanelButton
+                      title="Bloques"
+                      description="Consulta los bloques de preguntas reutilizables."
+                      icon={MdOutlineWidgets}
+                      to="/catalogo/bloques"
+                    />
+                  </li>
+
+                  <li>
+                    <PanelButton
+                      title="Preguntas fijas"
+                      description="Consulta las preguntas disponibles en el catálogo."
+                      icon={MdOutlineHelpOutline}
+                      to="/catalogo/preguntas"
+                    />
+                  </li>
+                </ul>
               </div>
             </div>
           </section>
@@ -690,30 +696,34 @@ export function PanelPage() {
                 </h2>
               </div>
 
-              <div className="catalog-buttons-grid">
-                <PanelButton
-                  title="Plantillas"
-                  description="Gestiona las plantillas de encuestas."
-                  icon={MdOutlineDescription}
-                  to="/catalogo/plantillas"
-                />
+              <ul className="catalog-buttons-grid" role="list">
+                <li>
+                  <PanelButton
+                    title="Plantillas"
+                    description="Gestiona las plantillas de encuestas."
+                    icon={MdOutlineDescription}
+                    to="/catalogo/plantillas"
+                  />
+                </li>
 
-                <PanelButton
-                  title="Bloques"
-                  description="Gestiona los bloques de preguntas."
-                  icon={MdOutlineWidgets}
-                  to="/catalogo/bloques"
-                />
+                <li>
+                  <PanelButton
+                    title="Bloques"
+                    description="Gestiona los bloques de preguntas."
+                    icon={MdOutlineWidgets}
+                    to="/catalogo/bloques"
+                  />
+                </li>
 
-                 <PanelButton
-                  title="Preguntas fijas"
-                  description="Gestiona las preguntas disponibles en el catálogo."
-                  icon={MdOutlineHelpOutline}
-                  to="/catalogo/preguntas"
-                />
-
-                
-              </div>
+                <li>
+                  <PanelButton
+                    title="Preguntas fijas"
+                    description="Gestiona las preguntas disponibles en el catálogo."
+                    icon={MdOutlineHelpOutline}
+                    to="/catalogo/preguntas"
+                  />
+                </li>
+              </ul>
             </section>
 
             <section

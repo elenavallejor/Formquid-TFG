@@ -4,10 +4,9 @@ import { ImUser } from 'react-icons/im';
 import { MdOutlineDashboard, MdOutlineKeyboardArrowDown, MdOutlineLogout, MdOutlineNotificationsNone, MdOutlinePerson } from 'react-icons/md';
 
 import { getUnreadNotificationsCount } from '../../api/notificationsApi.js';
-import formQuidLogo from '../../assets/images/formquid-logo.png';
 import { NotificationsModal } from '../NotificationsModal/NotificationsModal.jsx';
 import { useAuth } from '../../context/useAuth.js';
-import { getUserInitials } from '../../utils/getUserInitials.js';
+import { UserAvatar } from '../UserAvatar.jsx';
 
 import './Header.css';
 
@@ -94,28 +93,20 @@ export function Header() {
 
   return (
     <header id="main-header">
-      <div className="header-content">
+      <nav className="header-content" aria-label="Navegación principal">
         <Link
           className="brand"
           to="/"
           aria-label="FormQuid - Inicio"
         >
-          <img
-            className="brand-logo"
-            src={formQuidLogo}
-            alt=""
-            aria-hidden="true"
-          />
+          <span className="brand-logo" aria-hidden="true" />
 
           <span className="brand-name" aria-hidden="true">
             FORM<span>QUID</span>
           </span>
         </Link>
 
-        <nav
-          className="header-navigation"
-          aria-label="Navegación principal"
-        >
+        <div className="header-navigation">
           {isAuthenticated && user ? (
             <>
               <button
@@ -149,12 +140,7 @@ export function Header() {
                   className="user-menu-summary"
                   aria-label={`Menú de usuario de ${userDisplayName}`}
                 >
-                  <span
-                    className="user-avatar"
-                    aria-hidden="true"
-                  >
-                    {getUserInitials(userDisplayName)}
-                  </span>
+                  <UserAvatar className="user-avatar" name={userDisplayName} imageKey={user.profileImageKey} />
 
                   <span className="user-header-information">
                     <span className="user-header-name">
@@ -227,8 +213,8 @@ export function Header() {
               </Link>
             </>
           )}
-        </nav>
-      </div>
+        </div>
+      </nav>
       {isAuthenticated && notificationsOpen && <NotificationsModal onClose={() => setNotificationsOpen(false)} />}
     </header>
   );

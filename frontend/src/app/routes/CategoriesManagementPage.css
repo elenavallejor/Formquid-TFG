@@ -17,14 +17,14 @@
 .categories-page-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
 }
 
 .categories-page-header p {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .categories-create-card {
@@ -46,7 +46,7 @@
   display: grid;
   flex: none;
   place-items: center;
-  color: var(--color-primary);
+  color: var(--color-brand);
   background: var(--color-accent-surface);
 }
 
@@ -54,20 +54,20 @@
   width: 58px;
   height: 58px;
   border-radius: 12px;
-  font-size: 32px;
+  font-size: 2.56rem;
 }
 
 .categories-create-heading h2 {
   margin: 0;
   color: var(--color-header);
-  font-size: 21.25px;
+  font-size: 1.7rem;
   font-weight: 800;
 }
 
 .categories-create-heading p {
   margin: 4px 0 0;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .categories-form {
@@ -77,7 +77,7 @@
 
 .categories-form label {
   color: var(--color-header);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -97,7 +97,7 @@
 
 .categories-form-label {
   color: var(--color-header);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -106,10 +106,10 @@
   min-width: 0;
   min-height: 48px;
   padding: 10px 14px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   background: var(--color-surface);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
 }
 
 .categories-form input::placeholder {
@@ -123,17 +123,18 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-brand);
   border-radius: 8px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
-  font-size: 16.25px;
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: var(--font-size-min);
   font-weight: 700;
   white-space: nowrap;
 }
 
 .categories-form-submit:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: var(--color-action-hover);
+  color: var(--color-on-action);
 }
 
 .categories-form-submit:disabled {
@@ -141,7 +142,7 @@
 }
 
 .categories-form-submit svg {
-  font-size: 22px;
+  font-size: 1.76rem;
 }
 
 .categories-error,
@@ -150,7 +151,7 @@
   padding: 12px 16px;
   border: 1px solid;
   border-radius: 8px;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 600;
 }
 
@@ -183,14 +184,14 @@
 .categories-section-heading h2 {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 21.25px;
+  font-size: 1.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
 
 .categories-section-heading > span {
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -226,8 +227,8 @@
   place-items: center;
   border-radius: 10px;
   background: var(--color-accent-surface);
-  color: var(--color-primary);
-  font-size: 24px;
+  color: var(--color-brand);
+  font-size: 1.92rem;
 }
 
 .categories-available .pagination {
@@ -238,7 +239,7 @@
   min-width: 0;
   flex: 1;
   color: var(--color-header);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -249,7 +250,7 @@
   border-radius: 999px;
   background: var(--color-accent-surface);
   color: var(--color-primary);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -258,7 +259,7 @@
   flex-basis: 100%;
   padding-left: 66px;
   color: var(--color-success);
-  font-size: 14px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -272,7 +273,7 @@
   border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 600;
   text-align: center;
 }

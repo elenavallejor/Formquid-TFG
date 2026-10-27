@@ -337,7 +337,7 @@ export function BlockBuilder({
                   ) : TypeIcon ? (
                     <span
                       className="question-type-badge"
-                      style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
+                      style={{ color: typeConfig.color, borderColor: `color-mix(in srgb, ${typeConfig.color} 37.5%, transparent)` }}
                       title={typeConfig.title}
                     >
                       <TypeIcon aria-hidden="true" />
@@ -483,14 +483,14 @@ export function BlockBuilder({
               <ErrorMessage message={modalError} onClose={() => setModalError("")} />
             </div>
 
-            <footer className="block-modal-footer">
+            <div className="block-modal-footer">
               <button type="button" className="btn-cancel" onClick={closeModal}>
                 Cancelar
               </button>
               <button type="button" className="btn-confirm" onClick={handleSaveText}>
                 Guardar texto
               </button>
-            </footer>
+            </div>
           </section>
         </div>
       )}
@@ -517,14 +517,14 @@ export function BlockBuilder({
             <div className="block-modal-body">
               <p>¿Estás seguro de que deseas retirar este elemento del bloque?</p>
             </div>
-            <footer className="block-modal-footer">
+            <div className="block-modal-footer">
               <button ref={deleteCancelRef} type="button" className="btn-cancel" onClick={closeModal}>
                 Cancelar
               </button>
               <button type="button" className="btn-danger-confirm" onClick={handleDeleteItem}>
                 Eliminar
               </button>
-            </footer>
+            </div>
           </section>
         </div>
       )}
@@ -570,7 +570,7 @@ export function BlockBuilder({
           </div>
         </div>
         {(onClose || onSave) && (
-          <footer className="block-modal-footer">
+          <div className="block-modal-footer">
             {onClose && (
               <button type="button" className="btn-cancel" onClick={onClose}>
                 Cancelar
@@ -581,7 +581,7 @@ export function BlockBuilder({
                 Guardar bloque
               </button>
             )}
-          </footer>
+          </div>
         )}
       </section>
     </div>

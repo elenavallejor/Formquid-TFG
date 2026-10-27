@@ -337,7 +337,7 @@ export function Filter({
         type="button"
         className="filter__trigger"
         aria-expanded={open}
-        aria-controls={menuId}
+        aria-controls={open ? menuId : undefined}
         aria-haspopup={isMobile ? 'dialog' : undefined}
         aria-label={`${label}: ${selectedLabel}${selectedChoiceLabels ? `, ${selectedChoiceLabels}` : ''}${appliedText ? `, etiqueta ${appliedText}` : ''}`}
         onKeyDown={(event) => {

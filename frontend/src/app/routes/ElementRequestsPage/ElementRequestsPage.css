@@ -14,7 +14,7 @@
 .element-requests-page-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
 }
 
@@ -22,7 +22,7 @@
   margin: 6px 0 28px;
   max-width: 70ch;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .element-requests-list {
@@ -44,8 +44,8 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px 26px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .element-request-card-icon {
@@ -56,8 +56,8 @@
   place-items: center;
   border-radius: 50%;
   background: var(--color-surface);
-  color: var(--color-primary);
-  font-size: 26.25px;
+  color: var(--color-brand);
+  font-size: 2.1rem;
 }
 
 .element-request-card-heading {
@@ -68,13 +68,13 @@
 .element-request-card-type {
   display: block;
   margin-bottom: 5px;
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
 .element-request-card-heading h2 {
   margin: 0;
-  font-size: 22.5px;
+  font-size: 1.8rem;
   font-weight: 800;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -82,7 +82,7 @@
 
 .element-request-card-toggle {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 44px;
   flex: none;
   align-items: center;
   gap: 4px;
@@ -91,9 +91,9 @@
   border: 1px solid rgb(255 255 255 / 65%);
   border-radius: 8px;
   background: transparent;
-  color: var(--color-text-on-dark);
+  color: var(--color-on-action);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   cursor: pointer;
 }
@@ -108,7 +108,7 @@
 }
 
 .element-request-card-toggle svg {
-  font-size: 21px;
+  font-size: 1.68rem;
 }
 
 .element-request-card-content {
@@ -126,7 +126,7 @@
 .element-request-applicant {
   margin: 0 0 16px;
   color: var(--color-header);
-  font-size: 21.25px;
+  font-size: 1.7rem;
 }
 
 .element-request-user-data {
@@ -144,13 +144,13 @@
   align-items: flex-start;
   gap: 9px;
   color: var(--color-text-muted);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   overflow-wrap: anywhere;
 }
 
 .element-request-user-data svg {
   flex-shrink: 0;
-  font-size: 21.25px;
+  font-size: 1.7rem;
 }
 
 .element-request-message {
@@ -162,7 +162,7 @@
 .element-request-message h3 {
   margin: 0 0 10px;
   color: var(--color-primary);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 800;
 }
 
@@ -170,7 +170,7 @@
   margin: 0;
   max-width: 76ch;
   color: var(--color-text);
-  font-size: 20px;
+  font-size: 1.6rem;
   font-weight: 500;
   line-height: 1.6;
   overflow-wrap: anywhere;
@@ -195,7 +195,7 @@
 .element-request-structure-header h3 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 800;
 }
 
@@ -253,8 +253,8 @@
 }
 
 .element-request-reference svg {
-  color: var(--color-primary);
-  font-size: 26.25px;
+  color: var(--color-brand);
+  font-size: 2.1rem;
 }
 
 .element-request-actions {
@@ -275,21 +275,21 @@
   padding: 12px 18px;
   border-radius: 10px;
   font: inherit;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .element-request-accept {
-  border: 1.5px solid var(--color-success);
+  border: 1.5px solid var(--color-brand);
   background: var(--color-success-surface);
-  color: var(--color-success);
+  color: var(--color-text);
 }
 
 .element-request-accept:hover {
-  background: var(--color-success);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .element-request-deny {
@@ -334,11 +334,11 @@
 
 .element-requests-empty h2 {
   color: var(--color-header);
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 .element-requests-empty p {
-  font-size: 17.5px;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
@@ -379,7 +379,7 @@
   }
 
   .element-request-message p {
-    font-size: 18px;
+    font-size: 1.44rem;
   }
 
   .element-request-structure-header {

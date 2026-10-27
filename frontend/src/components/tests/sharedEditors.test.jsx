@@ -13,14 +13,17 @@ describe('editores compartidos', () => {
     const onChange = vi.fn();
     render(<CategoryIconPicker label="Icono" value={DEFAULT_CATEGORY_ICON} onChange={onChange} />);
     const trigger = screen.getByRole('button', { name: /^Icono:/ });
+    expect(trigger).not.toHaveAttribute('aria-controls');
     await user.click(trigger);
     const menu = screen.getByRole('group', { name: 'Iconos disponibles' });
+    expect(document.getElementById(trigger.getAttribute('aria-controls'))).toBe(menu);
     const next = CATEGORY_ICON_OPTIONS.find((option) => option.value !== DEFAULT_CATEGORY_ICON);
     await user.click(within(menu).getByRole('button', { name: next.label }));
     expect(onChange).toHaveBeenCalledWith(next.value);
     await user.click(trigger);
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('group', { name: 'Iconos disponibles' })).not.toBeInTheDocument();
+    expect(trigger).not.toHaveAttribute('aria-controls');
   });
 
   it('ofrece los iconos nuevos al crear una categoría', async () => {

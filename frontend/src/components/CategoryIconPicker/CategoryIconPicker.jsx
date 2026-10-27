@@ -80,7 +80,7 @@ export function CategoryIconPicker({ value, onChange, label, compact = false, di
         className="categories-icon-trigger"
         aria-label={`${label}: ${selectedLabel}`}
         aria-expanded={open}
-        aria-controls={menuId}
+        aria-controls={open ? menuId : undefined}
         disabled={disabled}
         onClick={toggleMenu}
       >

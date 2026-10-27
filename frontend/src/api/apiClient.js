@@ -10,6 +10,11 @@ export function resolveSurveyImageUrl(imageKey) {
   return new URL(`${API_BASE_URL}${imageKey.slice('/api/v1'.length)}`, window.location.origin).href;
 }
 
+export function resolveProfilePhotoUrl(imageKey) {
+  if (!imageKey?.startsWith('/api/v1/users/')) return imageKey;
+  return new URL(`${API_BASE_URL}${imageKey.slice('/api/v1'.length)}`, window.location.origin).href;
+}
+
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'TRACE']);
 const pendingGetRequests = new Map();
 

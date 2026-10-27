@@ -18,10 +18,15 @@ describe('Dropdown', () => {
     const onChange = vi.fn();
     const { container } = renderDropdown({ onChange });
     expect(container.querySelector('input[name="sort"]')).toHaveValue('a');
-    await user.click(screen.getByRole('button', { name: 'Ordenar: Primero' }));
+    const trigger = screen.getByRole('button', { name: 'Ordenar: Primero' });
+    expect(trigger).not.toHaveAttribute('aria-controls');
+    await user.click(trigger);
+    expect(document.getElementById(trigger.getAttribute('aria-controls')))
+      .toBe(screen.getByRole('group', { name: 'Ordenar' }));
     fireEvent.click(within(screen.getByRole('group', { name: 'Ordenar' })).getByRole('button', { name: 'Segundo' }));
     expect(onChange).toHaveBeenCalledWith({ target: { name: 'sort', value: 'b' } });
     expect(screen.queryByRole('group', { name: 'Ordenar' })).not.toBeInTheDocument();
+    expect(trigger).not.toHaveAttribute('aria-controls');
   });
 
   it('permite recorrer opciones con teclado y cerrar con Escape', async () => {

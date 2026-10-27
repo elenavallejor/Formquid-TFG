@@ -28,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
 import java.util.Set;
@@ -46,6 +47,7 @@ public class UserService {
     private final SurveyCollaboratorRepository collaboratorRepository;
     private final NotificationService notificationService;
     private final PasswordEncoder passwordEncoder;
+    private final ProfilePhotoStorage profilePhotoStorage;
 
     @Transactional(readOnly = true)
     public PageResponseDto<UserResponseDto> findAll(
@@ -78,6 +80,35 @@ public class UserService {
     public UserResponseDto getProfile(User user) {
         return userRepository.findResponseById(user.getId())
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+    }
+
+    @Transactional
+    public UserResponseDto uploadProfilePhoto(Long id, MultipartFile file) {
+        User user = userRepository.findByIdForUpdate(id)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        String previousImageKey = user.getProfileImageKey();
+        user.setProfileImageKey(profilePhotoStorage.save(id, file));
+        profilePhotoStorage.deleteAfterCommit(id, previousImageKey);
+        return toResponse(user);
+    }
+
+    @Transactional
+    public UserResponseDto removeProfilePhoto(Long id) {
+        User user = userRepository.findByIdForUpdate(id)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        String previousImageKey = user.getProfileImageKey();
+        user.setProfileImageKey(null);
+        profilePhotoStorage.deleteAfterCommit(id, previousImageKey);
+        return toResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public ProfilePhotoStorage.StoredPhoto getProfilePhoto(Long userId, String filename) {
+        User user = getById(userId);
+        if (!("/api/v1/users/" + userId + "/photo/" + filename).equals(user.getProfileImageKey())) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Foto de perfil no encontrada");
+        }
+        return profilePhotoStorage.read(filename);
     }
 
     @Transactional
@@ -128,6 +159,7 @@ public class UserService {
             ensureAnotherSuperadmin(id);
         }
         userRepository.delete(user);
+        profilePhotoStorage.deleteAfterCommit(id, user.getProfileImageKey());
     }
 
     @Transactional
@@ -154,6 +186,7 @@ public class UserService {
             ensureAnotherSuperadmin(id);
         }
         userRepository.delete(user);
+        profilePhotoStorage.deleteAfterCommit(id, user.getProfileImageKey());
     }
 
     @Transactional
@@ -187,7 +220,7 @@ public class UserService {
     }
 
     public UserResponseDto toResponse(User user) {
-        return new UserResponseDto(user.getId(), user.getRole(), user.getEmail(), user.getName(), user.getInstitution(), user.getCountry(), user.getCreatedAt(), user.getUpdatedAt());
+        return new UserResponseDto(user.getId(), user.getRole(), user.getEmail(), user.getName(), user.getInstitution(), user.getCountry(), user.getProfileImageKey(), user.getCreatedAt(), user.getUpdatedAt());
     }
 
     private PageRequest createPageRequest(int page, int size, UserSortOrder sortOrder) {

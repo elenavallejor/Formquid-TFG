@@ -13,13 +13,18 @@ describe('Filter', () => {
     const onChange = vi.fn();
     const onReset = vi.fn();
     render(<Filter label="Filtrar" options={options} selectedValues={['TITLE', 'OWNER']} textFilter={{ label: 'Etiqueta', value: '' }} choiceFilter={choiceFilter} onChange={onChange} onReset={onReset} />);
-    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    const trigger = screen.getByRole('button', { name: /^Filtrar:/ });
+    expect(trigger).not.toHaveAttribute('aria-controls');
+    await user.click(trigger);
+    expect(document.getElementById(trigger.getAttribute('aria-controls')))
+      .toBe(screen.getByRole('group', { name: 'Filtrar' }));
     const menu = screen.getByRole('group', { name: 'Filtrar' });
     await user.click(within(menu).getByRole('checkbox', { name: 'Autor' }));
     await user.type(within(menu).getByRole('searchbox', { name: 'Etiqueta' }), ' salud ');
     await user.click(within(menu).getByRole('radio', { name: 'Abiertas' }));
     await user.click(within(menu).getByRole('button', { name: 'Aplicar' }));
     expect(onChange).toHaveBeenCalledWith(['TITLE'], 'salud', 'OPEN');
+    expect(trigger).not.toHaveAttribute('aria-controls');
     await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
     await user.click(screen.getByRole('button', { name: 'Borrar filtros' }));
     expect(onChange).toHaveBeenLastCalledWith(['TITLE', 'OWNER'], '', 'ALL');

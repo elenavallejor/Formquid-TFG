@@ -87,7 +87,8 @@ describe('SurveyCard', () => {
 
   it('enlaza una encuesta pública con acceso protegido', () => {
     renderCard({ variant: 'public', survey: { ...survey, accessMode: 'PASSWORD_PROTECTED' }, accessHref: '/ABC123DEF456' });
-    expect(screen.getByText('Acceso con contraseña')).toBeVisible();
+    expect(screen.getByText('Acceso con contraseña').tagName).toBe('STRONG');
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Acceder a la encuesta: Hábitos' })).toHaveAttribute('href', '/ABC123DEF456');
   });
 });

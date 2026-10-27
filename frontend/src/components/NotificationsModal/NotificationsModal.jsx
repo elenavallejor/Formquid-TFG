@@ -104,8 +104,9 @@ export function NotificationsModal({ onClose }) {
       <header className="notifications-modal-header">
         <div className="notifications-title-group">
           <h1 id="notifications-title" ref={titleRef} tabIndex={-1}>TUS NOTIFICACIONES</h1>
-          <span className="notifications-count" aria-live="polite"
-            aria-label={`${totalElements} notificaciones`}>{totalElements}</span>
+          <span className="notifications-count" aria-live="polite">
+            {totalElements}<span className="sr-only"> notificaciones</span>
+          </span>
         </div>
         <button type="button" className="notifications-close" aria-label="Cerrar notificaciones" onClick={onClose}>
           <MdClose aria-hidden="true" />

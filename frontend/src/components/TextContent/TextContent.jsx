@@ -6,10 +6,10 @@ import "./TextContent.css";
  */
 export function TextContent({ data = {}, showLabel = true }) {
   return (
-    <article className="text-content-card">
+    <div className="text-content-card">
       {showLabel && <span className="text-content-label">Texto informativo</span>}
       <p className="text-content-statement">{data?.textBody || ""}</p>
-    </article>
+    </div>
   );
 }
 

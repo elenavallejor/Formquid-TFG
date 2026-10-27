@@ -8,7 +8,7 @@
 
 .category-select-label {
   color: var(--color-header);
-  font-size: 16.875px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -35,8 +35,8 @@
 
 .category-select-option svg {
   flex: 0 0 20px;
-  color: var(--color-primary);
-  font-size: 20px;
+  color: var(--color-brand);
+  font-size: 1.6rem;
 }
 
 .category-select-option > span {
@@ -52,7 +52,7 @@
 
 .category-select-error {
   color: var(--color-error);
-  font-size: 15px;
+  font-size: var(--font-size-min);
 }
 
 .category-select-required {

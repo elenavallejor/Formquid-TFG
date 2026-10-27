@@ -56,23 +56,23 @@
 
 .admin-panel-icon-container.theme-teal {
   background-color: var(--color-accent-surface);
-  color: var(--color-primary);
+  color: var(--color-brand);
 }
 
 .admin-panel-icon-container.theme-purple {
   background-color: var(--color-super-surface);
-  color: var(--color-super);
+  color: var(--color-brand);
 }
 
 .admin-panel-icon {
-  font-size: 50px;
+  font-size: 4rem;
 }
 
 
 
 .admin-panel-title {
   margin: 0;
-  font-size: 19.625px;
+  font-size: 1.57rem;
   font-weight: 700;
   color: var(--color-header);
   letter-spacing: 0.04em;
@@ -82,9 +82,9 @@
 
 .admin-panel-description {
   margin: -30px 0 0 0;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   color: var(--color-text-muted);
-  line-height: 1.35;
+  line-height: 1.5;
 }
 
 .admin-panel-card-bottom {
@@ -100,7 +100,7 @@
 }
 
 .admin-panel-count-number {
-  font-size: 35px;
+  font-size: 2.8rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -110,11 +110,11 @@
 }
 
 .admin-panel-count-number.theme-purple {
-  color: var(--color-info);
+  color: var(--color-super);
 }
 
 .admin-panel-count-label {
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
   color: var(--color-header);
   margin-top: 2px;
@@ -127,7 +127,7 @@
   flex-shrink: 0;
   padding: 8px 18px;
   border-radius: 50px;
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -140,27 +140,27 @@
 
 .admin-panel-action-button.theme-teal {
   border: 1.5px solid var(--color-accent);
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .admin-panel-action-button.theme-teal:hover {
-  background-color: var(--color-primary);
-  color: var(--color-surface);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .admin-panel-action-button.theme-purple {
-  border: 1.5px solid var(--color-super);
-  color: var(--color-super);
+  border: 1.5px solid var(--color-brand);
+  color: var(--color-text);
 }
 
 .admin-panel-action-button.theme-purple:hover {
-  background-color: var(--color-super);
-  color: var(--color-surface);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .admin-panel-action-icon {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 1.6rem;
 }
 
 @media only screen and (max-width: 768px) {

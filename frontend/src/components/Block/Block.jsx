@@ -96,7 +96,7 @@ export function Block({
   }
 
   return (
-    <article
+    <div
       className="block-content"
       onDragLeave={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setDropIndex(null);
@@ -167,7 +167,7 @@ export function Block({
                       {TypeIcon && (
                         <span
                           className="block-content-question-icon"
-                          style={{ color: typeConfig.color, borderColor: `${typeConfig.color}60` }}
+                          style={{ color: typeConfig.color, borderColor: `color-mix(in srgb, ${typeConfig.color} 37.5%, transparent)` }}
                           title={typeConfig.title}
                         >
                           <TypeIcon aria-hidden="true" />
@@ -291,6 +291,6 @@ export function Block({
           </div>
         )}
       </div>
-    </article>
+    </div>
   );
 }

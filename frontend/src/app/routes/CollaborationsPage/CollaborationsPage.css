@@ -18,7 +18,7 @@
 .collaborations-header h1 {
   margin: 0;
   color: var(--color-header);
-  font-size: 32.5px;
+  font-size: 2.6rem;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -26,7 +26,7 @@
 .collaborations-header p {
   margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 17.5px;
+  font-size: 1.4rem;
 }
 
 .collaborations-content {
@@ -53,7 +53,7 @@
 .collaborations-section-heading h2 {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 21.25px;
+  font-size: 1.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
@@ -79,7 +79,7 @@
 
 .collaborations-person span {
   color: var(--color-text-muted);
-  font-size: 13.75px;
+  font-size: var(--font-size-min);
 }
 
 .collaborations-badge {
@@ -90,7 +90,7 @@
   border-radius: 999px;
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-min);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -102,12 +102,12 @@
 }
 
 .collaborations-actions button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 7px 12px;
   border: 0;
   border-radius: 7px;
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 700;
   cursor: pointer;
 }
@@ -127,7 +127,7 @@
   border-radius: 9px;
   background: var(--color-success-surface);
   color: var(--color-success);
-  font-size: 16.25px;
+  font-size: var(--font-size-min);
   font-weight: 700;
 }
 
@@ -143,7 +143,7 @@
   }
 
   .collaborations-header h1 {
-    font-size: 30px;
+    font-size: 2.4rem;
   }
 
   .collaborations-section {

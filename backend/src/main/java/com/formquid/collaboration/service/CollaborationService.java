@@ -466,6 +466,7 @@ public class CollaborationService {
             collaborator.getUser().getId(),
             collaborator.getUser().getEmail(),
             collaborator.getUser().getName(),
+            collaborator.getUser().getProfileImageKey(),
             collaborator.getPermission(),
             collaborator.getJoinedAt()
         );

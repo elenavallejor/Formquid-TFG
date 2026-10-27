@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Optional;
 
@@ -43,9 +44,45 @@ class UserServiceTest {
     private NotificationService notificationService;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private ProfilePhotoStorage profilePhotoStorage;
 
     @InjectMocks
     private UserService userService;
+
+    @Test
+    void uploadProfilePhotoReplacesPreviousPhoto() {
+        User user = User.builder().id(7L).profileImageKey("/api/v1/users/7/photo/old.png").build();
+        var file = new MockMultipartFile("file", "photo.png", "image/png", new byte[] {1});
+        when(userRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
+        when(profilePhotoStorage.save(7L, file)).thenReturn("/api/v1/users/7/photo/new.png");
+
+        UserResponseDto response = userService.uploadProfilePhoto(7L, file);
+
+        assertThat(response.profileImageKey()).isEqualTo("/api/v1/users/7/photo/new.png");
+        verify(profilePhotoStorage).deleteAfterCommit(7L, "/api/v1/users/7/photo/old.png");
+    }
+
+    @Test
+    void removeProfilePhotoClearsReferenceAndDeletesFileAfterCommit() {
+        User user = User.builder().id(7L).profileImageKey("/api/v1/users/7/photo/old.png").build();
+        when(userRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
+
+        UserResponseDto response = userService.removeProfilePhoto(7L);
+
+        assertThat(response.profileImageKey()).isNull();
+        verify(profilePhotoStorage).deleteAfterCommit(7L, "/api/v1/users/7/photo/old.png");
+    }
+
+    @Test
+    void getProfilePhotoRejectsOutdatedFilename() {
+        User user = User.builder().id(7L).profileImageKey("/api/v1/users/7/photo/current.png").build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.getProfilePhoto(7L, "previous.png"))
+            .isInstanceOf(ApiException.class);
+        verify(profilePhotoStorage, never()).read(any());
+    }
 
     @Test
     void updateRoleAllowsMoreThanOneSuperadmin() {

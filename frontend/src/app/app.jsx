@@ -11,6 +11,10 @@ export function App() {
   useDocumentTitle();
   useScrollToTop();
 
+  return <AppLayout><Outlet /></AppLayout>;
+}
+
+export function AppLayout({ children }) {
   return (
     <div className="app-layout">
       <a className="skip-link" href="#main-content">
@@ -18,7 +22,7 @@ export function App() {
       </a>
       <Header />
       <div id="main-content" className="app-main-content" tabIndex={-1}>
-        <Outlet />
+        {children}
       </div>
       <Footer />
     </div>
