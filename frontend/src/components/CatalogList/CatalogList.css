@@ -16,6 +16,7 @@
 
 .catalog-list-columns-header {
   display: grid;
+  column-gap: 16px;
   grid-template-columns: 3.2fr 1.4fr 0.8fr 1.1fr 1.1fr 60px;
   align-items: center;
   padding: 0 24px 8px;
@@ -23,6 +24,10 @@
   font-weight: 800;
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
+}
+
+.col-main-header {
+  margin-left: -24px;
 }
 
 .catalog-list-columns-header.no-actions {
@@ -61,6 +66,8 @@
 
 .catalog-block-card {
   display: grid;
+  flex-shrink: 0;
+  column-gap: 16px;
   grid-template-columns: 3.2fr 1.4fr 0.8fr 1.1fr 1.1fr 60px;
   align-items: center;
   min-height: 100px;
@@ -107,6 +114,11 @@
   font-size: 1.8rem;
 }
 
+.catalog-item-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .catalog-item-info h3 {
   margin: 0 0 4px;
   font-size: 1.4rem;
@@ -114,7 +126,7 @@
   color: var(--color-text);
 }
 
-.catalog-item-info p {
+.catalog-item-description {
   margin: 0;
   font-size: var(--font-size-min);
   color: var(--color-text-muted);
@@ -125,13 +137,32 @@
   overflow: hidden;
 }
 
+.catalog-item-category {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-min);
+  line-height: 1.5;
+}
+
+.catalog-item-category svg {
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--color-primary);
+}
+
 .user-creator-cell {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 10px;
 }
 
 .user-avatar-circle {
+  flex-shrink: 0;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -145,6 +176,7 @@
 }
 
 .user-creator-name {
+  min-width: 0;
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--color-text);
@@ -292,6 +324,10 @@
 }
 
 @media only screen and (max-width: 1024px) {
+  .col-main-header {
+    margin-left: -16px;
+  }
+
   .catalog-list-columns-header,
   .catalog-block-card {
     grid-template-columns: 2.8fr 1.4fr 0.8fr 1fr 1fr 50px;
@@ -332,6 +368,10 @@
   .catalog-item-main {
     width: 100%;
     padding-right: 32px;
+  }
+
+  .catalog-block-card.view-action .catalog-item-main {
+    padding-right: 0;
   }
 
   .user-creator-cell {

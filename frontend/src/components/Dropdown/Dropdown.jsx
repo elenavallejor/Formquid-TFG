@@ -136,7 +136,7 @@ function DropdownPopover({ ariaDescribedBy, ariaInvalid, ariaLabel, className, d
           else openMenu();
         }}
       >
-        {selectedOption?.props.children ?? 'Seleccionar'}
+        <span id={`${id}-value`}>{selectedOption?.props.children ?? 'Seleccionar'}</span>
       </button>
       <MdKeyboardArrowDown className="custom-dropdown-icon" aria-hidden="true" />
       {name && <input type="hidden" name={name} value={value ?? ''} disabled={disabled} />}

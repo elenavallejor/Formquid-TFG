@@ -334,7 +334,7 @@ export function Question({
 
         {/* 6. MATRIX_SCALE */}
         {data.questionType === 'MATRIX_SCALE' && renderGroup(
-          <div className="academic-matrix-wrapper">
+          <div className="academic-matrix-wrapper" role="region" aria-label={`Matriz de respuestas: ${statement}`} tabIndex={0}>
             <table className="academic-matrix-table">
               <thead>
                 <tr>

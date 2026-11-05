@@ -10,27 +10,25 @@ import {
   getCatalogQuestions,
   getCatalogTemplates,
 } from '../../../api/catalogApi.js';
+import { getCategories } from '../../../api/categoriesApi.js';
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
-import { CategorySelect } from '../../../components/CategorySelect/CategorySelect.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
 import { Pagination } from '../../../components/Pagination/Pagination.jsx';
 import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './CatalogPage.css';
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
-const SEARCH_CATEGORY_OPTIONS = [
-  { value: 'TITLE', label: 'Nombre o título' },
-  { value: 'DESCRIPTION', label: 'Descripción o anotación' },
-  { value: 'CREATOR', label: 'Creador' },
-];
-const ALL_SEARCH_CATEGORIES = SEARCH_CATEGORY_OPTIONS.map((option) => option.value);
+const SEARCH_FIELDS = ['TITLE', 'DESCRIPTION', 'CREATOR'];
 const SORT_OPTIONS = [
   { value: 'NEWEST', label: 'Más reciente' },
   { value: 'OLDEST', label: 'Más antigua' },
+  { value: 'ALPHABETICAL', label: 'Alfabético (A–Z)' },
 ];
 
 const SECTION_CONFIG = {
@@ -99,11 +97,13 @@ export function CatalogPage() {
 
   const [ownCatalog, setOwnCatalog] = useState(() => emptyCatalogState());
   const [publicCatalog, setPublicCatalog] = useState(() => emptyCatalogState());
+  const { resultsRef: ownResultsRef, requestResultsFocus: requestOwnResultsFocus } = useResultsFocus(ownCatalog.isLoading);
+  const { resultsRef: publicResultsRef, requestResultsFocus: requestPublicResultsFocus } = useResultsFocus(publicCatalog.isLoading);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedSearchCategories, setSelectedSearchCategories] = useState(ALL_SEARCH_CATEGORIES);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [sortOrder, setSortOrder] = useState('NEWEST');
-  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [ownCurrentPage, setOwnCurrentPage] = useState(0);
   const [publicCurrentPage, setPublicCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -112,6 +112,16 @@ export function CatalogPage() {
 
   const canCreateCatalog = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
   const isSuperadmin = user?.role === 'SUPERADMIN';
+
+  useEffect(() => {
+    let active = true;
+    getCategories()
+      .then((response) => {
+        if (active) setCategories(Array.isArray(response) ? response : []);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -144,9 +154,9 @@ export function CatalogPage() {
           size: itemsPerPage,
           mine,
           search: debouncedSearch,
-          searchFields: selectedSearchCategories,
+          searchFields: SEARCH_FIELDS,
+          category: selectedCategory || undefined,
           sortOrder,
-          category,
         });
 
         if (requestVersion !== requestVersionRef.current) return;
@@ -175,13 +185,12 @@ export function CatalogPage() {
     return undefined;
   }, [
     canCreateCatalog,
-    category,
     config,
     debouncedSearch,
     itemsPerPage,
     ownCurrentPage,
     publicCurrentPage,
-    selectedSearchCategories,
+    selectedCategory,
     sortOrder,
     user?.id,
   ]);
@@ -225,6 +234,7 @@ export function CatalogPage() {
     return (
       <Pagination
         ariaLabel={`Paginación de ${paginationName}`}
+        onNavigate={source === 'own' ? requestOwnResultsFocus : requestPublicResultsFocus}
         currentPage={currentPage}
         itemLabel={config.label.toLowerCase()}
         onPageChange={setCurrentPage}
@@ -250,11 +260,12 @@ export function CatalogPage() {
     return (
       <section className="catalog-results-section" aria-labelledby={`catalog-${source}-title`}>
         <header className="catalog-results-header">
-          <h2 id={`catalog-${source}-title`}>{title}</h2>
+          <h2 ref={source === 'own' ? ownResultsRef : publicResultsRef} tabIndex={-1} id={`catalog-${source}-title`}>{title}</h2>
         </header>
 
         <CatalogList
           items={visibleItems}
+          categories={categories}
           config={config}
           isLoading={catalog.isLoading}
           errorMessage={catalog.errorMessage}
@@ -342,21 +353,20 @@ export function CatalogPage() {
             setOwnCurrentPage(0);
             setPublicCurrentPage(0);
           }}
-          filterOptions={SEARCH_CATEGORY_OPTIONS}
-          filterOptionsLabel="Campos de búsqueda"
-          filterOptionsControl="multiselect"
-          filterOptionsAllLabel="Todos los campos"
-          filterOptionsNoneLabel="Ningún campo"
-          filterOptionsSelectedCountLabel="campos seleccionados"
-          selectedFilterValues={selectedSearchCategories}
-          onFilterChange={(categories) => {
-            setSelectedSearchCategories(categories);
+          filterChoice={{
+            label: 'Categoría',
+            control: 'select',
+            options: [
+              { value: '', label: 'Todas las categorías' },
+              ...categories.map(({ code, name }) => ({ value: code, label: name })),
+            ],
+            value: selectedCategory,
+            resetValue: '',
+          }}
+          onFilterChange={(_values, _text, category) => {
+            setSelectedCategory(category);
             setOwnCurrentPage(0);
             setPublicCurrentPage(0);
-          }}
-          onFilterReset={() => {
-            setSearchQuery('');
-            setDebouncedSearch('');
           }}
           sortAriaLabel="Ordenar catálogo"
           sortOptions={SORT_OPTIONS}
@@ -367,12 +377,6 @@ export function CatalogPage() {
             setPublicCurrentPage(0);
           }}
         />
-
-        <CategorySelect id="catalog-category" value={category} onChange={(value) => {
-          setCategory(value);
-          setOwnCurrentPage(0);
-          setPublicCurrentPage(0);
-        }} />
 
         <div className="catalog-results">
           {canCreateCatalog && renderCatalogSection({

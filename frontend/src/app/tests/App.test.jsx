@@ -61,3 +61,14 @@ describe('navegación de la aplicación', () => {
     expect(document.title).toBe('Página no encontrada | FormQuid');
   });
 });
+
+
+it.each([
+  ['/resultados', 'Resultados | FormQuid'],
+  ['/superadmin/categorias', 'Gestión de categorías | FormQuid'],
+])('identifica la página %s con su título', (route, title) => {
+  renderWithDataRouter([{ path: '/', element: <App />, children: [
+    { path: '*', element: <h1>Contenido</h1> },
+  ] }], { route });
+  expect(document.title).toBe(title);
+});

@@ -492,6 +492,7 @@ public class SurveyService {
     public void delete(Long surveyId, User actor) {
         Survey survey = getSurvey(surveyId);
         ensureOwner(survey, actor);
+        ensureNotOpenForDelete(survey);
         surveyCoverStorage.deleteAfterCommit(surveyId, survey.getImageKey());
         participationRepository.deleteBySurveyId(surveyId);
         surveyRepository.deleteSurveyById(surveyId);
@@ -536,7 +537,7 @@ public class SurveyService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Solo administración puede eliminar encuestas");
         }
         Survey survey = getSurvey(surveyId);
-        ensureClosedForDelete(survey);
+        ensureNotOpenForDelete(survey);
         surveyCoverStorage.deleteAfterCommit(surveyId, survey.getImageKey());
         participationRepository.deleteBySurveyId(surveyId);
         surveyRepository.deleteSurveyById(surveyId);
@@ -820,9 +821,9 @@ public class SurveyService {
         }
     }
 
-    private void ensureClosedForDelete(Survey survey) {
-        if (survey.getLifecycleStatus() != SurveyLifecycle.CLOSED) {
-            throw new ApiException(HttpStatus.CONFLICT, "La encuesta debe estar cerrada antes de eliminarse");
+    private void ensureNotOpenForDelete(Survey survey) {
+        if (survey.getLifecycleStatus() == SurveyLifecycle.OPEN) {
+            throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar una encuesta abierta");
         }
     }
 

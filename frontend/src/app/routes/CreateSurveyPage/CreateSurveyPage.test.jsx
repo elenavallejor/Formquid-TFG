@@ -62,7 +62,7 @@ describe('CreateSurveyPage', () => {
 
     await chooseCategory(user);
     await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta con portada');
-    await user.upload(screen.getByLabelText('Imagen del dispositivo'), file);
+    await user.upload(screen.getByLabelText(/^Imagen del dispositivo/), file);
     expect(screen.getByText('portada.png')).toBeVisible();
     expect(screen.queryByText('Ningún archivo seleccionado')).not.toBeInTheDocument();
     expect(screen.getByText('Cambiar imagen')).toBeVisible();
@@ -102,7 +102,7 @@ describe('CreateSurveyPage', () => {
   it('abre el selector al pulsar la vista previa y sitúa la creación al final', async () => {
     const user = userEvent.setup();
     renderPage({ surveyOrigin: { type: 'BLANK' } });
-    const input = screen.getByLabelText('Imagen del dispositivo');
+    const input = screen.getByLabelText(/^Imagen del dispositivo/);
     const inputClick = vi.fn();
     input.addEventListener('click', inputClick);
 
@@ -155,7 +155,7 @@ describe('CreateSurveyPage', () => {
 
     await chooseCategory(user);
     await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta');
-    await user.upload(screen.getByLabelText('Imagen del dispositivo'), file);
+    await user.upload(screen.getByLabelText(/^Imagen del dispositivo/), file);
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('La encuesta se creó, pero no se pudo subir la portada');
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
@@ -203,6 +203,7 @@ describe('CreateSurveyPage', () => {
     expect(healthOption.querySelector('.category-select-option svg')).not.toBeNull();
     fireEvent.click(healthOption);
     expect(screen.getByRole('button', { name: /Categoría/ })).toHaveTextContent('Salud');
+    expect(screen.getByRole('button', { name: /Categoría/ })).toHaveAccessibleDescription('Salud');
     expect(screen.getByRole('button', { name: /Categoría/ }).querySelector('.category-select-option svg')).not.toBeNull();
     await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta de salud');
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));

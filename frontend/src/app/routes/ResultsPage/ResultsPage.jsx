@@ -10,6 +10,8 @@ import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.j
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './ResultsPage.css';
 
 const DEFAULT_PAGE_SIZE = 9;
@@ -43,6 +45,7 @@ export function ResultsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const { resultsRef, requestResultsFocus } = useResultsFocus(isLoading);
   const [errorMessage, setErrorMessage] = useState('');
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -109,7 +112,7 @@ export function ResultsPage() {
 
         <header className="results-page-header">
           <div>
-            <h1>RESULTADOS Y ESTADÍSTICAS</h1>
+            <h1 ref={resultsRef} tabIndex={-1}>RESULTADOS Y ESTADÍSTICAS</h1>
             <p>Selecciona una encuesta para consultar sus respuestas agregadas y su análisis ponderado.</p>
           </div>
         </header>
@@ -184,6 +187,7 @@ export function ResultsPage() {
 
         {!isLoading && !errorMessage && totalItems > 0 && (
           <Pagination
+            onNavigate={requestResultsFocus}
             ariaLabel="Paginación de encuestas con resultados"
             currentPage={currentPage}
             itemLabel="encuestas"

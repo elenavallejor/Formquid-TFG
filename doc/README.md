@@ -8,7 +8,7 @@ Se recomienda seguir este recorrido:
 2. [Uso de la aplicación](02_uso_de_la_aplicacion.md). Recorre las tareas disponibles para participantes, editores y administradores.
 3. [Servicios de la API](03_api.md). Enumera las rutas que ofrecen los controladores.
 4. [Entorno y desarrollo](04_entorno_y_desarrollo.md). Reúne instalación, variables, organización del código y pruebas.
-5. [Contenedores y despliegue](05_contenedores.md). Describe Docker Compose y el perfil de producción del backend.
+5. [Contenedores y despliegue](05_contenedores.md). Describe Docker Compose, el perfil de producción del backend y la publicación en Vercel y Render.
 
 El archivo [openapi.yaml](openapi.yaml) recoge una selección de operaciones principales con sus esquemas de entrada.
 

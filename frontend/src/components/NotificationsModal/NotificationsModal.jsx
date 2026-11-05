@@ -101,7 +101,7 @@ export function NotificationsModal({ onClose }) {
   return (
     <dialog ref={dialogRef} className="notifications-modal" aria-labelledby="notifications-title"
       onCancel={(event) => { event.preventDefault(); onClose(); }}>
-      <header className="notifications-modal-header">
+      <div className="notifications-modal-header">
         <div className="notifications-title-group">
           <h1 id="notifications-title" ref={titleRef} tabIndex={-1}>TUS NOTIFICACIONES</h1>
           <span className="notifications-count" aria-live="polite">
@@ -111,7 +111,7 @@ export function NotificationsModal({ onClose }) {
         <button type="button" className="notifications-close" aria-label="Cerrar notificaciones" onClick={onClose}>
           <MdClose aria-hidden="true" />
         </button>
-      </header>
+      </div>
 
       <section className="notifications-filters" aria-label="Filtros de notificaciones">
         <div className="notification-status-tabs" role="group" aria-label="Filtrar por estado">

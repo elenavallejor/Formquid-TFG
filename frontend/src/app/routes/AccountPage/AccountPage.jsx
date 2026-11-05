@@ -350,7 +350,7 @@ export function AccountPage() {
                 <p>PNG o JPEG · Máximo 3 MB</p>
                 <div className="account-photo-actions">
                   <input id="account-photo-file" className="account-photo-file-input" type="file" accept="image/png,image/jpeg"
-                    aria-label="Seleccionar foto de perfil" disabled={photoBusy || isSaving} onChange={handlePhotoSelection} />
+                    aria-label={`${profileImageKey || photoFile ? 'Cambiar' : 'Seleccionar'} foto de perfil`} disabled={photoBusy || isSaving} onChange={handlePhotoSelection} />
                   <label htmlFor="account-photo-file" className="account-photo-select"><MdUploadFile aria-hidden="true" />{profileImageKey || photoFile ? 'Cambiar foto' : 'Seleccionar foto'}</label>
                   {photoFile && <button type="button" disabled={photoBusy || isSaving} onClick={savePhoto}>{photoBusy ? 'Guardando foto...' : 'Guardar foto'}</button>}
                   {photoFile && <button type="button" className="account-photo-secondary" disabled={photoBusy || isSaving} onClick={() => { setPhotoFile(null); setPhotoPreviewUrl(null); }}>Descartar selección</button>}

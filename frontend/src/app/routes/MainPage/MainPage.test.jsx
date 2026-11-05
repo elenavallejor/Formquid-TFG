@@ -131,6 +131,39 @@ describe('MainPage', () => {
     expect(getPublicSurveys).toHaveBeenCalledWith(expect.objectContaining({ accessMode: 'PUBLIC', page: 0, size: 9 }));
   });
 
+  it.each([['página', false], ['página', true], ['tamaño', false], ['tamaño', true]])('recupera el foco al cambiar %s sin interrumpir al usuario: mueve el foco=%s', async (change, movesFocus) => {
+    const user = userEvent.setup();
+    let resolveNextPage;
+    getPublicSurveys.mockImplementation(({ accessMode, page, size }) => {
+      if (accessMode !== 'PUBLIC') return Promise.resolve(emptyPage);
+      if (page === 0 && size === 9) return Promise.resolve({ content: [survey], totalElements: 10, totalPages: 2 });
+      return new Promise((resolve) => { resolveNextPage = resolve; });
+    });
+    renderWithRouter(<MainPage />);
+    const publicSection = screen.getByRole('region', { name: 'Encuestas públicas' });
+    await within(publicSection).findByRole('button', { name: 'Página siguiente' });
+    if (change === 'página') {
+      within(publicSection).getByRole('button', { name: 'Página siguiente' }).focus();
+      await user.keyboard('{Enter}');
+    } else {
+      within(publicSection).getByRole('button', { name: /^Encuestas por página/ }).focus();
+      await user.keyboard('{ArrowDown}{Home}{Enter}');
+    }
+    expect(await within(publicSection).findByRole('status')).toHaveTextContent('Cargando encuestas públicas');
+    const search = screen.getByRole('searchbox', { name: 'Buscar encuestas por nombre, descripción o etiqueta' });
+    if (movesFocus) await user.click(search);
+
+    await act(async () => resolveNextPage({
+      content: [{ ...survey, title: 'Segunda página' }], totalElements: 10, totalPages: 2,
+    }));
+    expect(await within(publicSection).findByRole('heading', { name: 'Segunda página' })).toBeVisible();
+    expect(movesFocus ? search : within(publicSection).getByRole('heading', { name: 'Encuestas públicas' })).toHaveFocus();
+    if (!movesFocus) {
+      await user.tab();
+      expect(within(publicSection).getByRole('link', { name: 'Acceder a la encuesta: Segunda página' })).toHaveFocus();
+    }
+  });
+
   it('permite reintentar una sección que falla al cargar', async () => {
     const user = userEvent.setup();
     getPublicSurveys.mockImplementation(({ accessMode }) => {

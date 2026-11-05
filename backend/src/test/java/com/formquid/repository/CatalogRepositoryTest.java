@@ -2,6 +2,8 @@ package com.formquid.repository;
 
 import com.formquid.common.Category;
 import com.formquid.common.CategoryDefinition;
+import com.formquid.common.CatalogPagination;
+import com.formquid.common.dto.CatalogSortOrder;
 import com.formquid.block.entity.Block;
 import com.formquid.block.entity.BlockScope;
 import com.formquid.block.repository.BlockRepository;
@@ -140,6 +142,50 @@ class CatalogRepositoryTest {
         assertThat(templates.findCatalogSummaries(
             creator.getId(), true, "", true, true, true, Category.DATOS_PERSONALES, catalogPage()
         )).hasSize(1);
+    }
+
+    @Test
+    void alphabeticalCatalogSortAppliesBeforePaginationForEveryElementType() {
+        User creator = persistUser("alphabetical-owner@example.com", "Creadora");
+        for (String text : List.of("zeta", "Beta", "alfa")) {
+            persist(Block.builder()
+                .scope(BlockScope.CATALOG).name(text).createdBy(creator).build());
+            persist(Question.builder()
+                .scope(QuestionScope.CATALOG_FIXED)
+                .statement(text)
+                .questionType(QuestionType.TEXT)
+                .evaluationDirection(EvaluationDirection.NEUTRAL)
+                .createdBy(creator)
+                .build());
+            persist(Template.builder().title(text).createdBy(creator).build());
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        var blockPage = CatalogPagination.catalogPageable(0, 2, CatalogSortOrder.ALPHABETICAL, "name");
+        var questionPage = CatalogPagination.catalogPageable(0, 2, CatalogSortOrder.ALPHABETICAL, "statement");
+        var templatePage = CatalogPagination.catalogPageable(0, 2, CatalogSortOrder.ALPHABETICAL, "title");
+
+        assertThat(blocks.findCatalogSummaries(BlockScope.CATALOG, creator.getId(), true,
+            "", true, true, true, null, blockPage))
+            .extracting(summary -> summary.name()).containsExactly("alfa", "Beta");
+        assertThat(blocks.findCatalogSummaries(BlockScope.CATALOG, creator.getId(), true,
+            "", true, true, true, null, blockPage.next()))
+            .extracting(summary -> summary.name()).containsExactly("zeta");
+
+        assertThat(questions.findCatalogSummaries(QuestionScope.CATALOG_FIXED, creator.getId(), true,
+            "", true, true, true, null, questionPage))
+            .extracting(summary -> summary.statement()).containsExactly("alfa", "Beta");
+        assertThat(questions.findCatalogSummaries(QuestionScope.CATALOG_FIXED, creator.getId(), true,
+            "", true, true, true, null, questionPage.next()))
+            .extracting(summary -> summary.statement()).containsExactly("zeta");
+
+        assertThat(templates.findCatalogSummaries(creator.getId(), true,
+            "", true, true, true, null, templatePage))
+            .extracting(summary -> summary.title()).containsExactly("alfa", "Beta");
+        assertThat(templates.findCatalogSummaries(creator.getId(), true,
+            "", true, true, true, null, templatePage.next()))
+            .extracting(summary -> summary.title()).containsExactly("zeta");
     }
 
     @Test

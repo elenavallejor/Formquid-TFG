@@ -365,7 +365,7 @@ describe('EditSurveyPage', () => {
     expect(screen.queryByRole('dialog', { name: 'Salir sin guardar' })).not.toBeInTheDocument();
   });
 
-  it.each(['DRAFT', 'OPEN'])('permite al propietario solicitar el borrado en estado %s', async (lifecycleStatus) => {
+  it.each(['DRAFT', 'CLOSED'])('permite al propietario solicitar el borrado en estado %s', async (lifecycleStatus) => {
     const user = userEvent.setup();
     getSurveyById.mockResolvedValue({ ...survey, lifecycleStatus });
     renderPage('/encuestas/12/editar?seccion=configuracion');
@@ -415,5 +415,77 @@ describe('EditSurveyPage', () => {
     await waitFor(() => expect(acceptPublicationRequest).toHaveBeenCalledWith('12', 6));
     await user.click(screen.getByRole('button', { name: 'Rechazar publicación' }));
     await waitFor(() => expect(rejectPublicationRequest).toHaveBeenCalledWith('12', 6));
+  });
+
+  it.each(['OPEN', 'CLOSED', 'DRAFT'])('presenta metadatos incompletos en supervisión para %s', async (lifecycleStatus) => {
+    getSurveyById.mockResolvedValue({ ...survey, title: '', description: null, lifecycleStatus, visibility: null, tags: ['salud'], imageKey: '/cover.jpg', category: 'OTROS' });
+    renderPage('/encuestas/12/editar?vista=detalles', { id: 1, role: 'ADMIN' });
+    expect(await screen.findByRole('heading', { name: 'Sin título' })).toBeVisible();
+    expect(screen.getByText('Sin descripción.')).toBeVisible();
+    fireEvent.error(screen.getByRole('img', { name: /Portada/ }));
+    expect(screen.queryByRole('img', { name: /Portada/ })).not.toBeInTheDocument();
+  });
+  it('valida etiquetas vacías, inválidas y duplicadas y permite quitarlas', async () => {
+    renderPage();
+    const input = await screen.findByRole('textbox', { name: 'Nueva etiqueta' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.change(input, { target: { value: '!!!' } });
+    fireEvent.keyDown(input, { key: ',' });
+    expect(screen.getByRole('alert')).toHaveTextContent('solo admite');
+    fireEvent.change(input, { target: { value: 'salud' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.change(input, { target: { value: 'salud' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByRole('alert')).toHaveTextContent('ya está añadida');
+    fireEvent.click(screen.getByRole('button', { name: /salud/i }));
+    expect(screen.queryByText('#salud')).not.toBeInTheDocument();
+  });
+  it('recorre las pestañas mediante las teclas de navegación', async () => {
+    renderPage();
+    const tab = await screen.findByRole('tab', { name: /Encuesta/i });
+    fireEvent.keyDown(tab, { key: 'ArrowRight' });
+    fireEvent.keyDown(screen.getByRole('tab', { selected: true }), { key: 'End' });
+    expect(screen.getByRole('tab', { name: /Configuración/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tab', { selected: true }), { key: 'ArrowLeft' });
+    fireEvent.keyDown(screen.getByRole('tab', { selected: true }), { key: 'Home' });
+    expect(tab).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(tab, { key: 'a' });
+    expect(tab).toHaveAttribute('aria-selected', 'true');
+  });
+  it('muestra el error por defecto si falla guardar la estructura', async () => {
+    replaceSurveyContent.mockRejectedValue({});
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Añadir introducción' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido guardar la estructura.');
+  });
+  it('mantiene la confirmación si falla cambiar el ciclo de vida', async () => {
+    getSurveyById.mockResolvedValue({ ...survey, lifecycleStatus: 'OPEN' });
+    updateSurveyLifecycle.mockRejectedValue({});
+    renderPage('/encuestas/12/editar?seccion=configuracion');
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar encuesta' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Cerrar encuesta' })).getByRole('button', { name: 'Cerrar encuesta' }));
+    expect((await screen.findAllByRole('alert'))[0]).toHaveTextContent('No se ha podido cambiar el estado');
+  });
+  it('valida el correo de invitación y comunica fallos sin mensaje', async () => {
+    createCollaborationRequest.mockRejectedValue({});
+    renderPage('/encuestas/12/editar?seccion=colaboraciones');
+    const email = await screen.findByRole('textbox', { name: /Correo electrónico/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar invitación' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Introduce el correo');
+    fireEvent.change(email, { target: { value: 'ana@example.com' } });
+    fireEvent.click(screen.getByRole('radio', { name: /Solo lectura/ }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Mensaje opcional' }), { target: { value: 'Colabora' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar invitación' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido completar la operación.');
+  });
+  it('conserva el colaborador si falla transferir la autoridad', async () => {
+    getCollaborators.mockResolvedValue([{ userId: 9, email: 'eva@example.com' }]);
+    transferSurveyOwnership.mockRejectedValue({});
+    renderPage('/encuestas/12/editar?seccion=colaboraciones');
+    fireEvent.click(await screen.findByRole('button', { name: 'Transferir autoridad a eva@example.com' }));
+    fireEvent.change(within(screen.getByRole('dialog', { name: 'Transferir autoridad' })).getByLabelText('Contraseña actual'), { target: { value: 'clave' } });
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Transferir autoridad' })).getByRole('button', { name: 'Transferir autoridad' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido transferir la autoridad');
   });
 });

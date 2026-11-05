@@ -164,3 +164,53 @@ describe('TemplateBuilder', () => {
     expect(screen.getByText('Texto final')).toBeVisible();
   });
 });
+
+
+describe('TemplateBuilder: edición y movimiento entre bloques', () => {
+  it.each([false, true])('edita preguntas propias: dentro de bloque=%s', async (nested) => {
+    const user = userEvent.setup();
+    const q = { itemType: 'QUESTION', localId: 'q', statement: 'Original', questionType: 'TEXT', maxLength: 300 };
+    render(<Harness initial={{ title: 'T', items: nested ? [{ itemType: 'BLOCK', block: { name: 'B', items: [q] } }] : [q] }} />);
+    await user.click(screen.getByRole('button', { name: nested ? 'Opciones de la pregunta 1 del bloque' : 'Opciones de pregunta' }));
+    await user.click(screen.getByRole('button', { name: 'Editar pregunta' }));
+    const dialog = screen.getByRole('dialog', { name: 'Editar pregunta' });
+    fireEvent.change(within(dialog).getByPlaceholderText('Texto que verá el encuestado.'), { target: { value: 'Revisada' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    expect(screen.getByRole('heading', { name: /Revisada/ })).toBeVisible();
+  });
+  it('mueve un texto entre bloques, lo saca y elimina una pregunta del bloque', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ title: 'T', items: [
+      { itemType: 'BLOCK', block: { name: 'Origen', items: [{ itemType: 'TEXT', textBody: 'Nota' }, { itemType: 'QUESTION', statement: 'Pregunta', questionType: 'TEXT' }] } },
+      { itemType: 'BLOCK', block: { name: 'Destino', items: [] } },
+    ] }} />);
+    await user.click(screen.getByRole('button', { name: 'Opciones del texto informativo del bloque' }));
+    await user.click(screen.getByRole('button', { name: 'Mover a Destino' }));
+    expect(screen.getByText('Nota').closest('.block-content')).toHaveTextContent('Destino');
+    await user.click(screen.getByRole('button', { name: 'Opciones del texto informativo del bloque' }));
+    await user.click(screen.getByRole('button', { name: 'Sacar del bloque' }));
+    expect(screen.getByRole('button', { name: 'Opciones de texto' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Opciones de la pregunta 1 del bloque' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar del bloque' }));
+    expect(screen.queryByRole('heading', { name: /Pregunta 1/ })).not.toBeInTheDocument();
+  });
+  it('reordena y cambia obligatoriedad sin perder preguntas', () => {
+    const { container } = render(<Harness initial={{ title: 'T', items: [
+      { itemType: 'QUESTION', statement: 'Primera', questionType: 'TEXT' },
+      { itemType: 'BLOCK', block: { name: 'B', items: [{ itemType: 'QUESTION', statement: 'Segunda', questionType: 'TEXT' }, { itemType: 'QUESTION', statement: 'Tercera', questionType: 'TEXT' }] } },
+    ] }} />);
+    screen.getAllByRole('checkbox').forEach(checkbox => fireEvent.click(checkbox));
+    const handle = screen.getByRole('button', { name: 'Reordenar elemento 1. Usa las flechas o arrastra.' });
+    fireEvent.keyDown(handle, { key: 'Enter' });
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(screen.getByRole('heading', { name: /Primera/ })).toBeVisible();
+    const setData = vi.fn();
+    fireEvent.dragStart(handle, { dataTransfer: { setData } });
+    expect(setData).toHaveBeenCalled();
+    fireEvent.dragEnd(handle);
+    const dropzone = container.querySelector('.block-empty-dropzone');
+    fireEvent.dragOver(dropzone, { dataTransfer: { effectAllowed: 'move' } });
+    fireEvent.drop(dropzone, { dataTransfer: { getData: () => 'invalid' } });
+    expect(screen.getByRole('heading', { name: /Tercera/ })).toBeVisible();
+  });
+});

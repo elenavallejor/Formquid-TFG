@@ -1,7 +1,8 @@
 package com.formquid.common.dto;
 
-/** Orden temporal permitido en los listados del catálogo. */
+/** Órdenes permitidos en los listados del catálogo. */
 public enum CatalogSortOrder {
     NEWEST,
-    OLDEST
+    OLDEST,
+    ALPHABETICAL
 }

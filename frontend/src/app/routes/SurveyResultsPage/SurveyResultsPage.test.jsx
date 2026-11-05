@@ -74,3 +74,36 @@ describe('SurveyResultsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Servicio no disponible');
   });
 });
+
+
+describe('SurveyResultsPage: distribuciones y evaluación', () => {
+  it.each([[-40, 'Tendencia negativa'], [0, 'Tendencia equilibrada'], [null, 'No hay preguntas evaluables']])('interpreta el índice global %s', async (score, label) => {
+    getSurveyForResults.mockResolvedValue({ id: 12, title: 'Resultados', lifecycleStatus: 'DRAFT', contentItems: [] });
+    getSurveyStatistics.mockResolvedValue({ participations: 2, globalEvaluationScore: score, questions: [] });
+    renderPage();
+    expect(await screen.findByText(new RegExp(label))).toBeVisible();
+  });
+  it('muestra distribuciones numéricas, de opciones y de matriz con evaluación', async () => {
+    const user = userEvent.setup();
+    const types = ['TEXT', 'NUMBER', 'MULTIPLE_CHOICE', 'MATRIX_SCALE', 'UNKNOWN'];
+    getSurveyForResults.mockResolvedValue({ id: 12, title: 'Resultados', lifecycleStatus: 'CLOSED', contentItems: [
+      { itemType: 'BLOCK', block: { items: types.map((questionType, index) => ({ itemType: 'QUESTION', isRequired: true, question: { id: index + 1, statement: questionType, questionType, evaluationWeight: index === 1 ? -2 : 2, evaluationDirection: index === 1 ? 'NEGATIVE' : 'CUSTOM' } })) } },
+      { itemType: 'BLOCK' },
+    ] });
+    getSurveyStatistics.mockResolvedValue({ participations: 3, globalEvaluationScore: 0, questions: types.map((questionType, index) => ({
+      questionId: index + 1, questionType, statement: questionType, answers: 3, omissions: 0, responseRate: 100, evaluationScore: 2,
+      ...(questionType === 'NUMBER' ? { numericStatistics: { average: 2, median: 2, min: 1, max: 3, standardDeviation: 'invalid' }, valueDistribution: [{ value: 1, count: 1, percentage: 33 }] } : {}),
+      ...(questionType === 'MULTIPLE_CHOICE' ? { choiceStatistics: [{ optionId: 1, label: 'Opción A', count: 1, percentage: 150 }, { label: 'Opción B', count: 0, percentage: null }] } : {}),
+      ...(questionType === 'MATRIX_SCALE' ? { matrixStatistics: [{ rowId: 1, label: 'Rapidez', answers: 1, numericStatistics: { average: 3 }, valueDistribution: [{ value: 3, count: 1, percentage: 100 }] }, { rowId: 2, label: 'Precisión', answers: 2 }] } : {}),
+    })) });
+    renderPage();
+    expect(await screen.findByText('Resultados por fila')).toBeVisible();
+    expect(screen.getByText(/Las respuestas de texto libre/)).toBeVisible();
+    expect(screen.getByText(/la suma puede superar/)).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Opción A: 100 %, 1 respuestas' })).toBeVisible();
+    const toggle = screen.getAllByRole('button', { name: 'Ver pregunta' })[0];
+    await user.click(toggle);
+    await user.click(screen.getByRole('button', { name: 'Ocultar pregunta' }));
+    expect(screen.queryByText('Pregunta: TEXT')).not.toBeInTheDocument();
+  });
+});

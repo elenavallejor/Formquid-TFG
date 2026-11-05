@@ -1,5 +1,6 @@
 .breadcrumb-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-bottom: var(--breadcrumbs-margin-bottom, 12px);
@@ -21,4 +22,14 @@
 .breadcrumb-nav a:focus-visible {
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
+}
+
+.breadcrumb-nav a,
+.breadcrumb-nav span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.breadcrumb-nav > svg {
+  flex: none;
 }

@@ -100,4 +100,39 @@ describe('apiClient', () => {
     fetch.mockResolvedValue(jsonResponse({}, 500));
     await expect(apiClient('/broken')).rejects.toEqual(new ApiError('No se ha podido completar la solicitud.', 500, {}));
   });
+
+  it.each([{ status: 503, ok: false }, { status: 200, ok: true }])('rechaza inicializaciones CSRF sin token: %j', async (response) => {
+    document.cookie = 'XSRF-TOKEN=; Max-Age=0';
+    fetch.mockResolvedValue(response);
+    await expect(apiClient('/csrf-test', { method: 'POST' })).rejects.toMatchObject({ status: response.status, name: 'ApiError' });
+  });
+  it('comparte la inicialización CSRF entre modificaciones simultáneas', async () => {
+    document.cookie = 'XSRF-TOKEN=; Max-Age=0';
+    let resolve;
+    fetch.mockImplementationOnce(() => new Promise(done => { resolve = done; })).mockResolvedValue(jsonResponse({ ok: true }));
+    const first = apiClient('/first', { method: 'POST', body: 'text' });
+    const second = apiClient('/second', { method: 'POST', body: null });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    document.cookie = 'XSRF-TOKEN=nuevo';
+    resolve({ ok: true, status: 200 });
+    await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+  });
+  it.each([
+    [{ headers: { get: () => null }, text: async () => '' }, null],
+    [{ headers: { get: () => 'application/json' }, json: async () => { throw new Error('invalid'); } }, null],
+  ])('tolera respuestas vacías o JSON inválido', async (response, expected) => {
+    fetch.mockResolvedValue({ ok: true, status: 200, ...response });
+    await expect(apiClient('/optional')).resolves.toBe(expected);
+  });
+  it('usa errores de texto y el campo error y admite cancelar GET', async () => {
+    fetch.mockResolvedValueOnce({ ok: false, status: 500, headers: { get: () => 'text/plain' }, text: async () => 'Error de texto' });
+    await expect(apiClient('/error-text')).rejects.toThrow('Error de texto');
+    fetch.mockResolvedValueOnce(jsonResponse({ error: 'Error alternativo' }, 400));
+    await expect(apiClient('/error-alternative')).rejects.toThrow('Error alternativo');
+    fetch.mockResolvedValueOnce(jsonResponse({ ok: true }));
+    const controller = new AbortController();
+    await expect(apiClient('/abortable', { signal: controller.signal, headers: { Z: 'z', A: 'a' } })).resolves.toEqual({ ok: true });
+    expect(resolveProfilePhotoUrl(null)).toBeNull();
+    expect(resolveSurveyImageUrl(undefined)).toBeUndefined();
+  });
 });

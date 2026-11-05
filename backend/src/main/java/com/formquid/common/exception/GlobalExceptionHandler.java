@@ -2,6 +2,8 @@ package com.formquid.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -131,6 +133,20 @@ public class GlobalExceptionHandler {
         HttpServletRequest request
     ) {
         return build(HttpStatus.NOT_FOUND, "Recurso no encontrado", request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolationException(
+        DataIntegrityViolationException exception,
+        HttpServletRequest request
+    ) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation
+                && "ck_users_require_superadmin".equals(violation.getConstraintName())) {
+                return build(HttpStatus.CONFLICT, "Debe existir siempre un superadministrador", request);
+            }
+        }
+        return handleGenericException(exception, request);
     }
 
     @ExceptionHandler(Exception.class)

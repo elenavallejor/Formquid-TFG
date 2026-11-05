@@ -59,3 +59,35 @@ describe('CatalogList', () => {
     expect(onDelete).toHaveBeenCalledWith(item);
   });
 });
+
+
+it('mantiene la paleta original de los iconos de cada tipo de pregunta', () => {
+  const types = [
+    ['TEXT', 'Texto', '#6539B1'], ['NUMBER', 'Numérica', '#DE3ECE'],
+    ['SINGLE_CHOICE', 'Opción única', '#39B1AB'], ['MULTIPLE_CHOICE', 'Opción múltiple', '#FFBD30'],
+    ['SCALE', 'Escala', '#395FB1'], ['MATRIX_SCALE', 'Matriz de escala', '#5E9800'],
+    ['BOOLEAN', 'Dos opciones', '#FB963C'],
+  ];
+  renderList({
+    config: { ...config, titleKey: 'statement', detailKey: 'questionType' },
+    items: types.map(([questionType], id) => ({ id, questionType, statement: `Pregunta ${id}` })),
+  });
+  for (const [, label, color] of types) expect(screen.getByTitle(label)).toHaveStyle({ color });
+});
+
+it('identifica una categoría sin inventar una categoría por defecto si faltan sus metadatos', () => {
+  renderList({ items: [{ ...item, category: 'REALIDAD_AUMENTADA' }, { ...item, id: 3, category: null }] });
+  expect(screen.getByText('Realidad aumentada')).toBeVisible();
+  expect(screen.getByText('Sin categoría')).toBeVisible();
+});
+
+
+it('muestra el icono configurado para la categoría junto a su nombre', () => {
+  const { container } = renderList({
+    items: [{ ...item, category: 'ORDENADORES' }],
+    categories: [{ code: 'ORDENADORES', name: 'Ordenadores', icon: 'BsLaptop' }],
+  });
+  const category = container.querySelector('.catalog-item-category');
+  expect(category).toHaveTextContent(/^Ordenadores$/);
+  expect(category.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+});

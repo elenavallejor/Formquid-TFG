@@ -297,11 +297,10 @@
   font-weight: 700;
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
   white-space: nowrap;
 }
 
-.direction-btn-group button:hover:not(:disabled) {
+.direction-btn-group button:hover:not(:disabled):not([aria-pressed="true"]) {
   color: var(--color-header);
 }
 

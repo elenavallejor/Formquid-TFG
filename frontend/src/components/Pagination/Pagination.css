@@ -118,6 +118,7 @@
   }
 
   .pagination-pages {
+    flex-wrap: wrap;
     justify-content: center;
   }
 

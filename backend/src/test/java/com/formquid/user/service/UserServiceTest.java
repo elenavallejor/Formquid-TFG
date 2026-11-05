@@ -149,7 +149,7 @@ class UserServiceTest {
     void updateRole_keepsAtLeastOneSuperadmin() {
         User user = User.builder().id(2L).role(UserRole.SUPERADMIN).build();
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
-        when(userRepository.countByRoleAndIdNot(UserRole.SUPERADMIN, 2L)).thenReturn(0L);
+        when(userRepository.existsByRoleAndIdNot(UserRole.SUPERADMIN, 2L)).thenReturn(false);
 
         assertThatThrownBy(() -> userService.updateRole(2L, UserRole.ADMIN))
             .isInstanceOf(ApiException.class)

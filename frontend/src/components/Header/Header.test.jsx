@@ -72,3 +72,19 @@ describe('Header', () => {
     expect(screen.getByText('Inicio')).toBeVisible();
   });
 });
+
+
+it('incluye los textos visibles en el nombre del menú y devuelve el foco al cerrarlo con Escape', async () => {
+  const user = userEvent.setup();
+  getUnreadNotificationsCount.mockResolvedValue(0);
+  const { container } = renderHeader({ isAuthenticated: true, user: { id: 7, name: 'Ana García', role: 'EDITOR' }, logout: vi.fn() });
+  const summary = container.querySelector('summary');
+  expect(summary).toHaveAccessibleName('Menú de usuario de AG Ana García Editor');
+  await user.click(summary);
+  const details = summary.closest('details');
+  expect(details).toHaveAttribute('open');
+  screen.getByRole('link', { name: 'Mi perfil' }).focus();
+  await user.keyboard('{Escape}');
+  expect(details).not.toHaveAttribute('open');
+  expect(summary).toHaveFocus();
+});

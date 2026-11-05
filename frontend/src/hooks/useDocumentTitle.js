@@ -18,6 +18,7 @@ const PAGE_TITLES = [
   { pattern: /^\/encuestas\/[^/]+\/resultados\/participaciones\/?$/, title: 'Participaciones individuales' },
   { pattern: /^\/encuestas\/[^/]+\/resultados\/?$/, title: 'Resultados de encuesta' },
   { pattern: /^\/encuestas\/?$/, title: 'Encuestas' },
+  { pattern: /^\/resultados\/?$/, title: 'Resultados' },
   { pattern: /^\/catalogo\/crear\/pregunta\/?$/, title: 'Crear pregunta' },
   { pattern: /^\/catalogo\/crear\/bloque\/?$/, title: 'Crear bloque' },
   { pattern: /^\/catalogo\/crear\/plantilla\/?$/, title: 'Crear plantilla' },
@@ -27,6 +28,7 @@ const PAGE_TITLES = [
   { pattern: /^\/admin\/encuestas\/?$/, title: 'Supervisión de encuestas' },
   { pattern: /^\/admin\/solicitudes-registro\/?$/, title: 'Solicitudes de registro' },
   { pattern: /^\/admin\/solicitudes-catalogo\/?$/, title: 'Solicitudes del catálogo' },
+  { pattern: /^\/superadmin\/categorias\/?$/, title: 'Gestión de categorías' },
   { pattern: /^\/superadmin\/usuarios\/?$/, title: 'Gestión de usuarios' },
   { pattern: /^\/[A-Z0-9]{12}\/?$/i, title: 'Responder encuesta' },
 ];

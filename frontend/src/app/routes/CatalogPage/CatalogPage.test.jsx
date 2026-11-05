@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,7 @@ import {
   getCatalogQuestions,
   getCatalogTemplates,
 } from '../../../api/catalogApi.js';
+import { getCategories } from '../../../api/categoriesApi.js';
 import { CatalogPage } from './CatalogPage.jsx';
 import { renderWithRouter } from '../../../testing/render.jsx';
 
@@ -50,6 +51,10 @@ describe('CatalogPage', () => {
     getCatalogBlocks.mockResolvedValue(emptyPage);
     getCatalogQuestions.mockResolvedValue(emptyPage);
     getCatalogTemplates.mockResolvedValue(emptyPage);
+    getCategories.mockResolvedValue([
+      { code: 'ORDENADORES', name: 'Ordenadores' },
+      { code: 'LIBROS_TEXTO_DIGITALES', name: 'Libros digitales' },
+    ]);
   });
 
   it('muestra al editor el catálogo público con sus acciones de consulta', async () => {
@@ -97,6 +102,26 @@ describe('CatalogPage', () => {
     expect(getCatalogTemplates).toHaveBeenCalled();
   });
 
+  it.each([
+    ['bloques', getCatalogBlocks],
+    ['plantillas', getCatalogTemplates],
+    ['preguntas', getCatalogQuestions],
+  ])('permite ordenar alfabéticamente %s en mis elementos y la lista pública', async (section, load) => {
+    const user = userEvent.setup();
+    renderPage('ADMIN', section);
+    await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+
+    await user.click(screen.getByRole('button', { name: 'Ordenar catálogo: Más reciente' }));
+    const sortMenu = screen.getByRole('group', { name: 'Ordenar catálogo' });
+    fireEvent.click(within(sortMenu).getByRole('button', { name: 'Alfabético (A–Z)' }));
+    expect(screen.getByRole('button', { name: 'Ordenar catálogo: Alfabético (A–Z)' })).toBeVisible();
+
+    await vi.waitFor(() => {
+      expect(load).toHaveBeenCalledWith(expect.objectContaining({ mine: true, page: 0, sortOrder: 'ALPHABETICAL' }));
+      expect(load).toHaveBeenCalledWith(expect.objectContaining({ mine: false, page: 0, sortOrder: 'ALPHABETICAL' }));
+    });
+  });
+
   it('muestra el menú de creación para administradores', async () => {
     const user = userEvent.setup();
     renderPage('ADMIN');
@@ -119,4 +144,88 @@ describe('CatalogPage', () => {
     await user.click(within(screen.getByRole('dialog', { name: 'Eliminar pregunta' })).getByRole('button', { name: 'Eliminar' }));
     expect(deleteCatalogQuestion).toHaveBeenCalledWith(6);
   });
+
+  it.each([null, {}])('tolera respuestas incompletas del catálogo %j', async response => {
+    getCatalogBlocks.mockResolvedValue(response);
+    renderPage();
+    expect(await screen.findByRole('heading', { name: /CATÁLOGO/ })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'BLOQUE DIGITAL' })).not.toBeInTheDocument();
+  });
+});
+
+
+describe('Categorías del catálogo', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    const emptyPage = { content: [], totalElements: 0, totalPages: 0 };
+    getCatalogBlocks.mockResolvedValue(emptyPage);
+    getCatalogQuestions.mockResolvedValue(emptyPage);
+    getCatalogTemplates.mockResolvedValue(emptyPage);
+  });
+
+  it.each([
+    ['bloques', getCatalogBlocks, 'name'],
+    ['plantillas', getCatalogTemplates, 'title'],
+    ['preguntas', getCatalogQuestions, 'statement'],
+  ])('muestra todas las categorías en %s y las identifica en cada fila', async (section, load, titleKey) => {
+    const user = userEvent.setup();
+    getCategories.mockResolvedValue([
+      { code: 'ORDENADORES', name: 'Ordenadores' },
+      { code: 'LIBROS_TEXTO_DIGITALES', name: 'Libros digitales' },
+    ]);
+    load.mockResolvedValue({ content: [
+      { ...block, id: 12, [titleKey]: 'Primer elemento', category: 'ORDENADORES' },
+      { ...block, id: 13, [titleKey]: 'Segundo elemento', category: 'LIBROS_TEXTO_DIGITALES' },
+    ], totalElements: 2, totalPages: 1 });
+    renderPage('ADMIN', section);
+    const list = screen.getByRole('region', { name: 'LISTA PÚBLICA' });
+    expect(await within(list).findByText('Ordenadores')).toBeVisible();
+    expect(within(list).getByText('Libros digitales')).toBeVisible();
+    expect(screen.queryByLabelText(/^Categoría/)).not.toBeInTheDocument();
+    expect(load).toHaveBeenCalledWith(expect.objectContaining({ mine: false }));
+    expect(load).toHaveBeenCalledWith(expect.objectContaining({ mine: true }));
+    await user.type(screen.getByRole('searchbox', { name: 'Introduce una palabra para buscar en el catálogo' }), 'elemento');
+    await vi.waitFor(() => expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'elemento' })));
+    for (const [options] of load.mock.calls) expect(options.category).toBeUndefined();
+  });
+
+  it.each([
+    ['bloques', getCatalogBlocks, 'name'],
+    ['plantillas', getCatalogTemplates, 'title'],
+    ['preguntas', getCatalogQuestions, 'statement'],
+  ])('combina la búsqueda y la categoría en %s y borra solo el filtro', async (section, load, titleKey) => {
+    const user = userEvent.setup();
+    getCategories.mockResolvedValue([
+      { code: 'ORDENADORES', name: 'Ordenadores' },
+      { code: 'LIBROS_TEXTO_DIGITALES', name: 'Libros digitales' },
+    ]);
+    const items = [
+      { ...block, id: 12, [titleKey]: 'Primer elemento', category: 'ORDENADORES' },
+      { ...block, id: 13, [titleKey]: 'Segundo elemento', category: 'LIBROS_TEXTO_DIGITALES' },
+    ];
+    load.mockImplementation(({ category }) => {
+      const content = category ? items.filter((item) => item.category === category) : items;
+      return Promise.resolve({ content, totalElements: content.length, totalPages: 1 });
+    });
+    renderPage('ADMIN', section);
+    const list = screen.getByRole('region', { name: 'LISTA PÚBLICA' });
+    expect(await within(list).findByText('Libros digitales')).toBeVisible();
+    const search = screen.getByRole('searchbox', { name: 'Introduce una palabra para buscar en el catálogo' });
+    await user.type(search, 'elemento');
+    await vi.waitFor(() => expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'elemento' })));
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    const filter = screen.getByRole('group', { name: 'Filtrar' });
+    expect(within(filter).queryByText('Campos de búsqueda')).not.toBeInTheDocument();
+    await user.selectOptions(within(filter).getByRole('combobox', { name: 'Categoría' }), 'ORDENADORES');
+    await user.click(within(filter).getByRole('button', { name: 'Aplicar' }));
+    expect(await within(list).findByText('Ordenadores')).toBeVisible();
+    expect(within(list).queryByText('Libros digitales')).not.toBeInTheDocument();
+    expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ category: 'ORDENADORES', search: 'elemento', page: 0 }));
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(within(screen.getByRole('group', { name: 'Filtrar' })).getByRole('button', { name: 'Borrar filtros' }));
+    expect(await within(list).findByText('Libros digitales')).toBeVisible();
+    expect(search).toHaveValue('elemento');
+    expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ category: undefined, search: 'elemento' }));
+  });
+
 });

@@ -19,7 +19,8 @@ export function QuestionBuilder({
   includeEvaluation = false,
 }) {
   const [modalError, setModalError] = useState('');
-  const weightInputId = useId();
+  const fieldId = useId();
+  const weightInputId = `${fieldId}-weight`;
   const modalRef = useRef(null);
   const modalTitleRef = useRef(null);
   const isTextQuestion = data.questionType === 'TEXT';
@@ -138,9 +139,9 @@ export function QuestionBuilder({
 
         <div className="builder-general-info-fields">
           <div className="builder-field">
-            <label htmlFor="statement">Enunciado <span>*</span></label>
+            <label htmlFor={`${fieldId}-statement`}>Enunciado <span>*</span></label>
             <input
-              id="statement"
+              id={`${fieldId}-statement`}
               type="text"
               placeholder="Texto que verá el encuestado."
               maxLength={300}
@@ -153,9 +154,9 @@ export function QuestionBuilder({
           {afterPrimaryField}
 
           <div className="builder-field">
-            <label htmlFor="annotation">Nota (opcional)</label>
+            <label htmlFor={`${fieldId}-annotation`}>Nota (opcional)</label>
             <textarea
-              id="annotation"
+              id={`${fieldId}-annotation`}
               placeholder="Agrega una nota o contexto adicional para la pregunta..."
               maxLength={300}
               rows={3}
@@ -290,9 +291,10 @@ export function QuestionBuilder({
 
         {data.questionType === 'TEXT' && (
           <div className="config-grid-row">
-            <div className="config-label-cell">Longitud máxima del texto:</div>
+            <div className="config-label-cell"><label htmlFor={`${fieldId}-maxLength`}>Longitud máxima del texto:</label></div>
             <div className="config-interactive-cell">
               <input
+                id={`${fieldId}-maxLength`}
                 type="number"
                 min="1"
                 placeholder="Ej. 300 caracteres."
@@ -312,8 +314,9 @@ export function QuestionBuilder({
               </div>
               <div className="config-interactive-cell limits-labeled-group">
                 <div className="labeled-input-item">
-                  <span className="mini-top-label">Mínimo</span>
+                  <label className="mini-top-label" htmlFor={`${fieldId}-minValue`}>Mínimo</label>
                   <input
+                    id={`${fieldId}-minValue`}
                     type="number"
                     value={isFixedVisualScale ? 1 : (data.minValue ?? '')}
                     disabled={isFixedVisualScale}
@@ -322,8 +325,9 @@ export function QuestionBuilder({
                   />
                 </div>
                 <div className="labeled-input-item">
-                  <span className="mini-top-label">Máximo</span>
+                  <label className="mini-top-label" htmlFor={`${fieldId}-maxValue`}>Máximo</label>
                   <input
+                    id={`${fieldId}-maxValue`}
                     type="number"
                     value={isFixedVisualScale ? 5 : (data.maxValue ?? '')}
                     disabled={isFixedVisualScale}
@@ -334,8 +338,9 @@ export function QuestionBuilder({
 
                 {data.questionType !== 'NUMBER' && (
                   <div className="labeled-input-item">
-                    <span className="mini-top-label">Paso</span>
+                    <label className="mini-top-label" htmlFor={`${fieldId}-step`}>Paso</label>
                     <input
+                      id={`${fieldId}-step`}
                       type="number"
                       value={isFixedVisualScale ? 1 : (data.step ?? '')}
                       disabled={isFixedVisualScale}
@@ -360,8 +365,9 @@ export function QuestionBuilder({
                   <div className="config-label-cell">Etiquetas:</div>
                   <div className="config-interactive-cell limits-labeled-group">
                     <div className="labeled-input-item">
-                      <span className="mini-top-label">Etiqueta inicial</span>
+                      <label className="mini-top-label" htmlFor={`${fieldId}-leftLabel`}>Etiqueta inicial</label>
                       <input
+                        id={`${fieldId}-leftLabel`}
                         type="text"
                         value={data.leftLabel || ''}
                         placeholder="Ej. Totalmente en desacuerdo"
@@ -369,8 +375,9 @@ export function QuestionBuilder({
                       />
                     </div>
                     <div className="labeled-input-item">
-                      <span className="mini-top-label">Etiqueta final</span>
+                      <label className="mini-top-label" htmlFor={`${fieldId}-rightLabel`}>Etiqueta final</label>
                       <input
+                        id={`${fieldId}-rightLabel`}
                         type="text"
                         value={data.rightLabel || ''}
                         placeholder="Ej. Totalmente de acuerdo"
@@ -408,6 +415,7 @@ export function QuestionBuilder({
                   {(data.matrixRows || []).map((row, index) => (
                     <div key={index} className="sub-row-item">
                       <input
+                        aria-label={`Texto de la fila ${index + 1}`}
                         type="text"
                         value={getMatrixRowText(row)}
                         placeholder="Texto de la fila"
@@ -437,6 +445,7 @@ export function QuestionBuilder({
                 {(data.options || []).map((option, index) => (
                   <div key={index} className="sub-row-item">
                     <input
+                      aria-label={`Texto de la opción ${index + 1}`}
                       type="text"
                       value={getOptionText(option)}
                       placeholder="Texto de la opción"
@@ -444,6 +453,7 @@ export function QuestionBuilder({
                     />
                     {includeEvaluation && data.evaluationDirection !== 'NEUTRAL' && (
                       <input
+                        aria-label={`Factor de la opción ${index + 1}`}
                         type="number"
                         step="0.1"
                         value={getOptionFactor(option)}
@@ -482,8 +492,9 @@ export function QuestionBuilder({
                 <div className="config-label-cell">Límites de selección:</div>
                 <div className="config-interactive-cell limits-labeled-group">
                   <div className="labeled-input-item">
-                    <span className="mini-top-label">Mínimo</span>
+                    <label className="mini-top-label" htmlFor={`${fieldId}-minSelections`}>Mínimo</label>
                     <input
+                      id={`${fieldId}-minSelections`}
                       type="number"
                       min="1"
                       max={data.maxSelections || totalAvailable || 1}
@@ -493,8 +504,9 @@ export function QuestionBuilder({
                     />
                   </div>
                   <div className="labeled-input-item">
-                    <span className="mini-top-label">Máximo</span>
+                    <label className="mini-top-label" htmlFor={`${fieldId}-maxSelections`}>Máximo</label>
                     <input
+                      id={`${fieldId}-maxSelections`}
                       type="number"
                       min={data.minSelections || 1}
                       max={totalAvailable || 1}
@@ -518,6 +530,7 @@ export function QuestionBuilder({
             <div className="config-interactive-cell full-width-field">
               <div className="range-inputs">
                 <input
+                  aria-label="Etiqueta afirmativa"
                   type="text"
                   value={data.trueLabel || ''}
                   placeholder="Etiqueta afirmativa"
@@ -525,6 +538,7 @@ export function QuestionBuilder({
                 />
                 {includeEvaluation && data.evaluationDirection !== 'NEUTRAL' && (
                   <input
+                    aria-label="Factor de la respuesta afirmativa"
                     type="number"
                     step="0.1"
                     value={data.trueFactor ?? ''}
@@ -535,6 +549,7 @@ export function QuestionBuilder({
               </div>
               <div className="range-inputs boolean-answer-row">
                 <input
+                  aria-label="Etiqueta negativa"
                   type="text"
                   value={data.falseLabel || ''}
                   placeholder="Etiqueta negativa"
@@ -542,6 +557,7 @@ export function QuestionBuilder({
                 />
                 {includeEvaluation && data.evaluationDirection !== 'NEUTRAL' && (
                   <input
+                    aria-label="Factor de la respuesta negativa"
                     type="number"
                     step="0.1"
                     value={data.falseFactor ?? ''}
@@ -585,11 +601,11 @@ export function QuestionBuilder({
         className="builder-modal-container"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="question-builder-modal-title"
+        aria-labelledby={`${fieldId}-modal-title`}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="builder-modal-header">
-          <h2 ref={modalTitleRef} id="question-builder-modal-title" className="builder-modal-title" tabIndex={-1}>{modalTitle}</h2>
+          <h2 ref={modalTitleRef} id={`${fieldId}-modal-title`} className="builder-modal-title" tabIndex={-1}>{modalTitle}</h2>
           {onClose && (
             <button
               type="button"

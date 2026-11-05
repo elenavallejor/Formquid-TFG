@@ -300,3 +300,85 @@ describe('CatalogSidebar', () => {
     expect(article).not.toHaveClass('dragging');
   });
 });
+
+
+describe('CatalogSidebar: respuestas alternativas y acciones fallidas', () => {
+  it.each([[], null, {}])('acepta respuestas vacías del catálogo: %j', async (response) => {
+    getCatalogQuestionsForBuilder.mockResolvedValue(response);
+    getCatalogBlocksForBuilder.mockResolvedValue(response);
+    renderSidebar();
+    expect(await screen.findByText(/No se han encontrado preguntas/)).toBeVisible();
+    expect(screen.getByText(/No se han encontrado bloques/)).toBeVisible();
+  });
+  it('muestra nombres y recuentos de bloques en formatos heredados', async () => {
+    getCatalogQuestionsForBuilder.mockResolvedValue([{ id: 1, questionType: 'TEXT' }]);
+    getCatalogBlocksForBuilder.mockResolvedValue([
+      { id: 1, title: 'Por título', contentItems: [{ itemType: 'QUESTION' }] },
+      { id: 2, name: 'Por preguntas', questions: [{}] },
+      { id: 3, name: 'Por elementos', items: [{ itemType: 'TEXT' }, { itemType: 'QUESTION' }] },
+      { id: 4 },
+    ]);
+    renderSidebar();
+    expect(await screen.findByRole('heading', { name: 'POR TÍTULO' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'BLOQUE SIN TÍTULO' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Pregunta sin enunciado' })).toBeVisible();
+    expect(screen.getAllByText('1 pregunta')).toHaveLength(3);
+    expect(screen.getByText('0 preguntas')).toBeVisible();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar bloques de preguntas' }), { target: { value: 'título' } });
+    expect(screen.queryByRole('heading', { name: 'POR PREGUNTAS' })).not.toBeInTheDocument();
+  });
+  it.each([new Error('No se pudo añadir'), {}])('conserva el catálogo si falla añadir', async (error) => {
+    getCatalogQuestionsForBuilder.mockResolvedValue([question]);
+    getCatalogBlocksForBuilder.mockResolvedValue([]);
+    renderSidebar({ onAddQuestion: vi.fn().mockRejectedValue(error) });
+    fireEvent.click(await screen.findByRole('button', { name: 'Añadir pregunta: ¿Cómo estás?' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(error.message || 'No se ha podido añadir el elemento.');
+  });
+  it('carga más preguntas y conserva los resultados cuando la siguiente página falla', async () => {
+    getCatalogQuestionsForBuilder.mockResolvedValueOnce({ content: [question], totalElements: 3 })
+      .mockResolvedValueOnce({ content: [{ id: 6, statement: 'Segunda', questionType: 'TEXT' }], totalElements: 3 })
+      .mockRejectedValueOnce({});
+    getCatalogBlocksForBuilder.mockResolvedValue([]);
+    renderSidebar({ showBlocks: false });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver más preguntas' }));
+    expect(await screen.findByRole('heading', { name: 'Segunda' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver más preguntas' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se han podido cargar las preguntas del catálogo.');
+    expect(screen.getByRole('heading', { name: '¿Cómo estás?' })).toBeVisible();
+  });
+  it('expone errores por defecto de ambos catálogos', async () => {
+    getCatalogQuestionsForBuilder.mockRejectedValue({});
+    getCatalogBlocksForBuilder.mockRejectedValue({});
+    renderSidebar();
+    expect(await screen.findByText('No se han podido cargar las preguntas del catálogo.')).toBeVisible();
+    expect(await screen.findByText('No se han podido cargar los bloques del catálogo.')).toBeVisible();
+  });
+  it('envía bloques por arrastre', async () => {
+    getCatalogQuestionsForBuilder.mockResolvedValue([]);
+    getCatalogBlocksForBuilder.mockResolvedValue([block]);
+    const { container } = render(<MemoryRouter><CatalogSidebar embedded showQuestions={false} /></MemoryRouter>);
+    await screen.findByRole('heading', { name: 'HÁBITOS' });
+    const setData = vi.fn();
+    const element = container.querySelector('.catalog-item');
+    fireEvent.dragStart(element, { dataTransfer: { setData } });
+    expect(setData).toHaveBeenCalledWith('text/plain', JSON.stringify({ type: 'CATALOG_BLOCK', block }));
+    fireEvent.dragEnd(element);
+    expect(element).not.toHaveClass('dragging');
+  });
+  it('atrapa el foco en móvil y cierra con Escape', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} }));
+    getCatalogQuestionsForBuilder.mockResolvedValue([question]);
+    getCatalogBlocksForBuilder.mockResolvedValue([]);
+    render(<MemoryRouter><CatalogSidebar defaultOpen showBlocks={false} /></MemoryRouter>);
+    await screen.findByRole('heading', { name: '¿Cómo estás?' });
+    const close = screen.getByRole('button', { name: 'Cerrar catálogo de elementos' });
+    close.focus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(close).not.toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(close).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Abrir catálogo de elementos' })).toHaveAttribute('aria-expanded', 'false');
+  });
+});

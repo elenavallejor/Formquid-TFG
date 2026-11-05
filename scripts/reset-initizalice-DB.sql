@@ -5,11 +5,11 @@ BEGIN
     IF current_setting('formquid.allow_dev_seed', true) IS DISTINCT FROM 'yes' THEN
         RAISE EXCEPTION 'Activa formquid.allow_dev_seed=yes para permitir esta carga destructiva';
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM flyway_schema_history WHERE version = '40' AND success) THEN
-        RAISE EXCEPTION 'Es necesario aplicar las migraciones hasta V40';
+    IF NOT EXISTS (SELECT 1 FROM flyway_schema_history WHERE version = '42' AND success) THEN
+        RAISE EXCEPTION 'Es necesario aplicar las migraciones hasta V42';
     END IF;
-    IF (SELECT count(*) FROM superadmin_guard) <> 1 THEN
-        RAISE EXCEPTION 'Falta el superadministrador protegido';
+    IF NOT EXISTS (SELECT 1 FROM users WHERE role = 'SUPERADMIN') THEN
+        RAISE EXCEPTION 'Falta un superadministrador';
     END IF;
 END;
 $guard$;
@@ -17,7 +17,7 @@ $guard$;
 CREATE TEMP TABLE preserved_superadmin ON COMMIT DROP AS
 SELECT id, role, email, name, institution, country, password_hash, created_at, updated_at
 FROM users
-WHERE id = (SELECT user_id FROM superadmin_guard WHERE singleton);
+WHERE role = 'SUPERADMIN' ORDER BY id LIMIT 1;
 
 TRUNCATE TABLE
     password_reset_tokens, notifications, matrix_answer_values, answer_options,
@@ -26,7 +26,7 @@ TRUNCATE TABLE
     collaboration_requests, survey_collaborators, surveys, templates,
     registration_requests
 RESTART IDENTITY;
-DELETE FROM users WHERE id <> (SELECT user_id FROM superadmin_guard WHERE singleton);
+DELETE FROM users WHERE id <> (SELECT id FROM preserved_superadmin);
 
 DO $reset_user_ids$
 DECLARE
@@ -41,7 +41,6 @@ BEGIN
             original.name, original.institution, original.country, original.password_hash,
             original.created_at, original.updated_at
         );
-        UPDATE superadmin_guard SET user_id = 1 WHERE singleton;
         DELETE FROM users WHERE id = original.id;
         UPDATE users SET email = original.email WHERE id = 1;
     END IF;
@@ -742,7 +741,7 @@ DO $verify$
 BEGIN
     IF (SELECT count(*) FROM users WHERE role = 'SUPERADMIN') <> 1
        OR (SELECT count(*) FROM preserved_superadmin) <> 1
-       OR (SELECT user_id FROM superadmin_guard WHERE singleton) <> 1
+       OR NOT EXISTS (SELECT 1 FROM users WHERE id = 1 AND role = 'SUPERADMIN')
        OR (SELECT count(*) FROM users WHERE id BETWEEN 1 AND 13) <> 13
        OR EXISTS (
            SELECT 1 FROM preserved_superadmin original

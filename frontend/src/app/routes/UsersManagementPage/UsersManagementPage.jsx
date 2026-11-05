@@ -11,6 +11,8 @@ import { useAuth } from '../../../context/useAuth.js';
 import { getCountryName } from '../../../utils/countries.js';
 import { DEFAULT_USERS_PAGE_SIZE, USER_SEARCH_OPTIONS, USER_SORT_OPTIONS, USERS_PAGE_SIZE_OPTIONS, canChangeUserRole, canDeleteUser, getNextRole, getUserRoleLabel } from '../../../utils/usersManagementUtils.js';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './UsersManagementPage.css';
 
 /**
@@ -22,6 +24,7 @@ export function UsersManagementPage() {
 
   const [usersList, setUsersList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { resultsRef, requestResultsFocus } = useResultsFocus(isLoading);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -130,7 +133,9 @@ export function UsersManagementPage() {
     }
   }
 
-  const isPromotion = roleModalState.nextRole === 'ADMIN';
+  const isSuperPromotion = roleModalState.nextRole === 'SUPERADMIN';
+  const isSuperDemotion = roleModalState.targetUser?.role === 'SUPERADMIN';
+  const isPromotion = isSuperPromotion || (roleModalState.nextRole === 'ADMIN' && !isSuperDemotion);
   const roleTargetName = roleModalState.targetUser?.name || 'este usuario';
   const deleteTargetName = deleteModalState.targetUser?.name || 'este usuario';
 
@@ -146,7 +151,7 @@ export function UsersManagementPage() {
         />
 
         <header className="users-page-header">
-          <h1>GESTIÓN DE USUARIOS Y PERMISOS</h1>
+          <h1 ref={resultsRef} tabIndex={-1}>GESTIÓN DE USUARIOS Y PERMISOS</h1>
           <p className="users-subtitle">Gestiona a los usuarios de la plataforma y sus respectivos permisos.</p>
         </header>
 
@@ -236,7 +241,20 @@ export function UsersManagementPage() {
                           setRoleModalState({ isOpen: true, targetUser: item, nextRole });
                         }}
                       >
-                        {nextRole === 'ADMIN' ? 'ASCENDER A ADMINISTRADOR' : 'ELIMINAR PERMISOS'}
+                        {item.role === 'SUPERADMIN' ? 'DESCENDER A ADMINISTRADOR' : nextRole === 'ADMIN' ? 'ASCENDER A ADMINISTRADOR' : 'ELIMINAR PERMISOS'}
+                      </button>
+                    )}
+
+                    {canChangeUserRole(item, user) && item.role === 'ADMIN' && (
+                      <button
+                        type="button"
+                        className="btn-user-action btn-promote"
+                        onClick={() => {
+                          setActionError('');
+                          setRoleModalState({ isOpen: true, targetUser: item, nextRole: 'SUPERADMIN' });
+                        }}
+                      >
+                        ASCENDER A SUPERADMINISTRADOR
                       </button>
                     )}
 
@@ -261,6 +279,7 @@ export function UsersManagementPage() {
 
         {!isLoading && !errorMessage && (totalItems > 0 || totalPages > 0) && (
           <Pagination
+            onNavigate={requestResultsFocus}
             ariaLabel="Paginación de usuarios"
             currentPage={currentPage}
             itemLabel="usuarios"
@@ -282,11 +301,15 @@ export function UsersManagementPage() {
         isOpen={roleModalState.isOpen}
         onClose={() => setRoleModalState({ isOpen: false, targetUser: null, nextRole: null })}
         onConfirm={handleConfirmRoleChange}
-        title={isPromotion ? 'Ascender a administrador' : 'Eliminar permisos de administrador'}
-        message={isPromotion
+        title={isSuperPromotion ? 'Ascender a superadministrador' : isSuperDemotion ? 'Descender a administrador' : isPromotion ? 'Ascender a administrador' : 'Eliminar permisos de administrador'}
+        message={isSuperPromotion
+          ? `¿Confirmas que deseas ascender a ${roleTargetName} a superadministrador?`
+          : isSuperDemotion
+            ? `¿Confirmas que deseas descender a ${roleTargetName} a administrador?`
+            : isPromotion
           ? `¿Confirmas que deseas ascender a ${roleTargetName} a administrador?`
           : `¿Confirmas que deseas retirar los permisos de administrador a ${roleTargetName}?`}
-        confirmLabel={isPromotion ? 'Ascender' : 'Eliminar permisos'}
+        confirmLabel={isPromotion ? 'Ascender' : isSuperDemotion ? 'Descender' : 'Eliminar permisos'}
         variant={isPromotion ? 'primary' : 'danger'}
         isProcessing={isProcessingAction}
         errorMessage={actionError}

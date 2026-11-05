@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { BlockBuilder } from './BlockBuilder.jsx';
 import { INITIAL_BLOCK_STATE } from '../../utils/blockBuilderUtils.js';
@@ -64,5 +64,45 @@ describe('BlockBuilder', () => {
     await user.click(screen.getByRole('button', { name: 'Mover texto 2 hacia arriba' }));
     const texts = screen.getAllByText(/Primero|Segundo/);
     expect(texts.map((node) => node.textContent)).toEqual(['Segundo', 'Primero']);
+  });
+});
+
+
+describe('BlockBuilder: edición, arrastre y restricciones de categoría', () => {
+  it('edita una pregunta existente y su obligatoriedad', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ name: 'B', items: [{ itemType: 'QUESTION', questionType: 'TEXT', statement: 'Original', maxLength: 100 }] }} />);
+    fireEvent.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Opciones de pregunta' }));
+    await user.click(screen.getByRole('button', { name: 'Editar pregunta' }));
+    const dialog = screen.getByRole('dialog', { name: /Editar pregunta/ });
+    fireEvent.change(within(dialog).getByPlaceholderText('Texto que verá el encuestado.'), { target: { value: 'Revisada' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    expect(screen.getByRole('heading', { name: /Revisada/ })).toBeVisible();
+    expect(screen.getByRole('checkbox')).toBeChecked();
+  });
+  it('añade una pregunta arrastrada y reordena con flechas y arrastre', () => {
+    const { container } = render(<Harness initial={{ name: 'B', items: [{ itemType: 'TEXT', textBody: 'Nota' }] }} />);
+    const target = container.querySelector('.block-empty-dropzone');
+    fireEvent.dragOver(target, { dataTransfer: { effectAllowed: 'copy' } });
+    fireEvent.drop(target, { dataTransfer: { getData: () => JSON.stringify({ type: 'CATALOG_QUESTION', question: { id: 2, statement: 'Catálogo', questionType: 'TEXT' } }) } });
+    expect(screen.getByRole('heading', { name: /Catálogo/ })).toBeVisible();
+    const handles = screen.getAllByRole('button', { name: /Reordenar elemento/ });
+    fireEvent.keyDown(handles[1], { key: 'ArrowUp' });
+    fireEvent.keyDown(handles[1], { key: 'ArrowDown' });
+    fireEvent.keyDown(handles[0], { key: 'Enter' });
+    const setData = vi.fn();
+    fireEvent.dragStart(handles[0], { dataTransfer: { setData } });
+    expect(setData).toHaveBeenCalledWith('text/plain', expect.stringContaining('INTERNAL_SORT'));
+    fireEvent.dragEnd(handles[0]);
+    fireEvent.drop(target, { dataTransfer: { getData: () => JSON.stringify({ type: 'INTERNAL_SORT', index: 0 }) } });
+    fireEvent.drop(target, { dataTransfer: { getData: () => 'invalid' } });
+    expect(screen.getByText('Nota')).toBeVisible();
+  });
+  it.each(['SALUD', 'OTROS', ''])('solo acepta preguntas de la categoría seleccionada %s', (category) => {
+    const onChange = vi.fn();
+    const { container } = render(<BlockBuilder data={{ name: 'B', items: [] }} categoryFilter={category} onChange={onChange} />);
+    fireEvent.drop(container.querySelector('.block-empty-dropzone'), { dataTransfer: { getData: () => JSON.stringify({ type: 'CATALOG_QUESTION', question: { id: 1, category: 'SALUD', questionType: 'TEXT', statement: 'Salud' } }) } });
+    expect(onChange).toHaveBeenCalledTimes(category === 'SALUD' ? 1 : 0);
   });
 });

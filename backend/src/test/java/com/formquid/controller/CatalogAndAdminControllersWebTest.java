@@ -178,7 +178,7 @@ class CatalogAndAdminControllersWebTest {
                 .param("mine", "true")
                 .param("search", "infantil")
                 .param("searchFields", "TITLE,CREATOR")
-                .param("sortOrder", "OLDEST")
+                .param("sortOrder", "ALPHABETICAL")
                 .param("category", "DATOS_PERSONALES")
                 .with(authentication(tokenFor(editor))))
             .andExpect(status().isOk());
@@ -190,7 +190,7 @@ class CatalogAndAdminControllersWebTest {
             true,
             "infantil",
             Set.of(CatalogSearchField.TITLE, CatalogSearchField.CREATOR),
-            CatalogSortOrder.OLDEST,
+            CatalogSortOrder.ALPHABETICAL,
             Category.DATOS_PERSONALES
         );
     }

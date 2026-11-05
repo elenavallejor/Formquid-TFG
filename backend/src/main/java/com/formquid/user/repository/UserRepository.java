@@ -33,10 +33,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByRole(UserRole role);
 
-    long countByRoleAndIdNot(UserRole role, Long id);
-
-    @Query(value = "select user_id from superadmin_guard where singleton for update", nativeQuery = true)
-    Long lockSuperadminGuard();
+    boolean existsByRoleAndIdNot(UserRole role, Long id);
 
     @Query(
         value = """

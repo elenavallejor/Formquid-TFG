@@ -65,3 +65,34 @@ describe('CollaborationsPage', () => {
     expect(screen.getByRole('button', { name: 'Rechazar solicitud de Ana García para Hábitos digitales' })).toBeVisible();
   });
 });
+
+
+describe('CollaborationsPage: invitaciones y solicitudes enviadas', () => {
+  it.each(['ACCESS_REQUEST', 'INVITATION'])('agrupa entradas enviadas de tipo %s con y sin metadatos', async (requestType) => {
+    getCollaborationOverview.mockResolvedValue([
+      { ...request, requestType, ownerId: requestType === 'INVITATION' ? 7 : 8, userId: requestType === 'INVITATION' ? 8 : 7, message: 'Mensaje', ownerName: 'Propietaria', ownerEmail: 'owner@example.com' },
+      { id: 4, requestType, ownerId: requestType === 'INVITATION' ? 7 : 8, userId: requestType === 'INVITATION' ? 8 : 7, surveyTitle: 'Otra encuesta', permission: 'CUSTOM' },
+    ]);
+    renderPage();
+    expect(await screen.findByText('Otra encuesta')).toBeVisible();
+    expect(screen.getByRole('cell', { name: 'Mensaje' })).toBeVisible();
+    expect(screen.getByText('CUSTOM')).toBeVisible();
+    expect(screen.getAllByText('Pendiente')).toHaveLength(2);
+  });
+  it.each([true, false])('resuelve una invitación recibida: aceptar=%s', async (accept) => {
+    const user = userEvent.setup();
+    getCollaborationOverview.mockResolvedValue([{ ...request, requestType: 'INVITATION', ownerId: 8, userId: 7, ownerName: 'Marta', ownerEmail: 'm@example.com', permission: 'VIEW' }]);
+    acceptCollaborationRequest.mockResolvedValue(null);
+    rejectCollaborationRequest.mockResolvedValue(null);
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: `${accept ? 'Aceptar' : 'Rechazar'} invitación de Marta para Hábitos digitales` }));
+    if (!accept) await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Rechazar invitación' }));
+    expect(await screen.findByText(`Invitación ${accept ? 'aceptada' : 'rechazada'}.`)).toBeVisible();
+    expect(accept ? acceptCollaborationRequest : rejectCollaborationRequest).toHaveBeenCalledWith(12, 3);
+  });
+  it('presenta un error de carga sin mensaje del servidor', async () => {
+    getCollaborationOverview.mockRejectedValue({});
+    renderPage();
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se han podido cargar las colaboraciones.');
+  });
+});

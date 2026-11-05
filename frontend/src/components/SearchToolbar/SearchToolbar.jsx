@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { MdSearch } from 'react-icons/md';
 
 import { Dropdown } from '../Dropdown/Dropdown.jsx';
@@ -8,7 +9,7 @@ import './SearchToolbar.css';
 /** Barra compartida de búsqueda, categorías y ordenación para listados. */
 export function SearchToolbar({
   ariaLabel = 'Búsqueda y filtros',
-  searchLabel,
+  searchLabel = 'Buscar resultados',
   searchPlaceholder = 'Buscar',
   searchValue,
   searchInputRef,
@@ -31,14 +32,18 @@ export function SearchToolbar({
   sortValue,
   onSortChange,
 }) {
+  const searchId = useId();
+
   return (
     <section className="search-toolbar" aria-label={ariaLabel}>
       <div className="search-toolbar__search-group" role="search">
-        <label className="search-toolbar__search">
+        <label className="search-toolbar__search" htmlFor={searchId}>
           <span className="sr-only">{searchLabel}</span>
           <MdSearch aria-hidden="true" />
           <input
             ref={searchInputRef}
+            id={searchId}
+            name="search"
             type="search"
             placeholder={searchPlaceholder}
             value={searchValue}

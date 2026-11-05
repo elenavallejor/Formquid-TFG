@@ -9,7 +9,8 @@ describe('Pagination', () => {
     const user = userEvent.setup();
     const onPageChange = vi.fn();
     const onPageSizeChange = vi.fn();
-    render(<Pagination currentPage={2} totalPages={8} totalItems={75} pageSize={10} pageSizeOptions={[10, 25]} onPageChange={onPageChange} onPageSizeChange={onPageSizeChange} />);
+    const onNavigate = vi.fn();
+    render(<Pagination onNavigate={onNavigate} currentPage={2} totalPages={8} totalItems={75} pageSize={10} pageSizeOptions={[10, 25]} onPageChange={onPageChange} onPageSizeChange={onPageSizeChange} />);
     expect(screen.getByText('Mostrando 21 a 30 de 75 elementos')).toBeVisible();
     expect(screen.getByRole('group', { name: 'Paginación' })).toBeVisible();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
@@ -19,6 +20,7 @@ describe('Pagination', () => {
     await user.click(screen.getByRole('button', { name: /Elementos por página:/ }));
     fireEvent.click(within(screen.getByRole('group', { name: 'Elementos por página' })).getByRole('button', { name: '25 por página' }));
     expect(onPageSizeChange).toHaveBeenCalledWith(25);
+    expect(onNavigate).toHaveBeenCalledTimes(2);
   });
 
   it('deshabilita avanzar en la última página del modo compacto', () => {

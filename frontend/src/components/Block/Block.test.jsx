@@ -88,4 +88,45 @@ describe('Block', () => {
     fireEvent.drop(firstItem, { dataTransfer: { getData: () => JSON.stringify({ type: 'INTERNAL_SORT', index: 3 }) } });
     expect(onDropTemplateQuestion).toHaveBeenCalledWith(3, 1);
   });
+
+  it.each(['application/x-formquid-block-item', 'application/x-formquid-template-question'])('acepta arrastres internos de tipo %s', type => {
+    const onMoveItem = vi.fn(), onDropTemplateQuestion = vi.fn();
+    const { container } = render(<Block data={block} onDropQuestion={vi.fn()} onMoveItem={onMoveItem} onDropTemplateQuestion={onDropTemplateQuestion} />);
+    const item = container.querySelector('.block-content-item');
+    const end = container.querySelector('.block-content-dropzone');
+    const dataTransfer = { types: [type], effectAllowed: 'move', dropEffect: '', getData: () => 'invalid' };
+    fireEvent.dragOver(item, { dataTransfer });
+    expect(dataTransfer.dropEffect).toBe('move');
+    fireEvent.dragOver(end, { dataTransfer });
+    expect(end).toHaveClass('drop-active');
+    fireEvent.dragLeave(container.querySelector('.block-content'), { relatedTarget: document.body });
+    expect(end).not.toHaveClass('drop-active');
+    fireEvent.drop(item, { dataTransfer });
+    expect(onMoveItem).not.toHaveBeenCalled();
+    expect(onDropTemplateQuestion).not.toHaveBeenCalled();
+  });
+  it('ignora arrastres de tipos ajenos al constructor', () => {
+    const { container } = render(<Block data={block} onMoveItem={vi.fn()} onDropQuestion={vi.fn()} onDropTemplateQuestion={vi.fn()} />);
+    const end = container.querySelector('.block-content-dropzone');
+    const dataTransfer = { types: ['text/plain'], dropEffect: 'none' };
+    fireEvent.dragOver(container.querySelector('.block-content-item'), { dataTransfer });
+    fireEvent.dragOver(end, { dataTransfer });
+    expect(end).not.toHaveClass('drop-active');
+    expect(dataTransfer.dropEffect).toBe('none');
+  });
+  it('usa el nombre y nivel de encabezado por defecto y gestiona teclado y menú', () => {
+    const onMoveItem = vi.fn();
+    render(<Block data={{ contentItems: block.contentItems }} headingLevel="incorrecto" onMoveItem={onMoveItem} onEditItem={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: 'Bloque sin nombre', level: 3 })).toBeVisible();
+    const handle = screen.getByRole('button', { name: 'Reordenar elemento 2 del bloque' });
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(onMoveItem).toHaveBeenCalledWith(1, 0);
+    fireEvent.keyDown(handle, { key: 'Enter' });
+    expect(onMoveItem).toHaveBeenCalledTimes(1);
+    const menu = screen.getByRole('button', { name: 'Opciones de la pregunta 1 del bloque' });
+    fireEvent.click(menu);
+    expect(screen.getByRole('button', { name: 'Editar pregunta' })).toBeVisible();
+    fireEvent.click(menu);
+    expect(screen.queryByRole('button', { name: 'Editar pregunta' })).not.toBeInTheDocument();
+  });
 });

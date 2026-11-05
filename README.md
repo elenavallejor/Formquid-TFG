@@ -255,8 +255,8 @@ La [guía de contenedores](doc/05_contenedores.md) amplía la configuración del
 
 - Las portadas subidas se guardan en `/app/data/survey-covers` y las fotos de perfil en `/app/data/profile-photos` dentro del backend.
 - Docker Compose monta los volúmenes persistentes `survey-covers` y `profile-photos` en esas rutas. La configuración de producción reutiliza los montajes.
-- Las copias de seguridad deben incluir PostgreSQL y el volumen de portadas.
-- Al retirar los contenedores, conserva el volumen. El comando `docker compose down -v` también lo elimina.
+- Las copias de seguridad deben incluir PostgreSQL y los volúmenes de portadas y fotos de perfil.
+- Al retirar los contenedores, conserva ambos volúmenes. El comando `docker compose down -v` también los elimina.
 - Fuera de Compose, monta almacenamiento persistente y configura sus rutas en `SURVEY_COVER_STORAGE_PATH` y `PROFILE_PHOTO_STORAGE_PATH`.
 - Se admiten imágenes PNG y JPEG de hasta 3 MB y 4000 píxeles por lado.
 - Las portadas de borradores y de encuestas con acceso restringido requieren autorización para leerse.
@@ -295,7 +295,7 @@ La migración V33 protege la existencia de al menos un superadministrador. Se ap
 | [Uso de la aplicación](doc/02_uso_de_la_aplicacion.md) | Recorrido por las funciones de participantes, editores y administradores. |
 | [API](doc/03_api.md) | Rutas de los controladores y operaciones disponibles. |
 | [Entorno y desarrollo](doc/04_entorno_y_desarrollo.md) | Instalación, variables, organización del código y pruebas. |
-| [Contenedores y despliegue](doc/05_contenedores.md) | Servicios Compose y perfil de producción del backend. |
+| [Contenedores y despliegue](doc/05_contenedores.md) | Entorno Compose, perfil de producción y publicación en Vercel y Render. |
 | [OpenAPI](doc/openapi.yaml) | Especificación resumida de las operaciones principales. |
 
 También puedes consultar el [índice de documentación](doc/README.md) y los README específicos de [backend](backend/README.md), [frontend](frontend/README.md), [scripts](scripts/README.md) y [rendimiento](performance/README.md).

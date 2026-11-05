@@ -47,7 +47,7 @@ describe('AccountPage', () => {
     await screen.findByRole('textbox', { name: 'Nombre' });
 
     const file = new File(['imagen'], 'perfil.png', { type: 'image/png' });
-    await user.upload(screen.getByLabelText('Seleccionar foto de perfil'), file);
+    await user.upload(screen.getByLabelText(/(?:Seleccionar|Cambiar) foto de perfil/), file);
     await user.click(screen.getByRole('button', { name: 'Guardar foto' }));
     expect(uploadMyProfilePhoto).toHaveBeenCalledWith(file);
     expect(await screen.findByRole('button', { name: 'Quitar foto' })).toBeVisible();
@@ -64,7 +64,7 @@ describe('AccountPage', () => {
     uploadMyProfilePhoto.mockResolvedValue({ ...account, role: 'EDITOR', profileImageKey: '/api/v1/users/7/photo/nueva.png' });
     renderPage();
     await screen.findByRole('textbox', { name: 'Nombre' });
-    await user.upload(screen.getByLabelText('Seleccionar foto de perfil'), new File(['imagen'], 'perfil.png', { type: 'image/png' }));
+    await user.upload(screen.getByLabelText(/(?:Seleccionar|Cambiar) foto de perfil/), new File(['imagen'], 'perfil.png', { type: 'image/png' }));
 
     await user.click(screen.getByRole('button', { name: 'GUARDAR CAMBIOS' }));
 
@@ -84,7 +84,7 @@ describe('AccountPage', () => {
     await user.clear(name);
     await user.type(name, 'Ana López');
     const file = new File(['imagen'], 'perfil.png', { type: 'image/png' });
-    await user.upload(screen.getByLabelText('Seleccionar foto de perfil'), file);
+    await user.upload(screen.getByLabelText(/(?:Seleccionar|Cambiar) foto de perfil/), file);
 
     await user.click(screen.getByRole('button', { name: 'GUARDAR CAMBIOS' }));
     const dialog = screen.getByRole('dialog', { name: 'Confirmar contraseña' });
@@ -100,7 +100,7 @@ describe('AccountPage', () => {
     const user = userEvent.setup({ applyAccept: false });
     renderPage();
     await screen.findByRole('textbox', { name: 'Nombre' });
-    await user.upload(screen.getByLabelText('Seleccionar foto de perfil'), new File(['texto'], 'perfil.txt', { type: 'text/plain' }));
+    await user.upload(screen.getByLabelText(/(?:Seleccionar|Cambiar) foto de perfil/), new File(['texto'], 'perfil.txt', { type: 'text/plain' }));
     expect(screen.getByRole('alert')).toHaveTextContent('PNG o JPEG');
     expect(screen.queryByRole('button', { name: 'Guardar foto' })).not.toBeInTheDocument();
   });
@@ -179,5 +179,48 @@ describe('AccountPage', () => {
     getMe.mockRejectedValue(new Error('Sin conexión'));
     renderPage();
     expect(await screen.findByRole('alert')).toHaveTextContent('Sin conexión');
+  });
+
+  it.each([new Error('Foto no disponible'), {}])('conserva la foto seleccionada si falla subirla', async (error) => {
+    uploadMyProfilePhoto.mockRejectedValue(error);
+    renderPage();
+    await screen.findByRole('textbox', { name: 'Nombre' });
+    fireEvent.change(screen.getByLabelText(/(?:Seleccionar|Cambiar) foto de perfil/), { target: { files: [new File(['imagen'], 'perfil.png', { type: 'image/png' })] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar foto' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(error.message || 'No se ha podido guardar la foto de perfil.');
+  });
+  it('conserva la foto actual si falla quitarla', async () => {
+    getMe.mockResolvedValue({ ...account, profileImageKey: '/photo.png' });
+    removeMyProfilePhoto.mockRejectedValue({});
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Quitar foto' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido quitar la foto de perfil.');
+  });
+  it.each([0, 3 * 1024 * 1024 + 1])('rechaza fotos con tamaño %s', async (size) => {
+    renderPage();
+    await screen.findByRole('textbox', { name: 'Nombre' });
+    fireEvent.change(screen.getByLabelText(/(?:Seleccionar|Cambiar) foto de perfil/), { target: { files: [new File([new Uint8Array(size)], 'perfil.png', { type: 'image/png' })] } });
+    expect(screen.getByRole('alert')).toHaveTextContent('hasta 3 MB');
+  });
+  it('carga campos ausentes y bloquea la baja por encuestas activas heredadas', async () => {
+    getMe.mockResolvedValue({ hasActiveSurveys: true });
+    renderPage();
+    expect(await screen.findByRole('textbox', { name: 'Nombre' })).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Solicitar baja de cuenta' })).toBeDisabled();
+  });
+  it('solicita cambio de correo y contraseña', async () => {
+    updateMyAccount.mockResolvedValue(account);
+    renderPage({ setAuthenticatedUser: vi.fn() });
+    await screen.findByRole('textbox', { name: 'Nombre' });
+    fireEvent.change(screen.getByLabelText('Nueva contraseña'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Confirmar nueva contraseña'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nuevo correo' }), { target: { value: 'nuevo@example.com' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Confirmar nuevo correo' }), { target: { value: 'nuevo@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'GUARDAR CAMBIOS' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar contraseña' });
+    fireEvent.change(within(dialog).getByLabelText('Contraseña actual'), { target: { value: 'oldpassword' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar' }));
+    await screen.findByRole('status');
+    expect(updateMyAccount).toHaveBeenCalledWith(expect.objectContaining({ currentPassword: 'oldpassword' }));
   });
 });

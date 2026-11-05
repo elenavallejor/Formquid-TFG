@@ -4,7 +4,7 @@
 
 ## Antes de ejecutarlo
 
-La base debe tener las migraciones aplicadas hasta V40 y un superadministrador registrado en `superadmin_guard`. Necesitas una cuenta de PostgreSQL con permisos de escritura y `psql` o Docker.
+La base debe tener las migraciones aplicadas hasta V42 y al menos un usuario con el rol `SUPERADMIN`. Necesitas una cuenta de PostgreSQL con permisos de escritura y `psql` o Docker.
 
 Comprueba a qué base apuntan `DB_HOST`, `DB_PORT` y `DB_NAME` en el `.env` de la raíz. El script también necesita `DB_USERNAME` y `DB_PASSWORD`. Si ya has exportado alguna de esas variables, su valor tiene prioridad sobre el del archivo.
 

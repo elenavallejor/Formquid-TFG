@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -121,5 +121,73 @@ describe('Survey', () => {
     await user.type(screen.getByRole('textbox', { name: 'Especifica la respuesta «Otro»' }), 'Centro de salud');
     await user.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
     expect(onSubmit).toHaveBeenCalledWith([{ questionId: 11, selectedOptions: [{ optionId: 31, otherText: 'Centro de salud' }] }]);
+  });
+});
+
+
+describe('Survey: respuestas opcionales y restricciones', () => {
+  it('omite respuestas opcionales vacías de todos los tipos', () => {
+    const onSubmit = vi.fn();
+    render(<Survey mode={SURVEY_MODES.RESPOND} onSubmit={onSubmit} data={{ items: ['TEXT', 'NUMBER', 'BOOLEAN', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'CUSTOM'].map((type, i) => question(i + 1, type, type)) }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(onSubmit).toHaveBeenCalledWith([]);
+  });
+  it.each([
+    [{ questionType: 'NUMBER', maxValue: 10 }, '12', 'El valor máximo es 10.'],
+    [{ questionType: 'NUMBER', step: 2 }, '3', 'Usa incrementos de 2.'],
+    [{ questionType: 'TEXT', settings: { maxLength: 3 } }, 'largo', 'La respuesta no puede superar 3 caracteres.'],
+  ])('valida restricciones de respuesta %j', (settings, value, error) => {
+    const onSubmit = vi.fn();
+    render(<Survey mode={SURVEY_MODES.RESPOND} onSubmit={onSubmit} data={{ items: [question(1, settings.questionType, 'Respuesta', settings)] }} />);
+    fireEvent.change(screen.getByRole(settings.questionType === 'TEXT' ? 'textbox' : 'spinbutton'), { target: { value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(screen.getByRole('alert')).toHaveTextContent(error);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+  it.each([1, 2])('exige el mínimo de %i selecciones obligatorias', (minSelections) => {
+    render(<Survey mode={SURVEY_MODES.RESPOND} data={{ items: [question(1, 'MULTIPLE_CHOICE', 'Selección', { isRequired: true, minSelections, options: [{ id: 1, label: 'A' }, { id: 2, label: 'B' }] })] }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Esta pregunta es obligatoria');
+  });
+  it('limita las selecciones múltiples y permite corregirlas', () => {
+    const onSubmit = vi.fn();
+    render(<Survey mode={SURVEY_MODES.RESPOND} onSubmit={onSubmit} data={{ items: [question(1, 'MULTIPLE_CHOICE', 'Selección', { maxSelections: 1, options: [{ id: 1, label: 'A' }, { id: 2, label: 'B' }] })] }} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'A' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'B' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Selecciona como máximo 1 opciones.');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'B' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(onSubmit).toHaveBeenCalledWith([{ questionId: 1, selectedOptions: [{ optionId: 1 }] }]);
+  });
+  it('exige texto para Otro en selecciones múltiples', () => {
+    const onSubmit = vi.fn();
+    render(<Survey mode={SURVEY_MODES.RESPOND} onSubmit={onSubmit} data={{ items: [question(1, 'MULTIPLE_CHOICE', 'Selección', { options: [{ id: 3, label: 'Otro', other: true }] })] }} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Otro' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Especifica');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '  Alternativa  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(onSubmit).toHaveBeenCalledWith([{ questionId: 1, selectedOptions: [{ optionId: 3, otherText: 'Alternativa' }] }]);
+  });
+  it('muestra metadatos y preguntas anidadas de la respuesta del servidor', () => {
+    const onSubmit = vi.fn();
+    render(<Survey mode={SURVEY_MODES.RESPOND} onSubmit={onSubmit} data={{ fontFamily: 'OPEN_DYSLEXIC', imageKey: 'cover.jpg', description: 'Descripción', tags: ['salud'], contentItems: [
+      { itemType: 'QUESTION', question: { id: 1, questionType: 'BOOLEAN', statement: 'Aceptación', options: [], matrixRows: [] } },
+      { itemType: 'BLOCK', items: [{ itemType: 'TEXT', textBody: 'Contexto' }, question(null, 'TEXT', 'Sin identificador')] },
+      { itemType: 'UNKNOWN' },
+    ] }} />);
+    expect(screen.getByText('#salud')).toBeVisible();
+    expect(screen.getByText('Descripción')).toBeVisible();
+    expect(screen.getByText('Sección sin título')).toBeVisible();
+    fireEvent.click(screen.getByRole('radio', { name: 'No' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'No se serializa' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar respuestas' }));
+    expect(onSubmit).toHaveBeenCalledWith([{ questionId: 1, booleanValue: false }]);
+  });
+  it('muestra el estado vacío y el envío en curso', () => {
+    render(<Survey mode={SURVEY_MODES.RESPOND} isSubmitting />);
+    expect(screen.getByText('Esta encuesta todavía no contiene elementos.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Enviando...' })).toBeDisabled();
   });
 });

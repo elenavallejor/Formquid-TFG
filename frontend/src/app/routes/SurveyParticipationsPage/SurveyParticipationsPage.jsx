@@ -12,6 +12,8 @@ import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { formatDateTime } from '../../../utils/formatDate.js';
 
 import '../ElementDetailPage/ElementDetailPage.css';
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './SurveyParticipationsPage.css';
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -87,6 +89,7 @@ export function SurveyParticipationsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { resultsRef, requestResultsFocus } = useResultsFocus(isLoading);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [surveyError, setSurveyError] = useState('');
   const [listError, setListError] = useState('');
@@ -213,7 +216,7 @@ export function SurveyParticipationsPage() {
           <header className="catalog-detail-title-bar survey-participations-title">
             <div>
               <MdOutlineAssignment aria-hidden="true" />
-              <h2>{survey?.title || 'Participaciones'}</h2>
+              <h2 ref={resultsRef} tabIndex={-1}>{survey?.title || 'Participaciones'}</h2>
             </div>
             <span>{totalElements} {totalElements === 1 ? 'participación' : 'participaciones'}</span>
           </header>
@@ -250,6 +253,7 @@ export function SurveyParticipationsPage() {
 
             {!isLoading && totalElements > 0 && (
               <Pagination
+            onNavigate={requestResultsFocus}
                 ariaLabel="Paginación de participaciones"
                 currentPage={currentPage}
                 itemLabel="participaciones"

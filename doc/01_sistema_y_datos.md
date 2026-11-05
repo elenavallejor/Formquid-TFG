@@ -58,7 +58,7 @@ Las tablas actuales se pueden entender por grupos:
 - **Encuestas.** `surveys` guarda el propietario, el estado, el acceso, la visibilidad y las etiquetas. `survey_collaborators`, `collaboration_requests` y `publication_requests` registran el trabajo compartido.
 - **Contenido.** `templates`, `blocks` y `questions` permiten reutilizar elementos. `content_items` conserva su orden dentro de una encuesta, plantilla o bloque. `question_settings`, `question_options` y `matrix_rows` completan la configuración de las preguntas.
 - **Respuestas.** `participations` pertenece a una encuesta y `answers` contiene sus respuestas. `answer_options` y `matrix_answer_values` guardan selecciones y valores de matriz.
-- **Gestión.** `element_requests` almacena propuestas para el catálogo, `notifications` los avisos, `categories` las categorías y `superadmin_guard` la garantía de que exista un superadministrador.
+- **Gestión.** `element_requests` almacena propuestas para el catálogo, `notifications` los avisos y `categories` las categorías.
 
 Una encuesta pertenece a un usuario y puede tener colaboradores. Cada elemento de contenido pertenece a una encuesta, plantilla o bloque. Si representa una pregunta o un bloque, se enlaza con esa entidad. Un bloque contiene textos y preguntas. El servicio impide incluir un bloque dentro de otro. Las estadísticas se calculan a partir de las respuestas guardadas.
 
@@ -83,8 +83,8 @@ erDiagram
 
 - Los identificadores internos principales son numéricos. La encuesta recibe además un código público de doce caracteres cuando se abre.
 - Las etiquetas se guardan en un arreglo de `surveys` y se admiten hasta diez.
-- Se pueden crear varios superadministradores. `superadmin_guard` impide que se elimine el último.
+- Se pueden crear varios superadministradores. Los triggers de `users` impiden eliminar o degradar al último, coordinan operaciones concurrentes y bloquean `TRUNCATE`, sin una tabla auxiliar.
 - Una participación puede asociarse a un usuario o al hash del identificador de una persona anónima. Hay índices únicos para evitar dos envíos de la misma identidad en una encuesta.
 - El campo de género desapareció de usuarios y solicitudes. Se añadieron categorías gestionables y tokens de recuperación de contraseña.
 
-Estos cambios figuran, entre otras, en las migraciones V8, V17, V19, V24, V28, V33 y V34. El diseño inicial ayuda a entender el punto de partida y las migraciones describen la base actual.
+Estos cambios figuran, entre otras, en las migraciones V8, V17, V19, V24, V28, V34 y V42. El diseño inicial ayuda a entender el punto de partida y las migraciones describen la base actual.

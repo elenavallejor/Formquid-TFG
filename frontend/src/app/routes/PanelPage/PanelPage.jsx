@@ -17,6 +17,8 @@ import { SurveyOriginModal } from '../../../components/SurveyOriginModal/SurveyO
 import { Table } from '../../../components/Table/Table.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './PanelPage.css';
 
 /**
@@ -114,6 +116,7 @@ export function PanelPage() {
   const createSurveyTriggerRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(true);
+  const { resultsRef: editorResultsRef, requestResultsFocus: requestEditorResultsFocus } = useResultsFocus(isLoading);
   const [dataError, setDataError] = useState('');
   const [isSurveyOriginOpen, setIsSurveyOriginOpen] = useState(false);
 
@@ -125,6 +128,7 @@ export function PanelPage() {
   const [adminSurveysTotalItems, setAdminSurveysTotalItems] = useState(0);
   const [adminSurveysTotalPages, setAdminSurveysTotalPages] = useState(0);
   const [isAdminSurveysLoading, setIsAdminSurveysLoading] = useState(true);
+  const { resultsRef: adminResultsRef, requestResultsFocus: requestAdminResultsFocus } = useResultsFocus(isAdminSurveysLoading);
   const [adminSurveysError, setAdminSurveysError] = useState('');
 
   const [editorSurveys, setEditorSurveys] = useState([]);
@@ -474,7 +478,7 @@ export function PanelPage() {
             <div className="panel-container">
               <div className="surveys-header-row">
                 <div>
-                  <h2 className="surveys-section-title">
+                  <h2 ref={editorResultsRef} tabIndex={-1} className="surveys-section-title">
                     MIS ENCUESTAS
                   </h2>
 
@@ -575,6 +579,7 @@ export function PanelPage() {
                   {totalPages > 1 && (
                     <Pagination
                       ariaLabel="Paginación de mis encuestas"
+                      onNavigate={requestEditorResultsFocus}
                       currentPage={currentPage}
                       onPageChange={setCurrentPage}
                       totalPages={totalPages}
@@ -731,7 +736,7 @@ export function PanelPage() {
               aria-busy={isAdminSurveysLoading}
             >
               <div className="admin-section-header-row">
-                <h2 className="admin-section-title">
+                <h2 ref={adminResultsRef} tabIndex={-1} className="admin-section-title">
                   RESUMEN DE ENCUESTAS
                 </h2>
               </div>
@@ -749,6 +754,7 @@ export function PanelPage() {
                   footer={adminSurveysTotalItems > 0 ? (
                     <Pagination
                       ariaLabel="Paginación del resumen de encuestas"
+                      onNavigate={requestAdminResultsFocus}
                       currentPage={adminSurveysPage}
                       itemLabel="encuestas"
                       onPageChange={setAdminSurveysPage}

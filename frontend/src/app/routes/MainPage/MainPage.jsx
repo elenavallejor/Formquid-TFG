@@ -16,6 +16,8 @@ import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './MainPage.css';
 
 const ACCESS_FILTERS = {
@@ -68,6 +70,8 @@ function PaginatedSurveySection({
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [requestVersion, setRequestVersion] = useState(0);
+  const { resultsRef: resultsHeadingRef, requestResultsFocus } = useResultsFocus(isLoading);
+
   useEffect(() => {
     if (!visible || isAuthLoading) return undefined;
 
@@ -128,7 +132,7 @@ function PaginatedSurveySection({
     >
       <header>
         <Icon aria-hidden="true" />
-        <h3 id={id}>{title}</h3>
+        <h3 ref={resultsHeadingRef} id={id} tabIndex={-1}>{title}</h3>
       </header>
 
       {errorMessage && (
@@ -176,10 +180,15 @@ function PaginatedSurveySection({
       {!isLoading && !errorMessage && totalItems > 0 && (
         <Pagination
           ariaLabel={`Paginación de ${title.toLowerCase()}`}
+          onNavigate={requestResultsFocus}
           currentPage={currentPage}
           itemLabel="encuestas"
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => {
+            if (page === currentPage) return;
+            setCurrentPage(page);
+          }}
           onPageSizeChange={(size) => {
+            if (size === itemsPerPage) return;
             onPageSizeChange(size);
             setCurrentPage(0);
           }}
@@ -278,10 +287,12 @@ export function MainPage() {
           </div>
 
           <div className="main-page-controls" role="search">
-            <label className="main-page-search">
+            <label className="main-page-search" htmlFor="survey-search">
               <span className="sr-only">Buscar encuestas por nombre, descripción o etiqueta</span>
               <MdSearch aria-hidden="true" />
               <input
+                id="survey-search"
+                name="search"
                 type="search"
                 value={search}
                 placeholder="Buscar"

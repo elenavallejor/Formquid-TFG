@@ -33,7 +33,7 @@ export function CategorySelect({ id, value, onChange, surveyOnly = false, defaul
       <label className="category-select-label" htmlFor={id}>Categoría{required && <> <span className="category-select-required" aria-hidden="true">*</span><span className="sr-only"> (obligatoria)</span></>}</label>
       <Dropdown id={id} value={value} onChange={(event) => onChange(event.target.value, categories.find((category) => category.code === event.target.value) ?? null)}
         className={placeholder && !value ? 'category-select--placeholder' : ''}
-        aria-invalid={validationError ? true : undefined} aria-describedby={errorMessage ? `${id}-error` : undefined}>
+        aria-invalid={validationError ? true : undefined} aria-describedby={[`${id}-value`, errorMessage && `${id}-error`].filter(Boolean).join(' ')}>
         {placeholder
           ? <option value="" disabled>{placeholder}</option>
           : showDefaultOption && <option value="" disabled={required}>{required ? defaultLabel : <CategoryLabel category={{ code: 'OTROS', name: defaultLabel }} />}</option>}

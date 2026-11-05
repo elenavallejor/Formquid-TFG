@@ -68,6 +68,12 @@
   min-height: 48px;
 }
 
+.search-toolbar__sort .custom-dropdown-menu {
+  left: auto;
+  min-width: max(100%, 240px);
+  box-sizing: border-box;
+}
+
 @media only screen and (max-width: 800px) {
   .search-toolbar {
     flex-direction: column;
@@ -105,5 +111,10 @@
 
   .search-toolbar__search {
     min-width: 0;
+  }
+
+  .search-toolbar__sort .custom-dropdown-menu {
+    left: 0;
+    min-width: 100%;
   }
 }

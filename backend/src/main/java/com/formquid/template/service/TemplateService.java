@@ -65,7 +65,7 @@ public class TemplateService {
         Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
-        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder);
+        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder, "title");
         Page<TemplateSummaryDto> templates = templateRepository.findCatalogSummaries(
             user.getId(),
             mine,

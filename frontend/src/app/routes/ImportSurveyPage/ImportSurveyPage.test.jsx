@@ -74,4 +74,33 @@ describe('ImportSurveyPage', () => {
     expect(screen.queryByText('arrastrada.odt')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Validar documento' })).toBeDisabled();
   });
+
+  it.each([[2048, '2 KB'], [1048576, '1.0 MB']])('muestra el tamaño de un archivo de %s bytes', (size, label) => {
+    const { container } = renderWithRouter(<ImportSurveyPage />);
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [new File([new Uint8Array(size)], 'encuesta.odt')] } });
+    expect(screen.getByText(label)).toBeVisible();
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [] } });
+    expect(screen.queryByText('encuesta.odt')).not.toBeInTheDocument();
+  });
+  it('gestiona la salida del arrastre y el error por defecto de validación', async () => {
+    previewSurveyImport.mockRejectedValue({});
+    const { container } = renderWithRouter(<ImportSurveyPage />);
+    const dropzone = screen.getByRole('button', { name: /Arrastra aquí/ });
+    fireEvent.dragEnter(dropzone);
+    fireEvent.dragOver(dropzone);
+    fireEvent.dragLeave(dropzone, { relatedTarget: dropzone.querySelector('strong') });
+    fireEvent.dragLeave(dropzone, { relatedTarget: document.body });
+    expect(dropzone).not.toHaveClass('is-dragging');
+    fireEvent.drop(dropzone, { dataTransfer: { files: [] } });
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [new File(['odt'], 'encuesta.odt')] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Validar documento' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido validar el documento.');
+  });
+  it('muestra el singular cuando el documento contiene una pregunta', async () => {
+    previewSurveyImport.mockResolvedValue({ title: 'Única', blockCount: 1, questionCount: 1 });
+    const { container } = renderWithRouter(<ImportSurveyPage />);
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [new File(['odt'], 'encuesta.odt')] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Validar documento' }));
+    expect(await screen.findByText('1 bloque · 1 pregunta')).toBeVisible();
+  });
 });

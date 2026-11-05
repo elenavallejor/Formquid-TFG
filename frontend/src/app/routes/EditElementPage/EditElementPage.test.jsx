@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,7 +18,7 @@ vi.mock('../../../api/catalogApi.js', () => ({
   updateCatalogBlock: vi.fn(), updateCatalogQuestion: vi.fn(), updateCatalogTemplate: vi.fn(),
 }));
 vi.mock('../../../api/categoriesApi.js', () => ({ getCategories: vi.fn(() => Promise.resolve([])) }));
-vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: () => null }));
+vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: ({ onAddQuestion, onAddBlock }) => <><button onClick={() => onAddQuestion({ id: 3, statement: 'Añadida', questionType: 'TEXT', settings: { maxLength: 300 } })}>Añadir del catálogo</button>{onAddBlock && <button onClick={() => onAddBlock({ id: 4, name: 'Referencia' }, 0)}>Añadir bloque del catálogo</button>}</> }));
 vi.mock('../../../components/QuestionBuilder/QuestionBuilder.jsx', () => ({
   QuestionBuilder: ({ data, onChange }) => (
     <label>Enunciado
@@ -27,10 +27,11 @@ vi.mock('../../../components/QuestionBuilder/QuestionBuilder.jsx', () => ({
   ),
 }));
 vi.mock('../../../components/BlockBuilder/BlockBuilder.jsx', () => ({
-  BlockBuilder: ({ data, onChange }) => (
-    <label>Nombre del bloque
-      <input value={data.name} onChange={(event) => onChange({ ...data, name: event.target.value })} />
-    </label>
+  BlockBuilder: ({ data, onChange, onDropQuestionFromSidebar }) => (
+    <>
+      <button onClick={() => onDropQuestionFromSidebar({ id: 3, statement: 'Insertada', questionType: 'TEXT', settings: { maxLength: 300 } }, 0)}>Insertar pregunta</button>
+      <label>Nombre del bloque<input value={data.name} onChange={(event) => onChange({ ...data, name: event.target.value })} /></label>
+    </>
   ),
 }));
 vi.mock('../../../components/TemplateBuilder/TemplateBuilder.jsx', () => ({
@@ -96,5 +97,46 @@ describe('EditElementPage', () => {
     renderPage('pregunta');
     expect(await screen.findByRole('alert')).toHaveTextContent('Elemento no disponible');
     expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+  });
+
+  it.each(['bloque', 'plantilla'])('incorpora preguntas y bloques del catálogo al editar %s', async type => {
+    renderPage(type);
+    fireEvent.click(await screen.findByRole('button', { name: 'Añadir del catálogo' }));
+    if (type === 'bloque') fireEvent.click(screen.getByRole('button', { name: 'Insertar pregunta' }));
+    else fireEvent.click(screen.getByRole('button', { name: 'Añadir bloque del catálogo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('status')).toBeVisible();
+    const update = type === 'bloque' ? updateCatalogBlock : updateCatalogTemplate;
+    expect(update).toHaveBeenCalledWith('12', expect.objectContaining({ items: expect.arrayContaining([expect.objectContaining({ itemType: 'QUESTION' })]) }));
+  });
+  it('reutiliza el elemento de la vista de detalles y conserva su categoría al guardar', async () => {
+    const element = { id: 12, statement: 'Reutilizada', questionType: 'TEXT', settings: { maxLength: 300 }, category: 'SALUD' };
+    renderWithDataRouter([{ path: '/catalogo/editar/:elementType/:elementId', element: <EditElementPage /> }], {
+      route: { pathname: '/catalogo/editar/pregunta/12', state: { element, elementId: 12, elementType: 'pregunta', fromDetails: true } },
+    });
+    expect(screen.getByRole('textbox', { name: 'Enunciado' })).toHaveValue('Reutilizada');
+    expect(getCatalogQuestionById).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('status')).toBeVisible();
+    expect(updateCatalogQuestion).toHaveBeenCalledWith('12', expect.objectContaining({ category: 'SALUD' }));
+  });
+  it.each([new Error('No se pudo guardar'), {}])('conserva la edición tras un error al guardar', async error => {
+    updateCatalogQuestion.mockRejectedValue(error);
+    renderPage('pregunta');
+    await screen.findByRole('textbox', { name: 'Enunciado' });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(error.message || 'No se ha podido actualizar la pregunta fija.');
+  });
+  it('muestra el error de carga por defecto', async () => {
+    getCatalogQuestionById.mockRejectedValue({});
+    renderPage('pregunta');
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido cargar la pregunta fija.');
+  });
+  it('redirecciona tipos de elemento desconocidos al catálogo', async () => {
+    renderWithDataRouter([
+      { path: '/catalogo/editar/:elementType/:elementId', element: <EditElementPage /> },
+      { path: '/catalogo', element: <p>Catálogo seguro</p> },
+    ], { route: '/catalogo/editar/desconocido/12' });
+    expect(await screen.findByText('Catálogo seguro')).toBeVisible();
   });
 });

@@ -99,4 +99,27 @@ describe('AdminSurveysPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '18 por página' }));
     await waitFor(() => expect(getAdminSurveys).toHaveBeenCalledWith(expect.objectContaining({ size: 18, page: 0 })));
   });
+
+  it.each([null, {}])('tolera respuestas incompletas del listado: %j', async (response) => {
+    getAdminSurveys.mockResolvedValue(response);
+    renderWithRouter(<AdminSurveysPage />);
+    expect(await screen.findByText('No hay encuestas que coincidan con los filtros.')).toBeVisible();
+  });
+
+  it('muestra el error por defecto de carga', async () => {
+    getAdminSurveys.mockRejectedValue({});
+    renderWithRouter(<AdminSurveysPage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se han podido cargar las encuestas.');
+  });
+  it('restablece la búsqueda desde los filtros', async () => {
+    const user = userEvent.setup();
+    getAdminSurveys.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0 });
+    renderWithRouter(<AdminSurveysPage />);
+    await screen.findByText('No hay encuestas que coincidan con los filtros.');
+    const search = screen.getByRole('searchbox');
+    await user.type(search, 'salud');
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(screen.getByRole('button', { name: 'Borrar filtros' }));
+    expect(search).toHaveValue('');
+  });
 });

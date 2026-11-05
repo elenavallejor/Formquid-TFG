@@ -152,6 +152,9 @@ export function ImportSurveyPage() {
             <input
               ref={inputRef}
               id="survey-odt-file"
+              aria-label="Seleccionar archivo ODT"
+              aria-describedby={`survey-odt-file-help${errorMessage ? ' survey-odt-file-error' : ''}`}
+              aria-invalid={Boolean(errorMessage)}
               className="import-survey-file-input"
               type="file"
               tabIndex={-1}

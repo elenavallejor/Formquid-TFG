@@ -84,8 +84,8 @@ class SurveyServiceTest {
     private SurveyService surveyService;
 
     @ParameterizedTest
-    @EnumSource(SurveyLifecycle.class)
-    void delete_whenActorIsOwner_allowsAnyLifecycle(SurveyLifecycle lifecycle) {
+    @EnumSource(value = SurveyLifecycle.class, names = {"DRAFT", "CLOSED"})
+    void delete_whenActorIsOwner_allowsNonOpenLifecycle(SurveyLifecycle lifecycle) {
         User owner = User.builder().id(7L).role(UserRole.EDITOR).build();
         Survey survey = Survey.builder().id(12L).owner(owner).lifecycleStatus(lifecycle).build();
         when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));

@@ -20,6 +20,7 @@ export function Pagination({
   disabled = false,
   itemLabel = 'elementos',
   onPageChange,
+  onNavigate,
   onPageSizeChange,
   pageSize = 1,
   pageSizeLabel = 'Elementos por página',
@@ -33,6 +34,18 @@ export function Pagination({
   const startItem = totalItems > 0 ? currentPage * pageSize + 1 : 0;
   const endItem = Math.min((currentPage + 1) * pageSize, totalItems);
 
+  function changePage(page) {
+    if (page === currentPage) return;
+    onNavigate?.();
+    onPageChange(page);
+  }
+
+  function changePageSize(size) {
+    if (size === pageSize) return;
+    onNavigate?.();
+    onPageSizeChange(size);
+  }
+
   return (
     <div className={`pagination pagination--${variant}`}>
       {isCompact ? (
@@ -40,7 +53,7 @@ export function Pagination({
           <button
             type="button"
             disabled={disabled || currentPage === 0}
-            onClick={() => onPageChange(currentPage - 1)}
+            onClick={() => changePage(currentPage - 1)}
           >
             <MdChevronLeft aria-hidden="true" />
             Anterior
@@ -51,7 +64,7 @@ export function Pagination({
           <button
             type="button"
             disabled={disabled || currentPage >= totalPages - 1}
-            onClick={() => onPageChange(currentPage + 1)}
+            onClick={() => changePage(currentPage + 1)}
           >
             Siguiente
             <MdChevronRight aria-hidden="true" />
@@ -68,7 +81,7 @@ export function Pagination({
               type="button"
               disabled={disabled || currentPage === 0}
               aria-label="Página anterior"
-              onClick={() => onPageChange(currentPage - 1)}
+              onClick={() => changePage(currentPage - 1)}
             >
               <MdChevronLeft aria-hidden="true" />
             </button>
@@ -80,7 +93,7 @@ export function Pagination({
                 disabled={disabled}
                 aria-label={`Página ${page + 1}`}
                 aria-current={currentPage === page ? 'page' : undefined}
-                onClick={() => onPageChange(page)}
+                onClick={() => changePage(page)}
               >
                 {page + 1}
               </button>
@@ -89,7 +102,7 @@ export function Pagination({
               type="button"
               disabled={disabled || currentPage >= totalPages - 1}
               aria-label="Página siguiente"
-              onClick={() => onPageChange(currentPage + 1)}
+              onClick={() => changePage(currentPage + 1)}
             >
               <MdChevronRight aria-hidden="true" />
             </button>
@@ -100,7 +113,7 @@ export function Pagination({
               className="pagination-page-size"
               disabled={disabled}
               aria-label={pageSizeLabel}
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              onChange={(event) => changePageSize(Number(event.target.value))}
               value={pageSize}
             >
               {pageSizeOptions.map((option) => (

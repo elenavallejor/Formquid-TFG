@@ -82,3 +82,38 @@ describe('NotificationsModal', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
+
+
+describe('NotificationsModal: paginación y fallos de acciones', () => {
+  it.each([new Error('Acción fallida'), {}])('informa del fallo al marcar una notificación', async (error) => {
+    const user = userEvent.setup();
+    getNotifications.mockResolvedValue({ content: [unread], totalElements: 1, totalPages: 1 });
+    markNotificationAsRead.mockRejectedValue(error);
+    renderModal();
+    await user.click(await screen.findByRole('button', { name: 'Marcar como leída' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(error.message || 'No se pudo completar la operación.');
+    expect(screen.getByRole('heading', { name: 'Invitación' })).toBeVisible();
+  });
+  it('carga más resultados y conserva las notificaciones leídas al consultar todas', async () => {
+    const user = userEvent.setup();
+    getNotifications.mockResolvedValueOnce({ content: [unread], totalElements: 2, totalPages: 2 })
+      .mockResolvedValueOnce({ content: [read], totalElements: 2, totalPages: 2 })
+      .mockResolvedValue({ content: [unread, read], totalElements: 2, totalPages: 1 });
+    markNotificationAsRead.mockResolvedValue({ ...unread, readAt: '2026-10-20T10:00:00Z' });
+    getNotificationDestination.mockResolvedValue({ url: null });
+    renderModal();
+    await user.click(await screen.findByRole('button', { name: 'Ver 1 más' }));
+    expect(await screen.findByRole('heading', { name: 'Aviso leído' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Todas' }));
+    await user.click(await screen.findByRole('button', { name: 'Marcar como leída' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Notificación marcada como leída.');
+    expect(screen.getByRole('heading', { name: 'Invitación' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Ir a la encuesta' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('El destino ya no está disponible');
+  });
+  it('muestra un listado vacío cuando no hay notificaciones', async () => {
+    getNotifications.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0 });
+    renderModal();
+    expect(await screen.findByText('No hay notificaciones que coincidan con los filtros.')).toBeVisible();
+  });
+});

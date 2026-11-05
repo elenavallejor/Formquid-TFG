@@ -13,49 +13,49 @@ export const QUESTION_TYPES = [
     title: 'Texto', 
     desc: 'Permite escribir una respuesta libre.', 
     icon: MdOutlineTextFields,
-    color: 'var(--color-super)'
+    color: '#6539B1'
   },
   { 
     id: 'NUMBER', 
     title: 'Numérica', 
     desc: 'Permite introducir un valor numérico.', 
     icon: TiSortNumerically,
-    color: 'var(--color-info)'
+    color: '#DE3ECE'
   },
   { 
     id: 'SINGLE_CHOICE', 
     title: 'Opción única', 
     desc: 'Permite seleccionar una sola opción.', 
     icon: BiRadioCircleMarked,
-    color: 'var(--color-primary)'
+    color: '#39B1AB'
   },
   { 
     id: 'MULTIPLE_CHOICE', 
     title: 'Opción múltiple', 
     desc: 'Permite seleccionar una o varias opciones.', 
     icon: TiInputChecked,
-    color: 'var(--color-super)'
+    color: '#FFBD30'
   },
   { 
     id: 'SCALE', 
     title: 'Escala', 
     desc: 'Permite valorar algo dentro de un rango numérico.', 
     icon: MdLinearScale,
-    color: 'var(--color-info)'
+    color: '#395FB1'
   },
   { 
     id: 'MATRIX_SCALE', 
     title: 'Matriz de escala', 
     desc: 'Permite valorar varios elementos utilizando una misma escala.', 
     icon: IoAppsOutline,
-    color: 'var(--color-primary)'
+    color: '#5E9800'
   },
   { 
     id: 'BOOLEAN', 
     title: 'Dos opciones', 
     desc: 'Permite elegir entre dos respuestas, como Sí o No.', 
     icon: MdThumbsUpDown,
-    color: 'var(--color-header)'
+    color: '#FB963C'
   },
 ];
 

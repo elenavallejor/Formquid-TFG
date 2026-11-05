@@ -29,7 +29,23 @@ class DevSeedScriptTest {
             try (Connection connection = DriverManager.getConnection(
                     postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
                  Statement statement = connection.createStatement()) {
+                // El superadministrador conservado puede no tener el ID 1.
+                statement.executeUpdate("""
+                    INSERT INTO users (role, email, name, institution, password_hash, created_at, updated_at)
+                    VALUES ('SUPERADMIN', 'replacement@formquid.local', 'Relevo', 'FormQuid', 'preserved-hash', now(), now())
+                    """);
+                statement.executeUpdate("DELETE FROM users WHERE email = 'test-superadmin@formquid.local'");
                 statement.execute("SET formquid.allow_dev_seed = 'yes'");
+                statement.execute(sql);
+
+                try (ResultSet admin = statement.executeQuery("""
+                    SELECT email, password_hash FROM users WHERE id = 1 AND role = 'SUPERADMIN'
+                    """)) {
+                    assertThat(admin.next()).isTrue();
+                    assertThat(admin.getString("email")).isEqualTo("replacement@formquid.local");
+                    assertThat(admin.getString("password_hash")).isEqualTo("preserved-hash");
+                }
+                // Verifica también el reinicio cuando ya se conserva el ID 1.
                 statement.execute(sql);
 
                 try (ResultSet rows = statement.executeQuery("""

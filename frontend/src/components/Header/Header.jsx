@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ImUser } from 'react-icons/im';
 import { MdOutlineDashboard, MdOutlineKeyboardArrowDown, MdOutlineLogout, MdOutlineNotificationsNone, MdOutlinePerson } from 'react-icons/md';
@@ -26,6 +26,7 @@ function getUserDisplayName(user) {
 
 export function Header() {
   const navigate = useNavigate();
+  const userMenuId = useId();
   const { user, isAuthenticated, logout } = useAuth();
 
   const [notificationCount, setNotificationCount] = useState({ userId: null, count: 0 });
@@ -135,20 +136,27 @@ export function Header() {
               <details
                 className="user-menu"
                 onMouseLeave={handleMouseLeave}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Escape' || !event.currentTarget.open) return;
+                  event.preventDefault();
+                  event.currentTarget.removeAttribute('open');
+                  event.currentTarget.querySelector('summary')?.focus();
+                }}
               >
                 <summary
                   className="user-menu-summary"
-                  aria-label={`Menú de usuario de ${userDisplayName}`}
+                  aria-labelledby={`${userMenuId}-label ${userMenuId}-avatar ${userMenuId}-name${userRole ? ` ${userMenuId}-role` : ''}`}
                 >
-                  <UserAvatar className="user-avatar" name={userDisplayName} imageKey={user.profileImageKey} />
+                  <span id={`${userMenuId}-label`} className="sr-only">Menú de usuario de</span>
+                  <UserAvatar id={`${userMenuId}-avatar`} className="user-avatar" name={userDisplayName} imageKey={user.profileImageKey} />{' '}
 
                   <span className="user-header-information">
-                    <span className="user-header-name">
+                    <span id={`${userMenuId}-name`} className="user-header-name">
                       {userDisplayName}
-                    </span>
+                    </span>{' '}
 
                     {userRole && (
-                      <span className="user-header-role">
+                      <span id={`${userMenuId}-role`} className="user-header-role">
                         {userRole}
                       </span>
                     )}

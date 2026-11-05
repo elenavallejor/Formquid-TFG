@@ -57,7 +57,7 @@ public class BlockService {
         Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
-        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder);
+        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder, "name");
         Page<BlockSummaryDto> blocks = blockRepository.findCatalogSummaries(
             BlockScope.CATALOG,
             user.getId(),

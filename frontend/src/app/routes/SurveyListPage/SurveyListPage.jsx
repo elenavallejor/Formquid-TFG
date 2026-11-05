@@ -11,6 +11,8 @@ import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 import { useAuth } from '../../../context/useAuth.js';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './SurveyListPage.css';
 
 const DEFAULT_PAGE_SIZE = 9;
@@ -30,6 +32,7 @@ export function SurveyListPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [requestingSurveyId, setRequestingSurveyId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { resultsRef, requestResultsFocus } = useResultsFocus(isLoading);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -110,7 +113,7 @@ export function SurveyListPage() {
         <Breadcrumbs items={[{ label: 'PANEL', to: '/panel' }, { label: 'ENCUESTAS' }]} />
 
         <header className="survey-list-header">
-          <h1>TODAS LAS ENCUESTAS</h1>
+          <h1 ref={resultsRef} tabIndex={-1}>TODAS LAS ENCUESTAS</h1>
           <p>Explora las encuestas de otros editores y solicita colaborar en su creación.</p>
         </header>
 
@@ -189,6 +192,7 @@ export function SurveyListPage() {
 
         {!isLoading && !errorMessage && totalItems > 0 && (
           <Pagination
+            onNavigate={requestResultsFocus}
             ariaLabel="Paginación de encuestas"
             currentPage={currentPage}
             itemLabel="encuestas"

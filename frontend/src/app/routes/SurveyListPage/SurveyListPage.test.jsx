@@ -84,4 +84,27 @@ describe('SurveyListPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '18 por página' }));
     await waitFor(() => expect(getSurveyDirectory).toHaveBeenCalledWith(expect.objectContaining({ size: 18, page: 0 })));
   });
+
+  it.each([null, {}])('tolera respuestas incompletas del listado: %j', async (response) => {
+    getSurveyDirectory.mockResolvedValue(response);
+    renderList();
+    expect(await screen.findByText('No hay encuestas que coincidan con los filtros.')).toBeVisible();
+  });
+
+  it('muestra el error por defecto de carga', async () => {
+    getSurveyDirectory.mockRejectedValue({});
+    renderList();
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se han podido cargar las encuestas.');
+  });
+  it('restablece la búsqueda desde los filtros', async () => {
+    const user = userEvent.setup();
+    getSurveyDirectory.mockResolvedValue({ content: [], totalElements: 0, totalPages: 0 });
+    renderList();
+    await screen.findByText('No hay encuestas que coincidan con los filtros.');
+    const search = screen.getByRole('searchbox');
+    await user.type(search, 'salud');
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(screen.getByRole('button', { name: 'Borrar filtros' }));
+    expect(search).toHaveValue('');
+  });
 });

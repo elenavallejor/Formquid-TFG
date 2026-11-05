@@ -107,3 +107,30 @@ describe('SurveyParticipationsPage', () => {
     await waitFor(() => expect(getSurveyParticipations).toHaveBeenCalledWith('12', expect.objectContaining({ page: 0, size: 25 })));
   });
 });
+
+
+describe('SurveyParticipationsPage: respuestas opcionales', () => {
+  it('presenta etiquetas booleanas por defecto y tipos desconocidos', async () => {
+    const user = userEvent.setup();
+    getSurveyForResults.mockResolvedValue({ id: 12 });
+    getSurveyParticipations.mockResolvedValue({ content: [{ id: 1 }], totalElements: 1, totalPages: 1 });
+    getSurveyParticipation.mockResolvedValue({ id: 1, answers: [
+      { answerId: 1, questionType: 'BOOLEAN', statement: 'Positiva', booleanValue: true },
+      { answerId: 2, questionType: 'BOOLEAN', statement: 'Negativa', booleanValue: false },
+      { answerId: 3, questionType: 'UNKNOWN', statement: 'Sin respuesta', selectedOptions: [{ optionId: 1, label: 'A' }] },
+      { answerId: 4, questionType: 'BOOLEAN', statement: 'Personalizada', booleanValue: true, trueLabel: 'Conforme' },
+    ] });
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Ver respuestas' }));
+    expect(await screen.findByText('Sí')).toBeVisible();
+    expect(screen.getByText('No')).toBeVisible();
+    expect(screen.getByText('Conforme')).toBeVisible();
+    expect(screen.getByText('UNKNOWN')).toBeVisible();
+  });
+  it('muestra errores por defecto cuando no llega mensaje del servidor', async () => {
+    getSurveyForResults.mockRejectedValue({});
+    getSurveyParticipations.mockRejectedValue({});
+    renderPage();
+    expect(await screen.findAllByRole('alert')).toHaveLength(2);
+  });
+});

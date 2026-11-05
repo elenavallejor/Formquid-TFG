@@ -45,11 +45,12 @@ function isCurrentUser(user, currentUser) {
 export function getNextRole(role) {
   if (role === 'EDITOR') return 'ADMIN';
   if (role === 'ADMIN') return 'EDITOR';
+  if (role === 'SUPERADMIN') return 'ADMIN';
   return null;
 }
 
 export function canChangeUserRole(user, currentUser) {
-  return !isCurrentUser(user, currentUser) && user?.role !== 'SUPERADMIN';
+  return !isCurrentUser(user, currentUser);
 }
 
 export function canDeleteUser(user, currentUser) {

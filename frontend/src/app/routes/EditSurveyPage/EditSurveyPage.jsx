@@ -894,7 +894,7 @@ export function EditSurveyPage() {
                   ? <button type="button" className="edit-survey-publish-button edit-survey-close-button" disabled={isSaving} onClick={() => requestLifecycleChange('CLOSED')}><MdClose aria-hidden="true" />Cerrar encuesta</button>
                   : <button type="button" className="edit-survey-publish-button" disabled={isSaving} onClick={() => requestLifecycleChange('OPEN')}><MdPublish aria-hidden="true" />Publicar encuesta</button>}
               </section>}
-              {isOwner && <section className="edit-survey-panel-card edit-survey-delete-card">
+              {isOwner && survey.lifecycleStatus !== 'OPEN' && <section className="edit-survey-panel-card edit-survey-delete-card">
                 <div>
                   <h2>ELIMINAR ENCUESTA</h2>
                   <p>Se eliminarán de forma permanente la encuesta y sus respuestas.</p>

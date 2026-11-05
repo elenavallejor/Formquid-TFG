@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { MdMoreVert, MdOutlineDelete, MdOutlineEdit, MdOutlineVisibility } from 'react-icons/md';
 
+import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../utils/categoryIconOptions.js';
 import { formatDate } from '../../utils/formatDate.js';
 import { getUserInitials } from '../../utils/getUserInitials.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
@@ -20,6 +21,7 @@ const QUESTION_TYPE_LABELS = {
 
 export function CatalogList({
   items,
+  categories = [],
   config,
   isLoading,
   errorMessage,
@@ -271,6 +273,11 @@ export function CatalogList({
             const description = config.descriptionKey
               ? item[config.descriptionKey] || 'Sin descripción.'
               : '';
+            const category = categories.find(({ code }) => code === item.category) ?? { code: item.category };
+            const CategoryIcon = CATEGORY_ICON_COMPONENTS[getCategoryIconName(category)];
+            const categoryName = category.name
+              ?? item.category?.replaceAll('_', ' ').toLocaleLowerCase('es').replace(/^./, (letter) => letter.toLocaleUpperCase('es'))
+              ?? 'Sin categoría';
             const creator = item.creatorName || '';
             const createdAt = formatDate(item.createdAt, { includeTime: true });
             const updatedAt = formatDate(item.updatedAt, { includeTime: true });
@@ -296,7 +303,11 @@ export function CatalogList({
                   </div>
                   <div className="catalog-item-info">
                     <h3>{title}</h3>
-                    {description && <p>{description}</p>}
+                    {description && <p className="catalog-item-description">{description}</p>}
+                    <p className="catalog-item-category">
+                      <CategoryIcon aria-hidden="true" />
+                      <span>{categoryName}</span>
+                    </p>
                   </div>
                 </div>
                 <div className="col-creator user-creator-cell">

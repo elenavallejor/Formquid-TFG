@@ -17,9 +17,9 @@ export function TarjetaSolicitud({ solicitud, onAccept, onDeny }) {
   return (
     <section className="solicitud-card" aria-labelledby={`applicant-name-${id}`}>
       <div className="solicitud-col solicitud-col-personal">
-        <h3 id={`applicant-name-${id}`} className="solicitud-applicant-name">
+        <h2 id={`applicant-name-${id}`} className="solicitud-applicant-name">
           {name}
-        </h3>
+        </h2>
         <p className="solicitud-section-label">DATOS PERSONALES:</p>
         <ul className="solicitud-data-list">
           <li>

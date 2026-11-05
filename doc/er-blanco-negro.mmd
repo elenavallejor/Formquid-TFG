@@ -1,0 +1,271 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'lineColor': '#000000', 'textColor': '#000000', 'mainBkg': '#ffffff', 'nodeBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'attributeBackgroundColorOdd': '#ffffff', 'attributeBackgroundColorEven': '#ffffff'}}}%%
+erDiagram
+    users {
+        bigint id PK
+        varchar role
+        varchar email UK
+        varchar name
+        varchar institution
+        varchar country
+        varchar profile_image_key
+        varchar password_hash
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    registration_requests {
+        bigint id PK
+        varchar email
+        varchar name
+        varchar institution
+        varchar country
+        varchar motivation
+        varchar password_hash
+        timestamptz created_at
+    }
+
+    password_reset_tokens {
+        bigint user_id PK,FK
+        varchar token_hash UK
+        timestamptz created_at
+        timestamptz expires_at
+    }
+
+    notifications {
+        bigint id PK
+        bigint recipient_user_id FK
+        varchar type
+        varchar channel
+        varchar title
+        varchar message
+        varchar target_type
+        bigint target_id
+        timestamptz created_at
+        timestamptz read_at
+    }
+
+    superadmin_guard {
+        boolean singleton PK
+        varchar role FK
+        bigint user_id FK
+    }
+
+    categories {
+        varchar code PK
+        varchar name
+        boolean personal_data
+        timestamptz created_at
+        varchar icon
+        bigint version
+    }
+
+    surveys {
+        bigint id PK
+        varchar public_code UK
+        bigint owner_id FK
+        varchar title
+        varchar category FK
+        text description
+        text image_key
+        varchar font_family
+        varchar lifecycle_status
+        varchar access_mode
+        varchar visibility
+        varchar access_password_hash
+        varchar[] tags
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    templates {
+        bigint id PK
+        varchar title
+        varchar category FK
+        text description
+        text image_key
+        bigint created_by_user_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    content_items {
+        bigint id PK
+        bigint survey_id FK
+        bigint template_id FK
+        bigint parent_block_id FK
+        varchar item_type
+        integer position
+        boolean is_required
+        text text_body
+    }
+
+    blocks {
+        bigint id PK
+        bigint parent_item_id FK,UK
+        varchar scope
+        varchar name
+        varchar category FK
+        text description
+        bigint created_by_user_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    questions {
+        bigint id PK
+        bigint parent_item_id FK,UK
+        varchar scope
+        text statement
+        varchar category FK
+        text annotation
+        varchar question_type
+        varchar evaluation_direction
+        numeric evaluation_weight
+        bigint created_by_user_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    question_settings {
+        bigint question_id PK,FK
+        integer max_length
+        numeric min_value
+        numeric max_value
+        numeric step
+        integer min_selections
+        integer max_selections
+        text left_label
+        text right_label
+        varchar true_label
+        varchar false_label
+        numeric true_evaluation_factor
+        numeric false_evaluation_factor
+        varchar scale_display_type
+    }
+
+    question_options {
+        bigint id PK
+        bigint question_id FK
+        text label
+        integer position
+        boolean is_other
+        numeric evaluation_factor
+    }
+
+    matrix_rows {
+        bigint id PK
+        bigint question_id FK
+        text label
+        integer position
+    }
+
+    survey_collaborators {
+        bigint survey_id PK,FK
+        bigint user_id PK,FK
+        varchar permission
+        timestamptz joined_at
+    }
+
+    collaboration_requests {
+        bigint id PK
+        bigint survey_id FK
+        bigint user_id FK
+        varchar request_type
+        varchar permission
+        text message
+        timestamptz created_at
+    }
+
+    publication_requests {
+        bigint id PK
+        bigint survey_id FK
+        bigint requested_by_user_id FK
+        text message
+        timestamptz created_at
+    }
+
+    element_requests {
+        bigint id PK
+        bigint requested_by_user_id FK
+        varchar element_type
+        text message
+        jsonb request_payload
+        timestamptz created_at
+    }
+
+    participations {
+        bigint id PK
+        bigint survey_id FK
+        timestamptz submitted_at
+        bigint respondent_user_id FK
+        varchar respondent_token_hash
+    }
+
+    answers {
+        bigint id PK
+        bigint participation_id FK
+        bigint question_id FK
+        text text_value
+        numeric numeric_value
+        boolean boolean_value
+    }
+
+    answer_options {
+        bigint answer_id PK,FK
+        bigint option_id PK,FK
+        text other_text
+    }
+
+    matrix_answer_values {
+        bigint answer_id PK,FK
+        bigint matrix_row_id PK,FK
+        numeric numeric_value
+    }
+
+    users ||--o| password_reset_tokens : tiene
+    users ||--o{ notifications : recibe
+    users ||--o| superadmin_guard : garantiza
+
+    users ||--o{ surveys : posee
+    users o|--o{ templates : crea
+    users o|--o{ blocks : crea
+    users o|--o{ questions : crea
+
+    categories ||--o{ surveys : clasifica
+    categories ||--o{ templates : clasifica
+    categories ||--o{ blocks : clasifica
+    categories ||--o{ questions : clasifica
+
+    surveys o|--o{ content_items : contiene
+    templates o|--o{ content_items : contiene
+    blocks o|--o{ content_items : agrupa
+
+    content_items o|--o| questions : representa
+    content_items o|--o| blocks : representa
+
+    questions ||--o| question_settings : configura
+    questions ||--o{ question_options : ofrece
+    questions ||--o{ matrix_rows : define
+
+    users ||--o{ survey_collaborators : colabora
+    surveys ||--o{ survey_collaborators : incorpora
+
+    users ||--o{ collaboration_requests : tiene
+    surveys ||--o{ collaboration_requests : recibe
+
+    users ||--o{ publication_requests : solicita
+    surveys ||--o{ publication_requests : recibe
+
+    users ||--o{ element_requests : propone
+
+    surveys ||--o{ participations : recibe
+    users o|--o{ participations : realiza
+
+    participations ||--o{ answers : incluye
+    questions ||--o{ answers : recibe
+
+    answers ||--o{ answer_options : contiene
+    question_options ||--o{ answer_options : seleccionada
+
+    answers ||--o{ matrix_answer_values : contiene
+    matrix_rows ||--o{ matrix_answer_values : valorada

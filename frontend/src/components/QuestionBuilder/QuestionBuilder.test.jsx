@@ -97,3 +97,64 @@ describe('QuestionBuilder', () => {
     expect(onDataChange.mock.lastCall[0].evaluationWeight).toBe(4.5);
   });
 });
+
+
+describe('QuestionBuilder: campos de configuración', () => {
+  it.each(['NUMBER', 'SCALE', 'MATRIX_SCALE', 'MULTIPLE_CHOICE', 'BOOLEAN', 'TEXT'])('actualiza los campos de %s', (questionType) => {
+    const onDataChange = vi.fn();
+    render(<Harness initial={{ ...INITIAL_QUESTION_STATE, questionType, statement: 'Pregunta', evaluationDirection: 'POSITIVE', evaluationWeight: 2 }} includeEvaluation onDataChange={onDataChange} />);
+    const fields = screen.queryAllByRole('spinbutton').filter(node => !node.disabled);
+    fields.forEach((field, index) => fireEvent.change(field, { target: { value: String(index + 2) } }));
+    for (const placeholder of ['Texto de la fila', 'Etiqueta afirmativa', 'Etiqueta negativa', 'Ej. Totalmente en desacuerdo', 'Ej. Totalmente de acuerdo']) {
+      screen.queryAllByPlaceholderText(placeholder).forEach(field => fireEvent.change(field, { target: { value: 'Modificado' } }));
+    }
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Respuesta obligatoria para el encuestado' }));
+    fireEvent.change(screen.getByPlaceholderText('Agrega una nota o contexto adicional para la pregunta...'), { target: { value: 'Nota' } });
+    expect(onDataChange.mock.lastCall[0]).toMatchObject({ annotation: 'Nota', isRequired: true });
+  });
+  it.each(['', null, undefined])('inicializa factores vacíos y vuelve a neutral: %s', (factor) => {
+    const onDataChange = vi.fn();
+    render(<Harness initial={{ ...INITIAL_QUESTION_STATE, questionType: 'MULTIPLE_CHOICE', trueFactor: factor, falseFactor: factor, options: [{ label: 'A' }, { label: 'B' }], evaluationWeight: '' }} includeEvaluation onDataChange={onDataChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Positiva' }));
+    expect(onDataChange.mock.lastCall[0]).toMatchObject({ trueFactor: 1, falseFactor: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir opción' }));
+    expect(onDataChange.mock.lastCall[0].options.at(-1).evaluationFactor).toBe(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Neutral' }));
+    expect(onDataChange.mock.lastCall[0].evaluationWeight).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Texto/ }));
+    expect(onDataChange.mock.lastCall[0].questionType).toBe('TEXT');
+  });
+  it('edita filas heredadas como texto y añade filas a una matriz vacía', () => {
+    render(<Harness initial={{ ...INITIAL_QUESTION_STATE, questionType: 'MATRIX_SCALE', matrixRows: ['Original'] }} />);
+    fireEvent.change(screen.getByPlaceholderText('Texto de la fila'), { target: { value: 'Nueva fila' } });
+    expect(screen.getByDisplayValue('Nueva fila')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar fila' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir fila' }));
+    expect(screen.getByDisplayValue('Fila 1')).toBeVisible();
+  });
+});
+
+
+describe('QuestionBuilder: nombres accesibles', () => {
+  it.each(['TEXT', 'NUMBER', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'SCALE', 'MATRIX_SCALE', 'BOOLEAN'])(
+    'identifica los campos de configuración de %s sin depender del placeholder', (questionType) => {
+      render(<Harness initial={{ ...INITIAL_QUESTION_STATE, questionType, statement: 'Pregunta', evaluationDirection: 'POSITIVE', evaluationWeight: 2 }} includeEvaluation />);
+      for (const role of ['textbox', 'spinbutton']) {
+        for (const control of screen.queryAllByRole(role)) expect(control).toHaveAccessibleName();
+      }
+    },
+  );
+
+  it('asocia cada etiqueta al editor correspondiente cuando hay varias preguntas', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<><Harness /><Harness /></>);
+    const labels = [...container.querySelectorAll('.builder-field label')].filter((label) => label.textContent.startsWith('Enunciado'));
+    const controls = labels.map((label) => document.getElementById(label.htmlFor));
+    expect(new Set(controls).size).toBe(2);
+    await user.click(labels[1]);
+    expect(controls[1]).toHaveFocus();
+    await user.type(controls[1], 'Segunda pregunta');
+    expect(controls[0]).toHaveValue('');
+    expect(controls[1]).toHaveValue('Segunda pregunta');
+  });
+});

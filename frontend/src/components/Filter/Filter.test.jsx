@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -91,5 +91,43 @@ describe('Filter', () => {
     await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
     await user.click(within(screen.getByRole('group', { name: 'Filtrar' })).getByRole('button', { name: 'Borrar filtros' }));
     expect(onChange).toHaveBeenLastCalledWith([], '', []);
+  });
+});
+
+
+describe('Filter: selección múltiple de campos y grupos', () => {
+  it.each([[], ['TITLE'], ['TITLE', 'OWNER']])('permite seleccionar todos los campos desde %j', async (selectedValues) => {
+    const user = userEvent.setup(); const onChange = vi.fn();
+    render(<Filter options={options} optionsControl="multiselect" selectedValues={selectedValues} onChange={onChange} />);
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(screen.getByLabelText('Seleccionar opciones'));
+    await user.click(screen.getByRole('button', { name: 'Ver todas' }));
+    await user.click(screen.getByRole('button', { name: 'Aplicar' }));
+    expect(onChange).toHaveBeenCalledWith(['TITLE', 'OWNER'], '', undefined);
+  });
+  it('combina grupos independientes y desmarca opciones previamente elegidas', async () => {
+    const user = userEvent.setup(); const onChange = vi.fn();
+    render(<Filter onChange={onChange} choiceFilters={[
+      { label: 'Estado', control: 'multiselect', value: ['OPEN', 'CLOSED'], resetValue: [], options: [{ value: 'OPEN', label: 'Abiertas' }, { value: 'CLOSED', label: 'Cerradas' }] },
+      { label: 'Visibilidad', control: 'select', value: 'ALL', options: [{ value: 'ALL', label: 'Todas' }, { value: 'LISTED', label: 'Listadas' }] },
+    ]} />);
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(screen.getByLabelText('Seleccionar estado'));
+    await user.click(screen.getByRole('checkbox', { name: 'Cerradas' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Visibilidad' }), 'LISTED');
+    await user.click(screen.getByRole('button', { name: 'Aplicar' }));
+    expect(onChange).toHaveBeenCalledWith([], '', [['OPEN'], 'LISTED']);
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    await user.click(screen.getByLabelText('Seleccionar estado'));
+    await user.click(screen.getByRole('button', { name: 'Todas las opciones' }));
+    await user.click(screen.getByRole('button', { name: 'Aplicar' }));
+    expect(onChange).toHaveBeenLastCalledWith([], '', [[], 'ALL']);
+  });
+  it('cierra el menú al pulsar fuera', async () => {
+    const user = userEvent.setup();
+    render(<Filter options={options} selectedValues={['TITLE']} />);
+    await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('group', { name: 'Filtrar' })).not.toBeInTheDocument();
   });
 });

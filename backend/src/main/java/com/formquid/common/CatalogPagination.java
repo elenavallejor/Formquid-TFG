@@ -12,8 +12,14 @@ public final class CatalogPagination {
     private CatalogPagination() {
     }
 
-    public static Pageable catalogPageable(int page, int size, CatalogSortOrder sortOrder) {
+    public static Pageable catalogPageable(int page, int size, CatalogSortOrder sortOrder, String titleProperty) {
         validatePage(page, size);
+        if (sortOrder == CatalogSortOrder.ALPHABETICAL) {
+            return PageRequest.of(page, size, Sort.by(
+                Sort.Order.asc(titleProperty).ignoreCase(),
+                Sort.Order.asc("id")
+            ));
+        }
         Sort.Direction direction = sortOrder == CatalogSortOrder.OLDEST
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;

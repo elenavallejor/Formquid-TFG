@@ -10,6 +10,8 @@ import { SearchToolbar } from '../../../components/SearchToolbar/SearchToolbar.j
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { SurveyCard } from '../../../components/SurveyCard/SurveyCard.jsx';
 
+import { useResultsFocus } from '../../../hooks/useResultsFocus.js';
+
 import './AdminSurveysPage.css';
 
 const DEFAULT_PAGE_SIZE = 9;
@@ -19,6 +21,7 @@ export function AdminSurveysPage() {
   const navigate = useNavigate();
   const [surveys, setSurveys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { resultsRef, requestResultsFocus } = useResultsFocus(isLoading);
   const [errorMessage, setErrorMessage] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -79,7 +82,7 @@ export function AdminSurveysPage() {
         <Breadcrumbs items={[{ label: 'PANEL', to: '/panel' }, { label: 'ENCUESTAS' }]} />
         <header className="admin-surveys-header">
           <div>
-            <h1>SUPERVISIÓN DE ENCUESTAS</h1>
+            <h1 ref={resultsRef} tabIndex={-1}>SUPERVISIÓN DE ENCUESTAS</h1>
             <p>Consulta todas las encuestas y accede a sus controles de estado y visibilidad.</p>
           </div>
         </header>
@@ -161,6 +164,7 @@ export function AdminSurveysPage() {
 
         {!isLoading && !errorMessage && totalItems > 0 && (
           <Pagination
+            onNavigate={requestResultsFocus}
             ariaLabel="Paginación de encuestas"
             currentPage={currentPage}
             itemLabel="encuestas"

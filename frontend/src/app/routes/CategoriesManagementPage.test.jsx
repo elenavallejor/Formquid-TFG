@@ -53,3 +53,31 @@ describe('CategoriesManagementPage', () => {
     expect(updateCategoryIcon).toHaveBeenCalledWith('NUEVA', 'BsRobot');
   });
 });
+
+
+describe('CategoriesManagementPage: errores', () => {
+  it.each([new Error('Fallo de carga'), {}])('informa de errores al cargar categorías', async (error) => {
+    getCategories.mockRejectedValue(error);
+    renderWithRouter(<CategoriesManagementPage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(error.message || 'No se han podido cargar las categorías.');
+  });
+  it.each([new Error('Nombre duplicado'), {}])('conserva el formulario si falla la creación', async (error) => {
+    const user = userEvent.setup();
+    getCategories.mockResolvedValue([]);
+    createCategory.mockRejectedValue(error);
+    renderWithRouter(<CategoriesManagementPage />);
+    await user.type(screen.getByRole('textbox', { name: 'Nombre de la categoría' }), 'Nueva');
+    await user.click(screen.getByRole('button', { name: 'Crear categoría' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(error.message || 'No se ha podido crear la categoría.');
+    expect(screen.getByRole('textbox', { name: 'Nombre de la categoría' })).toHaveValue('Nueva');
+  });
+  it('conserva iconos tras un error de actualización', async () => {
+    const user = userEvent.setup();
+    getCategories.mockResolvedValue([{ code: 'OTROS', name: 'Otros' }, { code: 'Z', name: 'Zeta', icon: 'BsTag' }, { code: 'A', name: 'Alfa', icon: 'BsTag' }]);
+    updateCategoryIcon.mockRejectedValue({});
+    renderWithRouter(<CategoriesManagementPage />);
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Cambiar icono de Alfa' }), 'BsRobot');
+    expect(await screen.findByText('No se ha podido actualizar el icono.')).toBeVisible();
+    expect(screen.getByRole('combobox', { name: 'Cambiar icono de Alfa' })).toHaveValue('BsTag');
+  });
+});

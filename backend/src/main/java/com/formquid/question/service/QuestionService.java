@@ -67,7 +67,7 @@ public class QuestionService {
         Category category
     ) {
         Set<CatalogSearchField> fields = searchFields == null ? Set.of() : searchFields;
-        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder);
+        Pageable pageable = CatalogPagination.catalogPageable(page, size, sortOrder, "statement");
         Page<FixedQuestionSummaryDto> questions = questionRepository.findCatalogSummaries(
             QuestionScope.CATALOG_FIXED,
             user.getId(),

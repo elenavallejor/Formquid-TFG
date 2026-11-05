@@ -74,7 +74,7 @@ export function SurveyCoverInput({ id, imageKey, file, imageHasError, onImageErr
     <div className="create-survey-image-layout">
       <div className="survey-cover-preview-container">
         <label className={`create-survey-image-preview ${hasPreview ? 'has-image' : ''}`}
-          htmlFor={`${id}-file`} aria-label="Seleccionar imagen de portada">
+          htmlFor={`${id}-file`}>
           {hasPreview
             ? <img ref={previewRef} src={imageUrl} alt="Vista previa de la encuesta" onError={onImageError} />
             : <div className="survey-cover-preview-empty"><MdImage aria-hidden="true" /><span>{imageHasError ? 'No se pudo cargar la imagen' : 'Vista previa de la portada'}</span><small>Pulsa para elegir una imagen</small></div>}
@@ -89,11 +89,11 @@ export function SurveyCoverInput({ id, imageKey, file, imageHasError, onImageErr
       </div>
       <div className="survey-cover-controls">
         <div className="create-survey-field survey-cover-file-field">
-          <span className="survey-cover-field-label">Imagen del dispositivo</span>
+          <span id={`${id}-file-label`} className="survey-cover-field-label">Imagen del dispositivo</span>
           <div className="survey-cover-file-picker">
             <input ref={fileInputRef} id={`${id}-file`} className="survey-cover-file-input" type="file" accept="image/png,image/jpeg"
-              aria-label="Imagen del dispositivo" aria-describedby={`${id}-file-help ${id}-file-status`} onChange={selectFile} />
-            <label className="survey-cover-file-button" htmlFor={`${id}-file`}><MdUploadFile aria-hidden="true" />{file ? 'Cambiar imagen' : 'Examinar imágenes'}</label>
+              aria-labelledby={`${id}-file-label ${id}-file-button`} aria-describedby={`${id}-file-help ${id}-file-status`} onChange={selectFile} />
+            <label id={`${id}-file-button`} className="survey-cover-file-button" htmlFor={`${id}-file`}><MdUploadFile aria-hidden="true" />{file ? 'Cambiar imagen' : 'Examinar imágenes'}</label>
             <div className="survey-cover-file-meta">
               <span id={`${id}-file-status`} className={`survey-cover-file-status ${file ? 'has-file' : ''}`} aria-live="polite">
                 {file ? file.name : uploadedCover ? 'Portada guardada' : 'Ningún archivo seleccionado'}

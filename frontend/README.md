@@ -14,9 +14,9 @@ Los administradores disponen de pantallas para revisar solicitudes de registro y
 
 `src/app/router.jsx` define las páginas y sus restricciones de acceso. Las pantallas están en `src/app/routes` y los elementos reutilizables de la interfaz en `src/components`. `src/api` agrupa las peticiones al backend. `src/context/AuthContext.jsx` conserva el estado de autenticación y restaura la sesión al cargar la aplicación. Los recursos visuales se encuentran en `src/assets` y las funciones auxiliares en `src/utils`.
 
-El cliente HTTP utiliza la URL indicada por `VITE_API_BASE_URL`. Si no se configura, apunta a `http://localhost:8080/api/v1`. Las peticiones incluyen las cookies de sesión y el token CSRF en las operaciones que modifican datos. Los errores de la API se convierten en mensajes que pueden mostrar las páginas.
+El cliente HTTP utiliza la URL indicada por `VITE_API_BASE_URL`. Si no se configura, apunta a `http://localhost:8080/api/v1` en desarrollo y a `/api/v1` en la compilación de producción. Las peticiones incluyen las cookies de sesión y el token CSRF en las operaciones que modifican datos. Los errores de la API se convierten en mensajes que pueden mostrar las páginas.
 
-La interfaz incluye opciones de tipografía para las encuestas y componentes que atienden a la navegación por teclado y a los estados de carga. La configuración `vercel.json` contiene una regla de reescritura para que las rutas de React Router puedan abrirse directamente en un alojamiento que utilice ese archivo.
+La interfaz incluye opciones de tipografía para las encuestas y componentes que atienden a la navegación por teclado y a los estados de carga. La configuración `vercel.json` reenvía `/api/*` al backend de Render y permite abrir directamente las rutas de React Router.
 
 ## Desarrollo local
 
