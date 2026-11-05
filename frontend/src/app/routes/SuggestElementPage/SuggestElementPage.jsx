@@ -17,7 +17,7 @@ import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBui
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
 import { useAuth } from '../../../context/useAuth.js';
-import { containsCatalogItem } from '../../../utils/catalogCategoryUtils.js';
+import { hasIncompatibleCatalogItem, isCatalogQuestionAllowed } from '../../../utils/catalogCategoryUtils.js';
 import {
   INITIAL_BLOCK_STATE,
   buildBlockQuestionFromCatalog,
@@ -101,7 +101,7 @@ export function SuggestElementPage() {
 
   function handleCategoryChange(value, details) {
     const items = elementType === 'BLOCK' ? getBlockItems(formData) : formData?.items || [];
-    if (value !== category && containsCatalogItem(items)) {
+    if (value !== category && hasIncompatibleCatalogItem(items, value)) {
       setErrorMsg(`Quita primero los elementos añadidos del catálogo para cambiar la categoría de ${config.categoryTarget}.`);
       return;
     }
@@ -125,7 +125,7 @@ export function SuggestElementPage() {
   }
 
   function addQuestion(question, targetIndex) {
-    if (!category || question.category !== category) {
+    if (!isCatalogQuestionAllowed(question.category, category)) {
       setErrorMsg('Solo puedes añadir preguntas del catálogo de la categoría seleccionada.');
       return false;
     }

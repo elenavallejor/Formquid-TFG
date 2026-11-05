@@ -45,6 +45,18 @@ class TemplateServiceTest {
     private TemplateService templateService;
 
     @Test
+    void createRequiresCategory() {
+        var question = new CreateTemplateItemRequestDto(
+            ContentItemType.QUESTION, 1, true, null, null, 11L, null, null
+        );
+        var request = new CreateTemplateRequestDto("Plantilla", null, null,
+            List.of(question), null);
+
+        assertThatThrownBy(() -> templateService.create(request, null))
+            .hasMessageContaining("categoría de la plantilla es obligatoria");
+    }
+
+    @Test
     void rejectsTitleLongerThanDatabaseLimit() {
         CreateTemplateRequestDto request = new CreateTemplateRequestDto(
             "a".repeat(201), null, null, List.of(), null

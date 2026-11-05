@@ -14,6 +14,6 @@ public record CreateTemplateRequestDto(
     String description,
     String imageKey,
     @NotEmpty List<@NotNull @Valid CreateTemplateItemRequestDto> items,
-    Category category
+    @NotNull Category category
 ) {
 }

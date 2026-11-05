@@ -69,6 +69,21 @@ describe('BlockBuilder', () => {
 
 
 describe('BlockBuilder: edición, arrastre y restricciones de categoría', () => {
+  it('bloquea la creación de contenido hasta seleccionar la categoría del bloque', () => {
+    const props = { data: { name: 'Bloque', items: [] }, onChange: vi.fn() };
+    const { rerender } = render(<BlockBuilder {...props} categoryFilter="" />);
+    expect(screen.getByRole('button', { name: 'Crear elemento' })).toBeDisabled();
+    rerender(<BlockBuilder {...props} categoryFilter="SALUD" />);
+    expect(screen.getByRole('button', { name: 'Crear elemento' })).toBeEnabled();
+  });
+
+  it.each(['DATOS_PERSONALES', 'OTROS'])('permite preguntas compartidas de %s', (category) => {
+    const onChange = vi.fn();
+    const { container } = render(<BlockBuilder data={{ name: 'B', items: [] }} categoryFilter="SALUD" onChange={onChange} />);
+    fireEvent.drop(container.querySelector('.block-empty-dropzone'), { dataTransfer: { getData: () => JSON.stringify({ type: 'CATALOG_QUESTION', question: { id: 1, category, questionType: 'TEXT', statement: 'Compartida' } }) } });
+    expect(onChange).toHaveBeenCalledOnce();
+  });
+
   it('edita una pregunta existente y su obligatoriedad', async () => {
     const user = userEvent.setup();
     render(<Harness initial={{ name: 'B', items: [{ itemType: 'QUESTION', questionType: 'TEXT', statement: 'Original', maxLength: 100 }] }} />);
@@ -99,7 +114,7 @@ describe('BlockBuilder: edición, arrastre y restricciones de categoría', () =>
     fireEvent.drop(target, { dataTransfer: { getData: () => 'invalid' } });
     expect(screen.getByText('Nota')).toBeVisible();
   });
-  it.each(['SALUD', 'OTROS', ''])('solo acepta preguntas de la categoría seleccionada %s', (category) => {
+  it.each(['SALUD', 'OTROS', ''])('acepta preguntas compatibles con la categoría seleccionada %s', (category) => {
     const onChange = vi.fn();
     const { container } = render(<BlockBuilder data={{ name: 'B', items: [] }} categoryFilter={category} onChange={onChange} />);
     fireEvent.drop(container.querySelector('.block-empty-dropzone'), { dataTransfer: { getData: () => JSON.stringify({ type: 'CATALOG_QUESTION', question: { id: 1, category: 'SALUD', questionType: 'TEXT', statement: 'Salud' } }) } });

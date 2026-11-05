@@ -20,6 +20,7 @@ import { QuestionBuilder } from '../../../components/QuestionBuilder/QuestionBui
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { TemplateBuilder } from '../../../components/TemplateBuilder/TemplateBuilder.jsx';
 import { useAuth } from '../../../context/useAuth.js';
+import { hasIncompatibleCatalogItem, isCatalogQuestionAllowed } from '../../../utils/catalogCategoryUtils.js';
 import {
   buildBlockQuestionFromCatalog,
   buildCreateCatalogBlockPayload,
@@ -109,6 +110,8 @@ function EditElementEditor() {
   const saveLockRef = useRef(false);
   const [formData, setFormData] = useState(() => reusableElement ? config.toState(reusableElement) : null);
   const [category, setCategory] = useState(() => reusableElement?.category || '');
+  const [categoryDetails, setCategoryDetails] = useState(null);
+  const [categoryError, setCategoryError] = useState('');
   const [isLoading, setIsLoading] = useState(!reusableElement);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -165,14 +168,24 @@ function EditElementEditor() {
   }
 
   function addQuestion(question, targetIndex) {
+    if (!isCatalogQuestionAllowed(question.category, category)) {
+      setErrorMsg('Selecciona una categoría compatible antes de añadir la pregunta.');
+      return false;
+    }
     const item = elementType === 'bloque'
       ? buildBlockQuestionFromCatalog(question)
       : buildTemplateQuestionFromCatalog(question);
     addItem(item, targetIndex);
+    return true;
   }
 
   function addBlock(block, targetIndex) {
+    if (!category || block.category !== category) {
+      setErrorMsg('Solo puedes añadir bloques del catálogo de la categoría seleccionada.');
+      return false;
+    }
     addItem(buildTemplateBlockFromCatalog(block), targetIndex);
+    return true;
   }
 
   function handleFormChange(nextFormData) {
@@ -183,6 +196,12 @@ function EditElementEditor() {
   async function handleSave() {
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (!category) {
+      setCategoryError('Selecciona una categoría para el elemento.');
+      document.getElementById('edit-element-category')?.focus();
+      return;
+    }
 
     const validationError = config.validate(formData);
     if (validationError) {
@@ -218,6 +237,8 @@ function EditElementEditor() {
           data={formData}
           onChange={handleFormChange}
           onDropQuestionFromSidebar={addQuestion}
+          categoryFilter={category}
+          categoryDetails={categoryDetails}
         />
       );
     }
@@ -228,6 +249,8 @@ function EditElementEditor() {
         onChange={handleFormChange}
         onDropQuestionFromSidebar={addQuestion}
         onDropBlockFromSidebar={addBlock}
+        categoryFilter={category}
+        categoryDetails={categoryDetails}
       />
     );
   }
@@ -268,8 +291,21 @@ function EditElementEditor() {
       </header>
 
       {!isLoading && formData && (
-        <CategorySelect id="edit-element-category" value={category}
-          onChange={(value) => { setCategory(value); setHasUnsavedChanges(true); }} />
+        <CategorySelect id="edit-element-category" value={category} required
+          placeholder="Selecciona la categoría del elemento"
+          validationError={categoryError}
+          onChange={(value, details) => {
+            const items = elementType === 'bloque' ? getBlockItems(formData) : formData.items || [];
+            if (value !== category && hasIncompatibleCatalogItem(items, value)) {
+              setErrorMsg('Quita primero los elementos del catálogo incompatibles con la nueva categoría.');
+              return;
+            }
+            setCategory(value);
+            setCategoryDetails(details);
+            setCategoryError('');
+            setErrorMsg('');
+            setHasUnsavedChanges(true);
+          }} />
       )}
 
       {errorMsg && (
@@ -304,6 +340,8 @@ function EditElementEditor() {
         <CatalogSidebar
           showQuestions
           showBlocks={elementType === 'plantilla'}
+          categoryFilter={category}
+          categoryDetails={categoryDetails}
           defaultOpen={false}
           onAddQuestion={addQuestion}
           onAddBlock={elementType === 'plantilla' ? addBlock : undefined}

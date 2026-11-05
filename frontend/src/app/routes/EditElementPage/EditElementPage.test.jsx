@@ -18,7 +18,7 @@ vi.mock('../../../api/catalogApi.js', () => ({
   updateCatalogBlock: vi.fn(), updateCatalogQuestion: vi.fn(), updateCatalogTemplate: vi.fn(),
 }));
 vi.mock('../../../api/categoriesApi.js', () => ({ getCategories: vi.fn(() => Promise.resolve([])) }));
-vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: ({ onAddQuestion, onAddBlock }) => <><button onClick={() => onAddQuestion({ id: 3, statement: 'Añadida', questionType: 'TEXT', settings: { maxLength: 300 } })}>Añadir del catálogo</button>{onAddBlock && <button onClick={() => onAddBlock({ id: 4, name: 'Referencia' }, 0)}>Añadir bloque del catálogo</button>}</> }));
+vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: ({ onAddQuestion, onAddBlock }) => <><button onClick={() => onAddQuestion({ id: 3, statement: 'Añadida', questionType: 'TEXT', settings: { maxLength: 300 }, category: 'SALUD' })}>Añadir del catálogo</button>{onAddBlock && <button onClick={() => onAddBlock({ id: 4, name: 'Referencia', category: 'SALUD' }, 0)}>Añadir bloque del catálogo</button>}</> }));
 vi.mock('../../../components/QuestionBuilder/QuestionBuilder.jsx', () => ({
   QuestionBuilder: ({ data, onChange }) => (
     <label>Enunciado
@@ -29,7 +29,7 @@ vi.mock('../../../components/QuestionBuilder/QuestionBuilder.jsx', () => ({
 vi.mock('../../../components/BlockBuilder/BlockBuilder.jsx', () => ({
   BlockBuilder: ({ data, onChange, onDropQuestionFromSidebar }) => (
     <>
-      <button onClick={() => onDropQuestionFromSidebar({ id: 3, statement: 'Insertada', questionType: 'TEXT', settings: { maxLength: 300 } }, 0)}>Insertar pregunta</button>
+      <button onClick={() => onDropQuestionFromSidebar({ id: 3, statement: 'Insertada', questionType: 'TEXT', settings: { maxLength: 300 }, category: 'SALUD' }, 0)}>Insertar pregunta</button>
       <label>Nombre del bloque<input value={data.name} onChange={(event) => onChange({ ...data, name: event.target.value })} /></label>
     </>
   ),
@@ -52,9 +52,9 @@ function renderPage(type) {
 describe('EditElementPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    getCatalogQuestionById.mockResolvedValue({ id: 12, statement: 'Pregunta actual', questionType: 'TEXT', settings: { maxLength: 300 } });
-    getCatalogBlockById.mockResolvedValue({ id: 12, name: 'Bloque actual', contentItems: [] });
-    getCatalogTemplateById.mockResolvedValue({ id: 12, title: 'Plantilla actual', contentItems: [] });
+    getCatalogQuestionById.mockResolvedValue({ id: 12, statement: 'Pregunta actual', questionType: 'TEXT', settings: { maxLength: 300 }, category: 'SALUD' });
+    getCatalogBlockById.mockResolvedValue({ id: 12, name: 'Bloque actual', contentItems: [], category: 'SALUD' });
+    getCatalogTemplateById.mockResolvedValue({ id: 12, title: 'Plantilla actual', contentItems: [], category: 'SALUD' });
   });
 
   it('carga y guarda los cambios de una pregunta fija', async () => {

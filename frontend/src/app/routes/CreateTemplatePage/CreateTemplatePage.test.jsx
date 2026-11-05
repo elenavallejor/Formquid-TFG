@@ -15,6 +15,18 @@ vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ Catalo
 describe('CreateTemplatePage', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('exige elegir categoría antes de crear preguntas o bloques', async () => {
+    const user = userEvent.setup();
+    renderWithDataRouter([{ path: '/', element: <CreateTemplatePage /> }]);
+    const create = screen.getByRole('button', { name: 'Crear elemento' });
+    expect(create).toBeDisabled();
+    const category = screen.getByRole('button', { name: 'Categoría (obligatoria)' });
+    expect(category.closest('.category-select')).toHaveTextContent('*');
+    await user.click(category);
+    fireEvent.click(await screen.findByRole('button', { name: 'Salud' }));
+    expect(create).toBeEnabled();
+  });
+
   it('muestra la categoría debajo del título y la incluye al guardar', async () => {
     const user = userEvent.setup();
     createCatalogTemplate.mockResolvedValue({ id: 9 });

@@ -11,6 +11,7 @@ import {
   getCatalogTemplates,
 } from '../../../api/catalogApi.js';
 import { getCategories } from '../../../api/categoriesApi.js';
+import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../../utils/categoryIconOptions.js';
 import { CatalogList } from '../../../components/CatalogList/CatalogList.jsx';
 import { Breadcrumbs } from '../../../components/Breadcrumbs/Breadcrumbs.jsx';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal.jsx';
@@ -257,11 +258,18 @@ export function CatalogPage() {
     canManage,
     source,
   }) {
+    const category = categories.find(({ code }) => code === selectedCategory)
+      ?? { code: selectedCategory, name: selectedCategory.replaceAll('_', ' ').toLocaleLowerCase('es').replace(/^./, (letter) => letter.toLocaleUpperCase('es')) };
+    const CategoryIcon = selectedCategory ? CATEGORY_ICON_COMPONENTS[getCategoryIconName(category)] : null;
     return (
       <section className="catalog-results-section" aria-labelledby={`catalog-${source}-title`}>
         <header className="catalog-results-header">
           <h2 ref={source === 'own' ? ownResultsRef : publicResultsRef} tabIndex={-1} id={`catalog-${source}-title`}>{title}</h2>
         </header>
+        <p className="catalog-results-category">
+          {CategoryIcon && <CategoryIcon aria-hidden="true" />}
+          <span>{selectedCategory ? category.name : 'Todas las categorías'}</span>
+        </p>
 
         <CatalogList
           items={visibleItems}

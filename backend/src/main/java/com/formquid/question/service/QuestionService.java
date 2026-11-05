@@ -86,7 +86,8 @@ public class QuestionService {
     public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size, Category category) {
         Pageable pageable = CatalogPagination.builderPageable(page, size);
         Page<QuestionResponseDto> questions = questionRepository
-            .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, category, pageable)
+            .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, category,
+                Category.DATOS_PERSONALES, Category.OTROS, pageable)
             .map(this::toResponse);
         return toPageResponse(questions);
     }
@@ -134,13 +135,16 @@ public class QuestionService {
      */
     @Transactional
     public QuestionResponseDto createFixedQuestion(CreateFixedQuestionRequestDto request, User creator) {
+        if (request.category() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría de la pregunta fija es obligatoria");
+        }
         Question question = buildQuestion(
             withoutEvaluationConfiguration(request.question()),
             QuestionScope.CATALOG_FIXED,
             null,
             creator
         );
-        question.setCategory(request.category() == null ? Category.OTROS : request.category());
+        question.setCategory(request.category());
         categoryCatalogService.requireExisting(question.getCategory());
         return toResponse(questionRepository.save(question));
     }
@@ -156,10 +160,11 @@ public class QuestionService {
             throw new ApiException(HttpStatus.NOT_FOUND, "Pregunta fija no encontrada");
         }
         requireManagementPermission(question.getCreatedBy(), user);
-        if (request.category() != null) {
-            categoryCatalogService.requireExisting(request.category());
-            question.setCategory(request.category());
+        if (request.category() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría de la pregunta fija es obligatoria");
         }
+        categoryCatalogService.requireExisting(request.category());
+        question.setCategory(request.category());
         return toResponse(applyQuestionDraft(
             question,
             withoutEvaluationConfiguration(request.question())

@@ -11,7 +11,7 @@ import { UnsavedElementGuard } from '../../../components/ConfirmModal/UnsavedEle
 import { ErrorMessage } from '../../../components/ErrorMessage/ErrorMessage.jsx';
 import { Skeleton } from '../../../components/Skeleton/Skeleton.jsx';
 import { useAuth } from '../../../context/useAuth.js';
-import { containsCatalogItem } from '../../../utils/catalogCategoryUtils.js';
+import { hasIncompatibleCatalogItem, isCatalogQuestionAllowed } from '../../../utils/catalogCategoryUtils.js';
 import { INITIAL_BLOCK_STATE, buildBlockQuestionFromCatalog, buildCreateCatalogBlockPayload, getBlockItems, getBlockBuilderValidationError } from "../../../utils/blockBuilderUtils.js";
 import './CreateBlockPage.css';
 
@@ -33,7 +33,7 @@ export function CreateBlockPage() {
   const [successMsg, setSuccessMsg] = useState("");
 
   function handleAddQuestionFromSidebar(question, targetIndex) {
-    if (!category || question.category !== category) {
+    if (!isCatalogQuestionAllowed(question.category, category)) {
       setErrorMsg('Solo puedes añadir preguntas del catálogo de la categoría seleccionada.');
       return false;
     }
@@ -53,7 +53,7 @@ export function CreateBlockPage() {
   }
 
   function handleCategoryChange(value, details) {
-    if (value !== category && containsCatalogItem(getBlockItems(formData))) {
+    if (value !== category && hasIncompatibleCatalogItem(getBlockItems(formData), value)) {
       setErrorMsg('Quita primero las preguntas añadidas del catálogo para cambiar la categoría del bloque.');
       return;
     }

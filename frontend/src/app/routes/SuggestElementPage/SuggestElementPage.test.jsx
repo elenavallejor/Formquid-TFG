@@ -18,6 +18,7 @@ vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({
     <div data-testid="catalog-sidebar" data-category={categoryFilter}>
       <button type="button" onClick={() => onAddQuestion({ id: 5, category: 'SALUD', statement: 'Salud', questionType: 'TEXT', scope: 'CATALOG_FIXED' })}>Añadir pregunta de Salud</button>
       <button type="button" onClick={() => onAddQuestion({ id: 6, category: 'OTROS', statement: 'Otra', questionType: 'TEXT', scope: 'CATALOG_FIXED' })}>Añadir pregunta de Otros</button>
+      <button type="button" onClick={() => onAddQuestion({ id: 7, category: 'TECNOLOGIA', statement: 'Tecnología', questionType: 'TEXT', scope: 'CATALOG_FIXED' })}>Añadir pregunta de Tecnología</button>
     </div>
   ),
 }));
@@ -112,15 +113,17 @@ describe('SuggestElementPage', () => {
     expect(createElementRequest).toHaveBeenCalledWith(expect.objectContaining({ elementType: 'FIXED_QUESTION' }));
   });
 
-  it('filtra el catálogo y rechaza elementos de otra categoría', async () => {
+  it('admite preguntas compartidas y rechaza las de una categoría incompatible', async () => {
     const user = userEvent.setup();
     renderWithRouter(<SuggestElementPage />);
     await user.click(screen.getByRole('button', { name: /Bloque.*Agrupa preguntas/ }));
     expect(screen.getByTestId('catalog-sidebar')).toHaveAttribute('data-category', '');
     await selectCategory(user);
     expect(screen.getByTestId('catalog-sidebar')).toHaveAttribute('data-category', 'SALUD');
-    await user.click(screen.getByRole('button', { name: 'Añadir pregunta de Otros' }));
+    await user.click(screen.getByRole('button', { name: 'Añadir pregunta de Tecnología' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Solo puedes añadir preguntas del catálogo de la categoría seleccionada');
+    await user.click(screen.getByRole('button', { name: 'Añadir pregunta de Otros' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Añadir pregunta de Salud' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Categoría (obligatoria)' }));

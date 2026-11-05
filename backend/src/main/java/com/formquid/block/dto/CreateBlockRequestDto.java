@@ -16,6 +16,6 @@ public record CreateBlockRequestDto(
     @NotBlank @Size(max = 150) String name,
     String description,
     @NotEmpty List<@NotNull @Valid CreateBlockItemRequestDto> items,
-    Category category
+    @NotNull Category category
 ) {
 }

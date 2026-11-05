@@ -189,6 +189,34 @@ class CatalogRepositoryTest {
     }
 
     @Test
+    void builderQuestionsIncludeSharedCategoriesAcrossPages() {
+        User creator = persistUser("shared-questions@example.com", "Creadora");
+        for (Category category : List.of(Category.ORDENADORES, Category.DATOS_PERSONALES,
+            Category.OTROS, Category.TELEFONO_INTELIGENTE)) {
+            persist(Question.builder()
+                .scope(QuestionScope.CATALOG_FIXED)
+                .category(category)
+                .statement(category.code())
+                .questionType(QuestionType.TEXT)
+                .evaluationDirection(EvaluationDirection.NEUTRAL)
+                .createdBy(creator)
+                .build());
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        var firstPage = questions.findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED,
+            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, PageRequest.of(0, 2, Sort.by("id")));
+        var secondPage = questions.findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED,
+            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, PageRequest.of(1, 2, Sort.by("id")));
+
+        assertThat(firstPage.getTotalElements()).isEqualTo(3);
+        assertThat(firstPage).extracting(Question::getCategory)
+            .containsExactly(Category.ORDENADORES, Category.DATOS_PERSONALES);
+        assertThat(secondPage).extracting(Question::getCategory).containsExactly(Category.OTROS);
+    }
+
+    @Test
     void contentRows_preservePositionAndParentIdentity() {
         User creator = persistUser("content-owner@example.com", "Creadora");
         Block block = persist(Block.builder().scope(BlockScope.CATALOG).name("Ordenado").createdBy(creator).build());

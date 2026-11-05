@@ -105,6 +105,13 @@ class QuestionServiceTest {
     }
 
     @Test
+    void fixedCatalogQuestionRequiresCategory() {
+        assertThatThrownBy(() -> questionService.createFixedQuestion(
+            new CreateFixedQuestionRequestDto(evaluableChoiceQuestion(), null), null))
+            .hasMessageContaining("categoría de la pregunta fija es obligatoria");
+    }
+
+    @Test
     void fixedCatalogQuestionDiscardsEvaluationConfiguration() {
         when(questionRepository.save(any(Question.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));

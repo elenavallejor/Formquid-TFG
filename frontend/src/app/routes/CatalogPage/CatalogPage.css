@@ -163,6 +163,22 @@
   font-weight: 800;
 }
 
+.catalog-results-category {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-min);
+}
+
+.catalog-results-category svg {
+  flex: none;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+}
+
+
 @media only screen and (max-width: 768px) {
   .catalog-page {
     padding: 16px var(--page-gutter);

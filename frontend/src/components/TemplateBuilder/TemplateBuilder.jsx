@@ -499,7 +499,7 @@ export function TemplateBuilder({
             <h2 className="builder-section-title">{structureTitle}</h2>
             <p className="builder-section-desc">{structureDescription}</p>
           </div>
-          {!readOnly && <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.TEMPLATE} onSelect={handleCreateElement} />}
+          {!readOnly && <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.TEMPLATE} onSelect={handleCreateElement} disabled={categoryFilter !== null && !categoryFilter} />}
         </div>
 
         <div className="block-questions-list">

@@ -51,6 +51,16 @@ class BlockServiceTest {
     }
 
     @Test
+    void createRequiresCategory() {
+        var request = new CreateBlockRequestDto("Bloque", null,
+            List.of(fixedQuestion(1, 11L)), null);
+
+        assertThatThrownBy(() -> blockService.createCatalogBlock(request, null))
+            .isInstanceOf(ApiException.class)
+            .hasMessageContaining("categoría del bloque es obligatoria");
+    }
+
+    @Test
     void delete_rejectsEditorWhoDidNotCreateTheBlock() {
         User creator = User.builder().id(1L).build();
         User editor = User.builder().id(2L).role(UserRole.EDITOR).build();

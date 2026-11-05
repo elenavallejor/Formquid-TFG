@@ -181,6 +181,7 @@ describe('Categorías del catálogo', () => {
     const list = screen.getByRole('region', { name: 'LISTA PÚBLICA' });
     expect(await within(list).findByText('Ordenadores')).toBeVisible();
     expect(within(list).getByText('Libros digitales')).toBeVisible();
+    expect(within(list).getByText('Todas las categorías')).toBeVisible();
     expect(screen.queryByLabelText(/^Categoría/)).not.toBeInTheDocument();
     expect(load).toHaveBeenCalledWith(expect.objectContaining({ mine: false }));
     expect(load).toHaveBeenCalledWith(expect.objectContaining({ mine: true }));
@@ -218,7 +219,7 @@ describe('Categorías del catálogo', () => {
     expect(within(filter).queryByText('Campos de búsqueda')).not.toBeInTheDocument();
     await user.selectOptions(within(filter).getByRole('combobox', { name: 'Categoría' }), 'ORDENADORES');
     await user.click(within(filter).getByRole('button', { name: 'Aplicar' }));
-    expect(await within(list).findByText('Ordenadores')).toBeVisible();
+    expect((await within(list).findAllByText('Ordenadores')).length).toBeGreaterThan(0);
     expect(within(list).queryByText('Libros digitales')).not.toBeInTheDocument();
     expect(load).toHaveBeenLastCalledWith(expect.objectContaining({ category: 'ORDENADORES', search: 'elemento', page: 0 }));
     await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));

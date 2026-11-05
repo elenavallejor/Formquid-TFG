@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 
 import { getCatalogBlocksForBuilder, getCatalogQuestionsForBuilder } from '../../api/catalogApi.js';
 import { CATEGORY_ICON_COMPONENTS, getCategoryIconName } from '../../utils/categoryIconOptions.js';
+import { isCatalogQuestionAllowed } from '../../utils/catalogCategoryUtils.js';
 import { QUESTION_TYPES } from '../../utils/questionBuilderUtils.js';
 import { lockBodyScroll } from '../../utils/bodyScrollLock.js';
 import { CatalogBlockDetailsModal } from '../CatalogBlockDetailsModal/CatalogBlockDetailsModal.jsx';
@@ -327,7 +328,7 @@ function CatalogSidebarContent({
     const visibleTypes = new Set(availableQuestionTypes.map((type) => type.id));
     return questions.filter((question) => {
       const text = question.statement || '';
-      return (!requiresCategory || question.category === categoryFilter)
+      return (!requiresCategory || isCatalogQuestionAllowed(question.category, categoryFilter))
         && visibleTypes.has(question.questionType)
         && (!search || text.toLocaleLowerCase('es').includes(search))
         && (!activeTypeFilter || question.questionType === activeTypeFilter);
@@ -341,7 +342,7 @@ function CatalogSidebarContent({
   }, [blockSearch, blocks, categoryFilter, requiresCategory]);
 
   function handleDragStart(event, type, item) {
-    if (requiresCategory && item.category !== categoryFilter) {
+    if (requiresCategory && (type === 'QUESTION' ? !isCatalogQuestionAllowed(item.category, categoryFilter) : item.category !== categoryFilter)) {
       event.preventDefault();
       return;
     }
@@ -359,7 +360,7 @@ function CatalogSidebarContent({
   async function handleAdd(type, item) {
     const callback = type === 'QUESTION' ? onAddQuestion : onAddBlock;
     if (!callback || pendingActionRef.current) return;
-    if (requiresCategory && (!categoryFilter || item.category !== categoryFilter)) return;
+    if (requiresCategory && (!categoryFilter || (type === 'QUESTION' ? !isCatalogQuestionAllowed(item.category, categoryFilter) : item.category !== categoryFilter))) return;
     const existingItems = new Set(document.querySelectorAll('.block-questions-list > .block-question-item'));
     pendingActionRef.current = true;
     const actionId = `${type}-${item.id}`;
@@ -395,7 +396,7 @@ function CatalogSidebarContent({
         </div>
       );
     }
-    if (categoryFilter && !questions.some((question) => question.category === categoryFilter)) {
+    if (categoryFilter && !questions.some((question) => isCatalogQuestionAllowed(question.category, categoryFilter))) {
       return <EmptyCategoryMessage itemType="preguntas" category={selectedCategory} />;
     }
     if (filteredQuestions.length === 0) return <p className="catalog-empty" role="status">No se han encontrado preguntas que coincidan con la búsqueda o el filtro seleccionado.</p>;

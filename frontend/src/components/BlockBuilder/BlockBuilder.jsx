@@ -3,6 +3,7 @@ import { MdAdd, MdClose, MdDeleteOutline, MdDragIndicator, MdEdit, MdKeyboardArr
 import { useModalFocus } from "../../hooks/useModalFocus.js";
 import { buildBlockQuestionFromCatalog, buildBlockTextItem, getBlockItems, INITIAL_BLOCK_STATE } from "../../utils/blockBuilderUtils.js";
 import { getDragData, getDropIndex, reorderItems } from "../../utils/builderDragUtils.js";
+import { isCatalogQuestionAllowed } from "../../utils/catalogCategoryUtils.js";
 import { INITIAL_QUESTION_STATE, QUESTION_TYPES } from "../../utils/questionBuilderUtils.js";
 import { CreateElementButton } from "../CreateElementButton/CreateElementButton.jsx";
 import { CREATABLE_ELEMENT_TYPE, ELEMENT_CREATOR_CONTEXT } from "../CreateElementButton/createElementOptions.js";
@@ -96,7 +97,7 @@ export function BlockBuilder({
   }
 
   function handleCatalogQuestion(question, targetIndex) {
-    if (categoryFilter !== null && (!categoryFilter || question.category !== categoryFilter)) return false;
+    if (categoryFilter !== null && !isCatalogQuestionAllowed(question.category, categoryFilter)) return false;
     if (onDropQuestionFromSidebar) {
       return onDropQuestionFromSidebar(question, targetIndex);
     }
@@ -297,7 +298,7 @@ export function BlockBuilder({
               Combina preguntas y textos, y ordénalos como aparecerán.
             </p>
           </div>
-          <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.BLOCK} onSelect={handleCreateElement} />
+          <CreateElementButton context={ELEMENT_CREATOR_CONTEXT.BLOCK} onSelect={handleCreateElement} disabled={categoryFilter !== null && !categoryFilter} />
         </div>
 
         <div className="block-questions-list">

@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateFixedQuestionRequestDto(
     @Valid @NotNull QuestionDraftDto question,
-    Category category
+    @NotNull Category category
 ) {
 }

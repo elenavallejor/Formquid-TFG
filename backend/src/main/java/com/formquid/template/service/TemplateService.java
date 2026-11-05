@@ -106,10 +106,13 @@ public class TemplateService {
     @Transactional
     public TemplateResponseDto create(CreateTemplateRequestDto request, User creator) {
         validateDraft(request);
-        categoryCatalogService.requireExisting(request.category() == null ? Category.OTROS : request.category());
+        if (request.category() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría de la plantilla es obligatoria");
+        }
+        categoryCatalogService.requireExisting(request.category());
         Template template = templateRepository.save(Template.builder()
             .title(request.title().trim())
-            .category(request.category() == null ? Category.OTROS : request.category())
+            .category(request.category())
             .description(trimToNull(request.description()))
             .imageKey(trimToNull(request.imageKey()))
             .createdBy(creator)
@@ -131,10 +134,13 @@ public class TemplateService {
         Template template = getTemplate(id);
         requireManagementPermission(template.getCreatedBy(), user);
         validateDraft(request);
-        if (request.category() != null) categoryCatalogService.requireExisting(request.category());
+        if (request.category() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría de la plantilla es obligatoria");
+        }
+        categoryCatalogService.requireExisting(request.category());
         contentService.deleteTemplateContent(template);
         template.setTitle(request.title().trim());
-        if (request.category() != null) template.setCategory(request.category());
+        template.setCategory(request.category());
         template.setDescription(trimToNull(request.description()));
         template.setImageKey(trimToNull(request.imageKey()));
         template.setUpdatedAt(Instant.now());

@@ -80,6 +80,19 @@ describe('CatalogSidebar', () => {
     expect(getCatalogBlocksForBuilder).toHaveBeenCalledWith(expect.objectContaining({ category: 'TECNOLOGIA', page: 0 }));
   });
 
+  it('incluye preguntas de datos personales y otros en una categoría elegida', async () => {
+    getCatalogQuestionsForBuilder.mockResolvedValue({ content: [
+      { ...question, category: 'SALUD' },
+      { ...question, id: 8, statement: '¿Nombre?', category: 'DATOS_PERSONALES' },
+      { ...question, id: 9, statement: '¿Algo más?', category: 'OTROS' },
+      { ...question, id: 10, statement: '¿Tecnología?', category: 'TECNOLOGIA' },
+    ], totalElements: 4 });
+    renderSidebar({ categoryFilter: 'SALUD', showBlocks: false });
+    expect(await screen.findByRole('heading', { name: '¿Nombre?' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '¿Algo más?' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: '¿Tecnología?' })).not.toBeInTheDocument();
+  });
+
   it('descarta una respuesta antigua al cambiar de categoría durante la carga', async () => {
     let resolveSalud;
     getCatalogQuestionsForBuilder

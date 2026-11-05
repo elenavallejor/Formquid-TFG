@@ -82,18 +82,22 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             left join fetch question.settings
             left join fetch question.createdBy
             where question.scope = :scope
-                and (:category is null or question.category = :category)
+                and (:category is null or question.category = :category
+                    or question.category = :personalCategory or question.category = :otherCategory)
             """,
         countQuery = """
             select count(question.id)
             from Question question
             where question.scope = :scope
-                and (:category is null or question.category = :category)
+                and (:category is null or question.category = :category
+                    or question.category = :personalCategory or question.category = :otherCategory)
             """
     )
     Page<Question> findCatalogQuestionsWithDetails(
         @Param("scope") QuestionScope scope,
         @Param("category") Category category,
+        @Param("personalCategory") Category personalCategory,
+        @Param("otherCategory") Category otherCategory,
         Pageable pageable
     );
 

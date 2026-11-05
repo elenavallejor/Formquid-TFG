@@ -127,11 +127,14 @@ public class BlockService {
     @Transactional
     public BlockResponseDto createCatalogBlock(CreateBlockRequestDto request, User creator) {
         validateDraft(request);
-        categoryCatalogService.requireExisting(request.category() == null ? Category.OTROS : request.category());
+        if (request.category() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría del bloque es obligatoria");
+        }
+        categoryCatalogService.requireExisting(request.category());
         Block block = blockRepository.save(Block.builder()
             .scope(BlockScope.CATALOG)
             .name(request.name().trim())
-            .category(request.category() == null ? Category.OTROS : request.category())
+            .category(request.category())
             .description(trimToNull(request.description()))
             .createdBy(creator)
             .build());
@@ -149,10 +152,13 @@ public class BlockService {
         }
         requireManagementPermission(block.getCreatedBy(), user);
         validateDraft(request);
-        if (request.category() != null) categoryCatalogService.requireExisting(request.category());
+        if (request.category() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría del bloque es obligatoria");
+        }
+        categoryCatalogService.requireExisting(request.category());
         contentService.deleteBlockContent(block);
         block.setName(request.name().trim());
-        if (request.category() != null) block.setCategory(request.category());
+        block.setCategory(request.category());
         block.setDescription(trimToNull(request.description()));
         block.setUpdatedAt(Instant.now());
         request.items().stream()
