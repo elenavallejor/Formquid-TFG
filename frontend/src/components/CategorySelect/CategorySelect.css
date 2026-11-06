@@ -27,6 +27,18 @@
   background-color: var(--color-surface);
 }
 
+.category-select .custom-dropdown-trigger:disabled {
+  border-color: var(--color-border);
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.category-select .custom-dropdown-trigger:disabled .category-select-option svg,
+.category-select .custom-dropdown-trigger:disabled + .custom-dropdown-icon {
+  color: var(--color-text-muted);
+}
+
 .category-select--placeholder .custom-dropdown-trigger {
   color: var(--builder-placeholder-color, var(--color-text-muted));
 }

@@ -211,6 +211,7 @@ export function SurveyOriginModal({
                   key={template.id}
                   type="button"
                   className="survey-template-option"
+                  disabled={!template.category || template.category === 'DATOS_PERSONALES'}
                   onClick={() => handleSelect({ type: 'TEMPLATE', template })}
                 >
                   <span className="survey-template-image">
@@ -220,7 +221,9 @@ export function SurveyOriginModal({
                   </span>
                   <span>
                     <strong>{template.title}</strong>
-                    <small>{template.description || 'Sin descripción'}</small>
+                    <small>{!template.category || template.category === 'DATOS_PERSONALES'
+                      ? 'Esta plantilla no tiene una categoría válida para encuestas.'
+                      : template.description || 'Sin descripción'}</small>
                   </span>
                   <MdKeyboardArrowRight aria-hidden="true" />
                 </button>

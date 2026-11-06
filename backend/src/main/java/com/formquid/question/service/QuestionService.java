@@ -83,11 +83,11 @@ public class QuestionService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size, Category category) {
+    public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(int page, int size, Category category, String search) {
         Pageable pageable = CatalogPagination.builderPageable(page, size);
         Page<QuestionResponseDto> questions = questionRepository
             .findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED, category,
-                Category.DATOS_PERSONALES, Category.OTROS, pageable)
+                Category.DATOS_PERSONALES, Category.OTROS, normalizeSearch(search), pageable)
             .map(this::toResponse);
         return toPageResponse(questions);
     }

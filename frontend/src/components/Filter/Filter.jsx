@@ -172,17 +172,6 @@ export function Filter({
 
   const filterControls = (
     <>
-      {textFilter && (
-        <label className="filter__text-field">
-          <span>{textFilter.label}</span>
-          <input
-            type="search"
-            value={draftText}
-            placeholder={textFilter.placeholder}
-            onChange={(event) => setDraftText(event.target.value)}
-          />
-        </label>
-      )}
       {options.length > 0 && (
         <div className="filter__choice-select">
           <div className="filter__options-title">{optionsLabel}</div>
@@ -301,6 +290,17 @@ export function Filter({
           )}
         </div>
       ))}
+      {textFilter && (
+        <label className="filter__text-field">
+          <span>{textFilter.label}</span>
+          <input
+            type="search"
+            value={draftText}
+            placeholder={textFilter.placeholder}
+            onChange={(event) => setDraftText(event.target.value)}
+          />
+        </label>
+      )}
       <div className="filter__footer">
         <button type="button" className="filter__reset" onClick={resetFilters}>Borrar filtros</button>
         <button type="button" className="filter__apply" onClick={applyFilters}>Aplicar</button>

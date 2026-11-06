@@ -28,6 +28,8 @@ const DIRECTION_LABELS = {
   NEUTRAL: 'No evaluable',
 };
 
+const CHART_COLORS = ['#335ca8', '#da8c35', '#39927f', '#9b68a6', '#c75e69', '#718b36', '#497baf', '#a36d4b'];
+
 function formatNumber(value, maximumFractionDigits = 1) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
   return new Intl.NumberFormat('es-ES', { maximumFractionDigits }).format(Number(value));
@@ -83,6 +85,48 @@ function PercentageBars({ items, ariaLabel }) {
   );
 }
 
+function OptionDistribution({ items, title, ariaLabel, multipleChoice = false }) {
+  if (!items?.length) return null;
+  const totalSelections = items.reduce((total, item) => total + (Number(item.count) || 0), 0);
+  let position = 0;
+  const segments = items.map((item, index) => {
+    const start = position;
+    position += totalSelections ? ((Number(item.count) || 0) / totalSelections) * 100 : 0;
+    return `${CHART_COLORS[index % CHART_COLORS.length]} ${start}% ${position}%`;
+  });
+
+  return (
+    <section className="option-distribution" aria-label={ariaLabel}>
+      <h4>{title}</h4>
+      <div className="option-distribution-overview">
+        <div
+          className={`option-distribution-pie${totalSelections ? '' : ' option-distribution-pie--empty'}`}
+          role="img"
+          aria-label={totalSelections
+            ? items.map((item) => `${item.label}: ${formatPercentage((Number(item.count) || 0) * 100 / totalSelections)} de las selecciones`).join('; ')
+            : 'Todavía no hay respuestas para esta distribución'}
+          style={totalSelections ? { backgroundImage: `conic-gradient(${segments.join(', ')})` } : undefined}
+        />
+        <ul className="option-distribution-legend">
+          {items.map((item, index) => (
+            <li key={item.key ?? item.label}>
+              <span className="option-distribution-swatch" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} aria-hidden="true" />
+              <span>{item.label}</span>
+              <strong>{formatPercentage(totalSelections ? (Number(item.count) || 0) * 100 / totalSelections : 0)}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {multipleChoice && <p className="statistics-help"><MdInfoOutline aria-hidden="true" /> El gráfico circular muestra el reparto de selecciones. Una persona puede marcar varias opciones.</p>}
+      <details className="option-distribution-details">
+        <summary>Ver distribución por opción</summary>
+        <PercentageBars items={items} ariaLabel={ariaLabel} />
+        {multipleChoice && <p className="statistics-help">Cada porcentaje representa participantes que marcaron la opción; la suma puede superar el 100 %.</p>}
+      </details>
+    </section>
+  );
+}
+
 function NumericSummary({ data }) {
   if (data?.average === null || data?.average === undefined) return null;
   const values = [
@@ -127,18 +171,18 @@ function QuestionStatistics({ statistics, index, question }) {
     count: item.count,
     percentage: item.percentage,
   }));
-  const booleanItems = statistics.booleanStatistics ? [
+  const booleanItems = statistics.questionType === 'BOOLEAN' ? [
     {
       key: 'true',
       label: question?.settings?.trueLabel || 'Sí',
-      count: statistics.booleanStatistics.trueCount,
-      percentage: statistics.booleanStatistics.truePercentage,
+      count: statistics.booleanStatistics?.trueCount ?? 0,
+      percentage: statistics.booleanStatistics?.truePercentage ?? 0,
     },
     {
       key: 'false',
       label: question?.settings?.falseLabel || 'No',
-      count: statistics.booleanStatistics.falseCount,
-      percentage: statistics.booleanStatistics.falsePercentage,
+      count: statistics.booleanStatistics?.falseCount ?? 0,
+      percentage: statistics.booleanStatistics?.falsePercentage ?? 0,
     },
   ] : [];
   const valueItems = (statistics.valueDistribution || []).map((item) => ({
@@ -204,27 +248,15 @@ function QuestionStatistics({ statistics, index, question }) {
       </div>
 
       {choiceItems.length > 0 && (
-        <>
-          <h4>Distribución por opción</h4>
-          <PercentageBars items={choiceItems} ariaLabel="Distribución porcentual por opción" />
-          {statistics.questionType === 'MULTIPLE_CHOICE' && (
-            <p className="statistics-help"><MdInfoOutline aria-hidden="true" /> Cada porcentaje representa participantes que marcaron la opción; la suma puede superar el 100 %.</p>
-          )}
-        </>
+        <OptionDistribution items={choiceItems} title="Respuestas por opción" ariaLabel="Distribución porcentual por opción" multipleChoice={statistics.questionType === 'MULTIPLE_CHOICE'} />
       )}
 
       {booleanItems.length > 0 && (
-        <>
-          <h4>Distribución por opción</h4>
-          <PercentageBars items={booleanItems} ariaLabel="Distribución porcentual de respuestas" />
-        </>
+        <OptionDistribution items={booleanItems} title="Respuestas por opción" ariaLabel="Distribución porcentual de respuestas" />
       )}
 
       {valueItems.length > 0 && (
-        <>
-          <h4>Distribución de la escala</h4>
-          <PercentageBars items={valueItems} ariaLabel="Distribución porcentual de la escala" />
-        </>
+        <OptionDistribution items={valueItems} title="Distribución de la escala" ariaLabel="Distribución porcentual de la escala" />
       )}
 
       <NumericSummary data={statistics.numericStatistics} />
@@ -238,8 +270,9 @@ function QuestionStatistics({ statistics, index, question }) {
                 <h5>{row.label}</h5>
                 <span>{row.answers} {row.answers === 1 ? 'respuesta' : 'respuestas'}</span>
               </div>
-              <PercentageBars
+              <OptionDistribution
                 ariaLabel={`Distribución de ${row.label}`}
+                title={`Valores de ${row.label}`}
                 items={(row.valueDistribution || []).map((item) => ({
                   key: String(item.value),
                   label: String(item.value),
@@ -254,7 +287,12 @@ function QuestionStatistics({ statistics, index, question }) {
       )}
 
       {statistics.questionType === 'TEXT' && (
-        <p className="statistics-text-note">Las respuestas de texto libre se consultarán desde el detalle de participaciones individuales.</p>
+        <section className="statistics-text-responses" aria-label="Respuestas de texto libre">
+          <h4>Respuestas de texto libre</h4>
+          {statistics.textResponses?.length > 0 ? (
+            <ol>{statistics.textResponses.map((response, responseIndex) => <li key={responseIndex}>{response}</li>)}</ol>
+          ) : <p className="statistics-text-note">Todavía no hay respuestas de texto libre.</p>}
+        </section>
       )}
 
       <EvaluationBadge score={statistics.evaluationScore} question={question} />
@@ -293,10 +331,10 @@ function WeightedAnalysis({ score, hasParticipations }) {
         <strong>{formatNumber(score, 1)}</strong>
         <span>{tendency}</span>
       </div>
-      <div className="weighted-scale" role="img" aria-label={`Índice ponderado ${formatNumber(score, 1)} sobre una escala de menos 100 a 100`}>
+      <div className="weighted-scale" role="img" aria-label={`Índice ponderado ${formatNumber(score, 1)} en una escala de negativo a positivo`}>
         <span className="weighted-scale-marker" style={{ left: `${normalizedPosition}%` }} />
       </div>
-      <div className="weighted-scale-labels"><span>−100</span><span>0</span><span>100</span></div>
+      <div className="weighted-scale-labels"><span>Negativo</span><span>0</span><span>Positivo</span></div>
     </section>
   );
 }
@@ -444,7 +482,7 @@ export function SurveyResultsPage() {
               <header className="catalog-detail-structure-header">
                 <div>
                   <h3 id="questions-statistics-title">ESTADÍSTICAS POR PREGUNTA</h3>
-                  <p>Los porcentajes se calculan sobre quienes respondieron cada pregunta; las omisiones se muestran por separado.</p>
+                  <p>En el desglose, los porcentajes se calculan sobre quienes respondieron cada pregunta, las omisiones se muestran por separado. El gráfico circular muestra la proporción entre las opciones marcadas.</p>
                 </div>
               </header>
 

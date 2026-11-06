@@ -11,7 +11,7 @@ function CategoryLabel({ category }) {
   return <span className="category-select-option"><Icon aria-hidden="true" /><span>{category.name}</span></span>;
 }
 
-export function CategorySelect({ id, value, onChange, surveyOnly = false, defaultLabel = 'Otras tecnologías (por defecto)', placeholder = '', showDefaultOption = true, required = false, validationError = '' }) {
+export function CategorySelect({ id, value, onChange, surveyOnly = false, defaultLabel = 'Otras tecnologías (por defecto)', placeholder = '', showDefaultOption = true, required = false, disabled = false, validationError = '' }) {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
   const errorMessage = validationError || error;
@@ -31,7 +31,7 @@ export function CategorySelect({ id, value, onChange, surveyOnly = false, defaul
   return (
     <div className="category-select">
       <label className="category-select-label" htmlFor={id}>Categoría{required && <> <span className="category-select-required" aria-hidden="true">*</span><span className="sr-only"> (obligatoria)</span></>}</label>
-      <Dropdown id={id} value={value} onChange={(event) => onChange(event.target.value, categories.find((category) => category.code === event.target.value) ?? null)}
+      <Dropdown id={id} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value, categories.find((category) => category.code === event.target.value) ?? null)}
         className={placeholder && !value ? 'category-select--placeholder' : ''}
         aria-invalid={validationError ? true : undefined} aria-describedby={[`${id}-value`, errorMessage && `${id}-error`].filter(Boolean).join(' ')}>
         {placeholder

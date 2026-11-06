@@ -127,6 +127,7 @@ export function getCatalogQuestionsForBuilder(options = {}) {
     page = 0,
     size = 10,
     category,
+    search = '',
     refresh = false,
   } = options;
 
@@ -134,6 +135,7 @@ export function getCatalogQuestionsForBuilder(options = {}) {
     page,
     size,
     category,
+    search,
   });
 
   return getCachedPage(

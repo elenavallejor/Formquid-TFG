@@ -26,6 +26,7 @@ import com.formquid.statistics.repository.StatisticsQueryRepository.MatrixValueC
 import com.formquid.statistics.repository.StatisticsQueryRepository.ParticipationSummary;
 import com.formquid.statistics.repository.StatisticsQueryRepository.QuestionAggregate;
 import com.formquid.statistics.repository.StatisticsQueryRepository.QuestionScore;
+import com.formquid.statistics.repository.StatisticsQueryRepository.TextResponse;
 import com.formquid.statistics.repository.StatisticsQueryRepository.ValueCount;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.repository.SurveyRepository;
@@ -87,6 +88,7 @@ public class StatisticsService {
     private StatisticsData loadStatisticsData(List<Question> questions) {
         List<Long> questionIds = questions.stream().map(Question::getId).toList();
         List<Long> scaleQuestionIds = questionIdsByType(questions, QuestionType.SCALE);
+        List<Long> textQuestionIds = questionIdsByType(questions, QuestionType.TEXT);
         List<Long> choiceQuestionIds = questionIdsByType(
             questions, QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE
         );
@@ -97,6 +99,11 @@ public class StatisticsService {
             .collect(Collectors.toMap(QuestionAggregate::questionId, Function.identity()));
         Map<Long, List<ValueCount>> scaleValueCounts = queryScaleValues(scaleQuestionIds).stream()
             .collect(Collectors.groupingBy(ValueCount::questionId, LinkedHashMap::new, Collectors.toList()));
+        Map<Long, List<String>> textResponses = statisticsQueryRepository.findTextResponses(textQuestionIds).stream()
+            .collect(Collectors.groupingBy(
+                TextResponse::questionId, LinkedHashMap::new,
+                Collectors.mapping(TextResponse::value, Collectors.toList())
+            ));
         Map<Long, List<ChoiceOptionAggregate>> choiceOptions = queryChoiceOptions(choiceQuestionIds).stream()
             .collect(Collectors.groupingBy(
                 ChoiceOptionAggregate::questionId, LinkedHashMap::new, Collectors.toList()
@@ -117,6 +124,7 @@ public class StatisticsService {
         return new StatisticsData(
             questionAggregates,
             scaleValueCounts,
+            textResponses,
             choiceOptions,
             choiceScores,
             matrixRows,
@@ -183,6 +191,7 @@ public class StatisticsService {
             choiceStatistics(question.getId(), answerCount, data),
             booleanStatistics(aggregate),
             matrixStatistics(question, data),
+            data.textResponses().getOrDefault(question.getId(), List.of()),
             normalizedScore,
             evaluationScore
         );
@@ -424,6 +433,7 @@ public class StatisticsService {
     private record StatisticsData(
         Map<Long, QuestionAggregate> questionAggregates,
         Map<Long, List<ValueCount>> scaleValueCounts,
+        Map<Long, List<String>> textResponses,
         Map<Long, List<ChoiceOptionAggregate>> choiceOptions,
         Map<Long, Double> choiceScores,
         Map<Long, List<MatrixRowAggregate>> matrixRows,

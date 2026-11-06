@@ -93,6 +93,22 @@ describe('CatalogSidebar', () => {
     expect(screen.queryByRole('heading', { name: '¿Tecnología?' })).not.toBeInTheDocument();
   });
 
+  it('encuentra preguntas personales que no estaban en la primera página', async () => {
+    const user = userEvent.setup();
+    getCatalogQuestionsForBuilder.mockImplementation(({ search }) => Promise.resolve(search
+      ? { content: [{ ...question, id: 8, statement: '¿Nombre?', category: 'DATOS_PERSONALES' }], totalElements: 1 }
+      : { content: [{ ...question, category: 'SALUD' }], totalElements: 12 }));
+    renderSidebar({ categoryFilter: 'SALUD', showBlocks: false });
+    expect(await screen.findByRole('heading', { name: '¿Cómo estás?' })).toBeVisible();
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar preguntas fijas' }), 'nombre');
+
+    expect(await screen.findByRole('heading', { name: '¿Nombre?' })).toBeVisible();
+    expect(getCatalogQuestionsForBuilder).toHaveBeenLastCalledWith(expect.objectContaining({
+      category: 'SALUD', search: 'nombre', page: 0,
+    }));
+  });
+
   it('descarta una respuesta antigua al cambiar de categoría durante la carga', async () => {
     let resolveSalud;
     getCatalogQuestionsForBuilder

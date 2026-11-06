@@ -84,6 +84,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             where question.scope = :scope
                 and (:category is null or question.category = :category
                     or question.category = :personalCategory or question.category = :otherCategory)
+                and (:search = '' or lower(question.statement) like concat('%', :search, '%'))
             """,
         countQuery = """
             select count(question.id)
@@ -91,6 +92,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             where question.scope = :scope
                 and (:category is null or question.category = :category
                     or question.category = :personalCategory or question.category = :otherCategory)
+                and (:search = '' or lower(question.statement) like concat('%', :search, '%'))
             """
     )
     Page<Question> findCatalogQuestionsWithDetails(
@@ -98,6 +100,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         @Param("category") Category category,
         @Param("personalCategory") Category personalCategory,
         @Param("otherCategory") Category otherCategory,
+        @Param("search") String search,
         Pageable pageable
     );
 

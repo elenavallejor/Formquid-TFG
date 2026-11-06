@@ -16,6 +16,7 @@ public record QuestionStatisticsResponseDto(
     List<ChoiceOptionStatisticsDto> choiceStatistics,
     BooleanStatisticsDto booleanStatistics,
     List<MatrixRowStatisticsDto> matrixStatistics,
+    List<String> textResponses,
     Double normalizedScore,
     Double evaluationScore
 ) {

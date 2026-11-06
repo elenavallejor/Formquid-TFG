@@ -21,8 +21,11 @@
 }
 
 .required-asterisk {
-  color: var(--color-error);
-  font-weight: 700;
+  color: var(--color-required);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 0;
+  vertical-align: -0.1em;
 }
 
 .academic-annotation-box {
@@ -198,10 +201,18 @@
 
 .academic-option-row input[type="radio"],
 .academic-option-row input[type="checkbox"],
+.academic-scale-block input[type="radio"]:not(.visual-choice-input),
+.academic-matrix-table input[type="radio"]:not(.visual-choice-input),
 .academic-boolean-horizontal input[type="radio"] {
   width: 24px;
   height: 24px;
   flex: 0 0 24px;
+}
+
+.academic-scale-block input[type="radio"]:not(.visual-choice-input),
+.academic-matrix-table input[type="radio"]:not(.visual-choice-input) {
+  margin: 0;
+  cursor: pointer;
 }
 
 .option-label {

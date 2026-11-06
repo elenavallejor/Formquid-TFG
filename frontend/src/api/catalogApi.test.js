@@ -120,11 +120,12 @@ describe('catalogApi', () => {
   });
 
   it('envía la categoría al consultar preguntas y bloques del constructor', async () => {
-    await getCatalogQuestionsForBuilder({ page: 0, category: 'SALUD' });
+    await getCatalogQuestionsForBuilder({ page: 0, category: 'SALUD', search: 'Nombre' });
     await getCatalogBlocksForBuilder({ page: 1, category: 'SALUD' });
 
     const [questionsPath, blocksPath] = apiClient.mock.calls.map(([path]) => path);
     expect(new URL(questionsPath, 'https://example.test').searchParams.get('category')).toBe('SALUD');
+    expect(new URL(questionsPath, 'https://example.test').searchParams.get('search')).toBe('Nombre');
     expect(new URL(blocksPath, 'https://example.test').searchParams.get('category')).toBe('SALUD');
     expect(new URL(blocksPath, 'https://example.test').searchParams.get('page')).toBe('1');
   });

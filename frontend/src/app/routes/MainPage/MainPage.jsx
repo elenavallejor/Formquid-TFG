@@ -60,6 +60,7 @@ function PaginatedSurveySection({
   request,
   search,
   searchEmptyMessage,
+  tag,
   title,
   visible,
 }) {
@@ -85,6 +86,7 @@ function PaginatedSurveySection({
 
     request({
       search,
+      tag,
       categories,
       accessMode,
       page: currentPage,
@@ -119,6 +121,7 @@ function PaginatedSurveySection({
     request,
     requestVersion,
     search,
+    tag,
     visible,
   ]);
 
@@ -173,7 +176,7 @@ function PaginatedSurveySection({
       ) : !errorMessage && (
         <div className="main-page-section-empty" role="status">
           <FaRegClipboard aria-hidden="true" />
-          <p>{search || categories.length > 0 ? searchEmptyMessage : emptyMessage}</p>
+          <p>{search || tag || categories.length > 0 ? searchEmptyMessage : emptyMessage}</p>
         </div>
       )}
 
@@ -212,6 +215,7 @@ export function MainPage() {
   const { isAuthenticated, isAuthLoading } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedAccessModes, setSelectedAccessModes] = useState(
@@ -304,6 +308,7 @@ export function MainPage() {
               options={availableAccessOptions}
               optionsLabel="Tipo de acceso"
               selectedValues={visibleSelectedAccessModes}
+              textFilter={{ label: 'Etiqueta', placeholder: 'Escribe una etiqueta', value: tagFilter }}
               choiceFilter={{
                 label: 'Categoría',
                 control: 'multiselect',
@@ -313,8 +318,9 @@ export function MainPage() {
                 value: selectedCategories,
                 resetValue: [],
               }}
-              onChange={(accessModes, _text, categoriesSelection) => {
+              onChange={(accessModes, tag, categoriesSelection) => {
                 setSelectedAccessModes(accessModes);
+                setTagFilter(tag);
                 setSelectedCategories(categoriesSelection);
               }}
               onReset={() => {
@@ -333,7 +339,7 @@ export function MainPage() {
             </div>
           )}
           <PaginatedSurveySection
-            key={JSON.stringify([ACCESS_FILTERS.PUBLIC, debouncedSearch, selectedCategories, isCompact])}
+            key={JSON.stringify([ACCESS_FILTERS.PUBLIC, debouncedSearch, tagFilter, selectedCategories, isCompact])}
             accessMode={ACCESS_FILTERS.PUBLIC}
             categories={selectedCategories}
             emptyMessage="No hay encuestas públicas disponibles."
@@ -345,12 +351,13 @@ export function MainPage() {
             pageSizeOptions={pageSizeOptions}
             request={request}
             search={debouncedSearch}
+            tag={tagFilter}
             searchEmptyMessage="No hay encuestas públicas que coincidan con tu búsqueda."
             title="Encuestas públicas"
             visible={showPublicSection}
           />
           <PaginatedSurveySection
-            key={JSON.stringify([ACCESS_FILTERS.PASSWORD, debouncedSearch, selectedCategories, isCompact])}
+            key={JSON.stringify([ACCESS_FILTERS.PASSWORD, debouncedSearch, tagFilter, selectedCategories, isCompact])}
             accessMode={ACCESS_FILTERS.PASSWORD}
             categories={selectedCategories}
             emptyMessage="No hay encuestas con contraseña disponibles."
@@ -362,13 +369,14 @@ export function MainPage() {
             pageSizeOptions={pageSizeOptions}
             request={request}
             search={debouncedSearch}
+            tag={tagFilter}
             searchEmptyMessage="No hay encuestas con contraseña que coincidan con tu búsqueda."
             title="Encuestas con contraseña"
             visible={showPasswordSection}
           />
           {isAuthenticated && (
             <PaginatedSurveySection
-              key={JSON.stringify([ACCESS_FILTERS.AUTHENTICATED, debouncedSearch, selectedCategories, isCompact])}
+              key={JSON.stringify([ACCESS_FILTERS.AUTHENTICATED, debouncedSearch, tagFilter, selectedCategories, isCompact])}
               accessMode={ACCESS_FILTERS.AUTHENTICATED}
               categories={selectedCategories}
               emptyMessage="No hay encuestas para usuarios registrados disponibles."
@@ -380,6 +388,7 @@ export function MainPage() {
               pageSizeOptions={pageSizeOptions}
               request={request}
               search={debouncedSearch}
+              tag={tagFilter}
               searchEmptyMessage="No hay encuestas para usuarios registrados que coincidan con tu búsqueda."
               title="Encuestas para usuarios registrados"
               visible={showAuthenticatedSection}

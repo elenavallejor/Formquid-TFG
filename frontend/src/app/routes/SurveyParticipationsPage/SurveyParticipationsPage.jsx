@@ -215,13 +215,13 @@ export function SurveyParticipationsPage() {
         <div className="catalog-detail-card survey-participations-card">
           <header className="catalog-detail-title-bar survey-participations-title">
             <div>
-              <MdOutlineAssignment aria-hidden="true" />
+              <span className="catalog-detail-title-icon" aria-hidden="true"><MdOutlineAssignment /></span>
               <h2 ref={resultsRef} tabIndex={-1}>{survey?.title || 'Participaciones'}</h2>
             </div>
             <span>{totalElements} {totalElements === 1 ? 'participación' : 'participaciones'}</span>
           </header>
 
-          <div className="survey-participations-body" aria-busy={isLoading}>
+          <div className="catalog-detail-body survey-participations-body" aria-busy={isLoading}>
             {isLoading ? (
               <Skeleton variant="list" count={5} />
             ) : listError ? null : participations.length === 0 ? (
@@ -253,7 +253,7 @@ export function SurveyParticipationsPage() {
 
             {!isLoading && totalElements > 0 && (
               <Pagination
-            onNavigate={requestResultsFocus}
+                onNavigate={requestResultsFocus}
                 ariaLabel="Paginación de participaciones"
                 currentPage={currentPage}
                 itemLabel="participaciones"

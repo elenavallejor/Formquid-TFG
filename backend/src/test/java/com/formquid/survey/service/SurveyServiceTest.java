@@ -25,6 +25,7 @@ import com.formquid.survey.entity.SurveyLifecycle;
 import com.formquid.survey.entity.SurveyVisibility;
 import com.formquid.survey.repository.SurveyRepository;
 import com.formquid.template.service.TemplateService;
+import com.formquid.template.entity.Template;
 import com.formquid.user.entity.User;
 import com.formquid.user.entity.UserRole;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Page;
@@ -50,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -202,6 +205,59 @@ class SurveyServiceTest {
         var response = surveyService.create(request, owner);
 
         assertThat(response.category()).isEqualTo(Category.TELEFONO_INTELIGENTE);
+    }
+
+    @Test
+    void createFromTemplate_inheritsTemplateCategoryWhenRequestOmitsIt() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        Template template = Template.builder().id(5L).category(Category.TELEFONO_INTELIGENTE).build();
+        CreateSurveyRequestDto request = new CreateSurveyRequestDto(
+            "Encuesta", null, null, null, null, null, null, List.of(), null
+        );
+        when(templateService.getTemplate(5L)).thenReturn(template);
+        when(surveyRepository.save(any(Survey.class))).thenAnswer(invocation -> {
+            Survey survey = invocation.getArgument(0);
+            survey.setId(11L);
+            return survey;
+        });
+        when(contentService.findSurveyContent(11L)).thenReturn(List.of());
+
+        var response = surveyService.createFromTemplate(5L, request, owner);
+
+        assertThat(response.category()).isEqualTo(Category.TELEFONO_INTELIGENTE);
+        ArgumentCaptor<Survey> copiedSurvey = ArgumentCaptor.forClass(Survey.class);
+        verify(templateService).copyTemplateIntoSurvey(eq(template), copiedSurvey.capture(), eq(owner));
+        assertThat(copiedSurvey.getValue().getCategory()).isEqualTo(Category.TELEFONO_INTELIGENTE);
+    }
+
+    @Test
+    void createFromTemplate_rejectsDifferentCategoryBeforeSaving() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        Template template = Template.builder().id(5L).category(Category.TELEFONO_INTELIGENTE).build();
+        CreateSurveyRequestDto request = new CreateSurveyRequestDto(
+            "Encuesta", null, null, null, null, null, null, List.of(), Category.OTROS
+        );
+        when(templateService.getTemplate(5L)).thenReturn(template);
+
+        assertThatThrownBy(() -> surveyService.createFromTemplate(5L, request, owner))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("La categoría de la encuesta debe coincidir con la plantilla");
+        verify(surveyRepository, never()).save(any());
+    }
+
+    @Test
+    void createFromTemplate_rejectsPersonalDataTemplate() {
+        User owner = User.builder().id(1L).role(UserRole.EDITOR).build();
+        Template template = Template.builder().id(5L).category(Category.DATOS_PERSONALES).build();
+        CreateSurveyRequestDto request = new CreateSurveyRequestDto(
+            "Encuesta", null, null, null, null, null, null, List.of(), null
+        );
+        when(templateService.getTemplate(5L)).thenReturn(template);
+
+        assertThatThrownBy(() -> surveyService.createFromTemplate(5L, request, owner))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("Una encuesta no puede ser de datos personales");
+        verify(surveyRepository, never()).save(any());
     }
 
     @Test

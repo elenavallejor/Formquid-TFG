@@ -13,6 +13,7 @@ import com.formquid.question.repository.QuestionRepository;
 import com.formquid.statistics.repository.StatisticsQueryRepository;
 import com.formquid.statistics.repository.StatisticsQueryRepository.ParticipationSummary;
 import com.formquid.statistics.repository.StatisticsQueryRepository.QuestionAggregate;
+import com.formquid.statistics.repository.StatisticsQueryRepository.TextResponse;
 import com.formquid.statistics.repository.StatisticsQueryRepository.ValueCount;
 import com.formquid.survey.entity.Survey;
 import com.formquid.survey.repository.SurveyRepository;
@@ -187,6 +188,37 @@ class StatisticsServiceTest {
                     org.assertj.core.groups.Tuple.tuple(new BigDecimal("4"), 0L, 0.0),
                     org.assertj.core.groups.Tuple.tuple(new BigDecimal("5"), 1L, 100.0 / 3.0)
                 )
+        );
+    }
+
+    @Test
+    void getSurveyStatistics_includesTextResponsesInQuestionOrder() {
+        User user = User.builder().id(4L).build();
+        Survey survey = Survey.builder().id(1L).build();
+        ContentItem item = ContentItem.builder()
+            .id(10L).itemType(ContentItemType.QUESTION).position(1).required(false).build();
+        Question question = Question.builder()
+            .id(20L).parentItem(item).statement("Opinión")
+            .questionType(QuestionType.TEXT).evaluationDirection(EvaluationDirection.NEUTRAL).build();
+
+        when(surveyRepository.findById(1L)).thenReturn(Optional.of(survey));
+        when(statisticsQueryRepository.summarizeParticipations(1L))
+            .thenReturn(new ParticipationSummary(2, null, null));
+        when(contentItemRepository.findSurveyContentRows(1L)).thenReturn(List.of(
+            new ContentItemRowDto(10L, ContentItemType.QUESTION, 1, false, null)
+        ));
+        when(questionRepository.findByParentItemIdsForStatistics(List.of(10L))).thenReturn(List.of(question));
+        when(statisticsQueryRepository.summarizeQuestions(List.of(20L))).thenReturn(List.of(
+            QuestionAggregate.empty(20L)
+        ));
+        when(statisticsQueryRepository.findTextResponses(List.of(20L))).thenReturn(List.of(
+            new TextResponse(20L, "Primera opinión"), new TextResponse(20L, "Otra opinión")
+        ));
+
+        var response = statisticsService.getSurveyStatistics(1L, user);
+
+        assertThat(response.questions()).singleElement().satisfies(statistics ->
+            assertThat(statistics.textResponses()).containsExactly("Primera opinión", "Otra opinión")
         );
     }
 }

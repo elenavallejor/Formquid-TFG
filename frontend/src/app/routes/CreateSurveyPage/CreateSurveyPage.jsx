@@ -57,6 +57,11 @@ const FONT_OPTIONS = [
   },
 ];
 
+function templateSurveyCategory(origin) {
+  if (origin?.type !== 'TEMPLATE' || origin.template?.category === 'DATOS_PERSONALES') return '';
+  return origin.template?.category || '';
+}
+
 export function CreateSurveyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,6 +77,7 @@ export function CreateSurveyPage() {
     ...INITIAL_FORM,
     title: importedSurvey?.title ?? '',
     description: importedSurvey?.description ?? '',
+    category: templateSurveyCategory(initialOrigin),
   }));
   const [origin, setOrigin] = useState(() => initialOrigin);
   const [isOriginOpen, setIsOriginOpen] = useState(() => !initialOrigin);
@@ -92,6 +98,10 @@ export function CreateSurveyPage() {
 
   function selectOrigin(nextOrigin) {
     setOrigin(nextOrigin);
+    if (nextOrigin.type === 'TEMPLATE' || origin?.type === 'TEMPLATE') {
+      updateForm({ category: templateSurveyCategory(nextOrigin) });
+      setCategoryError('');
+    }
     setIsOriginOpen(false);
   }
 
@@ -128,6 +138,10 @@ export function CreateSurveyPage() {
     }
     if (!formData.title.trim()) {
       setErrorMessage('Introduce un título para la encuesta.');
+      return;
+    }
+    if (origin.type === 'TEMPLATE' && !templateSurveyCategory(origin)) {
+      setErrorMessage('Esta plantilla no tiene una categoría válida para crear encuestas. Elige otra plantilla.');
       return;
     }
     if (!formData.category) {
@@ -231,9 +245,10 @@ export function CreateSurveyPage() {
             />
             <small>{formData.title.length}/200</small>
           </div>
-          <CategorySelect id="survey-category" surveyOnly required
+          <CategorySelect id="survey-category" surveyOnly required disabled={origin?.type === 'TEMPLATE'}
             defaultLabel="Selecciona una categoría" value={formData.category} validationError={categoryError}
             onChange={(category) => { setCategoryError(''); updateForm({ category }); }} />
+          {origin?.type === 'TEMPLATE' && templateSurveyCategory(origin) && <p className="create-survey-category-note">La categoría viene de la plantilla y no se puede cambiar.</p>}
           <div className="create-survey-field">
             <label htmlFor="survey-description">Descripción</label>
             <textarea

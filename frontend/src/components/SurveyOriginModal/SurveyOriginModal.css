@@ -207,8 +207,13 @@
   cursor: pointer;
 }
 
-.survey-template-option:hover {
+.survey-template-option:hover:not(:disabled) {
   border-color: var(--color-brand);
+}
+
+.survey-template-option:disabled {
+  background: var(--color-surface-muted);
+  cursor: not-allowed;
 }
 
 .survey-template-image {

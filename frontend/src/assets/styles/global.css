@@ -47,6 +47,7 @@
   --color-border-strong: var(--color-primary);
 
   --color-error: #8f1b17;
+  --color-required: #c62828;
   --color-error-border: var(--color-error);
   --color-error-hover: #fed7d7;
   --color-error-surface: #fde8e8;

@@ -59,6 +59,11 @@ describe('SurveyResultsPage', () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: '¿Te gusta?' })).toBeVisible();
     expect(screen.getByText('Tendencia positiva')).toBeVisible();
+    expect(screen.getByRole('img', { name: /Sí: 66,7 % de las selecciones/ })).toBeVisible();
+    const distribution = screen.getByText('Ver distribución por opción');
+    expect(distribution.closest('details')).not.toHaveAttribute('open');
+    await user.click(distribution);
+    expect(distribution.closest('details')).toHaveAttribute('open');
     const questionToggle = screen.getByRole('button', { name: 'Ver pregunta' });
     expect(questionToggle).not.toHaveAttribute('aria-controls');
     await user.click(questionToggle);
@@ -66,6 +71,17 @@ describe('SurveyResultsPage', () => {
     expect(screen.getByText('Pregunta: ¿Te gusta?')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Ver participaciones individuales' }));
     expect(screen.getByRole('heading', { name: 'Participaciones individuales' })).toBeVisible();
+  });
+
+  it('muestra las opciones booleanas aunque todavía no haya respuestas', async () => {
+    getSurveyStatistics.mockResolvedValue({
+      participations: 0,
+      questions: [{ questionId: 4, questionType: 'BOOLEAN', statement: '¿Te gusta?', answers: 0, omissions: 0, responseRate: 0 }],
+    });
+    renderPage();
+    expect(await screen.findByRole('heading', { name: '¿Te gusta?' })).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Todavía no hay respuestas para esta distribución' })).toBeVisible();
+    expect(screen.getByText('Ver distribución por opción').closest('details')).not.toHaveAttribute('open');
   });
 
   it('muestra el error cuando las estadísticas no se pueden cargar', async () => {
@@ -92,15 +108,18 @@ describe('SurveyResultsPage: distribuciones y evaluación', () => {
     ] });
     getSurveyStatistics.mockResolvedValue({ participations: 3, globalEvaluationScore: 0, questions: types.map((questionType, index) => ({
       questionId: index + 1, questionType, statement: questionType, answers: 3, omissions: 0, responseRate: 100, evaluationScore: 2,
+      ...(questionType === 'TEXT' ? { textResponses: ['Primera opinión', 'Otra opinión'] } : {}),
       ...(questionType === 'NUMBER' ? { numericStatistics: { average: 2, median: 2, min: 1, max: 3, standardDeviation: 'invalid' }, valueDistribution: [{ value: 1, count: 1, percentage: 33 }] } : {}),
       ...(questionType === 'MULTIPLE_CHOICE' ? { choiceStatistics: [{ optionId: 1, label: 'Opción A', count: 1, percentage: 150 }, { label: 'Opción B', count: 0, percentage: null }] } : {}),
       ...(questionType === 'MATRIX_SCALE' ? { matrixStatistics: [{ rowId: 1, label: 'Rapidez', answers: 1, numericStatistics: { average: 3 }, valueDistribution: [{ value: 3, count: 1, percentage: 100 }] }, { rowId: 2, label: 'Precisión', answers: 2 }] } : {}),
     })) });
     renderPage();
     expect(await screen.findByText('Resultados por fila')).toBeVisible();
-    expect(screen.getByText(/Las respuestas de texto libre/)).toBeVisible();
-    expect(screen.getByText(/la suma puede superar/)).toBeVisible();
-    expect(screen.getByRole('img', { name: 'Opción A: 100 %, 1 respuestas' })).toBeVisible();
+    expect(screen.getByText('Primera opinión')).toBeVisible();
+    expect(screen.getByText('Otra opinión')).toBeVisible();
+    expect(screen.getByText(/la suma puede superar/)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Opción A: 100 % de las selecciones/ })).toBeVisible();
+    expect(screen.getAllByText('Ver distribución por opción')).toHaveLength(3);
     const toggle = screen.getAllByRole('button', { name: 'Ver pregunta' })[0];
     await user.click(toggle);
     await user.click(screen.getByRole('button', { name: 'Ocultar pregunta' }));

@@ -30,7 +30,7 @@ describe('SurveyOriginModal', () => {
   it('carga plantillas, filtra por texto y entrega la seleccionada', async () => {
     const user = userEvent.setup();
     getCatalogTemplates.mockResolvedValue({ content: [
-      { id: 1, title: 'Salud', description: 'Bienestar' },
+      { id: 1, title: 'Salud', description: 'Bienestar', category: 'SALUD' },
       { id: 2, title: 'Educación', description: 'Aprendizaje' },
     ] });
     const { onSelect } = renderModal();
@@ -40,7 +40,7 @@ describe('SurveyOriginModal', () => {
     await user.type(screen.getByRole('searchbox', { name: 'Buscar plantillas' }), 'salud');
     expect(screen.queryByRole('button', { name: /Educación/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Salud/ }));
-    expect(onSelect).toHaveBeenCalledWith({ type: 'TEMPLATE', template: { id: 1, title: 'Salud', description: 'Bienestar' } });
+    expect(onSelect).toHaveBeenCalledWith({ type: 'TEMPLATE', template: { id: 1, title: 'Salud', description: 'Bienestar', category: 'SALUD' } });
   });
 
   it('muestra el fallo de carga y permite volver a la selección inicial', async () => {
@@ -53,5 +53,18 @@ describe('SurveyOriginModal', () => {
     expect(screen.getByRole('heading', { name: '¿CÓMO QUIERES EMPEZAR?' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Cancelar creación de encuesta' }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('impide usar una plantilla de datos personales para crear encuestas', async () => {
+    const user = userEvent.setup();
+    getCatalogTemplates.mockResolvedValue({ content: [
+      { id: 3, title: 'Datos del alumnado', category: 'DATOS_PERSONALES' },
+    ] });
+    const { onSelect } = renderModal();
+    await user.click(screen.getByRole('button', { name: /Usar una plantilla del catálogo/ }));
+    const templateButton = await screen.findByRole('button', { name: /Datos del alumnado/ });
+    expect(templateButton).toBeDisabled();
+    expect(templateButton).toHaveTextContent('Esta plantilla no tiene una categoría válida para encuestas.');
+    expect(onSelect).not.toHaveBeenCalled();
   });
 });

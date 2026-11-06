@@ -59,20 +59,24 @@ describe('MainPage', () => {
     expect(getPublicSurveys).not.toHaveBeenCalled();
   });
 
-  it('filtra por varias categorías con un selector y deja la búsqueda de etiquetas en el buscador principal', async () => {
+  it('combina categorías y etiqueta en el botón de filtrar', async () => {
     const user = userEvent.setup();
     renderWithRouter(<MainPage />);
     expect(getCategories).toHaveBeenCalledWith({ surveyOnly: true });
 
     await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
     const filters = screen.getByRole('group', { name: 'Filtrar' });
-    expect(within(filters).queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(within(filters).getByRole('searchbox', { name: 'Etiqueta' }).compareDocumentPosition(
+      within(filters).getByLabelText('Seleccionar categoría'),
+    ) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    await user.type(within(filters).getByRole('searchbox', { name: 'Etiqueta' }), '  infancia  ');
     await user.click(within(filters).getByLabelText('Seleccionar categoría'));
     const categoryOptions = within(filters).getByRole('group', { name: 'Categoría' });
     await user.click(await within(categoryOptions).findByRole('checkbox', { name: 'Ordenadores' }));
     await user.click(within(categoryOptions).getByRole('checkbox', { name: 'Teléfono inteligente' }));
     await user.click(within(filters).getByRole('button', { name: 'Aplicar' }));
-    expect(getPublicSurveys).toHaveBeenCalledWith(expect.objectContaining({ categories: ['ORDENADORES', 'TELEFONO_INTELIGENTE'], accessMode: 'PUBLIC', page: 0 }));
+    expect(getPublicSurveys).toHaveBeenCalledWith(expect.objectContaining({ tag: 'infancia', categories: ['ORDENADORES', 'TELEFONO_INTELIGENTE'], accessMode: 'PUBLIC', page: 0 }));
+    expect(getPublicSurveys).toHaveBeenCalledWith(expect.objectContaining({ tag: 'infancia', accessMode: 'PASSWORD_PROTECTED', page: 0 }));
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar encuestas por nombre, descripción o etiqueta' }), 'infancia');
     expect(await screen.findByRole('searchbox', { name: 'Buscar encuestas por nombre, descripción o etiqueta' })).toHaveValue('infancia');
@@ -81,7 +85,7 @@ describe('MainPage', () => {
     await user.click(screen.getByRole('button', { name: /^Filtrar:/ }));
     await user.click(within(screen.getByRole('group', { name: 'Filtrar' })).getByRole('button', { name: 'Borrar filtros' }));
     expect(screen.getByRole('searchbox', { name: 'Buscar encuestas por nombre, descripción o etiqueta' })).toHaveValue('');
-    await vi.waitFor(() => expect(getPublicSurveys).toHaveBeenCalledWith(expect.objectContaining({ search: '', categories: [] })));
+    await vi.waitFor(() => expect(getPublicSurveys).toHaveBeenCalledWith(expect.objectContaining({ search: '', tag: '', categories: [] })));
   });
 
   it('muestra dos encuestas por página al reducir el ancho y recupera el tamaño normal al ampliarlo', async () => {

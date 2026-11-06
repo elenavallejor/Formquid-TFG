@@ -206,14 +206,18 @@ class CatalogRepositoryTest {
         entityManager.clear();
 
         var firstPage = questions.findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED,
-            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, PageRequest.of(0, 2, Sort.by("id")));
+            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, "", PageRequest.of(0, 2, Sort.by("id")));
         var secondPage = questions.findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED,
-            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, PageRequest.of(1, 2, Sort.by("id")));
+            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, "", PageRequest.of(1, 2, Sort.by("id")));
 
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
         assertThat(firstPage).extracting(Question::getCategory)
             .containsExactly(Category.ORDENADORES, Category.DATOS_PERSONALES);
         assertThat(secondPage).extracting(Question::getCategory).containsExactly(Category.OTROS);
+
+        var personalMatches = questions.findCatalogQuestionsWithDetails(QuestionScope.CATALOG_FIXED,
+            Category.ORDENADORES, Category.DATOS_PERSONALES, Category.OTROS, "datos", PageRequest.of(0, 2, Sort.by("id")));
+        assertThat(personalMatches).extracting(Question::getCategory).containsExactly(Category.DATOS_PERSONALES);
     }
 
     @Test

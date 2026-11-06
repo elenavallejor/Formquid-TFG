@@ -5,6 +5,7 @@ export function SurveyBuilder({
   onChange,
   onDropQuestionFromSidebar,
   onDropBlockFromSidebar,
+  categoryFilter = null,
   readOnly = false,
 }) {
   return (
@@ -13,6 +14,7 @@ export function SurveyBuilder({
       onChange={onChange}
       onDropQuestionFromSidebar={onDropQuestionFromSidebar}
       onDropBlockFromSidebar={onDropBlockFromSidebar}
+      categoryFilter={categoryFilter}
       readOnly={readOnly}
       showGeneralInfo={false}
       structureTitle="ESTRUCTURA DE LA ENCUESTA"

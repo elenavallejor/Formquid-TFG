@@ -55,9 +55,10 @@ public class QuestionController {
     public PageResponseDto<QuestionResponseDto> findFixedQuestionsForBuilder(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) Category category
+        @RequestParam(required = false) Category category,
+        @RequestParam(defaultValue = "") String search
     ) {
-        return questionService.findFixedQuestionsForBuilder(page, size, category);
+        return questionService.findFixedQuestionsForBuilder(page, size, category, search);
     }
 
     @GetMapping("/{questionId}")

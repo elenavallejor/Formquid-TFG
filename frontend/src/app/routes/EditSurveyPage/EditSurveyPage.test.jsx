@@ -43,10 +43,10 @@ vi.mock('../../../api/collaborationsApi.js', () => ({
 }));
 vi.mock('../../../api/categoriesApi.js', () => ({ getCategories: vi.fn(() => Promise.resolve([])) }));
 vi.mock('../../../api/usersApi.js', () => ({ transferSurveyOwnership: vi.fn() }));
-vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: () => null }));
+vi.mock('../../../components/CatalogSidebar/CatalogSidebar.jsx', () => ({ CatalogSidebar: ({ categoryFilter }) => <div data-testid="survey-catalog-sidebar" data-category={categoryFilter} /> }));
 vi.mock('../../../components/SurveyBuilder/SurveyBuilder.jsx', () => ({
-  SurveyBuilder: ({ data, onChange, readOnly }) => (
-    <div>
+  SurveyBuilder: ({ data, onChange, readOnly, categoryFilter }) => (
+    <div data-testid="survey-builder" data-category={categoryFilter}>
       <p>Estructura con {data.items.length} elementos</p>
       {!readOnly && <button type="button" onClick={() => onChange({ items: [{ itemType: 'TEXT', textBody: 'Introducción' }] })}>Añadir introducción</button>}
     </div>
@@ -87,6 +87,14 @@ describe('EditSurveyPage', () => {
     getCollaborators.mockResolvedValue([]);
     getCollaborationRequests.mockResolvedValue([]);
     getPublicationRequests.mockResolvedValue([]);
+  });
+
+  it('filtra el catálogo de edición por la categoría de la encuesta', async () => {
+    getSurveyById.mockResolvedValue({ ...survey, category: 'SALUD' });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('survey-catalog-sidebar')).toHaveAttribute('data-category', 'SALUD'));
+    expect(screen.getByTestId('survey-builder')).toHaveAttribute('data-category', 'SALUD');
   });
 
   it('mantiene asociadas las pestañas visibles a paneles existentes', async () => {

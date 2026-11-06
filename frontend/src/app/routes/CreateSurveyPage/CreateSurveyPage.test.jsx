@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,7 +18,7 @@ vi.mock('../../../components/SurveyOriginModal/SurveyOriginModal.jsx', () => ({
   SurveyOriginModal: ({ isOpen, onSelect }) => isOpen && (
     <div role="dialog" aria-label="Punto de partida">
       <button type="button" onClick={() => onSelect({ type: 'BLANK' })}>Desde cero</button>
-      <button type="button" onClick={() => onSelect({ type: 'TEMPLATE', template: { id: 8, title: 'Plantilla base' } })}>Desde plantilla</button>
+      <button type="button" onClick={() => onSelect({ type: 'TEMPLATE', template: { id: 8, title: 'Plantilla base', category: 'SALUD' } })}>Desde plantilla</button>
     </div>
   ),
 }));
@@ -216,12 +216,9 @@ describe('CreateSurveyPage', () => {
     createSurveyFromTemplate.mockResolvedValue({ id: 13 });
     renderPage();
     await user.click(screen.getByRole('button', { name: 'Desde plantilla' }));
-    expect(screen.getByRole('button', { name: /Categoría/ })).toHaveTextContent('Selecciona una categoría');
+    await waitFor(() => expect(screen.getByRole('button', { name: /Categoría/ })).toHaveTextContent('Salud'));
+    expect(screen.getByRole('button', { name: /Categoría/ })).toBeDisabled();
     await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta privada');
-    await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Selecciona una categoría para la encuesta.');
-    expect(createSurveyFromTemplate).not.toHaveBeenCalled();
-    await chooseCategory(user);
     await user.click(screen.getByRole('radio', { name: /PROTEGIDA CON CONTRASEÑA/ }));
     await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Introduce la contraseña de acceso');
@@ -231,6 +228,54 @@ describe('CreateSurveyPage', () => {
     expect(createSurveyFromTemplate).toHaveBeenCalledWith(8, expect.objectContaining({
       accessMode: 'PASSWORD_PROTECTED', accessPassword: 'secreta', category: 'SALUD',
     }));
+  });
+
+  it('carga y bloquea la categoría de una plantilla recibida desde el panel', async () => {
+    const user = userEvent.setup();
+    createSurveyFromTemplate.mockResolvedValue({ id: 19 });
+    renderPage({ surveyOrigin: { type: 'TEMPLATE', template: { id: 8, title: 'Plantilla base', category: 'SALUD' } } });
+
+    const categoryButton = screen.getByRole('button', { name: /Categoría/ });
+    await waitFor(() => expect(categoryButton).toHaveTextContent('Salud'));
+    expect(categoryButton).toBeDisabled();
+    expect(screen.getByText('La categoría viene de la plantilla y no se puede cambiar.')).toBeVisible();
+    await user.type(screen.getByLabelText(/Título de la encuesta/), 'Mi encuesta');
+    await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
+
+    expect(await screen.findByRole('heading', { name: 'Encuesta creada: 19' })).toBeVisible();
+    expect(createSurveyFromTemplate).toHaveBeenCalledWith(8, expect.objectContaining({ category: 'SALUD' }));
+  });
+
+  it('actualiza la categoría al cambiar a una plantilla del catálogo', async () => {
+    const user = userEvent.setup();
+    renderPage({ surveyOrigin: { type: 'BLANK' } });
+    await chooseCategory(user, 'Otros');
+    await user.click(screen.getByRole('button', { name: 'Cambiar' }));
+    await user.click(screen.getByRole('button', { name: 'Desde plantilla' }));
+
+    expect(screen.getByRole('button', { name: /Categoría/ })).toHaveTextContent('Salud');
+    expect(screen.getByRole('button', { name: /Categoría/ })).toBeDisabled();
+  });
+
+  it('vuelve a habilitar la categoría al dejar de usar una plantilla', async () => {
+    const user = userEvent.setup();
+    renderPage({ surveyOrigin: { type: 'TEMPLATE', template: { id: 8, title: 'Plantilla base', category: 'SALUD' } } });
+    await user.click(screen.getByRole('button', { name: 'Cambiar' }));
+    await user.click(screen.getByRole('button', { name: 'Desde cero' }));
+
+    const categoryButton = screen.getByRole('button', { name: /Categoría/ });
+    expect(categoryButton).toBeEnabled();
+    expect(categoryButton).toHaveTextContent('Selecciona una categoría');
+  });
+
+  it('pide elegir categoría si la plantilla es de datos personales', async () => {
+    const user = userEvent.setup();
+    renderPage({ surveyOrigin: { type: 'TEMPLATE', template: { id: 9, title: 'Datos personales', category: 'DATOS_PERSONALES' } } });
+    expect(screen.getByRole('button', { name: /Categoría/ })).toHaveTextContent('Selecciona una categoría');
+    await user.type(screen.getByLabelText(/Título de la encuesta/), 'Encuesta');
+    await user.click(screen.getByRole('button', { name: 'Crear encuesta' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Esta plantilla no tiene una categoría válida para crear encuestas.');
+    expect(createSurveyFromTemplate).not.toHaveBeenCalled();
   });
 
   it('crea un borrador a partir del contenido importado', async () => {

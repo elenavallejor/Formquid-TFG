@@ -1,5 +1,5 @@
 .survey-participations-container {
-  max-width: 1120px;
+  width: 100%;
 }
 
 .survey-participations-card {
@@ -19,9 +19,9 @@
   gap: 12px;
 }
 
-.survey-participations-title svg {
-  width: 27px;
-  height: 27px;
+.survey-participations-title .catalog-detail-title-icon svg {
+  width: 25px;
+  height: 25px;
 }
 
 .survey-participations-title > span {
@@ -30,7 +30,24 @@
 }
 
 .survey-participations-body {
-  padding: 24px;
+  padding: 28px 34px 34px;
+}
+
+.survey-participations-body > .pagination:not(.pagination--compact) {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.survey-participations-body > .pagination .pagination-count {
+  grid-column: 1;
+}
+
+.survey-participations-body > .pagination .pagination-pages {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.survey-participations-body > .pagination .pagination-page-size {
+  grid-column: 3;
 }
 
 .survey-participations-list {
@@ -108,9 +125,10 @@
 .participation-detail {
   margin-top: 24px;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 28px 34px 34px;
   background: var(--color-surface);
+  box-shadow: var(--card-shadow);
 }
 
 .participation-detail > header {
@@ -233,6 +251,23 @@
   margin: 0;
   color: var(--color-header);
   font-weight: 700;
+}
+
+@media only screen and (max-width: 1050px) {
+  .survey-participations-body > .pagination:not(.pagination--compact) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .survey-participations-body > .pagination .pagination-count,
+  .survey-participations-body > .pagination .pagination-pages,
+  .survey-participations-body > .pagination .pagination-page-size {
+    grid-column: 1;
+  }
+
+  .survey-participations-body > .pagination .pagination-page-size {
+    justify-self: center;
+  }
 }
 
 @media only screen and (max-width: 680px) {

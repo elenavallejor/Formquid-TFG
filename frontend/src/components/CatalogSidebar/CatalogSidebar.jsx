@@ -64,6 +64,7 @@ function CatalogSidebarContent({
   const [questions, setQuestions] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [questionSearch, setQuestionSearch] = useState('');
+  const [appliedQuestionSearch, setAppliedQuestionSearch] = useState('');
   const [blockSearch, setBlockSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [questionError, setQuestionError] = useState('');
@@ -94,6 +95,23 @@ function CatalogSidebarContent({
   const isInitialQuestionLoad = showQuestions && !hasLoadedQuestions && !questionError;
   const isInitialBlockLoad = showBlocks && !hasLoadedBlocks && !blockError;
 
+  useEffect(() => {
+    const nextSearch = questionSearch.trim();
+    if (nextSearch === appliedQuestionSearch) return undefined;
+    const timer = window.setTimeout(() => {
+      questionRequestRef.current?.abort();
+      questionRequestRef.current = null;
+      setQuestions([]);
+      setQuestionPage(0);
+      setQuestionTotal(0);
+      setHasLoadedQuestions(false);
+      setQuestionError('');
+      setIsLoadingQuestions(false);
+      setAppliedQuestionSearch(nextSearch);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [appliedQuestionSearch, questionSearch]);
+
   const createRequestController = useCallback(() => {
     const controller = new AbortController();
     requestControllersRef.current.add(controller);
@@ -116,7 +134,7 @@ function CatalogSidebarContent({
     const controller = createRequestController();
     questionRequestRef.current = controller;
     try {
-      const response = await getCatalogQuestionsForBuilder({ page, size: 10, category: categoryFilter || undefined, signal: controller.signal });
+      const response = await getCatalogQuestionsForBuilder({ page, size: 10, category: categoryFilter || undefined, search: appliedQuestionSearch, signal: controller.signal });
       if (controller.signal.aborted) return;
       const items = Array.isArray(response) ? response : response?.content ?? [];
       setQuestions((current) => page === 0 ? items : [...current, ...items]);
@@ -132,7 +150,7 @@ function CatalogSidebarContent({
         setIsLoadingQuestions(false);
       }
     }
-  }, [canLoadCatalog, categoryFilter, createRequestController]);
+  }, [appliedQuestionSearch, canLoadCatalog, categoryFilter, createRequestController]);
 
   const loadBlocks = useCallback(async (page = 0) => {
     if (!canLoadCatalog) return;
@@ -164,7 +182,7 @@ function CatalogSidebarContent({
     const controllers = requestControllersRef.current;
     questionRequestRef.current = controller;
 
-    getCatalogQuestionsForBuilder({ page: 0, size: 10, category: categoryFilter || undefined, signal: controller.signal })
+    getCatalogQuestionsForBuilder({ page: 0, size: 10, category: categoryFilter || undefined, search: appliedQuestionSearch, signal: controller.signal })
       .then((response) => {
         if (controller.signal.aborted) return;
         const items = Array.isArray(response) ? response : response?.content ?? [];
@@ -188,7 +206,7 @@ function CatalogSidebarContent({
       controllers.delete(controller);
       if (questionRequestRef.current === controller) questionRequestRef.current = null;
     };
-  }, [canLoadCatalog, categoryFilter, showQuestions, hasLoadedQuestions, questionError, createRequestController]);
+  }, [appliedQuestionSearch, canLoadCatalog, categoryFilter, showQuestions, hasLoadedQuestions, questionError, createRequestController]);
 
   useEffect(() => {
     if (!canLoadCatalog || !showBlocks || hasLoadedBlocks || blockError || blockRequestRef.current) return undefined;
@@ -396,7 +414,7 @@ function CatalogSidebarContent({
         </div>
       );
     }
-    if (categoryFilter && !questions.some((question) => isCatalogQuestionAllowed(question.category, categoryFilter))) {
+    if (categoryFilter && !appliedQuestionSearch && !questions.some((question) => isCatalogQuestionAllowed(question.category, categoryFilter))) {
       return <EmptyCategoryMessage itemType="preguntas" category={selectedCategory} />;
     }
     if (filteredQuestions.length === 0) return <p className="catalog-empty" role="status">No se han encontrado preguntas que coincidan con la búsqueda o el filtro seleccionado.</p>;

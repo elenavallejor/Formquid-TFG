@@ -83,7 +83,7 @@
 .survey-response-header ul { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 0; padding: 0; list-style: none; }
 .survey-response-header li { padding: 4px 9px; border-radius: 999px; background: var(--color-accent-surface); color: var(--color-primary); font-family: Arial, sans-serif; font-size: var(--font-size-min); font-weight: 800; }
 .survey-required-note { display: flex; align-items: baseline; gap: 7px; margin: 16px auto 0; color: var(--color-text); font-family: Arial, sans-serif; font-size: var(--font-size-min); line-height: 1.5; }
-.survey-required-note > span:first-child { color: var(--color-error); font-size: 1.6rem; font-weight: 800; }
+.survey-required-note > span:first-child { color: var(--color-required); font-size: 2.2rem; font-weight: 800; line-height: 1; }
 .survey-response-content { display: flex; flex-direction: column; gap: 12px; padding: 22px 0; }
 .survey-content-text { margin: 0; padding: 20px 0; color: var(--color-text); font-size: 1.6rem; font-style: italic; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 

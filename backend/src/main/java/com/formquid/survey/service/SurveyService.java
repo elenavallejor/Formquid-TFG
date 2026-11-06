@@ -431,10 +431,11 @@ public class SurveyService {
     @Transactional
     public SurveyResponseDto createFromTemplate(Long templateId, CreateSurveyRequestDto request, User owner) {
         Template template = templateService.getTemplate(templateId);
-        Survey saved = createDraft(request, owner);
-        if (request.category() == null && !Category.DATOS_PERSONALES.equals(template.getCategory())) {
-            saved.setCategory(template.getCategory());
+        Category templateCategory = requireSurveyCategory(template.getCategory());
+        if (request.category() != null && !request.category().equals(templateCategory)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría de la encuesta debe coincidir con la plantilla");
         }
+        Survey saved = createDraft(request, owner, templateCategory);
         templateService.copyTemplateIntoSurvey(template, saved, owner);
         return toResponse(saved, owner);
     }
@@ -658,10 +659,14 @@ public class SurveyService {
     }
 
     private Survey createDraft(CreateSurveyRequestDto request, User owner) {
+        return createDraft(request, owner, request.category());
+    }
+
+    private Survey createDraft(CreateSurveyRequestDto request, User owner, Category category) {
         Survey survey = Survey.builder()
             .owner(owner)
             .title(request.title().trim())
-            .category(requireSurveyCategory(request.category()))
+            .category(requireSurveyCategory(category))
             .description(trimToNull(request.description()))
             .imageKey(trimToNull(request.imageKey()))
             .fontFamily(fontFamilyOrDefault(request.fontFamily()))

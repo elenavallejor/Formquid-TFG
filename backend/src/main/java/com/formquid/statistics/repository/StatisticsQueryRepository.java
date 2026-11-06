@@ -97,6 +97,22 @@ public class StatisticsQueryRepository {
             .list();
     }
 
+    public List<TextResponse> findTextResponses(Collection<Long> questionIds) {
+        if (questionIds.isEmpty()) return List.of();
+        return jdbcClient.sql("""
+                select a.question_id, a.text_value
+                from answers a
+                join participations p on p.id = a.participation_id
+                where a.question_id in (:questionIds) and a.text_value is not null
+                order by a.question_id, p.submitted_at, a.id
+                """)
+            .param("questionIds", questionIds)
+            .query((rs, rowNum) -> new TextResponse(
+                rs.getLong("question_id"), rs.getString("text_value")
+            ))
+            .list();
+    }
+
     public List<ChoiceOptionAggregate> summarizeChoiceOptions(Collection<Long> questionIds) {
         if (questionIds.isEmpty()) return List.of();
         return jdbcClient.sql("""
@@ -255,6 +271,8 @@ public class StatisticsQueryRepository {
     }
 
     public record ParticipationSummary(long participationCount, Instant firstParticipation, Instant lastParticipation) {}
+
+    public record TextResponse(long questionId, String value) {}
 
     public record QuestionAggregate(
         long questionId, long answerCount, Double numericAverage,
