@@ -1,6 +1,7 @@
 package com.formquid.survey.service;
 
 import com.formquid.common.exception.ApiException;
+import com.formquid.survey.repository.SurveyCoverRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,20 +16,21 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Iterator;
 import java.util.UUID;
 
-/** Almacena las portadas fuera de la imagen del contenedor. */
+/** Almacena las nuevas portadas en PostgreSQL y lee archivos anteriores si aún existen. */
 @Service
 public class SurveyCoverStorage {
     private static final long MAX_BYTES = 3L * 1024 * 1024;
     private final Path directory;
+    private final SurveyCoverRepository repository;
 
-    public SurveyCoverStorage(@Value("${app.survey-cover.directory:./data/survey-covers}") String directory) {
+    public SurveyCoverStorage(@Value("${app.survey-cover.directory:./data/survey-covers}") String directory,
+                              SurveyCoverRepository repository) {
         this.directory = Path.of(directory).toAbsolutePath().normalize();
+        this.repository = repository;
     }
 
     public String save(Long surveyId, MultipartFile file) {
@@ -39,20 +41,7 @@ public class SurveyCoverStorage {
             byte[] bytes = file.getBytes();
             String extension = imageExtension(bytes);
             String filename = UUID.randomUUID() + extension;
-            Path target = directory.resolve(filename);
-            Files.createDirectories(directory);
-            Path temporary = Files.createTempFile(directory, "cover-", ".tmp");
-            try {
-                Files.write(temporary, bytes);
-                try {
-                    Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE);
-                } catch (AtomicMoveNotSupportedException exception) {
-                    Files.move(temporary, target);
-                }
-            } finally {
-                Files.deleteIfExists(temporary);
-            }
-            onTransactionCompletion(false, target);
+            repository.save(surveyId, filename, extension.equals(".png") ? "image/png" : "image/jpeg", bytes);
             return "/api/v1/public/surveys/" + surveyId + "/cover/" + filename;
         } catch (IOException exception) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "No se ha podido guardar la portada");
@@ -63,9 +52,12 @@ public class SurveyCoverStorage {
         if (!filename.matches("[0-9a-f-]{36}\\.(png|jpg)")) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Portada no encontrada");
         }
+        String contentType = filename.endsWith(".png") ? "image/png" : "image/jpeg";
+        var stored = repository.read(filename);
+        if (stored.isPresent()) return new StoredCover(stored.get(), contentType);
         try {
             byte[] bytes = Files.readAllBytes(directory.resolve(filename));
-            return new StoredCover(bytes, filename.endsWith(".png") ? "image/png" : "image/jpeg");
+            return new StoredCover(bytes, contentType);
         } catch (IOException exception) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Portada no encontrada");
         }
@@ -83,6 +75,7 @@ public class SurveyCoverStorage {
         if (imageKey == null || !imageKey.startsWith(prefix)) return;
         String filename = imageKey.substring(prefix.length());
         if (!filename.matches("[0-9a-f-]{36}\\.(png|jpg)")) return;
+        repository.delete(filename);
         onTransactionCompletion(true, directory.resolve(filename));
     }
 

@@ -22,7 +22,7 @@ Las cuentas nuevas se tramitan como solicitudes de registro. La aprobación crea
 
 Las migraciones están en `src/main/resources/db/migration`. Los perfiles `dev` y `prod` ejecutan Flyway al arrancar. En `dev`, Hibernate valida el esquema resultante. El perfil `prod` deja los cambios de estructura a Flyway.
 
-Las portadas subidas se guardan fuera de la imagen del contenedor. El servicio acepta PNG y JPEG de hasta 3 MB y 4000 píxeles por lado. Con Docker Compose, el volumen `survey-covers` conserva esos archivos en `/app/data/survey-covers`. La ruta puede cambiarse mediante `SURVEY_COVER_STORAGE_PATH` cuando el backend se ejecuta de otra forma.
+Las portadas nuevas se guardan en PostgreSQL para que sobrevivan a los reinicios y despliegues del backend. El servicio acepta PNG y JPEG de hasta 3 MB y 4000 píxeles por lado. Las portadas antiguas guardadas en archivos se siguen leyendo desde `SURVEY_COVER_STORAGE_PATH` si el archivo existe. Las que ya se perdieron del disco deben volver a subirse.
 
 Las fotos de perfil admiten los mismos formatos y límites. Se guardan en el volumen `profile-photos` (`/app/data/profile-photos`) y su ruta se puede configurar con `PROFILE_PHOTO_STORAGE_PATH`. La API solo entrega la foto activa de cada usuario a clientes autenticados; las fotos sustituidas o eliminadas se borran después de confirmar el cambio.
 

@@ -30,7 +30,7 @@ Además se pueden elegir la categoría, las etiquetas, la tipografía y una port
 
 La encuesta se guarda como borrador y después puede abrirse o cerrarse. Para abrirla debe contener contenido válido. La visibilidad decide si aparece en los listados, mientras que el modo de acceso decide quién puede responder. Tras la primera participación queda bloqueada la edición de su estructura para conservar la relación entre preguntas y respuestas. El editor puede compartir su código público.
 
-## Colaborar y consultar resultados
+## Colaborar y consultar resultados de encuestas
 
 Una encuesta admite colaboradores con permiso de lectura o edición. Las invitaciones y solicitudes de acceso se gestionan desde las pantallas de colaboración. El propietario puede transferir la autoridad a uno de los colaboradores tras confirmar su contraseña; después conserva acceso como colaborador con permiso de edición. Un colaborador puede presentar una solicitud de publicación y el propietario decide si la acepta. Los avisos de la aplicación muestran las acciones relacionadas con estas solicitudes.
 

@@ -53,7 +53,7 @@ Las encuestas se pueden construir desde cero, a partir de elementos del catálog
 - **Visibilidad.** Se configura por separado para decidir si la encuesta aparece en los listados.
 - **Difusión.** Cada encuesta abierta puede compartirse mediante su código público.
 
-### Responder y consultar resultados
+### Responder encuestas y consultar sus resultados
 
 - El formulario comprueba las respuestas obligatorias.
 - Se evita que una misma identidad participe dos veces en la misma encuesta.

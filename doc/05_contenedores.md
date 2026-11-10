@@ -20,7 +20,7 @@ docker compose up --build
 
 Para enviar correos reales durante el desarrollo, `docker-compose.brevo.yml` configura el backend para Brevo sin alterar el Compose habitual. Requiere `BREVO_SMTP_LOGIN`, `BREVO_SMTP_KEY` y `BREVO_MAIL_FROM` en el `.env` ignorado por Git. La [guía de Brevo](04_entorno_y_desarrollo.md#correo-en-desarrollo-con-brevo) recoge la preparación y el comando de arranque.
 
-Los volúmenes `survey-covers` y `profile-photos` conservan las portadas y las fotos de perfil que se suben desde la aplicación. Sus rutas dentro del contenedor son `/app/data/survey-covers` y `/app/data/profile-photos`. Las copias de seguridad deben incluir ambos volúmenes y la base de datos. El correo está desactivado por defecto. Para probar mensajes con MailHog se configuran `MAIL_ENABLED=true` y `MAIL_HOST=mailhog`.
+Las portadas nuevas se guardan en PostgreSQL. El volumen `survey-covers` permite leer portadas antiguas que sigan en `/app/data/survey-covers`; `profile-photos` conserva las fotos de perfil en `/app/data/profile-photos`. Las copias de seguridad deben incluir la base de datos y los volúmenes que contengan archivos antiguos o fotos. El correo está desactivado por defecto. Para probar mensajes con MailHog se configuran `MAIL_ENABLED=true` y `MAIL_HOST=mailhog`.
 
 ## Perfil de producción del backend
 
@@ -43,6 +43,6 @@ La configuración actual sitúa la interfaz en Vercel y el backend en Render. En
 
 En Render se configuran las variables del backend, incluidos `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `FRONTEND_ORIGIN` y los cuatro datos obligatorios del superadministrador inicial. `FRONTEND_ORIGIN` debe coincidir con el origen HTTPS desde el que se abre la interfaz. Si se habilita el correo real, sus variables SMTP se configuran también en Render; `docker-compose.brevo.yml` solo afecta a la ejecución local. La [guía del entorno](04_entorno_y_desarrollo.md#frontend-en-vercel-y-backend-en-render) recoge el ejemplo de configuración para Brevo.
 
-La base de datos y los archivos subidos deben persistir entre despliegues. Los volúmenes con nombre descritos antes pertenecen a Docker Compose y no configuran el almacenamiento de Render. En otro alojamiento se deben proporcionar directorios persistentes mediante `SURVEY_COVER_STORAGE_PATH` y `PROFILE_PHOTO_STORAGE_PATH`, además de incluirlos en las copias de seguridad junto con PostgreSQL. La configuración del servicio externo y de sus copias debe comprobarse en el proveedor correspondiente.
+La base de datos y las fotos de perfil deben persistir entre despliegues. Los volúmenes con nombre descritos antes pertenecen a Docker Compose y no configuran el almacenamiento de Render. Las portadas nuevas se guardan en PostgreSQL. `SURVEY_COVER_STORAGE_PATH` solo sirve para leer portadas antiguas si sus archivos todavía existen; `PROFILE_PHOTO_STORAGE_PATH` debe apuntar a un directorio persistente para conservar las fotos. Las portadas ya perdidas de un disco efímero deben volver a subirse.
 
 El flujo `.github/workflows/record-deployments.yml` consulta el resultado comunicado por Vercel o Render para un commit y lo registra en GitHub. Este registro identifica qué versión ha sido desplegada y si el proveedor informó éxito o fallo; no sustituye una comprobación funcional de la aplicación publicada.
