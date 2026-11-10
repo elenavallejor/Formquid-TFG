@@ -45,6 +45,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.math.BigDecimal;
+import com.formquid.participation.dto.*;
+import com.formquid.question.entity.QuestionOption;
+import com.formquid.question.entity.MatrixRow;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,6 +63,95 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ParticipationServiceTest {
+    private Question prepareQuestion(QuestionType type) {
+        Survey survey=Survey.builder().id(1L).publicCode("ABCDEF234567").lifecycleStatus(SurveyLifecycle.OPEN).accessMode(SurveyAccessMode.PUBLIC).build();
+        ContentItem item=ContentItem.builder().id(11L).itemType(ContentItemType.QUESTION).required(true).build();
+        Question question=Question.builder().id(21L).parentItem(item).questionType(type).build();
+        when(surveyRepository.findByPublicCode("ABCDEF234567")).thenReturn(Optional.of(survey));
+        when(contentItemRepository.findSurveyContentRows(1L)).thenReturn(List.of(new ContentItemRowDto(11L,ContentItemType.QUESTION,1,true,null)));
+        when(questionRepository.findByParentItemIdsForStatistics(Set.of(11L))).thenReturn(List.of(question));
+        when(participationRepository.saveAndFlush(any())).thenReturn(Participation.builder().id(50L).survey(survey).build());
+        return question;
+    }
+
+    private ParticipationResponseDto submitAnswer(SubmitAnswerRequestDto answer) {
+        return participationService.submit("ABCDEF234567",new SubmitParticipationRequestDto(null,List.of(answer)),null,"token");
+    }
+
+    @ParameterizedTest
+    @EnumSource(QuestionType.class)
+    void submit_allQuestionTypes_persistsTypedValuesAndAssociations(QuestionType type) {
+        Question q=prepareQuestion(type);
+        q.setSettings(QuestionSettings.builder().minValue(BigDecimal.ONE).maxValue(BigDecimal.TEN).step(BigDecimal.ONE).maxLength(20).minSelections(1).maxSelections(2).build());
+        when(answerRepository.save(any())).thenAnswer(i -> { Answer a=i.getArgument(0); a.setId(60L); return a; });
+        String text=type==QuestionType.TEXT?"Respuesta":null;
+        BigDecimal number=type==QuestionType.NUMBER||type==QuestionType.SCALE?new BigDecimal("3"):null;
+        Boolean bool=type==QuestionType.BOOLEAN?false:null;
+        List<OptionAnswerRequestDto> options=null;
+        List<MatrixAnswerRequestDto> matrix=null;
+        if(type==QuestionType.SINGLE_CHOICE||type==QuestionType.MULTIPLE_CHOICE) {
+            QuestionOption option=QuestionOption.builder().id(70L).question(q).other(true).build();
+            when(optionRepository.findById(70L)).thenReturn(Optional.of(option));
+            options=List.of(new OptionAnswerRequestDto(70L,"Otro"));
+        }
+        if(type==QuestionType.MATRIX_SCALE) {
+            MatrixRow row=MatrixRow.builder().id(80L).question(q).position(1).label("Fila").build();
+            when(matrixRowRepository.findByQuestionIdOrderByPositionAsc(21L)).thenReturn(List.of(row));
+            when(matrixRowRepository.findById(80L)).thenReturn(Optional.of(row));
+            matrix=List.of(new MatrixAnswerRequestDto(80L,new BigDecimal("3")));
+        }
+        var response=submitAnswer(new SubmitAnswerRequestDto(21L,text,number,bool,options,matrix));
+        assertThat(response.answers()).singleElement().satisfies(a -> {
+            assertThat(a.questionId()).isEqualTo(21L);
+            assertThat(a.textValue()).isEqualTo(text);
+            assertThat(a.numericValue()).isEqualTo(number);
+            assertThat(a.booleanValue()).isEqualTo(bool);
+        });
+        verify(answerRepository).save(argThat(a -> a.getQuestion()==q));
+    }
+
+    @Test
+    void submitNumeric_rejectsOutOfRangeWrongStepAndIncompatibleFields() {
+        Question q=prepareQuestion(QuestionType.SCALE);
+        q.setSettings(QuestionSettings.builder().minValue(BigDecimal.ONE).maxValue(new BigDecimal("5")).step(new BigDecimal("2")).build());
+        for(var entry:List.of(new String[]{"0","mínimo"},new String[]{"6","máximo"},new String[]{"2","step"})) {
+            assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,null,new BigDecimal(entry[0]),null,null,null)))
+                .hasMessageContaining(entry[1]);
+        }
+        assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,"texto",BigDecimal.ONE,null,null,null))).hasMessageContaining("incompatibles");
+    }
+
+    @Test
+    void submitOptions_rejectsForeignDuplicateAndInvalidOtherText() {
+        Question q=prepareQuestion(QuestionType.MULTIPLE_CHOICE);
+        QuestionOption option=QuestionOption.builder().id(70L).question(q).other(true).build();
+        when(optionRepository.findById(70L)).thenReturn(Optional.of(option));
+        when(answerRepository.save(any())).thenAnswer(i -> { Answer a=i.getArgument(0); a.setId(60L); return a; });
+        assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,null,null,null,List.of(new OptionAnswerRequestDto(70L,null)),null))).hasMessageContaining("requiere texto");
+        assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,null,null,null,List.of(new OptionAnswerRequestDto(70L,"x".repeat(501))),null))).hasMessageContaining("longitud máxima");
+        option.setOther(false);
+        assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,null,null,null,List.of(new OptionAnswerRequestDto(70L,"Otro")),null))).hasMessageContaining("Solo las opciones OTHER");
+        assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,null,null,null,List.of(new OptionAnswerRequestDto(70L,null),new OptionAnswerRequestDto(70L,null)),null))).hasMessageContaining("duplicadas");
+        option.setQuestion(Question.builder().id(99L).build());
+        assertThatThrownBy(() -> submitAnswer(new SubmitAnswerRequestDto(21L,null,null,null,List.of(new OptionAnswerRequestDto(70L,null)),null))).hasMessageContaining("no pertenece");
+    }
+
+    @Test
+    void submitAccess_rejectsClosedUnauthenticatedAndIncorrectPassword() {
+        Survey survey=Survey.builder().id(1L).lifecycleStatus(SurveyLifecycle.CLOSED).build();
+        when(surveyRepository.findByPublicCode("ABCDEF234567")).thenReturn(Optional.of(survey));
+        var request=new SubmitParticipationRequestDto(null,List.of());
+        assertThatThrownBy(() -> participationService.submit("ABCDEF234567",request,null,"token")).hasMessageContaining("no admite respuestas");
+        survey.setLifecycleStatus(SurveyLifecycle.OPEN); survey.setAccessMode(SurveyAccessMode.AUTHENTICATED);
+        assertThatThrownBy(() -> participationService.submit("ABCDEF234567",request,null,"token")).hasMessageContaining("cuenta registrada");
+        survey.setAccessMode(SurveyAccessMode.PASSWORD_PROTECTED);
+        assertThatThrownBy(() -> participationService.submit("ABCDEF234567",request,null,"token")).hasMessageContaining("Contraseña");
+        survey.setAccessMode(SurveyAccessMode.PUBLIC);
+        assertThatThrownBy(() -> participationService.submit("ABCDEF234567",request,null,null)).hasMessageContaining("identidad asociada");
+        User user=User.builder().id(9L).build();
+        when(participationRepository.existsBySurveyIdAndRespondentUserId(1L,9L)).thenReturn(true);
+        assertThatThrownBy(() -> participationService.submit("ABCDEF234567",request,user,null)).hasMessageContaining("Ya respondiste");
+    }
 
     @Mock
     private SurveyRepository surveyRepository;

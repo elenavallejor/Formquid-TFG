@@ -5,8 +5,8 @@ BEGIN
     IF current_setting('formquid.allow_dev_seed', true) IS DISTINCT FROM 'yes' THEN
         RAISE EXCEPTION 'Activa formquid.allow_dev_seed=yes para permitir esta carga destructiva';
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM flyway_schema_history WHERE version = '42' AND success) THEN
-        RAISE EXCEPTION 'Es necesario aplicar las migraciones hasta V42';
+    IF NOT EXISTS (SELECT 1 FROM flyway_schema_history WHERE version = '43' AND success) THEN
+        RAISE EXCEPTION 'Es necesario aplicar las migraciones hasta V43';
     END IF;
     IF NOT EXISTS (SELECT 1 FROM users WHERE role = 'SUPERADMIN') THEN
         RAISE EXCEPTION 'Falta un superadministrador';
@@ -23,7 +23,7 @@ TRUNCATE TABLE
     password_reset_tokens, notifications, matrix_answer_values, answer_options,
     answers, participations, element_requests, matrix_rows, question_options,
     question_settings, questions, blocks, content_items, publication_requests,
-    collaboration_requests, survey_collaborators, surveys, templates,
+    collaboration_requests, survey_collaborators, survey_cover_files, surveys, templates,
     registration_requests
 RESTART IDENTITY;
 DELETE FROM users WHERE id <> (SELECT id FROM preserved_superadmin);

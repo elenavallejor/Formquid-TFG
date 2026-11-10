@@ -97,11 +97,13 @@
 
 .collaborations-actions {
   display: flex;
+  min-width: max-content;
   justify-content: center;
   gap: 8px;
 }
 
 .collaborations-actions button {
+  flex-shrink: 0;
   min-height: 44px;
   padding: 7px 12px;
   border: 0;
@@ -109,6 +111,7 @@
   background: var(--color-action);
   color: var(--color-on-action);
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 

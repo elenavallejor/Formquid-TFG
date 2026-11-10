@@ -24,6 +24,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import com.formquid.question.dto.MatrixRowDto;
+import com.formquid.question.entity.*;
+import com.formquid.user.entity.*;
+import com.formquid.common.dto.CatalogSearchField;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,6 +42,99 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class QuestionServiceTest {
+    @Test
+    void updateQuestion_replacesOptionsRowsAndSettingsWithoutChangingIdentity() {
+        when(questionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        var settings=new QuestionSettingsDto(null,BigDecimal.ONE,new BigDecimal("5"),BigDecimal.ONE,null,null," Bajo "," Alto ",null,null,null,null,ScaleDisplayType.STARS);
+        var matrix=new QuestionDraftDto(" Matriz "," Nota ",QuestionType.MATRIX_SCALE,EvaluationDirection.NEUTRAL,null,settings,List.of(),List.of(new MatrixRowDto(null," Fila ",1)));
+        ContentItem parent=ContentItem.builder().survey(Survey.builder().category(Category.OTROS).build()).build();
+        Question q=questionService.createLocalQuestion(matrix,parent,User.builder().id(1L).name("Autora").build());
+        q.setId(9L);
+        assertThat(q.getMatrixRows()).singleElement().satisfies(r -> assertThat(r.getLabel()).isEqualTo("Fila"));
+        var copied=questionService.copyAsLocal(q,parent,null);
+        assertThat(copied.getScope()).isEqualTo(QuestionScope.LOCAL);
+        assertThat(copied.getMatrixRows().getFirst()).isNotSameAs(q.getMatrixRows().getFirst());
+        assertThat(questionService.toResponse(q).settings().leftLabel()).isEqualTo("Bajo");
+        questionService.updateSurveyQuestion(q,evaluableChoiceQuestion());
+        assertThat(q.getId()).isEqualTo(9L);
+        assertThat(q.getMatrixRows()).isEmpty();
+        assertThat(q.getOptions()).hasSize(2);
+        assertThat(q.getSettings().getMinSelections()).isEqualTo(1);
+        assertThat(q.getSettings().getMinValue()).isNull();
+        assertThat(q.getUpdatedAt()).isNotNull();
+        q.setSettings(null);
+        questionService.updateSurveyQuestion(q,evaluableBooleanQuestion());
+        assertThat(q.getSettings().getTrueLabel()).isEqualTo("Sí");
+    }
+
+    @Test
+    void catalogOperations_requireOwnerOrSuperadminAndFixedScope() {
+        User owner=User.builder().id(1L).role(UserRole.EDITOR).build();
+        Question q=Question.builder().id(9L).scope(QuestionScope.CATALOG_FIXED).createdBy(owner).build();
+        when(questionRepository.findById(9L)).thenReturn(Optional.of(q));
+        when(questionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        assertThat(questionService.findFixedQuestion(9L).id()).isEqualTo(9L);
+        var request=new CreateFixedQuestionRequestDto(evaluableChoiceQuestion(),Category.OTROS);
+        assertThat(questionService.updateFixedQuestion(9L,request,owner).evaluationDirection()).isEqualTo(EvaluationDirection.NEUTRAL);
+        assertThatThrownBy(() -> questionService.deleteFixedQuestion(9L,User.builder().id(2L).role(UserRole.EDITOR).build())).hasMessageContaining("propias preguntas");
+        questionService.deleteFixedQuestion(9L,owner);
+        questionService.deleteFixedQuestion(9L,User.builder().role(UserRole.SUPERADMIN).build());
+        verify(questionRepository,times(2)).delete(q);
+        assertThatThrownBy(() -> questionService.updateSurveyQuestion(q,evaluableBooleanQuestion())).hasMessageContaining("no se editan");
+        q.setScope(QuestionScope.LOCAL);
+        assertThatThrownBy(() -> questionService.findFixedQuestion(9L)).hasMessage("Pregunta fija no encontrada");
+        assertThatThrownBy(() -> questionService.createFixedSnapshot(q,null,null)).hasMessageContaining("Solo pueden copiarse");
+        assertThatThrownBy(() -> questionService.getQuestion(99L)).hasMessage("Pregunta no encontrada");
+    }
+
+    @Test
+    void catalogSearchAndBuilder_normalizeSearchAndReturnPages() {
+        when(questionRepository.findCatalogSummaries(any(),any(),anyBoolean(),anyString(),anyBoolean(),anyBoolean(),anyBoolean(),any(),any())).thenReturn(Page.empty());
+        User user=User.builder().id(1L).build();
+        assertThat(questionService.findFixedQuestions(0,10,user,false," Buscar ",Set.of(CatalogSearchField.TITLE),null,null).content()).isEmpty();
+        questionService.findFixedQuestions(0,10,user,false,null,null,null,null);
+        verify(questionRepository).findCatalogSummaries(eq(QuestionScope.CATALOG_FIXED),eq(1L),eq(false),eq("buscar"),eq(true),eq(false),eq(false),isNull(),any());
+        when(questionRepository.findCatalogQuestionsWithDetails(any(),any(),any(),any(),anyString(),any())).thenReturn(new PageImpl<>(List.of(Question.builder().id(9L).build())));
+        assertThat(questionService.findFixedQuestionsForBuilder(0,10,null," Texto ").content()).singleElement().satisfies(q -> assertThat(q.id()).isEqualTo(9L));
+    }
+
+    @Test
+    void numericAndScaleValidation_enforcesRangesDisplayAndConfiguration() {
+        var scale=new QuestionSettingsDto(null,BigDecimal.ONE,new BigDecimal("5"),BigDecimal.ONE,null,null,"Bajo","Alto",null,null,null,null,ScaleDisplayType.FACES);
+        questionService.validateQuestionDraft(neutral(QuestionType.SCALE,scale,List.of(),List.of()));
+        var tooLarge=new QuestionSettingsDto(null,BigDecimal.ZERO,new BigDecimal("100"),BigDecimal.ONE,null,null,null,null,null,null,null,null,null);
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.SCALE,tooLarge,List.of(),List.of()))).hasMessageContaining("30 valores");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.SCALE,null,List.of(),List.of()))).hasMessageContaining("mínimo, máximo y step");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.NUMBER,scale,List.of(),List.of()))).hasMessageContaining("configuración incompatible");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.TEXT,tooLarge,List.of(),List.of()))).hasMessageContaining("solo admiten");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.MATRIX_SCALE,scale,List.of(),List.of()))).hasMessageContaining("al menos una fila");
+        var backwards=new QuestionSettingsDto(null,BigDecimal.TEN,BigDecimal.ONE,BigDecimal.ONE,null,null,null,null,null,null,null,null,null);
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.NUMBER,backwards,List.of(),List.of()))).hasMessageContaining("mínimo debe ser menor");
+        var invalidFaces=new QuestionSettingsDto(null,BigDecimal.ZERO,new BigDecimal("5"),BigDecimal.ONE,null,null,null,null,null,null,null,null,ScaleDisplayType.FACES);
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.SCALE,invalidFaces,List.of(),List.of()))).hasMessageContaining("escalas enteras compatibles");
+        questionService.validateQuestionDraft(neutral(QuestionType.NUMBER,null,null,null));
+        questionService.validateQuestionDraft(neutral(QuestionType.NUMBER,tooLarge,null,null));
+    }
+
+    @Test
+    void validation_rejectsMissingDataAndIncompatibleRowsOptionsOrFactors() {
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(null)).hasMessage("La pregunta es obligatoria");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.TEXT,null,validOptions(),List.of()))).hasMessageContaining("no admite opciones");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.TEXT,null,List.of(),List.of(new MatrixRowDto(null,"Fila",1))))).hasMessageContaining("Solo las matrices");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.SINGLE_CHOICE,null,List.of(),List.of()))).hasMessageContaining("al menos dos opciones");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.BOOLEAN,null,List.of(),List.of()))).hasMessageContaining("etiquetas true y false");
+        var badLength=new QuestionSettingsDto(0,null,null,null,null,null,null,null,null,null,null,null,null);
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.TEXT,badLength,List.of(),List.of()))).hasMessageContaining("longitud máxima");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.MULTIPLE_CHOICE,settings(2,1,null,null),validOptions(),List.of()))).hasMessageContaining("mínimo de selección");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.MULTIPLE_CHOICE,settings(0,2,null,null),validOptions(),List.of()))).hasMessageContaining("mayores que cero");
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.SINGLE_CHOICE,settings(1,2,null,null),validOptions(),List.of()))).hasMessageContaining("no admite mínimo");
+        var repeated=List.of(new QuestionOptionDto(null,"Uno",1,true,null),new QuestionOptionDto(null,"Dos",2,true,null));
+        assertThatThrownBy(() -> questionService.validateQuestionDraft(neutral(QuestionType.MULTIPLE_CHOICE,null,repeated,List.of()))).hasMessageContaining("una opción OTHER");
+    }
+
+    private QuestionDraftDto neutral(QuestionType type,QuestionSettingsDto settings,List<QuestionOptionDto> options,List<MatrixRowDto> rows) {
+        return new QuestionDraftDto("Pregunta",null,type,EvaluationDirection.NEUTRAL,null,settings,options,rows);
+    }
 
     @Mock
     private QuestionRepository questionRepository;

@@ -69,6 +69,69 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @Import({ SecurityConfig.class, JwtAuthenticationFilter.class })
 class SurveyFlowControllersWebTest {
+    @Test
+    void contentEditingEndpoints_bindPayloadAndRequireEditableSurvey() throws Exception {
+        User user=editor();
+        Survey survey=Survey.builder().id(4L).build();
+        when(surveyService.getSurvey(4L)).thenReturn(survey);
+        when(surveyService.canEditSurvey(survey,user)).thenReturn(true);
+        var auth=authentication(tokenFor(user));
+        String question="{\"statement\":\"Pregunta\",\"questionType\":\"TEXT\",\"evaluationDirection\":\"NEUTRAL\"}";
+        mockMvc.perform(post("/api/v1/surveys/4/content/questions/local").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"position\":1,\"required\":true,\"question\":"+question+"}")).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/surveys/4/content/questions/fixed").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"position\":1,\"required\":false,\"fixedQuestionId\":9}")).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/surveys/4/content/blocks").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"position\":1,\"blockId\":8}")).andExpect(status().isCreated());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/surveys/4/content/texts/10").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"textBody\":\"Nuevo texto\"}")).andExpect(status().isOk());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/surveys/4/content/questions/11").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"required\":true,\"question\":"+question+"}")).andExpect(status().isOk());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/surveys/4/content/questions/11/required").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"required\":false}")).andExpect(status().isOk());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/surveys/4/content/reorder").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"items\":[{\"itemId\":11,\"position\":1}]}")).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/surveys/4/content/11").with(auth).with(csrf())).andExpect(status().isNoContent());
+        verify(contentService).addLocalQuestionToSurvey(eq(survey),any(),eq(user));
+        verify(contentService).addFixedQuestionToSurvey(eq(survey),any(),eq(user));
+        verify(contentService).addBlockToSurvey(eq(survey),any(),eq(user));
+        verify(contentService).updateSurveyText(eq(survey),eq(10L),any());
+        verify(contentService).updateSurveyQuestion(eq(survey),eq(11L),any());
+        verify(contentService).updateSurveyQuestionRequired(eq(survey),eq(11L),any());
+        verify(contentService).reorderSurveyContent(eq(survey),any());
+        verify(contentService).deleteSurveyItem(survey,11L);
+    }
+
+    @Test
+    void collaborationEndpoints_bindIdsAndActAsAuthenticatedUser() throws Exception {
+        User user=editor();
+        Survey survey=Survey.builder().id(4L).build();
+        when(surveyService.getSurvey(4L)).thenReturn(survey);
+        var auth=authentication(tokenFor(user));
+        for(String path:List.of("collaborators","collaboration-requests","publication-requests"))
+            mockMvc.perform(get("/api/v1/surveys/4/"+path).with(auth)).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/surveys/4/collaboration-requests").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"userId\":9,\"requestType\":\"ACCESS_REQUEST\",\"permission\":\"VIEW\"}")).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/surveys/4/collaboration-requests/7/accept").with(auth).with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/surveys/4/collaboration-requests/7").with(auth).with(csrf())).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v1/surveys/4/collaborators/9").with(auth).with(csrf())).andExpect(status().isNoContent());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/surveys/4/collaborators/9").with(auth).with(csrf()).contentType("application/json")
+            .content("{\"permission\":\"VIEW\"}")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/surveys/4/publication-requests").with(auth).with(csrf()).contentType("application/json").content("{\"message\":\"Publicar\"}")).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/surveys/4/publication-requests/8/accept").with(auth).with(csrf())).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v1/surveys/4/publication-requests/8").with(auth).with(csrf())).andExpect(status().isNoContent());
+        verify(collaborationService).findCollaborators(4L);
+        verify(collaborationService).findRequests(4L);
+        verify(collaborationService).findPublicationRequests(4L);
+        verify(collaborationService).request(eq(4L),eq(user.getId()),any());
+        verify(collaborationService).accept(7L,user.getId());
+        verify(collaborationService).reject(7L,user.getId());
+        verify(collaborationService).removeCollaborator(4L,9L,user.getId());
+        verify(collaborationService).updateCollaboratorPermission(4L,9L,user.getId(),com.formquid.collaboration.entity.CollaborationPermission.VIEW);
+        verify(collaborationService).requestPublication(4L,user.getId(),"Publicar");
+        verify(collaborationService).acceptPublication(8L,user.getId());
+        verify(collaborationService).rejectPublication(8L,user.getId());
+    }
 
     @Autowired private MockMvc mockMvc;
 

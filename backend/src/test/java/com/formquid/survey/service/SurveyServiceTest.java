@@ -45,6 +45,11 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import com.formquid.survey.dto.SurveyResultsSearchField;
+import com.formquid.survey.dto.SurveyResultsSortOrder;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 import java.time.Instant;
 import java.util.stream.IntStream;
 
@@ -59,6 +64,72 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SurveyServiceTest {
+    @Test
+    void editablePage_normalizesFiltersAndMapsSurveySummary() {
+        User owner=User.builder().id(7L).role(UserRole.EDITOR).build();
+        Survey survey=Survey.builder().id(12L).owner(owner).title("Encuesta").lifecycleStatus(SurveyLifecycle.DRAFT).build();
+        var pageable=PageRequest.of(0,10,Sort.by(Sort.Direction.DESC,"updatedAt"));
+        when(surveyRepository.findEditableByUser(any(),anyString(),any(),anyList(),anyBoolean(),anyList(),any())).thenReturn(new PageImpl<>(List.of(survey)));
+        assertThat(surveyService.findEditableByUser(owner," BUSCAR ",null,pageable).content()).singleElement().satisfies(s -> assertThat(s.title()).isEqualTo("Encuesta"));
+        assertThat(surveyService.findEditableByUser(owner,null,null,List.of(),List.of(Category.OTROS),pageable).content()).isEmpty();
+        assertThatThrownBy(() -> surveyService.findEditableByUser(null,null,null,pageable)).hasMessageContaining("no autenticado");
+        assertThatThrownBy(() -> surveyService.findEditableByUser(owner,null,null,PageRequest.of(0,51,Sort.by("updatedAt")))).hasMessageContaining("Paginación");
+        assertThatThrownBy(() -> surveyService.findEditableByUser(owner,null,null,PageRequest.of(0,10))).hasMessageContaining("Ordenación");
+        assertThatThrownBy(() -> surveyService.findEditableByUser(owner,null,null,null,List.of(Category.DATOS_PERSONALES),pageable)).hasMessageContaining("datos personales");
+    }
+
+    @Test
+    void resultSurveyPage_distinguishesAdministratorsAndEditorsAndValidatesPagination() {
+        User editor=User.builder().id(7L).role(UserRole.EDITOR).build();
+        when(surveyRepository.findResultSummaries(any(),anyBoolean(),anyString(),anyBoolean(),anyBoolean(),anyBoolean(),anyList(),any())).thenReturn(Page.empty());
+        assertThat(surveyService.findResultSurveys(editor," Texto ",Set.of(SurveyResultsSearchField.TITLE),List.of(SurveyLifecycle.CLOSED),SurveyResultsSortOrder.OLDEST,0,10).content()).isEmpty();
+        surveyService.findResultSurveys(User.builder().id(8L).role(UserRole.ADMIN).build(),null,null,null,null,0,10);
+        assertThatThrownBy(() -> surveyService.findResultSurveys(null,null,null,null,null,0,10)).hasMessageContaining("no autenticado");
+        assertThatThrownBy(() -> surveyService.findResultSurveys(editor,null,null,null,null,-1,10)).hasMessageContaining("Paginación");
+    }
+
+    @Test
+    void publicPage_hidesProtectedLocalCoverAndIncludesRegisteredCatalog() {
+        Survey survey=Survey.builder().id(12L).publicCode("ABC123").title("Encuesta").accessMode(SurveyAccessMode.PASSWORD_PROTECTED).imageKey("/api/v1/public/surveys/12/cover/file.png").build();
+        when(surveyRepository.findListedOpenPage(anyBoolean(),anyString(),anyString(),anyString(),anyString(),any())).thenReturn(new PageImpl<>(List.of(survey)));
+        assertThat(surveyService.findListedOpenPage(" Prueba ","#Mi etiqueta",null,0,10,List.of(Category.OTROS)).content()).singleElement().satisfies(s -> assertThat(s.imageKey()).isNull());
+        survey.setAccessMode(SurveyAccessMode.PUBLIC);
+        assertThat(surveyService.findListedOpenForRegisteredPage(User.builder().id(7L).build(),null,null,null,0,10,null).content()).singleElement().satisfies(s -> assertThat(s.imageKey()).isNotNull());
+        assertThatThrownBy(() -> surveyService.findListedOpenForRegisteredPage(null,null,null,null,0,10,null)).hasMessageContaining("no autenticado");
+    }
+
+    @Test
+    void managedSurveyAndRespondentAccess_respectLifecycleAndAuthentication() {
+        User owner=User.builder().id(7L).role(UserRole.EDITOR).build();
+        Survey survey=Survey.builder().id(12L).publicCode("ABC123").owner(owner).title("Encuesta").lifecycleStatus(SurveyLifecycle.DRAFT).accessMode(SurveyAccessMode.AUTHENTICATED).build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+        when(surveyRepository.findByPublicCode("ABC123")).thenReturn(Optional.of(survey));
+        assertThat(surveyService.getSurveyForUser(12L,owner).canEdit()).isTrue();
+        assertThatThrownBy(() -> surveyService.getSurveyForUser(12L,null)).hasMessageContaining("No puedes consultar");
+        assertThatThrownBy(() -> surveyService.getOpenSurveyForRespondent("ABC123",owner)).hasMessageContaining("no disponible");
+        survey.setLifecycleStatus(SurveyLifecycle.OPEN);
+        assertThat(surveyService.getOpenSurveyForRespondent("ABC123",owner).id()).isEqualTo(12L);
+        assertThatThrownBy(() -> surveyService.getOpenSurveyForRespondent("ABC123",null)).hasMessageContaining("no disponible");
+        survey.setAccessMode(SurveyAccessMode.PASSWORD_PROTECTED);
+        assertThatThrownBy(() -> surveyService.getOpenSurveyForRespondent("ABC123",owner)).hasMessageContaining("contraseña");
+        when(participationRepository.existsBySurveyId(12L)).thenReturn(true);
+        assertThat(surveyService.getSurveyForResults(12L,owner).id()).isEqualTo(12L);
+        assertThat(surveyService.getSurveyForResults(12L,User.builder().role(UserRole.ADMIN).build()).canEdit()).isFalse();
+        assertThatThrownBy(() -> surveyService.ensureStructureEditable(survey)).hasMessageContaining("con respuestas");
+    }
+
+    @Test
+    void uploadCover_replacesPreviousKeyAndSchedulesItsDeletion() {
+        User owner=User.builder().id(7L).role(UserRole.EDITOR).build();
+        Survey survey=Survey.builder().id(12L).owner(owner).imageKey("anterior").build();
+        when(surveyRepository.findById(12L)).thenReturn(Optional.of(survey));
+        var file=new org.springframework.mock.web.MockMultipartFile("file","foto.png","image/png",new byte[]{1});
+        when(surveyCoverStorage.save(12L,file)).thenReturn("nueva");
+        assertThat(surveyService.uploadCover(12L,owner,file).imageKey()).isEqualTo("nueva");
+        verify(surveyCoverStorage).deleteAfterCommit(12L,"anterior");
+        surveyService.adminDelete(12L,User.builder().role(UserRole.ADMIN).build());
+        verify(surveyRepository).deleteSurveyById(12L);
+    }
 
     @Mock
     private SurveyRepository surveyRepository;

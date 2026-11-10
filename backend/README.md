@@ -52,4 +52,12 @@ Las pruebas están en `src/test/java`. Cubren servicios, repositorios, controlad
 ./mvnw test
 ```
 
+Para ejecutar las pruebas, generar el informe de cobertura y comprobar un mínimo global del 85 % en líneas e instrucciones:
+
+```bash
+./mvnw clean verify
+```
+
+El informe HTML se genera en `target/site/jacoco/index.html`. La comprobación incluye todo el backend y se realiza en la fase `verify`.
+
 La carga de datos de desarrollo se documenta en [scripts/README.md](../scripts/README.md) y los escenarios JMeter en [performance/README.md](../performance/README.md).

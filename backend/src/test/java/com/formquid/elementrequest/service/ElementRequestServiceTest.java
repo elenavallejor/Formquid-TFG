@@ -25,6 +25,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.List;
+import com.formquid.question.dto.*;
+import com.formquid.question.entity.*;
+import com.formquid.block.dto.CreateBlockItemRequestDto;
+import com.formquid.content.entity.ContentItemType;
+import com.formquid.template.dto.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +45,54 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ElementRequestServiceTest {
+    @Mock QuestionResponseDto createdQuestion;
+    @Mock TemplateResponseDto createdTemplate;
+
+    @ParameterizedTest
+    @EnumSource(RequestedElementType.class)
+    void createAndResolve_validatesAndCreatesRequestedCatalogType(RequestedElementType type) {
+        User user=User.builder().id(4L).name("Autora").build();
+        var payload=Map.<String,Object>of("category","OTROS");
+        var draft=new QuestionDraftDto("Pregunta",null,QuestionType.TEXT,EvaluationDirection.NEUTRAL,null,null,List.of(),List.of());
+        var fixed=new CreateFixedQuestionRequestDto(draft,Category.OTROS);
+        var block=new CreateBlockRequestDto("Bloque",null,List.of(new CreateBlockItemRequestDto(ContentItemType.QUESTION,1,true,draft,null,null)),Category.OTROS);
+        var template=new CreateTemplateRequestDto("Plantilla",null,null,List.of(),Category.OTROS);
+        switch(type) {
+            case FIXED_QUESTION -> {
+                when(objectMapper.convertValue(payload,CreateFixedQuestionRequestDto.class)).thenReturn(fixed);
+                when(questionService.createFixedQuestion(fixed,user)).thenReturn(createdQuestion);
+                when(createdQuestion.id()).thenReturn(33L);
+            }
+            case BLOCK -> {
+                when(objectMapper.convertValue(payload,CreateBlockRequestDto.class)).thenReturn(block);
+                when(blockService.createCatalogBlock(block,user)).thenReturn(new BlockResponseDto(33L,null,"Bloque",null,List.of(),4L,null,null,null,Category.OTROS));
+            }
+            case TEMPLATE -> {
+                when(objectMapper.convertValue(payload,CreateTemplateRequestDto.class)).thenReturn(template);
+                when(templateService.create(template,user)).thenReturn(createdTemplate);
+                when(createdTemplate.id()).thenReturn(33L);
+            }
+        }
+        when(elementRequestRepository.save(any())).thenAnswer(i -> { ElementRequest e=i.getArgument(0); e.setId(12L); return e; });
+        var response=elementRequestService.create(new CreateElementRequestDto(type," Propuesta ",payload),user);
+        assertThat(response.message()).isEqualTo("Propuesta");
+        verify(categoryCatalogService).requireExisting(Category.OTROS);
+        var captor=org.mockito.ArgumentCaptor.forClass(ElementRequest.class);
+        verify(elementRequestRepository).save(captor.capture());
+        ElementRequest pending=captor.getValue();
+        when(elementRequestRepository.findById(12L)).thenReturn(Optional.of(pending));
+        assertThat(elementRequestService.approve(12L,user).createdElementId()).isEqualTo(33L);
+        elementRequestService.reject(12L);
+        verify(elementRequestRepository,times(2)).delete(pending);
+        verify(notificationService).notifyAdminsAboutElementRequest(pending);
+    }
+
+    @Test
+    void pendingAndResolution_handleEmptyListAndMissingRequest() {
+        assertThat(elementRequestService.findPending()).isEmpty();
+        verify(elementRequestRepository).findAllResponses();
+        assertThatThrownBy(() -> elementRequestService.reject(99L)).hasMessage("Solicitud de elemento no encontrada");
+    }
 
     @Mock
     private ElementRequestRepository elementRequestRepository;

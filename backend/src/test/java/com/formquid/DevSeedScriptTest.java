@@ -46,12 +46,18 @@ class DevSeedScriptTest {
                     assertThat(admin.getString("password_hash")).isEqualTo("preserved-hash");
                 }
                 // Verifica también el reinicio cuando ya se conserva el ID 1.
+                statement.executeUpdate("""
+                    INSERT INTO survey_cover_files (filename, survey_id, content_type, image_bytes)
+                    SELECT '123e4567-e89b-12d3-a456-426614174000.png', id, 'image/png', decode('010203', 'hex')
+                    FROM surveys ORDER BY id LIMIT 1
+                    """);
                 statement.execute(sql);
 
                 try (ResultSet rows = statement.executeQuery("""
                     SELECT (SELECT count(*) FROM categories) AS categories,
                            (SELECT count(*) FROM questions WHERE scope = 'CATALOG_FIXED') AS fixed_questions,
                            (SELECT count(*) FROM surveys) AS surveys,
+                           (SELECT count(*) FROM survey_cover_files) AS covers,
                            (SELECT count(*) FROM surveys WHERE cardinality(tags) <> 2) AS surveys_without_tags,
                            (SELECT count(*) FROM surveys WHERE category = 'ORDENADORES') AS computer_surveys,
                            (SELECT count(*) FROM surveys WHERE category = 'INTELIGENCIA_ARTIFICIAL') AS ai_surveys
@@ -60,6 +66,7 @@ class DevSeedScriptTest {
                     assertThat(rows.getLong("categories")).isEqualTo(19);
                     assertThat(rows.getLong("fixed_questions")).isEqualTo(136);
                     assertThat(rows.getLong("surveys")).isEqualTo(30);
+                    assertThat(rows.getLong("covers")).isZero();
                     assertThat(rows.getLong("surveys_without_tags")).isZero();
                     assertThat(rows.getLong("computer_surveys")).isGreaterThanOrEqualTo(2);
                     assertThat(rows.getLong("ai_surveys")).isGreaterThanOrEqualTo(2);

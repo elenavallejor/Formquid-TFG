@@ -23,6 +23,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Optional;
+import java.util.Set;
+import com.formquid.user.dto.UserSortOrder;
+import com.formquid.user.dto.UserSearchField;
+import org.springframework.data.domain.Page;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,6 +41,50 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
+    @ParameterizedTest
+    @EnumSource(UserSortOrder.class)
+    void findAll_supportsSortOrdersAndNormalizesSearch(UserSortOrder sort) {
+        when(userRepository.findResponses(anyString(),anyBoolean(),anyBoolean(),anyBoolean(),anyBoolean(),anyBoolean(),any(),any())).thenReturn(Page.empty());
+        assertThat(userService.findAll(0,10," Ana ",Set.of(UserSearchField.NAME),sort).content()).isEmpty();
+        verify(userRepository).findResponses(eq("ana"),eq(true),eq(false),eq(false),eq(false),eq(false),any(),any());
+    }
+
+    @Test
+    void findAll_rejectsInvalidPageAndSize() {
+        assertThatThrownBy(() -> userService.findAll(-1,10,null,null,UserSortOrder.NEWEST)).hasMessageContaining("negativa");
+        assertThatThrownBy(() -> userService.findAll(0,0,null,null,UserSortOrder.NEWEST)).hasMessageContaining("tamaño de página");
+    }
+
+    @Test
+    void updateAccount_changesEmailAndProfileAndRejectsDuplicatesOrNoChanges() {
+        User user=User.builder().id(7L).email("old@example.com").name("Ana").institution("Centro").country("ES").passwordHash("hash").build();
+        when(userRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("actual","hash")).thenReturn(true);
+        var request=new UpdateAccountRequestDto(new UpdateAccountRequestDto.ProfileData(" Elena "," Universidad ","FR"),new UpdateAccountRequestDto.EmailData(" NEW@example.com "),null,"actual");
+        assertThat(userService.updateMyAccount(7L,request).tokenRenewalRequired()).isTrue();
+        assertThat(user.getEmail()).isEqualTo("new@example.com");
+        assertThat(user.getName()).isEqualTo("Elena");
+        assertThat(user.getInstitution()).isEqualTo("Universidad");
+        assertThatThrownBy(() -> userService.updateMyAccount(7L,request)).hasMessageContaining("distinto al actual");
+        when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
+        assertThatThrownBy(() -> userService.updateMyAccount(7L,new UpdateAccountRequestDto(null,new UpdateAccountRequestDto.EmailData("taken@example.com"),null,"actual"))).hasMessageContaining("Ya existe");
+        assertThatThrownBy(() -> userService.updateMyAccount(7L,new UpdateAccountRequestDto(null,null,null,"actual"))).hasMessageContaining("ningún cambio");
+        assertThatThrownBy(() -> userService.updateMyAccount(7L,new UpdateAccountRequestDto(null,null,null," "))).hasMessageContaining("contraseña actual");
+    }
+
+    @Test
+    void deleteAccounts_cleansPhotoAndProtectsSurveyOwnersAndLastSuperadmin() {
+        User user=User.builder().id(7L).role(UserRole.SUPERADMIN).passwordHash("hash").profileImageKey("foto").build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByRoleAndIdNot(UserRole.SUPERADMIN,7L)).thenReturn(true);
+        when(passwordEncoder.matches("actual","hash")).thenReturn(true);
+        userService.deleteMyAccount(7L,new DeleteOwnAccountRequestDto("actual"));
+        userService.delete(7L);
+        verify(userRepository,times(2)).delete(user);
+        verify(profilePhotoStorage,times(2)).deleteAfterCommit(7L,"foto");
+        when(surveyRepository.countByOwnerId(7L)).thenReturn(1L);
+        assertThatThrownBy(() -> userService.delete(7L)).hasMessageContaining("propietario de encuestas");
+    }
 
     @Mock
     private UserRepository userRepository;

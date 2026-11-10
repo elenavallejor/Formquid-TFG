@@ -22,12 +22,68 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import com.formquid.collaboration.entity.*;
+import com.formquid.block.entity.*;
+import com.formquid.question.entity.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationDestinationServiceTest {
+    @ParameterizedTest
+    @EnumSource(NotificationTargetType.class)
+    void resolve_currentTargets_returnTheirDestination(NotificationTargetType type) {
+        User user=User.builder().id(3L).role(UserRole.SUPERADMIN).build();
+        Survey survey=Survey.builder().id(8L).owner(user).build();
+        Notification notification=Notification.builder().targetType(type).targetId(9L).build();
+        when(notifications.getOwnedNotification(21L,3L)).thenReturn(notification);
+        String expected=switch(type) {
+            case SURVEY -> {
+                when(surveys.findById(9L)).thenReturn(Optional.of(survey));
+                yield "/encuestas/9/editar?vista=detalles";
+            }
+            case COLLABORATION_REQUEST -> {
+                user.setRole(UserRole.EDITOR);
+                when(collaborationRequests.findById(9L)).thenReturn(Optional.of(CollaborationRequest.builder().survey(survey).user(user).build()));
+                yield "/colaboraciones";
+            }
+            case PUBLICATION_REQUEST -> {
+                when(publicationRequests.findById(9L)).thenReturn(Optional.of(PublicationRequest.builder().survey(survey).build()));
+                yield "/encuestas/8/editar?seccion=colaboraciones";
+            }
+            case REGISTRATION_REQUEST -> {
+                when(registrationRequests.existsById(9L)).thenReturn(true);
+                yield "/admin/solicitudes-registro";
+            }
+            case ELEMENT_REQUEST -> {
+                when(elementRequests.existsById(9L)).thenReturn(true);
+                yield "/admin/solicitudes-catalogo";
+            }
+            case USER -> {
+                when(users.existsById(9L)).thenReturn(true);
+                yield "/superadmin/usuarios";
+            }
+            case QUESTION -> {
+                when(questions.findById(9L)).thenReturn(Optional.of(Question.builder().scope(QuestionScope.CATALOG_FIXED).build()));
+                yield "/catalogo/detalles/pregunta/9";
+            }
+            case BLOCK -> {
+                when(blocks.findById(9L)).thenReturn(Optional.of(Block.builder().scope(BlockScope.CATALOG).build()));
+                yield "/catalogo/detalles/bloque/9";
+            }
+            case TEMPLATE -> {
+                when(templates.existsById(9L)).thenReturn(true);
+                yield "/catalogo/detalles/plantilla/9";
+            }
+            case NONE -> null;
+        };
+        assertThat(destinationService.resolve(21L,user)).isEqualTo(expected);
+        notification.setTargetId(null);
+        assertThat(destinationService.resolve(21L,user)).isNull();
+    }
 
     @Mock private NotificationService notifications;
     @Mock private SurveyRepository surveys;
