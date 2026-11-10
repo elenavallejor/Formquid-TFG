@@ -1,0 +1,21 @@
+.manual-page {
+  width: 100%;
+  padding: 1rem;
+}
+
+.manual-page-document {
+  display: block;
+  width: 100%;
+  height: max(75vh, 38rem);
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .manual-page {
+    padding: 0;
+  }
+
+  .manual-page-document {
+    height: 80vh;
+  }
+}

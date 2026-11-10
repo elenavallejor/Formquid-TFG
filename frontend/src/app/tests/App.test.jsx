@@ -42,6 +42,7 @@ describe('navegación de la aplicación', () => {
     const routes = root.children;
     expect(root.errorElement).toBeTruthy();
     expect(routes.find(({ path }) => path === 'inicia-sesion')).toBeTruthy();
+    expect(routes.find(({ path }) => path === 'manual')).toBeTruthy();
     expect(routes.find(({ path }) => path === 'recover-password')).toBeTruthy();
     expect(routes.find(({ path }) => path === 'restablecer-contrasena')).toBeTruthy();
     expect(routes.find(({ path }) => path === 'perfil')).toBeTruthy();
@@ -49,6 +50,12 @@ describe('navegación de la aplicación', () => {
     const publicSurvey = routes.find(({ path }) => path === ':publicCode');
     expect(publicSurvey.loader({ params: { publicCode: 'ABC123DEF456' } })).toBeNull();
     expect(() => publicSurvey.loader({ params: { publicCode: 'invalid' } })).toThrow();
+  });
+
+  it('muestra el PDF en la ruta pública del manual', () => {
+    renderWithDataRouter(router.routes, { route: '/manual' });
+    expect(screen.getByTitle('Manual de usuario de FormQuid')).toHaveAttribute('data', '/manual-de-usuario.pdf');
+    expect(document.title).toBe('Manual de usuario | FormQuid');
   });
 
   it('conserva cabecera y pie cuando falla un loader de navegación', async () => {

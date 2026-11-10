@@ -19,6 +19,7 @@ import { LoginPage } from './routes/LoginPage/LoginPage';
 import { PasswordRecoveryPage } from './routes/PasswordRecoveryPage/PasswordRecoveryPage.jsx';
 import { ResetPasswordPage } from './routes/ResetPasswordPage/ResetPasswordPage.jsx';
 import { MainPage } from './routes/MainPage/MainPage';
+import { ManualPage } from './routes/ManualPage/ManualPage.jsx';
 import { PanelPage } from './routes/PanelPage/PanelPage';
 import { SurveyParticipationsPage } from './routes/SurveyParticipationsPage/SurveyParticipationsPage.jsx';
 import { PublicSurveyPage } from './routes/PublicSurveyPage/PublicSurveyPage.jsx';
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <MainPage />,
+      },
+      {
+        path: 'manual',
+        element: <ManualPage />,
       },
       {
         path: 'inicia-sesion',

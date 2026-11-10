@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 const PAGE_TITLES = [
   { pattern: /^\/$/, title: 'Inicio' },
+  { pattern: /^\/manual\/?$/, title: 'Manual de usuario' },
   { pattern: /^\/inicia-sesion\/?$/, title: 'Iniciar sesión' },
   { pattern: /^\/recover-password\/?$/, title: 'Recuperar contraseña' },
   { pattern: /^\/restablecer-contrasena\/?$/, title: 'Restablecer contraseña' },
